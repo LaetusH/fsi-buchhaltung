@@ -13,7 +13,7 @@ services:
       - DB_HOST=${DB_HOST:-db}
       - DB_USER=${DB_USER:-fsi}
       - DB_PASSWORD=${DB_PASSWORD:-fsi_password}
-      - DB_NAME=${DB_NAME:-fsi_kasse}
+      - DB_NAME=${DB_NAME:-fsi_buchhaltung}
       - DB_CONN_LIMIT=${DB_CONN_LIMIT:-5}
       - SESSION_COOKIE_NAME=${SESSION_COOKIE_NAME:-fsi_session}
       - SESSION_SECRET=${SESSION_SECRET:-dev_change_me}
@@ -34,7 +34,7 @@ services:
     image: mariadb:11.4
     environment:
       - MARIADB_ROOT_PASSWORD=${DB_ROOT_PASSWORD:-root_password}
-      - MARIADB_DATABASE=${DB_NAME:-fsi_kasse}
+      - MARIADB_DATABASE=${DB_NAME:-fsi_buchhaltung}
       - MARIADB_USER=${DB_USER:-fsi}
       - MARIADB_PASSWORD=${DB_PASSWORD:-fsi_password}
     volumes:

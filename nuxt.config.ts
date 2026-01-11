@@ -6,7 +6,7 @@ export default defineNuxtConfig({
   modules: ['@vite-pwa/nuxt', '@nuxt/icon'],
   css: ['~/assets/css/main.css'],
   app: {
-    // Allow hosting under a subpath like /kasse
+    // Allow hosting under a subpath like /buchhaltung
     baseURL: process.env.APP_BASE_URL || '/'
   },
   vite: {
@@ -16,8 +16,8 @@ export default defineNuxtConfig({
   pwa: {
     registerType: 'autoUpdate',
     manifest: {
-      name: 'Kassensystem',
-      short_name: 'kassensystem',
+      name: 'Buchhaltung',
+      short_name: 'Buchhaltung',
       theme_color: '#ffffff',
       background_color: '#ffffff',
       display: 'standalone',

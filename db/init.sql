@@ -1,4 +1,4 @@
--- Schema initialization for fsi-kasse
+-- Schema initialization for fsi-buchhaltung
 CREATE TABLE IF NOT EXISTS users (
   id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
   username VARCHAR(255) NOT NULL UNIQUE,
