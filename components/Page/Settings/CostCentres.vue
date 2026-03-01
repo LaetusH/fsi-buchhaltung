@@ -1,65 +1,63 @@
 <template>
-  <Page headline1="Einstellungen – Kostenstellen" @open-menu="$emit('openMenu')">
-    <template #cards>
-      <div class="bg-white rounded-xl shadow-lg p-6 space-y-6 col-span-12">
+  <div class="bg-white rounded-b-xl rounded-tl-xl shadow-lg p-6 space-y-6 col-span-12">
+    <div class="flex justify-between items-center">
+      <h2 class="text-lg font-semibold">Kostenstellen</h2>
 
-        <div class="flex justify-between items-center">
-          <h2 class="text-lg font-semibold">Kostenstellen</h2>
+      <button
+        class="btn-primary"
+        @click="addCostCentre"
+      >
+        ＋ Neue Kostenstelle
+      </button>
+    </div>
 
-          <button
-            class="btn-primary"
-            @click="addCostCentre"
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm border-collapse">
+        <thead>
+          <tr class="text-left border-b">
+            <th class="py-2">Code</th>
+            <th class="py-2">Name</th>
+            <th class="py-2 text-right">Aktionen</th>
+          </tr>
+        </thead>
+
+        <tbody>
+          <tr
+            v-for="c in costCentres"
+            :key="c.id"
+            class="border-b last:border-b-0"
           >
-            ＋ Neue Kostenstelle
-          </button>
-        </div>
+            <td class="py-2">{{ c.code }}</td>
+            <td class="py-2">{{ c.name }}</td>
 
-        <div class="overflow-x-auto">
-          <table class="w-full text-sm border-collapse">
-            <thead>
-              <tr class="text-left border-b">
-                <th class="py-2">Code</th>
-                <th class="py-2">Name</th>
-                <th class="py-2 text-right">Aktionen</th>
-              </tr>
-            </thead>
-
-            <tbody>
-              <tr
-                v-for="c in costCentres"
-                :key="c.id"
-                class="border-b last:border-b-0"
+            <td class="py-2 text-right space-x-2">
+              <button
+                class="text-blue-600 hover:underline cursor-pointer"
+                @click="editCostCentre(c)"
               >
-                <td class="py-2">{{ c.code }}</td>
-                <td class="py-2">{{ c.name }}</td>
+                Bearbeiten
+              </button>
 
-                <td class="py-2 text-right space-x-2">
-                  <button
-                    class="text-blue-600 hover:underline cursor-pointer"
-                    @click="editCostCentre(c)"
-                  >
-                    Bearbeiten
-                  </button>
-
-                  <button
-                    class="text-red-500 hover:underline cursor-pointer"
-                    @click="activateCostCentre(c)"
-                  >
-                    {{ c.is_active ? 'Deaktivieren' : 'Aktivieren'}}
-                  </button>
-                </td>
-              </tr>
-              <tr v-if="costCentres.length === 0">
-                <td colspan="3" class="py-6 text-center text-slate-500">
-                  Keine Kostenstellen vorhanden
-                </td>
-              </tr>
-            </tbody>              
-          </table>
-        </div>
-      </div>
-    </template>
-  </Page>
+              <button
+                class="hover:underline cursor-pointer"
+                :class="c.is_active
+                  ? 'text-red-500'
+                  : 'text-gray-500'"
+                @click="activateCostCentre(c)"
+              >
+                {{ c.is_active ? 'Deaktivieren' : 'Aktivieren'}}
+              </button>
+            </td>
+          </tr>
+          <tr v-if="costCentres.length === 0">
+            <td colspan="3" class="py-6 text-center text-slate-500">
+              Keine Kostenstellen vorhanden
+            </td>
+          </tr>
+        </tbody>              
+      </table>
+    </div>
+  </div>
 
   <div
     v-if="showCostCentreModal"

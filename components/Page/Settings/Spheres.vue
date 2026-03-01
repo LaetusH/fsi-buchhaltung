@@ -1,65 +1,60 @@
 <template>
-  <Page headline1="Einstellungen – Sphären" @open-menu="$emit('openMenu')">
-    <template #cards>
-      <div class="bg-white rounded-xl shadow-lg p-6 space-y-6 col-span-12">
+  <div class="bg-white rounded-b-xl rounded-tl-xl shadow-lg p-6 space-y-6 col-span-12">
+    <div class="flex justify-between items-center">
+      <h2 class="text-lg font-semibold">Sphären</h2>
 
-        <div class="flex justify-between items-center">
-          <h2 class="text-lg font-semibold">Sphären</h2>
+      <button
+        class="btn-primary"
+        @click="addSphere"
+      >
+        ＋ Neue Sphäre
+      </button>
+    </div>
 
-          <button
-            class="btn-primary"
-            @click="addSphere"
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm border-collapse">
+        <thead>
+          <tr class="text-left border-b">
+            <th class="py-2">Code</th>
+            <th class="py-2">Name</th>
+            <th class="py-2 text-right">Aktionen</th>
+          </tr>
+        </thead>
+
+        <tbody>
+          <tr
+            v-for="sphere in spheres"
+            :key="sphere.id"
+            class="border-b last:border-b-0"
           >
-            ＋ Neue Sphäre
-          </button>
-        </div>
+            <td class="py-2">{{ sphere.code }}</td>
+            <td class="py-2">{{ sphere.name }}</td>
 
-        <div class="overflow-x-auto">
-          <table class="w-full text-sm border-collapse">
-            <thead>
-              <tr class="text-left border-b">
-                <th class="py-2">Code</th>
-                <th class="py-2">Name</th>
-                <th class="py-2 text-right">Aktionen</th>
-              </tr>
-            </thead>
-
-            <tbody>
-              <tr
-                v-for="sphere in spheres"
-                :key="sphere.id"
-                class="border-b last:border-b-0"
+            <td class="py-2 text-right space-x-2">
+              <button
+                class="text-blue-600 hover:underline cursor-pointer"
+                @click="editSphere(sphere)"
               >
-                <td class="py-2">{{ sphere.code }}</td>
-                <td class="py-2">{{ sphere.name }}</td>
+                Bearbeiten
+              </button>
 
-                <td class="py-2 text-right space-x-2">
-                  <button
-                    class="text-blue-600 hover:underline cursor-pointer"
-                    @click="editSphere(sphere)"
-                  >
-                    Bearbeiten
-                  </button>
-
-                  <button
-                    class="text-red-500 hover:underline cursor-pointer"
-                    @click="activateSphere(sphere)"
-                  >
-                    {{ sphere.is_active ? 'Deaktivieren' : 'Aktivieren'}}
-                  </button>
-                </td>
-              </tr>
-              <tr v-if="spheres.length === 0">
-                <td colspan="3" class="py-6 text-center text-slate-500">
-                  Keine Sphären vorhanden
-                </td>
-              </tr>
-            </tbody>              
-          </table>
-        </div>
-      </div>
-    </template>
-  </Page>
+              <button
+                class="text-red-500 hover:underline cursor-pointer"
+                @click="activateSphere(sphere)"
+              >
+                {{ sphere.is_active ? 'Deaktivieren' : 'Aktivieren'}}
+              </button>
+            </td>
+          </tr>
+          <tr v-if="spheres.length === 0">
+            <td colspan="3" class="py-6 text-center text-slate-500">
+              Keine Sphären vorhanden
+            </td>
+          </tr>
+        </tbody>              
+      </table>
+    </div>
+  </div>
 
   <div
     v-if="showSphereModal"
