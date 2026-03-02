@@ -274,6 +274,11 @@ const emit = defineEmits<{
   (e: 'cancel'): void
 }>()
 
+const form = computed({
+  get: () => props.modelValue,
+  set: v => emit('update:modelValue', v)
+})
+
 const companies = ref<CompanyRow[]>([])
 
 const companyQuery = ref('')
@@ -380,6 +385,41 @@ onMounted(() => {
   loadCostCentres()
 })
 
+watch(
+  [companies, () => form.value.company_id],
+  () => {
+    if (!form.value.company_id) return
+
+    const company = companies.value.find(
+      c => c.id === form.value.company_id
+    )
+
+    if (company) {
+      selectedCompany.value = company
+      companyQuery.value = company.name
+    }
+  },
+  { immediate: true }
+)
+
+watch(
+  [costCentres, () => form.value.positions],
+  () => {
+    form.value.positions.forEach((p, index) => {
+      if (!p.cost_centre) return
+
+      const cc = costCentres.value.find(
+        c => c.id === p.cost_centre
+      )
+
+      if (cc) {
+        costCentreQueries.value[index] = cc.code
+      }
+    })
+  },
+  { immediate: true, deep: true }
+)
+
 onBeforeUnmount(() => {
   window.removeEventListener('keydown', onKeydown)
 })
@@ -484,11 +524,6 @@ watch(companyQuery, (newVal) => {
     clearSelectedCompany()
   }
 })
-
-const form = computed({
-  get: () => props.modelValue,
-  set: v => emit('update:modelValue', v)
-})
   
 function addPosition() {
   form.value.positions.push({
@@ -590,18 +625,18 @@ const taxBreakdown = computed(() => {
     const netto = nettoOf(p)
 
     if (!entry) return
-    entry.tax += p.amount - netto
+    entry.tax += Number(p.amount - netto)
   }
 
   return map
 })
 
 const netTotal = computed(() => 
-  form.value.positions.reduce((s, p) => s + p.amount / (1 + (p.tax / 100)), 0) 
+  form.value.positions.reduce((s, p) => s + Number(p.amount) / (1 + (Number(p.tax) / 100)), 0) 
 )
   
 const grossTotal = computed(() => 
-  form.value.positions.reduce((s, p) => s + p.amount, 0)
+  form.value.positions.reduce((s, p) => s + Number(p.amount), 0)
 )
 </script>
 <style scoped>

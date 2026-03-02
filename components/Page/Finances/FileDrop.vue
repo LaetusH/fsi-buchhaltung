@@ -1,7 +1,7 @@
 <template>
   <div class="w-full mx-auto text-slate-700">
     <div
-      v-if="!modelValue"
+      v-if="!modelValue && !existingFile"
       @dragover.prevent="isDragging = true"
       @dragleave.prevent="isDragging = false"
       @drop.prevent="handleDrop"
@@ -27,11 +27,11 @@
       />
     </div>
 
-    <div v-else class="relative w-full h-200 border border-slate-200 rounded-lg overflow-hidden bg-slate-800 group shadow-lg">
+    <div v-else-if="previewUrl" class="relative w-full h-200 border border-slate-200 rounded-lg overflow-hidden bg-slate-800 group shadow-lg">
       <div class="absolute top-0 left-0 right-0 flex z-20 items-center justify-between p-3 transition-opacity duration-200 bg-black/70 backdrop-blur-sm opacity-0 group-hover:opacity-100">
         <div class="flex items-center space-x-3 text-white">
-          <span class="text-sm font-medium truncate max-w-50">{{ modelValue.name }}</span>
-          <span class="text-xs text-slate-300">({{ (modelValue.size / 1024 / 1024).toFixed(2) }} MB)</span>
+          <span class="text-sm font-medium truncate max-w-50">{{ displayName }}</span>
+          <span class="text-xs text-slate-300">({{ displaySize }} MB)</span>
         </div>
 
         <div class="flex items-center space-x-2 bg-slate-700/50 rounded-lg p-1">
@@ -99,10 +99,18 @@ const VuePdfEmbed = defineAsyncComponent(() => import('vue-pdf-embed'))
   
 const props = defineProps<{
   modelValue: File | null
+  existingFile?: {
+    id: number
+    url: string
+    name: string
+    mime_type: string
+    size: number
+  } | null
 }>()
   
 const emit = defineEmits<{
   (e: 'update:modelValue', value: File | null): void
+  (e: 'remove-existing'): void
 }>()
   
 const isDragging = ref<boolean>(false)
@@ -126,8 +134,13 @@ const computedWidth = computed<number>(() => {
   return (containerWidth.value - 15) * zoomLevel.value
 })
 
-const isPdf = computed<boolean>(() => props.modelValue?.type === 'application/pdf')
-const isImage = computed<boolean>(() => props.modelValue?.type === 'image/png' || props.modelValue?.type === 'image/jpeg' || props.modelValue?.type === 'image/jpg')
+const activeFileType = computed(() => {
+  if (props.modelValue) return props.modelValue.type
+  if (props.existingFile) return props.existingFile.mime_type
+})
+
+const isPdf = computed(() => activeFileType.value === 'application/pdf')
+const isImage = computed(() => activeFileType.value?.startsWith('image/'))
 
 const updateContainerWidth = (): void => {
   if (containerRef.value) {
@@ -146,35 +159,49 @@ onUnmounted(() => {
 })
   
 watch(
-  () => props.modelValue, 
-  async (newFile: File | null) => {
-    if (previewUrl.value) URL.revokeObjectURL(previewUrl.value)
+  () => [props.modelValue, props.existingFile], 
+  async () => {
+    if (previewUrl.value && props.modelValue) URL.revokeObjectURL(previewUrl.value)
     
-    if (newFile) {
-      previewUrl.value = URL.createObjectURL(newFile)
-      await nextTick()
-      updateContainerWidth()
-
-      currentPage.value = 1
-      zoomLevel.value = 1.0
+    if (props.modelValue) {
+      previewUrl.value = URL.createObjectURL(props.modelValue)
+    } else if (props.existingFile) {
+      previewUrl.value = props.existingFile.url
     } else {
       previewUrl.value = undefined
-      pdfPageCount.value = 0
     }
+      
+    await nextTick()
+    updateContainerWidth()
+
+    currentPage.value = 1
+    zoomLevel.value = 1.0
   }, 
   { immediate: true }
 )
+
+const displayName = computed(() => {
+  if (props.modelValue) return props.modelValue.name
+  if (props.existingFile) return props.existingFile.name
+  return ''
+})
+
+const displaySize = computed(() => {
+  if (props.modelValue) return (props.modelValue.size / 1024 / 1024).toFixed(2)
+  if (props.existingFile) return (props.existingFile.size / 1024 / 1024).toFixed(2)
+  return ''
+})
 
 type PdfDocumentProxy = {
   numPages: number
 }
 
-const onPdfLoaded = (doc: PdfDocumentProxy): void => {
+function onPdfLoaded(doc: PdfDocumentProxy) {
   pdfPageCount.value = doc.numPages
   pdfLoading.value = false
 }
 
-const processFile = (file: File): void => {
+function processFile(file: File) {
   if (file.type === 'application/pdf' || file.type === 'image/png' || file.type === 'image/jpg' || file.type === 'image/jpeg') {
     emit('update:modelValue', file)
   } else {
@@ -182,7 +209,7 @@ const processFile = (file: File): void => {
   }
 }
   
-const handleDrop = (e: DragEvent): void => {
+function handleDrop(e: DragEvent) {
   isDragging.value = false
   const files = e.dataTransfer?.files
   if (!files || files.length == 0) return
@@ -193,7 +220,7 @@ const handleDrop = (e: DragEvent): void => {
   processFile(file)
 }
   
-const handleFileSelect = (e: Event): void => {
+function handleFileSelect(e: Event) {
   const input = e.target as HTMLInputElement | null
   const files = input?.files
   if (!files || files.length == 0) return
@@ -204,26 +231,24 @@ const handleFileSelect = (e: Event): void => {
   processFile(file)
 }
 
-const removeFile = (): void => {
-  emit('update:modelValue', null);
-  if (fileInput.value) {
-    fileInput.value.value = ''
-  }
+function removeFile() {
+  if (props.modelValue) emit('update:modelValue', null)
+  if (props.existingFile) emit('remove-existing')
 }
   
-const zoomIn = (): void => {
+function zoomIn() {
   if (zoomLevel.value < MAX_ZOOM) zoomLevel.value += ZOOM_STEP
 }
   
-const zoomOut = (): void => {
+function zoomOut() {
   if (zoomLevel.value > MIN_ZOOM) zoomLevel.value -= ZOOM_STEP
 }
   
-const nextPage = (): void => {
+function nextPage() {
   if (currentPage.value < pdfPageCount.value) currentPage.value++
 }
   
-const prevPage = (): void => {
+function prevPage() {
   if (currentPage.value > 1) currentPage.value--
 }
 </script>

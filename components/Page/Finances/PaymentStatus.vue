@@ -43,10 +43,10 @@ const statusLabels: Record<ReceiptStatus, string> = {
 }
 
 const statusClasses: Record<ReceiptStatus, string> = {
-  draft: 'bg-slate-200 text-slate-700',
+  draft: 'bg-slate-300 text-slate-900',
   open: 'bg-yellow-300 text-yellow-900',
-  paid: 'bg-green-500 text-white',
-  cancelled: 'bg-red-200 text-red-700 line-through',
+  paid: 'bg-green-300 text-green-900',
+  cancelled: 'bg-red-300 text-red-900 line-through',
 }
 
 const transitions: Record<ReceiptStatus, ReceiptStatus[]> = {
