@@ -178,8 +178,8 @@ function updateModelValueFromForm() {
 }
 
 async function save() {
-  const res = await $fetch('/api/companies/update', {
-    method: 'POST',
+  const res = await $fetch(`/api/companies/${form.id}`, {
+    method: 'PUT',
     body: form
   })
   if (res.ok) updateModelValueFromForm()

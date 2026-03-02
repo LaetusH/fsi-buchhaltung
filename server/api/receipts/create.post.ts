@@ -59,8 +59,8 @@ export default defineEventHandler(async (event) => {
   try {
     const receiptResult: any = await query(
       `INSERT INTO receipts
-        (title, company_id, receipt_date, receipt_number, description, status, created_by, updated_by)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+        (title, company_id, receipt_date, receipt_number, description, status, created_by)
+       VALUES (?, ?, ?, ?, ?, ?, ?)`,
       [
         receipt.title || null,
         company_id || null,
@@ -68,7 +68,6 @@ export default defineEventHandler(async (event) => {
         receipt_number || null,
         description || null,
         status,
-        current.user.id,
         current.user.id,
       ]
     )
@@ -78,15 +77,14 @@ export default defineEventHandler(async (event) => {
     for (const p of positions) {
       await query(
         `INSERT INTO receipt_positions
-          (receipt_id, sphere_id, cost_centre, amount, tax, created_by, updated_by)
-         VALUES (?, ?, ?, ?, ?, ?, ?)`,
+          (receipt_id, sphere, cost_centre, amount, tax, created_by)
+         VALUES (?, ?, ?, ?, ?, ?)`,
         [
           receiptId,
           p.sphere,
           p.cost_centre,
           p.amount,
           p.tax ?? 19,
-          current.user.id,
           current.user.id,
         ]
       )
@@ -119,13 +117,12 @@ export default defineEventHandler(async (event) => {
 
     await query(
       `INSERT INTO file_attachments
-        (file_id, entity_type, entity_id, attached_by, updated_by)
-       VALUES (?, ?, ?, ?, ?)`,
+        (file_id, entity_type, entity_id, attached_by)
+       VALUES (?, ?, ?, ?)`,
       [
         fileId,
         'receipt',
         receiptId,
-        current.user.id,
         current.user.id,
       ]
     )

@@ -21,7 +21,7 @@ export default defineEventHandler(async (event): Promise<GetCompaniesResponse> =
   if (!current.ok) return { ok: false, error: 'Not authenticated' }
 
   const rows = await query(`
-    SELECT id, name, street, street_number, postal_code, city, country, iban, bic, bankname, vat_id, email, phone, notes, created_at, updated_at
+    SELECT id, name, street, street_number, postal_code, city, country, iban, bic, bankname, vat_id, email, phone, notes, created_at
     FROM companies
     ORDER BY name ASC
   `) as CompanyRow[]

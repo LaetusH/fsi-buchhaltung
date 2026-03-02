@@ -29,8 +29,8 @@ export default defineEventHandler(async (event): Promise<CreateCompanyResponse> 
 
   try {
     const res = await query(
-      `INSERT INTO companies (name, street, postal_code, city, country, iban, bic, bankname, vat_id, email, phone, notes, created_by, updated_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [name, street, postal_code, city, country, iban, bic, bankname, vat_id, email, phone, notes, current.user.id, current.user.id]
+      `INSERT INTO companies (name, street, postal_code, city, country, iban, bic, bankname, vat_id, email, phone, notes, created_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [name, street, postal_code, city, country, iban, bic, bankname, vat_id, email, phone, notes, current.user.id]
     )
 
     return { ok: true, id: normalizeBigInt(res.insertId) }
