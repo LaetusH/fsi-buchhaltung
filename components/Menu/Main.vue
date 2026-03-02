@@ -16,7 +16,7 @@
       :class="pages.length > 6 ? 'justify-between' : 'justify-start gap-4'"
     >
       <li
-        v-for="page in pages"
+        v-for="page in mainPages"
         :key="page.name"
         @click="handleClick(page.name)"
         class="cursor-pointer flex flex-col items-center p-1 md:p-3 rounded-lg"
@@ -53,6 +53,10 @@ const props = defineProps<{
 const emit = defineEmits(['close'])
 
 const { currentPage, setPage } = usePage()
+
+const mainPages = computed(() => {
+  return props.pages.filter(page => page.main === true)
+})
 
 function handleClick(name: PageName) {
   setPage(name)

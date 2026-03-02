@@ -1,11 +1,13 @@
 import type { PageName } from '~/types/page'
 
-export const usePage = () => {
-  const currentPage = useState<PageName>('currentPage', () => 'Home')
+const currentPage = ref<PageName>('Home')
+const pageMeta = ref<Record<string, any> | null>(null)
 
-  const setPage = (page: PageName) => {
+export const usePage = () => {
+  const setPage = (page: PageName, meta?: Record<string, any>) => {
     currentPage.value = page
+    pageMeta.value = meta || null
   }
 
-  return { currentPage, setPage }
+  return { currentPage, setPage, pageMeta }
 }
