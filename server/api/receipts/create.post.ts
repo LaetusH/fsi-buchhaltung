@@ -131,8 +131,8 @@ export default defineEventHandler(async (event) => {
 
     return { ok: true, receiptId }
 
-  } catch (err) {
+  } catch (err: any) {
     await query('ROLLBACK')
-    throw createError({ statusCode: 500, statusMessage: 'Failed to create receipt' })
+    throw createError({ statusCode: 500, statusMessage: 'Failed to create receipt', message: err })
   }
 })
