@@ -122,7 +122,11 @@ const isNewCostCentre = ref(false)
 
 async function loadCostCentres() {
   const res = await $fetch('/api/cost_centres')
-  if (res.ok) costCentres.value = res.costCentres
+  if (res.ok) {
+    costCentres.value = res.costCentres
+  } else {
+    console.log(res.error)
+  }
 }
 
 function addCostCentre() {
@@ -143,10 +147,11 @@ function editCostCentre(costCentre: CostCentreRow) {
 async function saveCostCentre() {
   if (!editingCostCentre.value) return
 
-  await $fetch('/api/cost_centres/save', {
+  const res = await $fetch('/api/cost_centres/save', {
     method: 'POST',
     body: editingCostCentre.value
   })
+  if (!res.ok) console.log(res.error)
 
   showCostCentreModal.value = false
   editingCostCentre.value = null
@@ -154,10 +159,11 @@ async function saveCostCentre() {
 }
 
 async function activateCostCentre(costCentre: CostCentreRow) {
-  await $fetch('/api/cost_centres/activate', {
+  const res = await $fetch('/api/cost_centres/activate', {
     method: 'POST',
     body: { id: costCentre.id, is_active: !costCentre.is_active }
   })
+  if (!res.ok) console.log(res.error)
 
   await loadCostCentres()
 }

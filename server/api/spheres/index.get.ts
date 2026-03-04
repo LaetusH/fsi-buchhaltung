@@ -21,7 +21,7 @@ export default defineEventHandler(async (event): Promise<GetSpheresResponse> => 
   if (!current.ok) return { ok: false, error: 'Not authenticated' }
 
   const rows = await query(`
-    SELECT id, code, name, is_active, description, created_at, updated_at
+    SELECT id, code, name, is_active, description, created_at
     FROM spheres
     ORDER BY code ASC
   `) as SphereRow[]

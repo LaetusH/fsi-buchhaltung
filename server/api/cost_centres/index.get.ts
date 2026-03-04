@@ -21,7 +21,7 @@ export default defineEventHandler(async (event): Promise<GetCostCentresResponse>
   if (!current.ok) return { ok: false, error: 'Not authenticated' }
 
   const rows = await query(`
-    SELECT id, code, name, is_active, description, created_at, updated_at
+    SELECT id, code, name, is_active, description, created_at
     FROM cost_centres
     ORDER BY code ASC
   `) as CostCentreRow[]

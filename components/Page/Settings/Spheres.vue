@@ -119,7 +119,11 @@ const isNewSphere = ref(false)
 
 async function loadSpheres() {
   const res = await $fetch('/api/spheres')
-  if (res.ok) spheres.value = res.spheres
+  if (res.ok) {
+    spheres.value = res.spheres
+  } else {
+    console.log(res.error)
+  }
 }
 
 function addSphere() {
@@ -140,10 +144,11 @@ function editSphere(sphere: SphereRow) {
 async function saveSphere() {
   if (!editingSphere.value) return
 
-  await $fetch('/api/spheres/save', {
+  const res = await $fetch('/api/spheres/save', {
     method: 'POST',
     body: editingSphere.value
   })
+  if (!res.ok) console.log(res.error)
 
   showSphereModal.value = false
   editingSphere.value = null
@@ -151,10 +156,11 @@ async function saveSphere() {
 }
 
 async function activateSphere(sphere: SphereRow) {
-  await $fetch('/api/spheres/activate', {
+  const res = await $fetch('/api/spheres/activate', {
     method: 'POST',
     body: { id: sphere.id, is_active: !sphere.is_active }
   })
+  if (!res.ok) console.log(res.error)
 
   await loadSpheres()
 }
