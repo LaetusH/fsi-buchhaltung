@@ -1,3 +1,4 @@
+import mariadb from 'mariadb'
 import { query } from '~/server/utils/db'
 
 interface ChangeLogInput {
@@ -41,7 +42,8 @@ export async function logChange({
   oldValue,
   newValue,
   userId,
-}: ChangeLogInput): Promise<LogChangeResponse> {
+}: ChangeLogInput, 
+conn?: mariadb.PoolConnection): Promise<LogChangeResponse> {
   if (normalize(oldValue) === normalize(newValue)) return { ok: false, error: 'Old and new value are the same' }
 
   try {
@@ -58,7 +60,8 @@ export async function logChange({
         oldValue ?? null,
         newValue ?? null,
         userId,
-      ]
+      ],
+      conn
     )
     return { ok: true }
   } catch (err) {

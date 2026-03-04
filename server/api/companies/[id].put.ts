@@ -1,5 +1,5 @@
 import { defineEventHandler, readBody } from 'h3'
-import { query } from '~/server/utils/db'
+import { query, withTransaction } from '~/server/utils/db'
 import { getCurrentUserFromEvent } from '~/server/utils/sessionGuard'
 import type { CompanyRow, UpdateCompanyBody } from '~/types/company'
 
@@ -30,70 +30,73 @@ export default defineEventHandler(async (event): Promise<UpdateCompanyResponse> 
   const updated = body
 
   try {
-    const existingRows: CompanyRow[] = await query(
-      `SELECT * FROM companies WHERE id = ? LIMIT 1`,
-      [companyId]
-    )
-    
-    if (!existingRows.length) return { ok: false, error: 'No matching companies in database' }
-    
-    const existing = existingRows[0]
-    
-    const fields = ['name', 'street', 'street_number', 'postal_code', 'city', 'country', 'iban', 'bic', 'bankname', 'vat_id', 'email', 'phone', 'notes'] as (keyof UpdateCompanyBody)[]
-    
-    for (const field of fields) {
-      if (String(existing[field]) !== String(updated[field])) {
-        await logChange({
-          entityType: 'company',
-          entityId: companyId,
-          subEntityType: null,
-          subEntityId: null,
-          field,
-          oldValue: existing[field],
-          newValue: updated[field],
-          userId: current.user.id,
-        })
+    return await withTransaction(async (conn) => {
+      const existingRows: CompanyRow[] = await query(
+        `SELECT * FROM companies WHERE id = ? LIMIT 1`,
+        [companyId],
+        conn
+      )
+      
+      if (!existingRows.length) return { ok: false, error: 'No matching companies in database' }
+      const existing = existingRows[0]
+      
+      const fields = ['name', 'street', 'street_number', 'postal_code', 'city', 'country', 'iban', 'bic', 'bankname', 'vat_id', 'email', 'phone', 'notes'] as (keyof UpdateCompanyBody)[]
+      
+      for (const field of fields) {
+        if (String(existing[field]) !== String(updated[field])) {
+          await logChange({
+            entityType: 'company',
+            entityId: companyId,
+            subEntityType: null,
+            subEntityId: null,
+            field,
+            oldValue: existing[field],
+            newValue: updated[field],
+            userId: current.user.id,
+          }, conn)
+        }
       }
-    }
 
-    await query(
-      `UPDATE companies
-       SET
-        name = ?,
-        street = ?,
-        street_number = ?,
-        postal_code = ?,
-        city = ?,
-        country = ?,
-        iban = ?,
-        bic = ?,
-        bankname = ?,
-        vat_id = ?,
-        email = ?,
-        phone = ?,
-        notes = ?
-       WHERE id = ?`,
-      [
-        updated.name, 
-        updated.street || null, 
-        updated.street_number || null, 
-        updated.postal_code || null, 
-        updated.city || null, 
-        updated.country || null, 
-        updated.iban || null, 
-        updated.bic || null, 
-        updated.bankname || null, 
-        updated.vat_id || null, 
-        updated.email || null, 
-        updated.phone || null, 
-        updated.notes || null, 
-        companyId,
-      ]
-    )
+      await query(
+        `UPDATE companies
+        SET
+          name = ?,
+          street = ?,
+          street_number = ?,
+          postal_code = ?,
+          city = ?,
+          country = ?,
+          iban = ?,
+          bic = ?,
+          bankname = ?,
+          vat_id = ?,
+          email = ?,
+          phone = ?,
+          notes = ?
+        WHERE id = ?`,
+        [
+          updated.name, 
+          updated.street || null, 
+          updated.street_number || null, 
+          updated.postal_code || null, 
+          updated.city || null, 
+          updated.country || null, 
+          updated.iban || null, 
+          updated.bic || null, 
+          updated.bankname || null, 
+          updated.vat_id || null, 
+          updated.email || null, 
+          updated.phone || null, 
+          updated.notes || null, 
+          companyId,
+        ],
+        conn
+      )
+
+      return { ok: true }
+    })
   } catch (err: unknown) {
     const error = err as MysqlError
-    return { ok: false, error: error.code! }
+    return { ok: false, error: `An error occured while updating the company: ${error.code ?? 'DB_ERROR'}` }
   }
-
-  return { ok: true }
 })

@@ -10,12 +10,35 @@ const pool = mariadb.createPool({
   dateStrings: true
 })
 
-export async function query<T = any>(sql: string, params?: unknown[]): Promise<T> {
-  let conn
+export async function query<T = any>(sql: string, params?: unknown[], conn?: mariadb.PoolConnection): Promise<T> {
+  let connection = conn
+  let shouldRelease = false
+
   try {
-    conn = await pool.getConnection()
-    return normalizeBigInt(await conn.query(sql, params))
+    if (!connection) {
+      connection = await pool.getConnection()
+      shouldRelease = true
+    }
+
+    const result = await connection.query(sql, params)
+    return normalizeBigInt(result)
   } finally {
-    if (conn) conn.release()
+    if (shouldRelease && connection) connection.release()
+  }
+}
+
+export async function withTransaction<T>(callback: (conn: mariadb.PoolConnection) => Promise<T>): Promise<T> {
+  const conn = await pool.getConnection()
+
+  try {
+    await conn.beginTransaction()
+    const result = await callback(conn)
+    await conn.commit()
+    return normalizeBigInt(result)
+  } catch (err) {
+    await conn.rollback()
+    throw err
+  } finally {
+    conn.release()
   }
 }
