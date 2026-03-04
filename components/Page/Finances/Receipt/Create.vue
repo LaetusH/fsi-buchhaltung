@@ -25,8 +25,8 @@
 
 <script setup lang="ts">
 import Page from '~/components/Page.vue'
-import FileDrop from './FileDrop.vue'
-import ReceiptForm from './ReceiptForm.vue'
+import FileDrop from '../FileDrop.vue'
+import ReceiptForm from './Form.vue'
 import { ReceiptStatus, type CreateReceiptBody } from '~/types/receipt'
 import { usePage } from '~/composables/usePage'
 import type { GetReceiptResponse } from '~/server/api/receipts/[id].get'

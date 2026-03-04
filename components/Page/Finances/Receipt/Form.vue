@@ -258,10 +258,10 @@
 </template>
 <script setup lang="ts">
 import type { CompanyRow, Company } from '~/types/company'
-import { type CreateReceiptBody, ReceiptStatus } from '~/types/receipt'
+import { type CreateReceiptBody } from '~/types/receipt'
 import type { SphereRow } from '~/types/sphere'
 import type { CostCentreRow } from '~/types/costCentre'
-import CompanyForm from './CompanyForm.vue'
+import CompanyForm from '../CompanyForm.vue'
   
 const props = defineProps<{
   modelValue: CreateReceiptBody
