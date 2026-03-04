@@ -41,6 +41,7 @@ export interface ReceiptRow {
   receipt_number: string | null
   description: string | null
   status: ReceiptStatus
+  total_amount: number
 }
 
 export interface CreateReceiptPositionBody {

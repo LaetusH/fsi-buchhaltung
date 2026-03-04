@@ -90,7 +90,7 @@ export default defineEventHandler(async (event): Promise<GetReceiptResponse> => 
       file: fileRows.length ? normalizeBigInt(fileRows[0]) : null
     }
 
-  } catch (err) {
-    return { ok: false, error: 'An error occurred while fetching a receipt'}
+  } catch (err: any) {
+    return { ok: false, error: `An error occurred while fetching a receipt: ${err}` }
   }
 })

@@ -5,6 +5,18 @@ import fs from 'fs/promises'
 import path from 'path'
 import crypto from 'crypto'
 
+interface CreateReceiptSuccess {
+  ok: true
+  receiptId: number
+}
+
+interface CreateReceiptError {
+  ok: false
+  error: string
+}
+
+type CreateReceiptResponse = CreateReceiptSuccess | CreateReceiptError
+
 const ALLOWED_MIME = [
   'application/pdf',
   'image/jpeg',
@@ -14,30 +26,26 @@ const ALLOWED_MIME = [
 
 const MAX_SIZE = Number(process.env.MAX_UPLOAD_MB || 5) * 1024 * 1024
 
-export default defineEventHandler(async (event) => {
+export default defineEventHandler(async (event): Promise<CreateReceiptResponse> => {
   const current = await getCurrentUserFromEvent(event, true)
-  if (!current.ok) throw createError({ statusCode: 401, statusMessage: 'Not authenticated' })
+  if (!current.ok) return { ok: false, error: 'Not authenticated' }
 
   const formData = await readMultipartFormData(event)
-  if (!formData) throw createError({ statusCode: 400, statusMessage: 'Invalid form data' })
+  if (!formData) return { ok: false, error: 'Invalid form data' }
 
   const getField = (name: string) =>
     formData.find(f => f.name === name)?.data?.toString()
 
   const file = formData.find(f => f.type && f.filename)
 
-  if (!file) throw createError({ statusCode: 400, statusMessage: 'No file uploaded' })
+  if (!file) return { ok: false, error: 'No file uploaded' }
 
-  if (!ALLOWED_MIME.includes(file.type || '')) {
-    throw createError({ statusCode: 400, statusMessage: 'Invalid file type' })
-  }
+  if (!ALLOWED_MIME.includes(file.type || '')) return { ok: false, error: 'Invalid file type' }
 
-  if (file.data.length > MAX_SIZE) {
-    throw createError({ statusCode: 400, statusMessage: 'File too large' })
-  }
+  if (file.data.length > MAX_SIZE) return { ok: false, error: 'File too large' }
 
   const receiptJson = getField('receipt')
-  if (!receiptJson) throw createError({ statusCode: 400, statusMessage: 'Missing receipt data' })
+  if (!receiptJson) return { ok: false, error: 'Missing receipt data' }
 
   const receipt = JSON.parse(receiptJson)
 
@@ -50,9 +58,7 @@ export default defineEventHandler(async (event) => {
     positions,
   } = receipt
 
-  if (!receipt_date || !status || !positions || !Array.isArray(positions)) {
-    throw createError({ statusCode: 400, statusMessage: 'Missing required receipt fields' })
-  }
+  if (!receipt_date || !status || !positions || !Array.isArray(positions)) return { ok: false, error: 'Missing required receipt fields' }
 
   await query('START TRANSACTION')
 
@@ -133,6 +139,6 @@ export default defineEventHandler(async (event) => {
 
   } catch (err: any) {
     await query('ROLLBACK')
-    throw createError({ statusCode: 500, statusMessage: 'Failed to create receipt', message: err })
+    return { ok: false, error: `Failed to create receipt: ${err}` }
   }
 })

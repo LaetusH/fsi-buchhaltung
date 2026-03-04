@@ -6,6 +6,7 @@ import fs from 'fs/promises'
 import path from 'path'
 import crypto from 'crypto'
 import { ReceiptPosition, ReceiptRow } from '~/types/receipt'
+import { FileAttachment } from '~/types/file'
 
 interface UpdateReceiptSuccess {
   ok: true
@@ -195,7 +196,7 @@ export default defineEventHandler(async (event): Promise<UpdateReceiptResponse> 
     }
 
     if (removeExistingFile) {
-      const existingAttachment: any = await query(
+      const existingAttachment: FileAttachment[] = await query(
         `SELECT id, file_id
          FROM file_attachments
          WHERE entity_type = 'receipt' AND entity_id = ? AND detached_at IS NULL`,
@@ -224,8 +225,7 @@ export default defineEventHandler(async (event): Promise<UpdateReceiptResponse> 
     }
 
     if (file) {
-      if (!ALLOWED_MIME.includes(file.type || ''))
-        throw createError({ statusCode: 400 })
+      if (!ALLOWED_MIME.includes(file.type || '')) return { ok: false, error: 'Invalid file type' }
 
       const uploadRoot = process.env.UPLOAD_DIR!
       const uploadDir = path.join(uploadRoot, 'receipts')
@@ -252,7 +252,7 @@ export default defineEventHandler(async (event): Promise<UpdateReceiptResponse> 
 
       const fileId = Number(fileResult.insertId)
 
-      const res = await query(
+      const attachmentResult: any = await query(
         `INSERT INTO file_attachments
          (file_id, entity_type, entity_id, attached_by)
          VALUES (?, 'receipt', ?, ?)`,
@@ -267,7 +267,7 @@ export default defineEventHandler(async (event): Promise<UpdateReceiptResponse> 
         entityType: 'receipt',
         entityId: receiptId,
         subEntityType: 'file_attachment',
-        subEntityId: res.insertId,
+        subEntityId: attachmentResult.insertId,
         field: 'file_attached',
         oldValue: null,
         newValue: fileId,
@@ -281,7 +281,6 @@ export default defineEventHandler(async (event): Promise<UpdateReceiptResponse> 
 
   } catch (err) {
     await query('ROLLBACK')
-    console.log(err)
-    return { ok: false, error: 'An error occured during the update of the receipt' }
+    return { ok: false, error: `An error occured during the update of the receipt: ${err}` }
   }
 })

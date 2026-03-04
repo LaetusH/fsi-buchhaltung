@@ -1,12 +1,23 @@
 import { defineEventHandler, createError } from 'h3'
 import { query } from '~/server/utils/db'
 import { getCurrentUserFromEvent } from '~/server/utils/sessionGuard'
+import { ReceiptRow, ReceiptStatus } from '~/types/receipt'
 
-export default defineEventHandler(async (event) => {
+interface GetReceiptsSuccess {
+  ok: true
+  receipts: ReceiptRow[]
+}
+
+interface GetReceiptsError {
+  ok: false
+  error: string
+}
+
+type GetReceiptsResponse = GetReceiptsSuccess | GetReceiptsError
+
+export default defineEventHandler(async (event): Promise<GetReceiptsResponse> => {
   const current = await getCurrentUserFromEvent(event, true)
-  if (!current.ok) {
-    throw createError({ statusCode: 401, statusMessage: 'Not authenticated' })
-  }
+  if (!current.ok) return { ok: false, error: 'Not authenticated' }
 
   try {
     const receipts: any[] = await query(
@@ -17,6 +28,8 @@ export default defineEventHandler(async (event) => {
         r.receipt_number,
         r.status,
         c.name AS company_name,
+        c.id AS company_id,
+        r.description,
         IFNULL(SUM(rp.amount), 0) AS total_amount
       FROM receipts r
       LEFT JOIN companies c ON c.id = r.company_id
@@ -26,19 +39,18 @@ export default defineEventHandler(async (event) => {
       `
     )
 
-    return receipts.map(r => ({
+    return { ok: true, receipts: receipts.map(r => ({
       id: Number(r.id),
-      receipt_date: new Date(r.receipt_date),
-      receipt_number: r.receipt_number,
-      company_name: r.company_name,
-      status: r.status,
+      receipt_date: String(r.receipt_date),
+      receipt_number: String(r.receipt_number),
+      company_name: String(r.company_name),
+      company_id: Number(r.company_id),
+      status: r.status as ReceiptStatus,
+      description: String(r.description),
       total_amount: Number(r.total_amount),
-    }))
+    }))}
 
-  } catch (err) {
-    throw createError({
-      statusCode: 500,
-      statusMessage: 'Failed to load receipts'
-    })
+  } catch (err: any) {
+    return { ok: false, error: `Failed to load receipts: ${err}` }
   }
 })

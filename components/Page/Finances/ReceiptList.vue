@@ -83,7 +83,7 @@
 
 <script setup lang="ts">
 import { usePage } from '~/composables/usePage'
-import { ReceiptStatus } from '~/types/receipt'
+import { ReceiptStatus, type ReceiptRow } from '~/types/receipt'
 
 const emit = defineEmits<{
   (e: 'openMenu'): void
@@ -92,16 +92,7 @@ const emit = defineEmits<{
 
 const { setPage } = usePage()
 
-interface Receipt {
-  id: number
-  receipt_date: string
-  receipt_number: string | null
-  company_name: string | null
-  status: ReceiptStatus
-  total_amount: number
-}
-
-const receipts = ref<Receipt[]>([])
+const receipts = ref<ReceiptRow[]>([])
 
 const statusLabels: Record<ReceiptStatus, string> = {
   draft: 'ENTWURF',
@@ -111,8 +102,8 @@ const statusLabels: Record<ReceiptStatus, string> = {
 }
 
 onMounted(async () => {
-  const res = await $fetch<Receipt[]>('/api/receipts')
-  receipts.value = res
+  const res = await $fetch('/api/receipts')
+  if (res.ok) receipts.value = res.receipts
 })
 
 function formatDate(date: string) {

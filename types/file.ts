@@ -5,3 +5,8 @@ export interface FileRow {
   mime_type: string
   file_size: number
 }
+
+export interface FileAttachment {
+  id: number
+  file_id: number
+}
