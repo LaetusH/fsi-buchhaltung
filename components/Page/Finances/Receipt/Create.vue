@@ -14,7 +14,7 @@
       <div class="col-span-6">
         <ReceiptForm
           v-model="form"
-          :disabled="!file"
+          :has-file="!!file || (!!existingFile && !removeExistingFile)"
           @submit="submit"
           @cancel="cancel"
         />
@@ -109,6 +109,23 @@ async function submit() {
     return
   }
 
+  if (!form.value.positions.length) {
+    alert('Please add at least one position.')
+    return
+  }
+
+  if (form.value.positions.some(p => !p.sphere || !p.cost_centre || p.amount === null || p.amount === undefined)) {
+    alert('Each position requires sphere, cost centre and amount.')
+    return
+  }
+
+  const hasFile = !!file.value || (!!existingFile.value && !removeExistingFile.value)
+  const requiresFile = form.value.status === ReceiptStatus.Open || form.value.status === ReceiptStatus.Paid
+  if (requiresFile && !hasFile) {
+    alert('A file is required when status is open or paid.')
+    return
+  }
+
   const body = new FormData()
 
   if(file.value) body.append('file', file.value)
@@ -116,22 +133,38 @@ async function submit() {
   body.append('receipt', JSON.stringify(form.value))
 
   try {
+    let createdReceiptId: number | null = null
     if (isEditMode.value) {
       body.append('removeExistingFile', String(removeExistingFile.value))
-      await $fetch(`/api/receipts/${receiptId.value}`, {
+      const updateRes = await $fetch<{ ok: boolean, error?: string }>(`/api/receipts/${receiptId.value}`, {
         method: 'PUT',
         body,
       })
+      if (!updateRes.ok) throw new Error(updateRes.error || 'Failed to update receipt')
     } else {
-      await $fetch('/api/receipts/create', {
+      const createRes = await $fetch<{ ok: boolean, receiptId?: number, error?: string }>('/api/receipts/create', {
         method: 'POST',
         body,
       })
+      if (!createRes.ok) throw new Error(createRes.error || 'Failed to create receipt')
+      if (createRes.receiptId) createdReceiptId = createRes.receiptId
     }
 
-    alert('Receipt created successfully!')
+    alert(isEditMode.value ? 'Receipt updated successfully!' : 'Receipt created successfully!')
     const returnTo = pageMeta.value?.returnTo || 'ReceiptList'
-    setPage(returnTo)
+    const returnToMeta = pageMeta.value?.returnToMeta
+      ? { ...pageMeta.value.returnToMeta }
+      : undefined
+
+    if (createdReceiptId && returnTo === 'ReimbursementCreate') {
+      if (!returnToMeta) {
+        setPage(returnTo, { newReceiptId: createdReceiptId })
+        return
+      }
+      returnToMeta.newReceiptId = createdReceiptId
+    }
+
+    setPage(returnTo, returnToMeta)
   } catch (err: any) {
     alert(err?.message || 'Failed to upload receipt.')
   }
@@ -139,6 +172,9 @@ async function submit() {
 
 function cancel() {
   const returnTo = pageMeta.value?.returnTo || 'ReceiptList'
-  setPage(returnTo)
+  const returnToMeta = pageMeta.value?.returnToMeta
+    ? { ...pageMeta.value.returnToMeta }
+    : undefined
+  setPage(returnTo, returnToMeta)
 }
 </script>

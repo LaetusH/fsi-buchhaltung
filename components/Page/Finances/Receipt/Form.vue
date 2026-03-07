@@ -53,9 +53,6 @@
         </template>
       </MenuDropdown>
 
-      <p v-if="!form.company_id" class="text-xs text-red-500">
-        Dieses Feld darf nicht leer sein
-      </p>
     </section>
 
     <section class="bg-white rounded-xl shadow-lg p-4 grid grid-cols-2 gap-4">
@@ -215,11 +212,23 @@
 
       <button
         class="btn-primary"
+        :disabled="saveDisabled"
+        :class="{ 'opacity-50 cursor-not-allowed': saveDisabled }"
         @click="emit('submit')"
       >
         Speichern
       </button>
     </div>
+
+    <section
+      v-if="validationErrors.length"
+      class="bg-red-50 border border-red-200 rounded-xl p-3 text-sm text-red-700"
+    >
+      <p class="font-semibold mb-1">Speichern derzeit nicht moglich:</p>
+      <ul class="list-disc list-inside">
+        <li v-for="error in validationErrors" :key="error">{{ error }}</li>
+      </ul>
+    </section>
   </div>
 
   <teleport to="body">
@@ -258,7 +267,7 @@
 </template>
 <script setup lang="ts">
 import type { CompanyRow, Company } from '~/types/company'
-import { type CreateReceiptBody } from '~/types/receipt'
+import { ReceiptStatus, type CreateReceiptBody } from '~/types/receipt'
 import type { SphereRow } from '~/types/sphere'
 import type { CostCentreRow } from '~/types/costCentre'
 import CompanyForm from '../CompanyForm.vue'
@@ -266,6 +275,7 @@ import CompanyForm from '../CompanyForm.vue'
 const props = defineProps<{
   modelValue: CreateReceiptBody
   disabled?: boolean
+  hasFile?: boolean
 }>()
   
 const emit = defineEmits<{
@@ -278,6 +288,36 @@ const form = computed({
   get: () => props.modelValue,
   set: v => emit('update:modelValue', v)
 })
+
+const validationErrors = computed(() => {
+  const errors: string[] = []
+
+  if (!form.value.receipt_date) {
+    errors.push('Belegdatum ist ein Pflichtfeld.')
+  }
+
+  if (!form.value.status) {
+    errors.push('Status ist ein Pflichtfeld.')
+  }
+
+  if (!Array.isArray(form.value.positions) || form.value.positions.length === 0) {
+    errors.push('Mindestens eine Position ist erforderlich.')
+  }
+  if (form.value.positions.some(p => !p.sphere || !p.cost_centre || p.amount === null || p.amount === undefined)) {
+    errors.push('Jede Position braucht Sphäre, Kostenstelle und Betrag.')
+  }
+
+  const requiresFile = form.value.status === ReceiptStatus.Open || form.value.status === ReceiptStatus.Paid
+  if (requiresFile && !props.hasFile) {
+    errors.push('Für Status OFFEN oder BEZAHLT ist eine Datei erforderlich.')
+  }
+
+  return errors
+})
+
+const saveDisabled = computed(() =>
+  Boolean(props.disabled) || validationErrors.value.length > 0
+)
 
 const companies = ref<CompanyRow[]>([])
 

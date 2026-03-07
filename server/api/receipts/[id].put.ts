@@ -26,6 +26,8 @@ const ALLOWED_MIME = [
   'image/png',
 ]
 
+const MAX_SIZE = Number(process.env.MAX_UPLOAD_MB || 5) * 1024 * 1024
+
 export default defineEventHandler(async (event): Promise<UpdateReceiptResponse> => {
   const current = await getCurrentUserFromEvent(event, true)
   if (!current.ok) return { ok: false, error: 'Not authenticated' }
@@ -46,6 +48,12 @@ export default defineEventHandler(async (event): Promise<UpdateReceiptResponse> 
   if (!receiptJson) return { ok: false, error: 'Missing receipt' }
 
   const updated = JSON.parse(receiptJson)
+  if (!updated.receipt_date || !updated.status || !Array.isArray(updated.positions) || updated.positions.length === 0) {
+    return { ok: false, error: 'Missing required receipt fields' }
+  }
+  if (updated.positions.some((p: any) => !p?.sphere || !p?.cost_centre || p?.amount === null || p?.amount === undefined)) {
+    return { ok: false, error: 'Each position requires sphere, cost centre and amount' }
+  }
 
   try {
     return await withTransaction(async (conn) => {
@@ -57,6 +65,22 @@ export default defineEventHandler(async (event): Promise<UpdateReceiptResponse> 
 
       if (!existingRows.length) return { ok: false, error: 'No matching receipts in database' }
       const existing = existingRows[0]
+
+      const existingAttachment: FileAttachment[] = await query(
+        `SELECT id, file_id
+         FROM file_attachments
+         WHERE entity_type = 'receipt' AND entity_id = ? AND detached_at IS NULL`,
+        [receiptId],
+        conn
+      )
+
+      const hasExistingFile = existingAttachment.length > 0
+      const hasFileAfterSave = Boolean(file) || (hasExistingFile && !removeExistingFile)
+      const requiresFile = updated.status === 'open' || updated.status === 'paid'
+
+      if (requiresFile && !hasFileAfterSave) {
+        return { ok: false, error: 'A file is required for open or paid receipts' }
+      }
 
       const fields = ['receipt_date', 'receipt_number', 'status', 'company_id', 'description'] as (keyof ReceiptRow)[]
 
@@ -199,14 +223,6 @@ export default defineEventHandler(async (event): Promise<UpdateReceiptResponse> 
       }
 
       if (removeExistingFile) {
-        const existingAttachment: FileAttachment[] = await query(
-          `SELECT id, file_id
-          FROM file_attachments
-          WHERE entity_type = 'receipt' AND entity_id = ? AND detached_at IS NULL`,
-          [receiptId],
-          conn
-        )
-
         if (existingAttachment.length) {
           await query(
             `UPDATE file_attachments
@@ -231,6 +247,7 @@ export default defineEventHandler(async (event): Promise<UpdateReceiptResponse> 
 
       if (file) {
         if (!ALLOWED_MIME.includes(file.type || '')) return { ok: false, error: 'Invalid file type' }
+        if (file.data.length > MAX_SIZE) return { ok: false, error: 'File too large' }
 
         const uploadRoot = process.env.UPLOAD_DIR!
         const uploadDir = path.join(uploadRoot, 'receipts')
