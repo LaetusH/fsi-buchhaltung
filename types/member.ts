@@ -1,5 +1,67 @@
+export enum MemberStatus {
+  Active = 'active',
+  Passive = 'passive',
+  Left = 'left',
+}
+
 export interface MemberListItem {
   id: number
   first_name: string
   last_name: string
+  status: MemberStatus
+  honorary: boolean
+  subject_name: string | null
+  joined_at: string
+  left_at: string | null
+}
+
+export interface MemberPositionAssignment {
+  id?: number
+  position_id: number
+  since: string
+  until: string | null
+}
+
+export interface Member {
+  id: number
+  account: number | null
+  last_name: string
+  first_name: string
+  birthdate: string
+  street: string
+  street_number: string
+  postal_code: string
+  city: string
+  subject: number
+  subject_name: string
+  phone: string
+  email: string
+  notes: string | null
+  status: MemberStatus
+  honorary: boolean
+  applied_at: string
+  joined_at: string
+  left_at: string | null
+  positions: MemberPositionAssignment[]
+}
+
+export interface SaveMemberBody {
+  account?: number | null
+  last_name: string
+  first_name: string
+  birthdate: string
+  street: string
+  street_number: string
+  postal_code: string
+  city: string
+  subject_name: string
+  phone: string
+  email: string
+  notes?: string | null
+  status: MemberStatus
+  honorary: boolean
+  applied_at: string
+  joined_at: string
+  left_at?: string | null
+  positions: MemberPositionAssignment[]
 }

@@ -5,6 +5,8 @@ import ReceiptListPage from '~/components/Page/Finances/Receipt/List.vue'
 import ReceiptCreatePage from '~/components/Page/Finances/Receipt/Create.vue'
 import ReimbursementListPage from '~/components/Page/Finances/Reimbursement/List.vue'
 import ReimbursementCreatePage from '~/components/Page/Finances/Reimbursement/Create.vue'
+import MemberListPage from '~/components/Page/Members/List.vue'
+import MemberCreatePage from '~/components/Page/Members/Create.vue'
 import SettingsPage from '~/components/Page/Settings/Overview.vue'
 
 // Do not display more than 8 pages at once
@@ -15,5 +17,7 @@ export const PAGES: Record<string, AppPage> = {
   ReceiptCreate: { main: false, label: 'Create Receipt', component: ReceiptCreatePage, roles: ['admin'] },
   ReimbursementList: { main: true, label: 'Reimbursements', component: ReimbursementListPage, icon: '', roles: ['admin'] },
   ReimbursementCreate: { main: false, label: 'Create Reimbursement', component: ReimbursementCreatePage, roles: ['admin'] },
+  MemberList: { main: true, label: 'Members', component: MemberListPage, icon: '', roles: ['admin'] },
+  MemberCreate: { main: false, label: 'Create Member', component: MemberCreatePage, roles: ['admin'] },
   Settings: { main: true, label: 'Settings', component: SettingsPage, icon: '', roles: ['admin'] },
 }
