@@ -23,22 +23,24 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { computed, ref } from 'vue'
 
 import SettingsSpheres from './Spheres.vue'
 import SettingsCostCentres from './CostCentres.vue'
+import SettingsPositions from './Positions.vue'
 
 const emit = defineEmits<{
   (e: 'openMenu'): void
 }>()
 
-type SettingsTab = 'spheres' | 'costCentres'
+type SettingsTab = 'spheres' | 'costCentres' | 'positions'
 
 const currentTab = ref<SettingsTab>('spheres')
 
 const tabs = [
   { key: 'spheres', label: 'Sphären' },
   { key: 'costCentres', label: 'Kostenstellen' },
+  { key: 'positions', label: 'Positionen' },
 ] as const
 
 const activeComponent = computed(() => {
@@ -47,6 +49,8 @@ const activeComponent = computed(() => {
       return SettingsSpheres
     case 'costCentres':
       return SettingsCostCentres
+    case 'positions':
+      return SettingsPositions
     default:
       return SettingsSpheres
   }
