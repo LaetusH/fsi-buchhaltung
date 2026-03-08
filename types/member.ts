@@ -1,4 +1,4 @@
-export enum MemberStatus {
+﻿export enum MemberStatus {
   Active = 'active',
   Passive = 'passive',
   Hold = 'hold',
@@ -9,6 +9,7 @@ export interface MemberListItem {
   id: number
   first_name: string
   last_name: string
+  birthdate: string
   status: MemberStatus
   honorary: boolean
   subject_name: string | null

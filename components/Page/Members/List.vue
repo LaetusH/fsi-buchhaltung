@@ -17,7 +17,9 @@
           <table class="w-full text-sm border-collapse">
             <thead>
               <tr class="text-left border-b">
-                <th class="py-2">Name</th>
+                <th class="py-2">Vorname</th>
+                <th class="py-2">Nachname</th>
+                <th class="py-2">Geburtsdatum</th>
                 <th class="py-2">Fach</th>
                 <th class="py-2">Status</th>
                 <th class="py-2">Eintritt</th>
@@ -32,7 +34,9 @@
                 :key="member.id"
                 class="border-b last:border-b-0 transition"
               >
-                <td class="py-2 font-medium">{{ member.last_name }}, {{ member.first_name }}</td>
+                <td class="py-2">{{ member.first_name }}</td>
+                <td class="py-2">{{ member.last_name }}</td>
+                <td class="py-2">{{ formatDate(member.birthdate) }}</td>
                 <td class="py-2">{{ member.subject_name || '-' }}</td>
                 <td class="py-2">{{ statusLabel(member.status) || '-' }}</td>
                 <td class="py-2">{{ formatDate(member.joined_at) }}</td>
