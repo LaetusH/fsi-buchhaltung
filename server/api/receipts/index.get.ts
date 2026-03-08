@@ -42,11 +42,11 @@ export default defineEventHandler(async (event): Promise<GetReceiptsResponse> =>
     return { ok: true, receipts: receipts.map(r => ({
       id: Number(r.id),
       receipt_date: String(r.receipt_date),
-      receipt_number: String(r.receipt_number),
-      company_name: String(r.company_name),
+      receipt_number: r.receipt_number ? String(r.receipt_number) : null,
+      company_name: r.company_name ? String(r.company_name) : null,
       company_id: Number(r.company_id),
       status: r.status as ReceiptStatus,
-      description: String(r.description),
+      description: r.description ? String(r.description) : null,
       total_amount: Number(r.total_amount),
     }))}
 

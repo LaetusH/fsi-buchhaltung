@@ -1,5 +1,5 @@
 <template>
-  <div class="xl:p-6">
+  <div id="page-root" class="xl:p-6">
     <div class="flex flex-wrap gap-3 justify-between">
       <div class="flex flex-row gap-3">
         <button

@@ -1,0 +1,277 @@
+import { computed, ref, watch, type Ref } from 'vue'
+
+export type SortDirection = 'asc' | 'desc' | null
+export type TableFilterType = 'text' | 'number' | 'date'
+
+export interface TableColumnConfig<T, K extends string = string> {
+  key: K
+  filterType: TableFilterType
+  getValue: (row: T) => unknown
+  sortable?: boolean
+  globalSearchable?: boolean
+}
+
+export interface TextColumnFilter {
+  type: 'text'
+  selected: string[]
+}
+
+export interface RangeColumnFilter {
+  type: 'number' | 'date'
+  min: string
+  max: string
+}
+
+export type ColumnFilter = TextColumnFilter | RangeColumnFilter
+
+function normalizeText(value: unknown): string {
+  if (value === null || value === undefined) return ''
+  return String(value).trim().toLocaleLowerCase('de-DE')
+}
+
+function toComparableValue(type: TableFilterType, value: unknown): number | string | null {
+  if (value === null || value === undefined || value === '') return null
+
+  if (type === 'number') {
+    const raw = String(value).trim().replace(/\s/g, '').replace(/[^\d,.-]/g, '')
+    const lastComma = raw.lastIndexOf(',')
+    const lastDot = raw.lastIndexOf('.')
+    let normalized = raw
+
+    if (lastComma > -1 && lastDot > -1) {
+      if (lastComma > lastDot) {
+        normalized = raw.replace(/\./g, '').replace(',', '.')
+      } else {
+        normalized = raw.replace(/,/g, '')
+      }
+    } else if (lastComma > -1) {
+      normalized = raw.replace(',', '.')
+    }
+
+    const numeric = Number(normalized)
+    return Number.isFinite(numeric) ? numeric : null
+  }
+
+  if (type === 'date') {
+    const ts = Date.parse(String(value))
+    return Number.isFinite(ts) ? ts : null
+  }
+
+  return normalizeText(value)
+}
+
+function toDateSearchTokens(value: unknown): string[] {
+  if (!value) return []
+  const raw = String(value)
+  const ts = Date.parse(raw)
+  if (!Number.isFinite(ts)) return [normalizeText(raw)]
+  return [
+    normalizeText(raw),
+    normalizeText(
+      new Date(ts).toLocaleDateString('de-DE', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+      }),
+    ),
+  ]
+}
+
+export function useAdvancedTable<T, K extends string>(
+  rows: Ref<T[]>,
+  columns: TableColumnConfig<T, K>[],
+) {
+  const sortKey = ref<K | null>(null)
+  const sortDirection = ref<SortDirection>(null)
+  const globalSearchInput = ref('')
+  const globalSearchTerm = ref('')
+
+  const columnByKey = computed(() => {
+    return columns.reduce<Record<string, TableColumnConfig<T, K>>>((acc, column) => {
+      acc[column.key] = column
+      return acc
+    }, {})
+  })
+
+  const filters = ref<Record<string, ColumnFilter>>(
+    columns.reduce<Record<string, ColumnFilter>>((acc, column) => {
+      if (column.filterType === 'text') {
+        acc[column.key] = { type: 'text', selected: [] }
+      } else {
+        acc[column.key] = { type: column.filterType, min: '', max: '' }
+      }
+      return acc
+    }, {}),
+  )
+
+  const textOptionsByColumn = computed<Record<string, string[]>>(() => {
+    const result: Record<string, string[]> = {}
+    for (const column of columns) {
+      if (column.filterType !== 'text') continue
+      const values = new Set<string>()
+      for (const row of rows.value) {
+        const value = column.getValue(row)
+        const text = value === null || value === undefined || value === '' ? '-' : String(value)
+        values.add(text)
+      }
+      result[column.key] = Array.from(values).sort((a, b) => a.localeCompare(b, 'de-DE'))
+    }
+    return result
+  })
+
+  function getFilter(key: K): ColumnFilter {
+    return filters.value[key]!
+  }
+
+  function isFilterActive(key: K): boolean {
+    const filter = filters.value[key]
+    if (!filter) return false
+    if (filter.type === 'text') return filter.selected.length > 0
+    return filter.min !== '' || filter.max !== ''
+  }
+
+  function setTextFilter(key: K, selected: string[]) {
+    filters.value[key] = {
+      type: 'text',
+      selected: Array.from(new Set(selected)),
+    }
+  }
+
+  function setRangeFilter(key: K, min: string, max: string) {
+    const column = columnByKey.value[key]
+    const type = column?.filterType === 'date' ? 'date' : 'number'
+    filters.value[key] = {
+      type,
+      min: min.trim(),
+      max: max.trim(),
+    }
+  }
+
+  function resetFilter(key: K) {
+    const column = columnByKey.value[key]
+    if (!column) return
+    if (column.filterType === 'text') {
+      filters.value[key] = { type: 'text', selected: [] }
+    } else {
+      filters.value[key] = {
+        type: column.filterType,
+        min: '',
+        max: '',
+      }
+    }
+  }
+
+  function toggleSort(key: K) {
+    const column = columnByKey.value[key]
+    if (!column || column.sortable === false) return
+
+    if (sortKey.value !== key) {
+      sortKey.value = key
+      sortDirection.value = 'asc'
+      return
+    }
+
+    if (sortDirection.value === 'asc') {
+      sortDirection.value = 'desc'
+      return
+    }
+
+    sortKey.value = null
+    sortDirection.value = null
+  }
+
+  function applyGlobalSearch() {
+    globalSearchTerm.value = globalSearchInput.value.trim()
+  }
+
+  function resetGlobalSearch() {
+    globalSearchInput.value = ''
+    globalSearchTerm.value = ''
+  }
+
+  watch(globalSearchInput, (value) => {
+    globalSearchTerm.value = value.trim()
+  })
+
+  const processedRows = computed<T[]>(() => {
+    const filtered = rows.value.filter((row) => {
+      for (const column of columns) {
+        const filter = filters.value[column.key]
+        const value = column.getValue(row)
+
+        if (filter?.type === 'text' && filter.selected.length > 0) {
+          const normalizedValue = normalizeText(value === null || value === undefined || value === '' ? '-' : String(value))
+          const selected = new Set(filter.selected.map(item => normalizeText(item)))
+          if (!selected.has(normalizedValue)) return false
+        }
+
+        if (filter?.type === 'number' || filter?.type === 'date') {
+          if (filter.min === '' && filter.max === '') continue
+
+          const comparable = toComparableValue(filter.type, value)
+          if (comparable === null || typeof comparable === 'string') return false
+
+          const minComparable = filter.min === '' ? null : toComparableValue(filter.type, filter.min)
+          const maxComparable = filter.max === '' ? null : toComparableValue(filter.type, filter.max)
+
+          if (typeof minComparable === 'number' && comparable < minComparable) return false
+          if (typeof maxComparable === 'number' && comparable > maxComparable) return false
+        }
+      }
+
+      const searchTerm = normalizeText(globalSearchTerm.value)
+      if (!searchTerm) return true
+
+      return columns.some((column) => {
+        if (!column.globalSearchable) return false
+        const raw = column.getValue(row)
+        if (column.filterType === 'date') {
+          return toDateSearchTokens(raw).some(token => token.includes(searchTerm))
+        }
+        return normalizeText(raw).includes(searchTerm)
+      })
+    })
+
+    const sorted = [...filtered]
+    if (!sortKey.value || !sortDirection.value) return sorted
+
+    const activeColumn = columnByKey.value[sortKey.value]
+    if (!activeColumn) return sorted
+
+    const factor = sortDirection.value === 'asc' ? 1 : -1
+    sorted.sort((a, b) => {
+      const left = toComparableValue(activeColumn.filterType, activeColumn.getValue(a))
+      const right = toComparableValue(activeColumn.filterType, activeColumn.getValue(b))
+
+      if (left === null && right === null) return 0
+      if (left === null) return 1
+      if (right === null) return -1
+
+      if (typeof left === 'number' && typeof right === 'number') {
+        return (left - right) * factor
+      }
+
+      return String(left).localeCompare(String(right), 'de-DE') * factor
+    })
+
+    return sorted
+  })
+
+  return {
+    sortKey,
+    sortDirection,
+    filters,
+    textOptionsByColumn,
+    globalSearchInput,
+    globalSearchTerm,
+    processedRows,
+    getFilter,
+    isFilterActive,
+    toggleSort,
+    setTextFilter,
+    setRangeFilter,
+    resetFilter,
+    applyGlobalSearch,
+    resetGlobalSearch,
+  }
+}
