@@ -32,6 +32,7 @@
             <template #default="{ styling }">
               <button :class="styling" @click="selectStatus(MemberStatus.Active)">Aktiv</button>
               <button :class="styling" @click="selectStatus(MemberStatus.Passive)">Passiv</button>
+              <button :class="styling" @click="selectStatus(MemberStatus.Hold)">Ruhend</button>
               <button :class="styling" @click="selectStatus(MemberStatus.Left)">Ausgetreten</button>
             </template>
           </MenuDropdown>
@@ -466,6 +467,7 @@ function onKeydown(e: KeyboardEvent) {
 function statusLabel(status: MemberStatus) {
   if (status === MemberStatus.Active) return 'Aktiv'
   if (status === MemberStatus.Passive) return 'Passiv'
+  if (status === MemberStatus.Hold) return 'Ruhend'
   return 'Ausgetreten'
 }
 

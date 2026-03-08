@@ -16,7 +16,7 @@ interface GetMembersError {
 type GetMembersResponse = GetMembersSuccess | GetMembersError
 
 function parseStatus(value: unknown): MemberStatus {
-  if (value === MemberStatus.Active || value === MemberStatus.Passive || value === MemberStatus.Left) {
+  if (value === MemberStatus.Active || value === MemberStatus.Passive || value === MemberStatus.Hold || value === MemberStatus.Left) {
     return value
   }
   return MemberStatus.Active

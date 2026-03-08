@@ -89,6 +89,7 @@ function formatDate(date?: string | null) {
 function statusLabel(status: MemberStatus) {
   if (status === MemberStatus.Active) return 'Aktiv'
   if (status === MemberStatus.Passive) return 'Passiv'
+  if (status === MemberStatus.Hold) return 'Ruhend'
   return 'Ausgetreten'
 }
 

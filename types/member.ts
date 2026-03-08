@@ -1,6 +1,7 @@
 export enum MemberStatus {
   Active = 'active',
   Passive = 'passive',
+  Hold = 'hold',
   Left = 'left',
 }
 

@@ -17,7 +17,7 @@ interface UpdateMemberError {
 type UpdateMemberResponse = UpdateMemberSuccess | UpdateMemberError
 
 function isMemberStatus(value: unknown): value is MemberStatus {
-  return value === MemberStatus.Active || value === MemberStatus.Passive || value === MemberStatus.Left
+  return value === MemberStatus.Active || value === MemberStatus.Passive || value === MemberStatus.Hold || value === MemberStatus.Left
 }
 
 async function ensureSubjectId(subjectName: string, createdBy: number, conn: any) {
