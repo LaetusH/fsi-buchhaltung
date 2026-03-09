@@ -15,7 +15,7 @@
     <button
       ref="triggerRef"
       type="button"
-      class="p-1 rounded border hover:bg-slate-50 cursor-pointer"
+      class="pt-1 pr-1 pl-1 rounded-lg border hover:bg-slate-50 cursor-pointer"
       :class="isFilterActive ? 'border-blue-500 text-blue-600' : 'border-slate-300 text-slate-500'"
       @click.stop="toggleMenu"
     >

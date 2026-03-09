@@ -3,7 +3,7 @@
     <button
       v-if="!isExpanded"
       type="button"
-      class="w-9 h-9 rounded border border-slate-300 hover:bg-slate-50 cursor-pointer inline-flex items-center justify-center"
+      class="w-9 h-9 rounded-lg border border-slate-300 hover:bg-slate-50 cursor-pointer inline-flex items-center justify-center"
       @click="expand"
     >
       <Icon name="material-symbols:search-rounded" class="w-5 h-5 text-slate-600" />
@@ -19,7 +19,7 @@
         :value="modelValue"
         type="text"
         :placeholder="placeholder"
-        class="w-full border border-slate-300 rounded pl-9 pr-9 py-1.75 text-sm"
+        class="w-full border border-slate-300 rounded-lg pl-9 pr-9 py-1.75 text-sm"
         @input="onInput"
       >
       <button
