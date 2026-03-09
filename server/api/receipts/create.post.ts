@@ -53,7 +53,7 @@ export default defineEventHandler(async (event): Promise<CreateReceiptResponse> 
     positions,
   } = receipt
 
-  if (!receipt_date || !status || !positions || !Array.isArray(positions) || positions.length === 0) {
+  if (!company_id || !receipt_date || !status || !positions || !Array.isArray(positions) || positions.length === 0) {
     return { ok: false, error: 'Missing required receipt fields' }
   }
   if (positions.some((p: any) => !p?.sphere || !p?.cost_centre || p?.amount === null || p?.amount === undefined)) {
@@ -74,10 +74,9 @@ export default defineEventHandler(async (event): Promise<CreateReceiptResponse> 
     return await withTransaction(async (conn) => {
       const receiptResult: any = await query(
         `INSERT INTO receipts
-          (title, company_id, receipt_date, receipt_number, description, status, created_by)
-        VALUES (?, ?, ?, ?, ?, ?, ?)`,
+          (company_id, receipt_date, receipt_number, description, status, created_by)
+        VALUES (?, ?, ?, ?, ?, ?)`,
         [
-          receipt.title || null,
           company_id || null,
           receipt_date,
           receipt_number || null,

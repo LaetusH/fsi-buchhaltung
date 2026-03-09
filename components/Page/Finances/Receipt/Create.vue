@@ -104,6 +104,11 @@ function onRemoveFile() {
 }
 
 async function submit() {
+  if (!form.value.company_id) {
+    alert('Please enter a company.')
+    return
+  }
+
   if (!form.value.receipt_date) {
     alert('Please enter a receipt date.')
     return

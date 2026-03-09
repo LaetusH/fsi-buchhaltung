@@ -214,7 +214,7 @@
         class="btn-primary"
         :disabled="saveDisabled"
         :class="{ 'opacity-50 cursor-not-allowed': saveDisabled }"
-        @click="emit('submit')"
+        @click="submit"
       >
         Speichern
       </button>
@@ -291,6 +291,10 @@ const form = computed({
 
 const validationErrors = computed(() => {
   const errors: string[] = []
+
+  if (companyQuery.value.trim().length < 1) {
+    errors.push('Zahlungsempfänger ist ein Pflichtfeld.')
+  }
 
   if (!form.value.receipt_date) {
     errors.push('Belegdatum ist ein Pflichtfeld.')
@@ -378,6 +382,12 @@ async function loadCostCentres() {
 async function loadCompanies() {
   const res = await $fetch('/api/companies', { method: 'GET' })
   if (res.ok) companies.value = res.companies
+}
+
+async function submit() {
+  const newCompanyName = companyQuery.value.trim()
+  if (newCompanyName.length > 0) createCompanyFromQuery()
+  emit('submit')
 }
 
 async function createCompanyFromQuery() {

@@ -48,7 +48,7 @@ export default defineEventHandler(async (event): Promise<UpdateReceiptResponse> 
   if (!receiptJson) return { ok: false, error: 'Missing receipt' }
 
   const updated = JSON.parse(receiptJson)
-  if (!updated.receipt_date || !updated.status || !Array.isArray(updated.positions) || updated.positions.length === 0) {
+  if (!updated.company_id || !updated.receipt_date || !updated.status || !Array.isArray(updated.positions) || updated.positions.length === 0) {
     return { ok: false, error: 'Missing required receipt fields' }
   }
   if (updated.positions.some((p: any) => !p?.sphere || !p?.cost_centre || p?.amount === null || p?.amount === undefined)) {

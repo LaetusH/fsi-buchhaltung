@@ -158,8 +158,7 @@ CREATE TABLE IF NOT EXISTS spheres (
 
 CREATE TABLE IF NOT EXISTS receipts (
   id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-  title VARCHAR(255),
-  company_id BIGINT UNSIGNED,
+  company_id BIGINT UNSIGNED NOT NULL,
   receipt_date DATE NOT NULL,
   receipt_number VARCHAR(100),
   description TEXT,
