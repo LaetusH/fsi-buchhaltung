@@ -18,7 +18,7 @@
         ref="inputRef"
         :value="modelValue"
         type="text"
-        :placeholder="placeholder"
+        :placeholder="resolvedPlaceholder"
         class="w-full border border-slate-300 rounded-lg pl-9 pr-9 py-1.75 text-sm"
         @input="onInput"
       >
@@ -36,13 +36,12 @@
 
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { useI18n } from '~/composables/useI18n'
 
-const props = withDefaults(defineProps<{
+const props = defineProps<{
   modelValue: string
   placeholder?: string
-}>(), {
-  placeholder: 'Liste durchsuchen',
-})
+}>()
 
 const emit = defineEmits<{
   (e: 'update:modelValue', value: string): void
@@ -51,7 +50,9 @@ const emit = defineEmits<{
 const rootRef = ref<HTMLElement | null>(null)
 const inputRef = ref<HTMLInputElement | null>(null)
 const isExpanded = ref(false)
+const { t } = useI18n()
 
+const resolvedPlaceholder = computed(() => props.placeholder || t('common.searchList'))
 const hasValue = computed(() => props.modelValue.trim().length > 0)
 
 function onInput(event: Event) {

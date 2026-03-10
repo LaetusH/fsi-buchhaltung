@@ -23,6 +23,8 @@
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue'
+import { useI18n } from '~/composables/useI18n'
 import { ReceiptStatus } from '~/types/receipt'
 
 const props = defineProps<{
@@ -34,13 +36,14 @@ const emit = defineEmits<{
 }>()
 
 const open = ref<number | null>(null)
+const { t } = useI18n()
 
-const statusLabels: Record<ReceiptStatus, string> = {
-  draft: 'ENTWURF',
-  open: 'OFFEN',
-  paid: 'BEZAHLT',
-  cancelled: 'STORNIERT',
-}
+const statusLabels = computed<Record<ReceiptStatus, string>>(() => ({
+  draft: t('receipt.states.draft'),
+  open: t('receipt.states.open'),
+  paid: t('receipt.states.paid'),
+  cancelled: t('receipt.states.cancelled'),
+}))
 
 const statusClasses: Record<ReceiptStatus, string> = {
   draft: 'bg-slate-300 text-slate-900',

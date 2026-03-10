@@ -1,5 +1,5 @@
 <template>
-  <Page headline1="Mitglied" @open-menu="$emit('openMenu')">
+  <Page :headline1="t('member.title')" @open-menu="$emit('openMenu')">
     <template #cards>
       <div class="col-span-12 lg:col-span-8 lg:col-start-3">
         <MembersForm
@@ -13,6 +13,7 @@
 </template>
 
 <script setup lang="ts">
+import { useI18n } from '~/composables/useI18n'
 import { MemberStatus, type Member, type SaveMemberBody } from '~/types/member'
 import { usePage } from '~/composables/usePage'
 import MembersForm from './Form.vue'
@@ -22,6 +23,7 @@ const emit = defineEmits<{
 }>()
 
 const { setPage, pageMeta } = usePage()
+const { t } = useI18n()
 
 const isEditMode = ref(false)
 const memberId = ref<number | null>(null)
@@ -89,21 +91,21 @@ async function submit() {
         body: form.value,
       })
 
-      if (!updateRes.ok) throw new Error(updateRes.error || 'Failed to update member')
+      if (!updateRes.ok) throw new Error(updateRes.error || t('member.saved.failedUpdate'))
     } else {
       const createRes = await $fetch<{ ok: boolean, error?: string }>('/api/members/create', {
         method: 'POST',
         body: form.value,
       })
 
-      if (!createRes.ok) throw new Error(createRes.error || 'Failed to create member')
+      if (!createRes.ok) throw new Error(createRes.error || t('member.saved.failedCreate'))
     }
 
-    alert(isEditMode.value ? 'Member updated successfully!' : 'Member created successfully!')
+    alert(isEditMode.value ? t('member.saved.updated') : t('member.saved.created'))
     const returnTo = pageMeta.value?.returnTo || 'MemberList'
     setPage(returnTo)
   } catch (err: any) {
-    alert(err?.message || 'Failed to save member.')
+    alert(err?.message || t('member.saved.failedSave'))
   }
 }
 

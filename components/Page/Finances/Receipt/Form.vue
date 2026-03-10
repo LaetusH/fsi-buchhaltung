@@ -1,9 +1,9 @@
 <template>
   <div class="space-y-6">
     <section class="bg-white rounded-xl shadow-lg p-4 space-y-1">
-      <h2 class="text-lg font-semibold">Ausgabe</h2>
+      <h2 class="text-lg font-semibold">{{ t('receipt.issue') }}</h2>
 
-      <label class="section-title">Zahlungsempfänger</label>
+      <label class="section-title">{{ t('receipt.company') }}</label>
 
       <!-- Select Company Dropdown -->
       <MenuDropdown v-model="openCompany" :id="0" class="w-full">
@@ -12,7 +12,7 @@
             <input
               v-model="companyQuery"
               :class="styling"
-              placeholder="Firma auswählen"
+              :placeholder="t('receipt.companyPlaceholder')"
               @input="openCompany = 0"
             />
 
@@ -21,7 +21,7 @@
               type="button"
               @click.stop.prevent="openCompanyDrawer"
               class="p-2 h-10 w-10 rounded-md hover:bg-slate-100 text-orange-500 cursor-pointer"
-              title="Firma bearbeiten"
+              :title="t('receipt.editCompany')"
             >
               ✏️
             </button>
@@ -32,7 +32,7 @@
           <button type="button" :class="styling" @click="createCompanyFromQuery">
             <div class="flex justify-between w-full">
               <span>"{{ companyQuery }}"</span>
-              <span class="text-orange-500 font-semibold">＋ neu anlegen</span>
+              <span class="text-orange-500 font-semibold">＋ {{ t('actions.createNew') }}</span>
             </div>
           </button>
 
@@ -48,27 +48,26 @@
             {{ c.name }}
           </button>
           <div v-if="filteredCompanies.length === 0" class="px-3 py-2 text-sm text-gray-500">
-            Keine bestehenden Firmen
+            {{ t('receipt.noCompanies') }}
           </div>
         </template>
       </MenuDropdown>
-
     </section>
 
     <section class="bg-white rounded-xl shadow-lg p-4 grid grid-cols-2 gap-4">
       <div>
-        <label class="text-sm font-medium text-slate-600">Beleg-Nr.</label>
-        <input v-model="form.receipt_number" class="input"/>
+        <label class="text-sm font-medium text-slate-600">{{ t('receipt.receiptNumber') }}</label>
+        <input v-model="form.receipt_number" class="input" />
       </div>
 
       <div>
-        <label class="text-sm font-medium text-slate-600">Belegdatum</label>
-        <input v-model="form.receipt_date" type="date" class="input"/>
+        <label class="text-sm font-medium text-slate-600">{{ t('receipt.receiptDate') }}</label>
+        <input v-model="form.receipt_date" type="date" class="input" />
       </div>
     </section>
 
     <section class="bg-white rounded-xl shadow-lg p-4 space-y-3">
-      <h3 class="font-semibold">Positionen</h3>
+      <h3 class="font-semibold">{{ t('receipt.positions') }}</h3>
 
       <div
         v-for="(p, i) in form.positions"
@@ -90,7 +89,7 @@
               v-for="s in spheres"
               :key="s.id"
               :class="styling"
-              @click="selectSphere(i,s)"
+              @click="selectSphere(i, s)"
             >
               {{ s.name }}
             </button>
@@ -104,7 +103,7 @@
               <input
                 v-model="costCentreQueries[i]"
                 :class="styling"
-                placeholder="Kostenstelle wählen"
+                :placeholder="t('receipt.costCentrePlaceholder')"
                 @input="openCostCentreIndex = i"
               />
             </div>
@@ -117,7 +116,7 @@
               type="button"
               :class="styling"
               class="overflow-hidden text-ellipsis"
-              @click="selectCostCentre(i,c)"
+              @click="selectCostCentre(i, c)"
             >
               {{ c.code }} - {{ c.name }}
             </button>
@@ -125,7 +124,7 @@
               v-if="filteredCostCentres(i).length === 0"
               class="px-3 py-2 text-sm text-gray-500"
             >
-              Keine vorhandenen Kostenstellen
+              {{ t('receipt.noCostCentres') }}
             </div>
           </template>
         </MenuDropdown>
@@ -140,9 +139,9 @@
           </template>
 
           <template #default="{ styling }">
-            <button :class="styling" @click="selectTax(i,0)">0%</button>
-            <button :class="styling" @click="selectTax(i,7)">7%</button>
-            <button :class="styling" @click="selectTax(i,19)">19%</button>
+            <button :class="styling" @click="selectTax(i, 0)">0%</button>
+            <button :class="styling" @click="selectTax(i, 7)">7%</button>
+            <button :class="styling" @click="selectTax(i, 19)">19%</button>
           </template>
         </MenuDropdown>
 
@@ -171,13 +170,13 @@
           class="flex items-center gap-2 text-orange-500 font-medium cursor-pointer"
           @click="addPosition"
         >
-          <span class="text-xl">＋</span> Position
+          <span class="text-xl">＋</span> {{ t('actions.addPosition') }}
         </button>
 
         <div class="text-sm text-right space-y-1 pt-2 min-w-55 w-48">
           <div class="flex justify-between text-slate-500">
-            <span>Netto</span>
-            <span>{{ netTotal.toFixed(2) }} €</span>
+            <span>{{ t('receipt.net') }}</span>
+            <span>{{ formatCurrency(netTotal) }}</span>
           </div>
 
           <div
@@ -185,30 +184,25 @@
             :key="tax"
             class="flex justify-between text-slate-500 space-y-0.5"
           >
-            <span>MwSt. ({{ tax }}%)</span>
-            <span>{{ v.tax.toFixed(2) }} €</span>
+            <span>{{ t('receipt.vat', { tax }) }}</span>
+            <span>{{ formatCurrency(v.tax) }}</span>
           </div>
 
           <div class="flex justify-between font-semibold text-lg border-t pt-1">
-            <span>Gesamt</span>
-            <span>{{ grossTotal.toFixed(2) }} €</span>
+            <span>{{ t('receipt.total') }}</span>
+            <span>{{ formatCurrency(grossTotal) }}</span>
           </div>
         </div>
       </div>
     </section>
 
     <section class="bg-white rounded-xl shadow-lg p-4 flex items-center gap-4">
-      <span class="font-medium">Zahlungsstatus</span>
+      <span class="font-medium">{{ t('receipt.paymentStatus') }}</span>
       <PageFinancesPaymentStatus v-model="form.status" />
     </section>
 
     <div class="grid grid-cols-2 gap-4">
-      <button
-        class="btn-secondary"
-        @click="emit('cancel')"
-      >
-        Abbrechen
-      </button>
+      <button class="btn-secondary" @click="emit('cancel')">{{ t('actions.cancel') }}</button>
 
       <button
         class="btn-primary"
@@ -216,7 +210,7 @@
         :class="{ 'opacity-50 cursor-not-allowed': saveDisabled }"
         @click="submit"
       >
-        Speichern
+        {{ t('actions.save') }}
       </button>
     </div>
 
@@ -224,7 +218,7 @@
       v-if="validationErrors.length"
       class="bg-red-50 border border-red-200 rounded-xl p-3 text-sm text-red-700"
     >
-      <p class="font-semibold mb-1">Speichern derzeit nicht moglich:</p>
+      <p class="font-semibold mb-1">{{ t('common.validationBlocked') }}</p>
       <ul class="list-disc list-inside">
         <li v-for="error in validationErrors" :key="error">{{ error }}</li>
       </ul>
@@ -247,7 +241,7 @@
         @click.stop
       >
         <div class="flex items-center justify-between px-6 py-4 border-b">
-          <h2 class="text-lg font-semibold">Kontaktdaten</h2>
+          <h2 class="text-lg font-semibold">{{ t('receipt.companyDrawer') }}</h2>
           <button @click="closeCompanyDrawer" class="text-slate-400 hover:text-slate-600 cursor-pointer">
             ✕
           </button>
@@ -266,23 +260,26 @@
   </teleport>
 </template>
 <script setup lang="ts">
+import { useI18n } from '~/composables/useI18n'
 import type { CompanyRow, Company } from '~/types/company'
 import { ReceiptStatus, type CreateReceiptBody } from '~/types/receipt'
 import type { SphereRow } from '~/types/sphere'
 import type { CostCentreRow } from '~/types/costCentre'
 import CompanyForm from '../CompanyForm.vue'
-  
+
 const props = defineProps<{
   modelValue: CreateReceiptBody
   disabled?: boolean
   hasFile?: boolean
 }>()
-  
+
 const emit = defineEmits<{
   (e: 'update:modelValue', v: CreateReceiptBody): void
   (e: 'submit'): void
   (e: 'cancel'): void
 }>()
+
+const { locale, t } = useI18n()
 
 const form = computed({
   get: () => props.modelValue,
@@ -291,92 +288,53 @@ const form = computed({
 
 const validationErrors = computed(() => {
   const errors: string[] = []
-
-  if (companyQuery.value.trim().length < 1) {
-    errors.push('Zahlungsempfänger ist ein Pflichtfeld.')
-  }
-
-  if (!form.value.receipt_date) {
-    errors.push('Belegdatum ist ein Pflichtfeld.')
-  }
-
-  if (!form.value.status) {
-    errors.push('Status ist ein Pflichtfeld.')
-  }
-
-  if (!Array.isArray(form.value.positions) || form.value.positions.length === 0) {
-    errors.push('Mindestens eine Position ist erforderlich.')
-  }
+  if (companyQuery.value.trim().length < 1) errors.push(t('receipt.required.company'))
+  if (!form.value.receipt_date) errors.push(t('receipt.required.receiptDate'))
+  if (!form.value.status) errors.push(t('receipt.required.status'))
+  if (!Array.isArray(form.value.positions) || form.value.positions.length === 0) errors.push(t('receipt.required.positions'))
   if (form.value.positions.some(p => !p.sphere || !p.cost_centre || p.amount === null || p.amount === undefined)) {
-    errors.push('Jede Position braucht Sphäre, Kostenstelle und Betrag.')
+    errors.push(t('receipt.required.completePosition'))
   }
-
   const requiresFile = form.value.status === ReceiptStatus.Open || form.value.status === ReceiptStatus.Paid
-  if (requiresFile && !props.hasFile) {
-    errors.push('Für Status OFFEN oder BEZAHLT ist eine Datei erforderlich.')
-  }
-
+  if (requiresFile && !props.hasFile) errors.push(t('receipt.required.fileForStatus'))
   return errors
 })
 
-const saveDisabled = computed(() =>
-  Boolean(props.disabled) || validationErrors.value.length > 0
-)
-
+const saveDisabled = computed(() => Boolean(props.disabled) || validationErrors.value.length > 0)
 const companies = ref<CompanyRow[]>([])
-
 const companyQuery = ref('')
 const openCompany = ref<number | null>(null)
 const selectedCompany = ref<Company | null>(null)
-
 const filteredCompanies = computed(() => {
   const q = companyQuery.value.toLowerCase().trim()
   if (!q) return companies.value
-
-  return companies.value.filter(c =>
-    c.name.toLowerCase().includes(q)
-  )
+  return companies.value.filter(c => c.name.toLowerCase().includes(q))
 })
-
 const spheres = ref<SphereRow[]>([])
 const openSphereIndex = ref<number | null>(null)
-
 const costCentres = ref<CostCentreRow[]>([])
-
 const openCostCentreIndex = ref<number | null>(null)
 const costCentreQueries = ref<Record<number, string>>({})
-
 const focusedIndex = ref<number | null>(null)
+const openTaxIndex = ref<number | null>(null)
+const showCompanyDrawer = ref(false)
 
 function filteredCostCentres(i: number) {
   const q = costCentreQueries.value[i]?.toLowerCase().trim()
   if (!q) return costCentres.value
-
-  const filtered = costCentres.value.filter(c =>
-    c.code.toLowerCase().includes(q)
-  )
-
+  const filtered = costCentres.value.filter(c => c.code.toLowerCase().includes(q))
   if (filtered.length > 0) return filtered
-
-  return costCentres.value.filter(c =>
-    c.name.toLowerCase().includes(q)
-  )
+  return costCentres.value.filter(c => c.name.toLowerCase().includes(q))
 }
-
-const openTaxIndex = ref<number | null>(null)
 
 async function loadSpheres() {
   const res = await $fetch('/api/spheres', { method: 'GET' })
-  if (res.ok) {
-    spheres.value = res.spheres.filter(s => s.is_active)
-  }
+  if (res.ok) spheres.value = res.spheres.filter(s => s.is_active)
 }
 
 async function loadCostCentres() {
   const res = await $fetch('/api/cost_centres', { method: 'GET' })
-  if (res.ok) {
-    costCentres.value = res.costCentres.filter(c => c.is_active)
-  }
+  if (res.ok) costCentres.value = res.costCentres.filter(c => c.is_active)
 }
 
 async function loadCompanies() {
@@ -395,15 +353,10 @@ async function createCompanyFromQuery() {
   if (newCompanyName.length > 0) {
     const res = await $fetch('/api/companies/create', {
       method: 'POST',
-      body: { 
-        name: newCompanyName 
-      }
+      body: { name: newCompanyName }
     })
     if (res.ok) {
-      selectedCompany.value = {
-        id: res.id,
-        name: newCompanyName
-      }
+      selectedCompany.value = { id: res.id, name: newCompanyName }
       form.value.company_id = res.id
     }
   }
@@ -435,40 +388,22 @@ onMounted(() => {
   loadCostCentres()
 })
 
-watch(
-  [companies, () => form.value.company_id],
-  () => {
-    if (!form.value.company_id) return
+watch([companies, () => form.value.company_id], () => {
+  if (!form.value.company_id) return
+  const company = companies.value.find(c => c.id === form.value.company_id)
+  if (company) {
+    selectedCompany.value = company
+    companyQuery.value = company.name
+  }
+}, { immediate: true })
 
-    const company = companies.value.find(
-      c => c.id === form.value.company_id
-    )
-
-    if (company) {
-      selectedCompany.value = company
-      companyQuery.value = company.name
-    }
-  },
-  { immediate: true }
-)
-
-watch(
-  [costCentres, () => form.value.positions],
-  () => {
-    form.value.positions.forEach((p, index) => {
-      if (!p.cost_centre) return
-
-      const cc = costCentres.value.find(
-        c => c.id === p.cost_centre
-      )
-
-      if (cc) {
-        costCentreQueries.value[index] = cc.code
-      }
-    })
-  },
-  { immediate: true, deep: true }
-)
+watch([costCentres, () => form.value.positions], () => {
+  form.value.positions.forEach((p, index) => {
+    if (!p.cost_centre) return
+    const cc = costCentres.value.find(c => c.id === p.cost_centre)
+    if (cc) costCentreQueries.value[index] = cc.code
+  })
+}, { immediate: true, deep: true })
 
 onBeforeUnmount(() => {
   window.removeEventListener('keydown', onKeydown)
@@ -497,8 +432,6 @@ function selectTax(index: number, tax: number) {
   openTaxIndex.value = null
 }
 
-const showCompanyDrawer = ref(false)
-
 function openCompanyDrawer() {
   openCompany.value = null
   openSphereIndex.value = null
@@ -524,48 +457,32 @@ function clearSelectedCompany() {
 
 function tryAutoSelectCompany() {
   if (selectedCompany.value) return
-
-  if (filteredCompanies.value.length === 1) {
-    if (filteredCompanies.value[0]) selectCompany(filteredCompanies.value[0])
+  if (filteredCompanies.value.length === 1 && filteredCompanies.value[0]) {
+    selectCompany(filteredCompanies.value[0])
   }
-
   const q = companyQuery.value.trim().toLowerCase()
   if (!q) return
-
-  const exactMatches = companies.value.filter(
-    c => c.name.toLowerCase() === q
-  )
-
-  if (exactMatches.length === 1) {
-    if (exactMatches[0]) selectCompany(exactMatches[0])
+  const exactMatches = companies.value.filter(c => c.name.toLowerCase() === q)
+  if (exactMatches.length === 1 && exactMatches[0]) {
+    selectCompany(exactMatches[0])
   }
 }
 
 function tryAutoSelectCostCentre() {
   if (openCostCentreIndex.value === null) return
-
   if (filteredCostCentres(openCostCentreIndex.value).length === 1) {
     const filter = filteredCostCentres(openCostCentreIndex.value)[0]
     if (filter) selectCostCentre(openCostCentreIndex.value, filter)
   }
-
   const q = costCentreQueries.value[openCostCentreIndex.value]?.trim().toLowerCase()
   if (!q) return
-
-  const exactMatchesCode = costCentres.value.filter(
-    c => c.code.toLowerCase() === q
-  )
-
-  if (exactMatchesCode.length === 1) {
-    if (exactMatchesCode[0]) selectCostCentre(openCostCentreIndex.value, exactMatchesCode[0])
+  const exactMatchesCode = costCentres.value.filter(c => c.code.toLowerCase() === q)
+  if (exactMatchesCode.length === 1 && exactMatchesCode[0]) {
+    selectCostCentre(openCostCentreIndex.value, exactMatchesCode[0])
   }
-
-  const exactMatchesName = costCentres.value.filter(
-    c => c.name.toLowerCase() === q
-  )
-
-  if (exactMatchesName.length === 1) {
-    if (exactMatchesName[0]) selectCostCentre(openCostCentreIndex.value, exactMatchesName[0])
+  const exactMatchesName = costCentres.value.filter(c => c.name.toLowerCase() === q)
+  if (exactMatchesName.length === 1 && exactMatchesName[0]) {
+    selectCostCentre(openCostCentreIndex.value, exactMatchesName[0])
   }
 }
 
@@ -574,16 +491,11 @@ watch(companyQuery, (newVal) => {
     clearSelectedCompany()
   }
 })
-  
+
 function addPosition() {
-  form.value.positions.push({
-    sphere: 0,
-    cost_centre: 0,
-    amount: 0.0,
-    tax: 19
-  })
+  form.value.positions.push({ sphere: 0, cost_centre: 0, amount: 0.0, tax: 19 })
 }
-  
+
 function removePosition(i: number) {
   form.value.positions.splice(i, 1)
   delete costCentreQueries.value[i]
@@ -591,10 +503,9 @@ function removePosition(i: number) {
 
 function sphereLabel(index: number) {
   const sphereId = form.value.positions[index]?.sphere
-  if (!sphereId) return 'Sphäre auswählen'
-
+  if (!sphereId) return t('receipt.chooseSphere')
   const sphere = spheres.value?.find(s => s.id === sphereId)
-  return sphere?.name ?? 'Sphäre auswählen'
+  return sphere?.name ?? t('receipt.chooseSphere')
 }
 
 function taxLabel(index: number) {
@@ -604,14 +515,13 @@ function taxLabel(index: number) {
 
 function displayAmount(i: number) {
   const value = form.value.positions[i]?.amount ?? null
-
-  if (focusedIndex.value === i) {
-    return value !== null ? String(value) : ''
-  }
-
+  if (focusedIndex.value === i) return value !== null ? String(value) : ''
   if (value === null) return ''
+  return formatCurrency(value)
+}
 
-  return new Intl.NumberFormat('de-DE', {
+function formatCurrency(value: number) {
+  return new Intl.NumberFormat(locale.value, {
     style: 'currency',
     currency: 'EUR',
     minimumFractionDigits: 2,
@@ -621,7 +531,6 @@ function displayAmount(i: number) {
 
 function onFocus(e: FocusEvent, i: number) {
   focusedIndex.value = i
-
   nextTick(() => {
     const input = e.target as HTMLInputElement
     input.select()
@@ -630,28 +539,19 @@ function onFocus(e: FocusEvent, i: number) {
 
 function onInput(e: Event, i: number) {
   let value = (e.target as HTMLInputElement).value
-
   value = value.replace(/[^0-9.,]/g, '')
-
   value = value.replace(',', '.')
-
   const parts = value.split('.')
-  if (parts.length > 2) {
-    value = parts[0] + '.' + parts.slice(1).join('')
-  }
-
+  if (parts.length > 2) value = parts[0] + '.' + parts.slice(1).join('')
   const parsed = parseFloat(value)
   if (!form.value.positions[i]) return
   form.value.positions[i].amount = isNaN(parsed) ? 0 : parsed
-
   ;(e.target as HTMLInputElement).value = value
 }
 
 function onBlur(i: number) {
   focusedIndex.value = null
-
   if (!form.value.positions[i]) return
-
   const value = form.value.positions[i].amount
   if (value !== null && value !== undefined) {
     form.value.positions[i].amount = Number(value.toFixed(2))
@@ -664,30 +564,18 @@ function nettoOf(p: { amount: number; tax: number }) {
 
 const taxBreakdown = computed(() => {
   const map: Record<number, { tax: number }> = {}
-
   for (const p of form.value.positions) {
-    if (!map[p.tax]) {
-      map[p.tax] = { tax: 0 }
-    }
-
+    if (!map[p.tax]) map[p.tax] = { tax: 0 }
     const entry = map[p.tax]
-
     const netto = nettoOf(p)
-
     if (!entry) return
     entry.tax += Number(p.amount - netto)
   }
-
   return map
 })
 
-const netTotal = computed(() => 
-  form.value.positions.reduce((s, p) => s + Number(p.amount) / (1 + (Number(p.tax) / 100)), 0) 
-)
-  
-const grossTotal = computed(() => 
-  form.value.positions.reduce((s, p) => s + Number(p.amount), 0)
-)
+const netTotal = computed(() => form.value.positions.reduce((s, p) => s + Number(p.amount) / (1 + (Number(p.tax) / 100)), 0))
+const grossTotal = computed(() => form.value.positions.reduce((s, p) => s + Number(p.amount), 0))
 </script>
 <style scoped>
 .fade-enter-active,

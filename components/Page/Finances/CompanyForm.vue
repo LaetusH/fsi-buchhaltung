@@ -1,97 +1,96 @@
 <template>
   <div class="flex flex-col h-full">
     <div class="flex-1 overflow-y-auto space-y-6">
-
       <section>
-        <h3 class="section-title">Persönliche Daten</h3>
+        <h3 class="section-title">{{ t('company.personalData') }}</h3>
 
         <div class="space-y-2">
           <div class="field">
-            <label>Firma*</label>
+            <label>{{ t('company.company') }}</label>
             <input v-model="form.name" class="input" required />
           </div>
 
           <div class="grid grid-cols-3 gap-3">
             <div class="field col-span-2">
-              <label>Straße</label>
+              <label>{{ t('company.street') }}</label>
               <input v-model="form.street" class="input" />
             </div>
 
             <div class="field">
-              <label>Nr.</label>
-              <input v-model="form.street_number" class="input"/>
+              <label>{{ t('company.streetNumber') }}</label>
+              <input v-model="form.street_number" class="input" />
             </div>
           </div>
 
           <div class="grid grid-cols-3 gap-3">
             <div class="field">
-              <label>PLZ</label>
+              <label>{{ t('company.postalCode') }}</label>
               <input v-model="form.postal_code" class="input" />
             </div>
 
             <div class="field col-span-2">
-              <label>Ort</label>
+              <label>{{ t('company.city') }}</label>
               <input v-model="form.city" class="input" />
             </div>
           </div>
 
           <div class="field">
-            <label>Land</label>
+            <label>{{ t('company.country') }}</label>
             <input v-model="form.country" class="input" />
           </div>
         </div>
       </section>
 
       <section>
-        <h3 class="section-title">Kontaktdaten</h3>
+        <h3 class="section-title">{{ t('company.contactData') }}</h3>
 
         <div class="grid grid-cols-2 gap-3">
           <div class="field">
-            <label>E-Mail</label>
+            <label>{{ t('member.email') }}</label>
             <input v-model="form.email" class="input" />
           </div>
 
           <div class="field">
-            <label>Telefon</label>
+            <label>{{ t('member.phone') }}</label>
             <input v-model="form.phone" class="input" />
           </div>
         </div>
       </section>
 
       <section>
-        <h3 class="section-title">Bankverbindung</h3>
+        <h3 class="section-title">{{ t('reimbursement.bankDetails') }}</h3>
 
         <div class="space-y-2">
           <div class="grid grid-cols-2 gap-3">
             <div class="field">
-              <label>IBAN</label>
+              <label>{{ t('reimbursement.iban') }}</label>
               <input v-model="form.iban" class="input" />
             </div>
 
             <div class="field">
-              <label>BIC</label>
+              <label>{{ t('reimbursement.bic') }}</label>
               <input v-model="form.bic" class="input" />
             </div>
           </div>
 
           <div class="field">
-            <label>Bankname</label>
+            <label>{{ t('reimbursement.bankname') }}</label>
             <input v-model="form.bankname" class="input" />
           </div>
         </div>
       </section>
 
       <section>
-        <h3 class="section-title">Steuerdaten</h3>
+        <h3 class="section-title">{{ t('company.taxData') }}</h3>
 
         <div class="field">
-          <label>USt-ID</label>
+          <label>{{ t('company.vatId') }}</label>
           <input v-model="form.vat_id" class="input" />
         </div>
       </section>
 
       <section>
-        <h3 class="section-title">Notizen</h3>
+        <h3 class="section-title">{{ t('company.notes') }}</h3>
 
         <textarea
           v-model="form.notes"
@@ -107,7 +106,7 @@
         @click="$emit('cancel')"
         class="btn-secondary"
       >
-        Abbrechen
+        {{ t('actions.cancel') }}
       </button>
 
       <button
@@ -115,25 +114,28 @@
         @click="save"
         class="btn-primary"
       >
-        Speichern
+        {{ t('actions.save') }}
       </button>
     </div>
   </div>
 </template>
 
-<script setup lang="ts">  
+<script setup lang="ts">
+import { useI18n } from '~/composables/useI18n'
 import type { Company, UpdateCompanyBody } from '~/types/company'
-  
+
 const props = defineProps<{
   modelValue: Company
 }>()
-  
+
 const emit = defineEmits<{
   (e: 'update:modelValue', value: Company): void
   (e: 'save'): void
   (e: 'cancel'): void
 }>()
-  
+
+const { t } = useI18n()
+
 const form = reactive<UpdateCompanyBody>({
   id: props.modelValue.id,
   name: props.modelValue.name,
@@ -150,7 +152,7 @@ const form = reactive<UpdateCompanyBody>({
   phone: props.modelValue.phone ?? null,
   notes: props.modelValue.notes ?? null
 })
-  
+
 watch(
   () => props.modelValue,
   (v) => Object.assign(form, {

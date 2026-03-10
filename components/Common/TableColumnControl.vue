@@ -6,10 +6,7 @@
       @click="$emit('toggle-sort')"
     >
       <span>{{ label }}</span>
-      <Icon
-        :name="sortIcon"
-        class="w-4 h-4"
-      />
+      <Icon :name="sortIcon" class="w-4 h-4" />
     </button>
 
     <button
@@ -36,7 +33,7 @@
               v-model="textSearchInput"
               type="text"
               class="w-full border-0 border-b border-r border-slate-300 rounded-tl-lg px-2 py-2 text-xs"
-              placeholder="Filter suchen"
+              :placeholder="t('common.searchFilter')"
               @keydown.enter.prevent="applyTextSearch"
             >
             <button
@@ -63,17 +60,17 @@
               <span class="truncate">{{ option }}</span>
             </label>
             <div v-if="filteredTextOptions.length === 0" class="text-xs text-slate-400">
-              Keine Eintraege
+              {{ t('common.noEntries') }}
             </div>
             <div v-else-if="filteredTextOptions.length > MAX_FILTER_OPTIONS" class="text-[11px] text-slate-500 pt-1">
-              Es werden die ersten {{ MAX_FILTER_OPTIONS }} Optionen angezeigt.
+              {{ t('common.firstOptionsShown', { count: MAX_FILTER_OPTIONS }) }}
             </div>
           </div>
         </template>
 
         <template v-else>
           <div class="px-2 pt-2 space-y-1">
-            <label class="text-xs text-slate-600">Von</label>
+            <label class="text-xs text-slate-600">{{ t('common.from') }}</label>
             <input
               v-model="rangeMin"
               :type="rangeInputType"
@@ -83,7 +80,7 @@
             >
           </div>
           <div class="px-2 py-2 space-y-1">
-            <label class="text-xs text-slate-600">Bis</label>
+            <label class="text-xs text-slate-600">{{ t('common.to') }}</label>
             <input
               v-model="rangeMax"
               :type="rangeInputType"
@@ -100,14 +97,14 @@
             class="px-3 py-2 border-0 border-r border-slate-300 text-xs hover:bg-slate-50 cursor-pointer"
             @click="onReset"
           >
-            Zurücksetzen
+            {{ t('actions.reset') }}
           </button>
           <button
             type="button"
             class="px-3 py-2 text-xs btn-primary rounded-none"
             @click="onConfirm"
           >
-            Bestätigen
+            {{ t('actions.confirm') }}
           </button>
         </div>
       </div>
@@ -117,6 +114,7 @@
 
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue'
+import { useI18n } from '~/composables/useI18n'
 import type { ColumnFilter, SortDirection, TableFilterType } from '~/composables/useAdvancedTable'
 
 const props = defineProps<{
@@ -145,6 +143,7 @@ const selectedValues = ref<Set<string>>(new Set())
 const rangeMin = ref('')
 const rangeMax = ref('')
 const MAX_FILTER_OPTIONS = 200
+const { t } = useI18n()
 
 const sortIcon = computed(() => {
   if (props.sortDirection === 'asc') return 'material-symbols:arrow-upward-rounded'

@@ -6,7 +6,7 @@ export type AppPage = MainPage | SubPage
 
 interface MainPage {
   main: true
-  label: string
+  labelKey: string
   component: Component
   icon: string
   roles: UserRole[]
@@ -14,7 +14,7 @@ interface MainPage {
 
 interface SubPage {
   main: false
-  label: string
+  labelKey: string
   component: Component
   roles: UserRole[]
 }

@@ -1,10 +1,10 @@
 <template>
-  <Page headline1="Erstattung Ausgaben/Auslagen" @open-menu="$emit('openMenu')">
+  <Page :headline1="t('reimbursement.title')" @open-menu="$emit('openMenu')">
     <template #cards>
       <div class="col-span-6">
         <ClientOnly>
-          <FileDrop 
-            v-model:model-value="file" 
+          <FileDrop
+            v-model:model-value="file"
             :existing-file="existingFile"
             @remove-existing="onRemoveFile"
           />
@@ -25,6 +25,7 @@
 
 <script setup lang="ts">
 import Page from '~/components/Page.vue'
+import { useI18n } from '~/composables/useI18n'
 import FileDrop from '../FileDrop.vue'
 import ReimbursementForm from './Form.vue'
 import { usePage } from '~/composables/usePage'
@@ -36,18 +37,12 @@ const emit = defineEmits<{
 }>()
 
 const { setPage, pageMeta } = usePage()
+const { t } = useI18n()
 
 const isEditMode = ref(false)
 const reimbursementId = ref<number | null>(null)
-
 const file = ref<File | null>(null)
-const existingFile = ref<{
-    id: number
-    url: string
-    name: string
-    mime_type: string
-    size: number
-  } | null>(null)
+const existingFile = ref<{ id: number, url: string, name: string, mime_type: string, size: number } | null>(null)
 const removeExistingFile = ref(false)
 
 const form = ref<CreateReimbursementBody>({
@@ -70,10 +65,7 @@ function mergeNewReceiptIntoForm(newReceiptId: number) {
   const alreadyPresent = form.value.positions.some(position =>
     (position.receipt_id || position.receipt?.id) === newReceiptId
   )
-
-  if (!alreadyPresent) {
-    form.value.positions.push({ receipt_id: newReceiptId })
-  }
+  if (!alreadyPresent) form.value.positions.push({ receipt_id: newReceiptId })
 }
 
 function applyDraft(draft: Partial<CreateReimbursementBody>) {
@@ -105,7 +97,7 @@ onMounted(async () => {
 
     if (reimbursementId.value) {
       isEditMode.value = true
-      const res = await $fetch<GetReimbursementResponse>(`/api/reimbursements/${reimbursementId.value}`, { method: 'GET'})
+      const res = await $fetch<GetReimbursementResponse>(`/api/reimbursements/${reimbursementId.value}`, { method: 'GET' })
       if (res.ok && res.file) {
         existingFile.value = {
           id: res.file.id,
@@ -117,22 +109,18 @@ onMounted(async () => {
       }
     }
 
-    if (pageMeta.value?.newReceiptId) {
-      mergeNewReceiptIntoForm(Number(pageMeta.value.newReceiptId))
-    }
+    if (pageMeta.value?.newReceiptId) mergeNewReceiptIntoForm(Number(pageMeta.value.newReceiptId))
     return
   }
 
   if (!reimbursementId.value) {
-    if (pageMeta.value?.newReceiptId) {
-      mergeNewReceiptIntoForm(Number(pageMeta.value.newReceiptId))
-    }
+    if (pageMeta.value?.newReceiptId) mergeNewReceiptIntoForm(Number(pageMeta.value.newReceiptId))
     return
   }
 
   isEditMode.value = true
 
-  const res = await $fetch<GetReimbursementResponse>(`/api/reimbursements/${reimbursementId.value}`, { method: 'GET'})
+  const res = await $fetch<GetReimbursementResponse>(`/api/reimbursements/${reimbursementId.value}`, { method: 'GET' })
 
   if (!res.ok) {
     isEditMode.value = false
@@ -147,9 +135,7 @@ onMounted(async () => {
     }))
   }
 
-  if (pageMeta.value?.newReceiptId) {
-    mergeNewReceiptIntoForm(Number(pageMeta.value.newReceiptId))
-  }
+  if (pageMeta.value?.newReceiptId) mergeNewReceiptIntoForm(Number(pageMeta.value.newReceiptId))
 
   if (!res.file) return
   existingFile.value = {
@@ -170,55 +156,52 @@ function onRemoveFile() {
 
 async function submit() {
   if (!form.value.paid_by) {
-    alert('Please select who paid the reimbursement.')
+    alert(t('reimbursement.required.selectPaidBy'))
     return
   }
-
   if (!form.value.submitted_at) {
-    alert('Please enter a submitted date.')
+    alert(t('reimbursement.required.enterSubmittedDate'))
     return
   }
-
   if (!form.value.positions.length) {
-    alert('Please add at least one receipt to this reimbursement.')
+    alert(t('reimbursement.required.addReceipt'))
     return
   }
 
   const hasFile = !!file.value || (!!existingFile.value && !removeExistingFile.value)
   if (!hasFile) {
-    alert('A file is required for reimbursements.')
+    alert(t('reimbursement.required.fileNeeded'))
     return
   }
 
   const hasCheckedPair = Boolean(form.value.checked_by) === Boolean(form.value.checked_at)
   if (!hasCheckedPair) {
-    alert('checked_by and checked_at must both be set or both be empty.')
+    alert(t('reimbursement.required.checkedPair'))
     return
   }
 
   const hasDisbursedPair = Boolean(form.value.disbursed_by) === Boolean(form.value.disbursed_at)
   if (!hasDisbursedPair) {
-    alert('disbursed_by and disbursed_at must both be set or both be empty.')
+    alert(t('reimbursement.required.disbursedPair'))
     return
   }
 
   if (!form.value.cash) {
     if (!form.value.bankname?.trim()) {
-      alert('Bankname is required when cash is false.')
+      alert(t('reimbursement.required.bankname'))
       return
     }
     if (!form.value.iban?.trim()) {
-      alert('IBAN is required when cash is false.')
+      alert(t('reimbursement.required.iban'))
       return
     }
   }
 
   const body = new FormData()
-
-  if(file.value) body.append('file', file.value)
+  if (file.value) body.append('file', file.value)
 
   if (form.value.positions.some(position => !position.receipt_id && !position.receipt?.id)) {
-    alert('At least one reimbursement position has no receipt id.')
+    alert(t('reimbursement.required.receiptId'))
     return
   }
 
@@ -238,20 +221,20 @@ async function submit() {
         method: 'PUT',
         body,
       })
-      if (!updateRes.ok) throw new Error(updateRes.error || 'Failed to update reimbursement')
+      if (!updateRes.ok) throw new Error(updateRes.error || t('reimbursement.saved.failedUpdate'))
     } else {
       const createRes = await $fetch<{ ok: boolean, error?: string }>('/api/reimbursements/create', {
         method: 'POST',
         body,
       })
-      if (!createRes.ok) throw new Error(createRes.error || 'Failed to create reimbursement')
+      if (!createRes.ok) throw new Error(createRes.error || t('reimbursement.saved.failedCreate'))
     }
 
-    alert(isEditMode.value ? 'Reimbursement updated successfully!' : 'Reimbursement created successfully!')
+    alert(isEditMode.value ? t('reimbursement.saved.updated') : t('reimbursement.saved.created'))
     const returnTo = pageMeta.value?.returnTo || 'ReimbursementList'
     setPage(returnTo)
   } catch (err: any) {
-    alert(err?.message || 'Failed to save reimbursement.')
+    alert(err?.message || t('reimbursement.saved.failedSave'))
   }
 }
 

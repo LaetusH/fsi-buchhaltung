@@ -33,7 +33,7 @@
         </div>
 
         <span class="mt-2 text-sm text-gray-300 font-medium">
-          {{ page.label }}
+          {{ t(page.labelKey) }}
         </span>
       </li>
     </ul>
@@ -42,6 +42,7 @@
 
 <script setup lang="ts">
 import { usePage } from '~/composables/usePage'
+import { useI18n } from '~/composables/useI18n'
 import type { AppPage, PageName } from '~/types/page'
 
 
@@ -53,6 +54,7 @@ const props = defineProps<{
 const emit = defineEmits(['close'])
 
 const { currentPage, setPage } = usePage()
+const { t } = useI18n()
 
 const mainPages = computed(() => {
   return props.pages.filter(page => page.main === true)

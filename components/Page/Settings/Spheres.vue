@@ -1,12 +1,18 @@
 <template>
   <PageSettingsEntityManager
-    title="Sphären"
-    singular-label="Sphäre"
-    add-label="Neue Sphäre"
-    empty-label="Keine Sphären vorhanden"
+    :title="t('settings.entities.spheres')"
+    :singular-label="t('settings.entities.sphere')"
+    :add-label="t('settings.entities.newSphere')"
+    :empty-label="t('settings.entities.noSpheres')"
     list-endpoint="/api/spheres"
     save-endpoint="/api/spheres/save"
     activate-endpoint="/api/spheres/activate"
     response-list-key="spheres"
   />
 </template>
+
+<script setup lang="ts">
+import { useI18n } from '~/composables/useI18n'
+
+const { t } = useI18n()
+</script>

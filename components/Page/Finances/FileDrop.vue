@@ -15,15 +15,15 @@
         <svg class="w-10 h-10 mb-3 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
         </svg>
-        <p class="mb-2 text-sm text-slate-500"><span class="font-semibold">Click to upload</span> or drag and drop</p>
+        <p class="mb-2 text-sm text-slate-500"><span class="font-semibold">{{ t('files.clickUpload') }}</span> {{ t('files.dragDrop') }}</p>
         <p class="text-xs text-slate-500">PDF, PNG, JPG or JPEG</p>
       </div>
-      <input 
-        ref="fileInput" 
-        type="file" 
-        class="hidden" 
-        accept="application/pdf,image/*" 
-        @change="handleFileSelect" 
+      <input
+        ref="fileInput"
+        type="file"
+        class="hidden"
+        accept="application/pdf,image/*"
+        @change="handleFileSelect"
       />
     </div>
 
@@ -38,7 +38,7 @@
           <button @click="zoomOut" class="p-1.5 hover:bg-slate-600 rounded text-white transition disabled:opacity-50" title="Zoom Out">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 12H4"/></svg>
           </button>
-          
+
           <span class="text-xs font-mono text-white w-12 text-center">{{ Math.round(zoomLevel * 100) }}%</span>
 
           <button @click="zoomIn" class="p-1.5 hover:bg-slate-600 rounded text-white transition disabled:opacity-50" title="Zoom In">
@@ -63,14 +63,14 @@
         <div>
           <button @click="removeFile" class="flex items-center px-3 py-1.5 text-xs font-medium text-white bg-red-500/80 hover:bg-red-600 rounded transition backdrop-blur-sm">
             <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
-            Remove
+            {{ t('files.remove') }}
           </button>
         </div>
       </div>
 
       <div ref="containerRef" class="w-full h-full overflow-auto bg-slate-800 custom-scrollbar">
         <div v-if="isPdf" class="relative shadow-2xl bg-white transition-all duration-200">
-          <VuePdfEmbed 
+          <VuePdfEmbed
             :source="previewUrl"
             :page="currentPage"
             :width="computedWidth"
@@ -80,12 +80,12 @@
           />
         </div>
 
-        <div v-else-if="isImage"  class="min-w-max transition-all duration-200">
-          <img 
-            :src="previewUrl" 
-            :style="{ width: computedWidth + 'px' }" 
-            class="block h-auto shadow-2xl" 
-            alt="Preview" 
+        <div v-else-if="isImage" class="min-w-max transition-all duration-200">
+          <img
+            :src="previewUrl"
+            :style="{ width: computedWidth + 'px' }"
+            class="block h-auto shadow-2xl"
+            alt="Preview"
           />
         </div>
       </div>
@@ -95,8 +95,10 @@
 
 <script setup lang="ts">
 import { defineAsyncComponent } from 'vue'
+import { useI18n } from '~/composables/useI18n'
+
 const VuePdfEmbed = defineAsyncComponent(() => import('vue-pdf-embed'))
-  
+
 const props = defineProps<{
   modelValue: File | null
   existingFile?: {
@@ -107,29 +109,27 @@ const props = defineProps<{
     size: number
   } | null
 }>()
-  
+
 const emit = defineEmits<{
   (e: 'update:modelValue', value: File | null): void
   (e: 'remove-existing'): void
 }>()
-  
+
 const isDragging = ref<boolean>(false)
 const previewUrl = ref<string | undefined>(undefined)
 const fileInput = ref<HTMLInputElement | null>(null)
-  
 const pdfPageCount = ref<number>(0)
 const currentPage = ref<number>(1)
-
 const containerRef = ref<HTMLDivElement | null>(null)
 const containerWidth = ref<number>(800)
-
 const zoomLevel = ref<number>(1.0)
 const pdfLoading = ref<boolean>(false)
+const { t } = useI18n()
 
 const MIN_ZOOM = 0.5
 const MAX_ZOOM = 4.0
 const ZOOM_STEP = 0.25
-  
+
 const computedWidth = computed<number>(() => {
   return (containerWidth.value - 15) * zoomLevel.value
 })
@@ -149,7 +149,7 @@ const updateContainerWidth = (): void => {
 }
 
 onMounted(() => {
-  updateContainerWidth();
+  updateContainerWidth()
   window.addEventListener('resize', updateContainerWidth)
 })
 
@@ -157,12 +157,12 @@ onUnmounted(() => {
   if (previewUrl.value) URL.revokeObjectURL(previewUrl.value)
   window.removeEventListener('resize', updateContainerWidth)
 })
-  
+
 watch(
-  () => [props.modelValue, props.existingFile], 
+  () => [props.modelValue, props.existingFile],
   async () => {
     if (previewUrl.value && props.modelValue) URL.revokeObjectURL(previewUrl.value)
-    
+
     if (props.modelValue) {
       previewUrl.value = URL.createObjectURL(props.modelValue)
     } else if (props.existingFile) {
@@ -170,13 +170,13 @@ watch(
     } else {
       previewUrl.value = undefined
     }
-      
+
     await nextTick()
     updateContainerWidth()
 
     currentPage.value = 1
     zoomLevel.value = 1.0
-  }, 
+  },
   { immediate: true }
 )
 
@@ -205,25 +205,25 @@ function processFile(file: File) {
   if (file.type === 'application/pdf' || file.type === 'image/png' || file.type === 'image/jpg' || file.type === 'image/jpeg') {
     emit('update:modelValue', file)
   } else {
-    alert('Please upload a PDF or an Image file.')
+    alert(t('files.uploadError'))
   }
 }
-  
+
 function handleDrop(e: DragEvent) {
   isDragging.value = false
   const files = e.dataTransfer?.files
-  if (!files || files.length == 0) return
+  if (!files || files.length === 0) return
 
   const file = files.item(0)
   if (!file) return
 
   processFile(file)
 }
-  
+
 function handleFileSelect(e: Event) {
   const input = e.target as HTMLInputElement | null
   const files = input?.files
-  if (!files || files.length == 0) return
+  if (!files || files.length === 0) return
 
   const file = files.item(0)
   if (!file) return
@@ -235,24 +235,24 @@ function removeFile() {
   if (props.modelValue) emit('update:modelValue', null)
   if (props.existingFile) emit('remove-existing')
 }
-  
+
 function zoomIn() {
   if (zoomLevel.value < MAX_ZOOM) zoomLevel.value += ZOOM_STEP
 }
-  
+
 function zoomOut() {
   if (zoomLevel.value > MIN_ZOOM) zoomLevel.value -= ZOOM_STEP
 }
-  
+
 function nextPage() {
   if (currentPage.value < pdfPageCount.value) currentPage.value++
 }
-  
+
 function prevPage() {
   if (currentPage.value > 1) currentPage.value--
 }
 </script>
-  
+
 <style scoped>
 .custom-scrollbar::-webkit-scrollbar {
   display: block;
