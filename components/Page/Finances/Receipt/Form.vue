@@ -94,6 +94,9 @@
             >
               {{ s.name }}
             </button>
+            <div v-if="spheres.length === 0" class="px-3 py-2 text-sm text-gray-500">
+              {{ t('receipt.noSpheres') }}
+            </div>
           </template>
         </MenuDropdown>
 

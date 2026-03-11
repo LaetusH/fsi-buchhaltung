@@ -243,6 +243,7 @@ const messages = {
       positions: 'Positionen',
       costCentrePlaceholder: 'Kostenstelle wählen',
       noCostCentres: 'Keine vorhandenen Kostenstellen',
+      noSpheres: 'Keine vorhandenen Sphären',
       chooseSphere: 'Sphäre auswählen',
       companyDrawer: 'Kontaktdaten',
       required: {
@@ -593,6 +594,7 @@ const messages = {
       positions: 'Positions',
       costCentrePlaceholder: 'Select cost centre',
       noCostCentres: 'No existing cost centres',
+      noSpheres: 'No existing spheres',
       chooseSphere: 'Select sphere',
       companyDrawer: 'Contact details',
       required: {
