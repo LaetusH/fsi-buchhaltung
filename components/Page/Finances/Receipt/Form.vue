@@ -77,7 +77,7 @@
         :class="form.positions.length > 1 ? 'grid-cols-[3fr_2fr_2fr_2fr_auto]' : 'grid-cols-[3fr_2fr_2fr_3fr]'"
       >
         <!-- Sphere Dropdown -->
-        <MenuDropdown v-model="openSphereIndex" :id="i">
+        <MenuDropdown v-model="openSphereIndex" :id="i" class="min-w-0">
           <template #trigger="{ styling }">
             <button :class="[styling, disabled ? 'opacity-70' : 'cursor-pointer']" :disabled="disabled">
               <span class="flex-1 overflow-hidden whitespace-nowrap text-ellipsis">{{ sphereLabel(i) }}</span>

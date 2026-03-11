@@ -1,8 +1,14 @@
 <template>
   <div class="flex min-h-screen">
-    <MenuMain :pages="filteredMenuItems" :open="menuOpen" @close="menuOpen = false" />
+    <MenuMain
+      :pages="filteredMenuItems"
+      :open="menuOpen"
+      :collapsed="menuCollapsed"
+      @close="menuOpen = false"
+      @toggle-collapse="toggleDesktopMenu"
+    />
 
-    <main class="flex-1 md:ml-36 p-6 bg-gray-100" @click="handleClick">
+    <main :class="['flex-1 p-6 bg-gray-100 transition-[margin] duration-200', menuCollapsed ? 'md:ml-[4.5rem]' : 'md:ml-36']" @click="handleClick">
       <PageRenderer @open-menu="handleOpen" />
     </main>
   </div>
@@ -16,6 +22,8 @@ const { user, fetchSession, hasPermission } = useAuth()
 
 const menuOpen = ref(false)
 const openMenu = ref(false)
+const menuCollapsed = ref(false)
+const desktopMediaQuery = ref<MediaQueryList | null>(null)
 
 const menuItems = Object.entries(PAGES).map(([name, page]) => ({ name, ...page }))
 
@@ -42,7 +50,31 @@ function handleClick() {
   }
 }
 
+function syncMenuMode(event?: MediaQueryList | MediaQueryListEvent) {
+  const matchesDesktop = event?.matches ?? desktopMediaQuery.value?.matches ?? false
+  if (matchesDesktop) {
+    menuOpen.value = false
+    return
+  }
+
+  menuCollapsed.value = true
+  menuOpen.value = false
+  openMenu.value = false
+}
+
+function toggleDesktopMenu() {
+  if (!desktopMediaQuery.value?.matches) return
+  menuCollapsed.value = !menuCollapsed.value
+}
+
 onMounted(() => {
   fetchSession()
+  desktopMediaQuery.value = window.matchMedia('(min-width: 768px)')
+  syncMenuMode(desktopMediaQuery.value)
+  desktopMediaQuery.value.addEventListener('change', syncMenuMode)
+})
+
+onBeforeUnmount(() => {
+  desktopMediaQuery.value?.removeEventListener('change', syncMenuMode)
 })
 </script>

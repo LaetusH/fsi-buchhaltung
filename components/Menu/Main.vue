@@ -6,7 +6,9 @@
   />
 
   <aside :class="[
-      'fixed top-0 left-0 h-full w-30 md:w-36 bg-gray-900 text-gray-300 flex flex-col p-4 shadow-lg z-40 transition-transform',
+      'fixed top-0 left-0 h-full bg-gray-900 text-gray-300 flex flex-col p-4 shadow-lg z-40 transition-[width,transform] duration-200',
+      collapsed ? 'md:w-18' : 'md:w-36',
+      'w-30',
       open ? 'translate-x-0' : '-translate-x-full',
       'md:translate-x-0'
     ]"
@@ -19,7 +21,7 @@
         v-for="page in mainPages"
         :key="page.name"
         @click="handleClick(page.name)"
-        class="cursor-pointer flex flex-col items-center p-1 md:p-3 rounded-lg"
+        class="cursor-pointer flex flex-col items-center rounded-lg p-1 md:p-3"
       >
         <div
           :class="[
@@ -32,11 +34,25 @@
           <Icon :name="page.icon" class="w-10 h-10" aria-hidden="true" />
         </div>
 
-        <span class="mt-2 text-sm text-gray-300 font-medium">
+        <span v-if="!collapsed" class="mt-2 text-sm text-gray-300 font-medium">
           {{ t(page.labelKey) }}
         </span>
       </li>
     </ul>
+
+    <button
+      type="button"
+      class="mt-auto hidden md:flex items-center justify-center gap-2 rounded-lg bg-gray-800 px-3 py-2 text-sm font-medium text-gray-300 transition hover:bg-gray-700 cursor-pointer"
+      :title="collapsed ? t('common.expandMenu') : t('common.collapseMenu')"
+      @click="$emit('toggle-collapse')"
+    >
+      <Icon
+        :name="collapsed ? 'material-symbols:keyboard-double-arrow-right-rounded' : 'material-symbols:keyboard-double-arrow-left-rounded'"
+        class="h-5 w-5 shrink-0"
+        aria-hidden="true"
+      />
+      <span v-if="!collapsed">{{ t('common.collapseMenu') }}</span>
+    </button>
   </aside>
 </template>
 
@@ -49,9 +65,10 @@ import type { AppPage, PageName } from '~/types/page'
 const props = defineProps<{
   pages: Array<{ name: PageName } & AppPage>
   open: boolean
+  collapsed?: boolean
 }>()
 
-const emit = defineEmits(['close'])
+const emit = defineEmits(['close', 'toggle-collapse'])
 
 const { currentPage, setPage } = usePage()
 const { t } = useI18n()
@@ -59,6 +76,8 @@ const { t } = useI18n()
 const mainPages = computed(() => {
   return props.pages.filter(page => page.main === true)
 })
+
+const collapsed = computed(() => props.collapsed === true)
 
 function handleClick(name: PageName) {
   setPage(name)

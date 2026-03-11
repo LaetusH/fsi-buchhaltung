@@ -29,10 +29,10 @@
 
     <div
       v-else-if="previewUrl"
-      class="relative w-full border border-slate-200 rounded-lg overflow-hidden bg-slate-800 group shadow-lg"
+      class="relative flex flex-col w-full border border-slate-200 rounded-lg overflow-hidden bg-slate-800 group shadow-lg"
       :style="{ height: `${previewHeight}px` }"
     >
-      <div class="absolute top-0 left-0 right-0 flex z-20 items-center justify-between p-3 transition-opacity duration-200 bg-black/70 backdrop-blur-sm opacity-0 group-hover:opacity-100">
+      <div class="file-preview-toolbar z-20 flex items-center justify-between gap-3 p-3 bg-black/70 backdrop-blur-sm">
         <div class="flex items-center space-x-3 text-white">
           <span class="text-sm font-medium truncate max-w-50">{{ displayName }}</span>
           <span class="text-xs text-slate-300">({{ displaySize }} MB)</span>
@@ -65,14 +65,20 @@
         </div>
 
         <div>
-          <button @click="removeFile" class="flex items-center px-3 py-1.5 text-xs font-medium text-white bg-red-500/80 hover:bg-red-600 rounded transition backdrop-blur-sm" :class="{ 'opacity-50 cursor-not-allowed': !canEdit }" :disabled="!canEdit">
-            <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
-            {{ t('files.remove') }}
+          <button
+            @click="removeFile"
+            class="flex h-9 items-center gap-1.5 rounded-lg bg-red-500/80 px-3 text-xs font-medium text-white transition backdrop-blur-sm hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed"
+            :disabled="!canEdit"
+            :aria-label="t('files.remove')"
+            :title="t('files.remove')"
+          >
+            <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+            <span>{{ t('files.remove') }}</span>
           </button>
         </div>
       </div>
 
-      <div ref="containerRef" class="w-full h-full overflow-auto bg-slate-800 custom-scrollbar">
+      <div ref="containerRef" class="file-preview-content w-full flex-1 min-h-0 overflow-auto bg-slate-800 custom-scrollbar">
         <div v-if="isPdf" class="relative shadow-2xl bg-white transition-all duration-200">
           <VuePdfEmbed
             :source="previewUrl"
@@ -413,6 +419,26 @@ function prevPage() {
 .custom-scrollbar {
   scrollbar-width: auto;
   scrollbar-color: #475569 #1e293b;
+}
+
+.file-preview-toolbar {
+  flex-wrap: wrap;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .file-preview-toolbar {
+    position: absolute;
+    top: 0;
+    right: 0;
+    left: 0;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+  }
+
+  .group:hover .file-preview-toolbar,
+  .group:focus-within .file-preview-toolbar {
+    opacity: 1;
+  }
 }
 
 :deep(.vue-pdf-embed__page > canvas) {
