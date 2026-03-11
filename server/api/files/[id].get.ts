@@ -1,5 +1,6 @@
 import { defineEventHandler, createError, sendStream, setHeader } from 'h3'
 import { query } from '~/server/utils/db'
+import { getCurrentUserFromEvent } from '~/server/utils/sessionGuard'
 import fs from 'fs'
 import path from 'path'
 
@@ -19,6 +20,7 @@ export type GetFileResponse = Promise<void> | GetFileError
 export default defineEventHandler(async (event): Promise<GetFileResponse> => {
   const current = await getCurrentUserFromEvent(event, true )
   if (!current.ok) return { ok: false, error: 'Not authenticated' }
+  if (!current.user.permissions.includes('files.view')) return { ok: false, error: 'Not authorized' }
 
   const idParam = event.context.params?.id
 

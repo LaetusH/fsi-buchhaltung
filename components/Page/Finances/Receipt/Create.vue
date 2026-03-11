@@ -2,19 +2,22 @@
   <Page :headline1="t('receipt.title')" @open-menu="$emit('openMenu')">
     <template #cards>
       <div class="col-span-6">
-        <ClientOnly>
+        <ClientOnly v-if="canViewFiles">
           <FileDrop
             v-model:model-value="file"
             :existing-file="existingFile"
+            :can-edit="canEdit"
             @remove-existing="onRemoveFile"
           />
         </ClientOnly>
       </div>
 
-      <div class="col-span-6">
+      <div :class="[canViewFiles ? 'col-span-6' : 'col-span-12 lg:col-span-8 lg:col-start-3']">
         <ReceiptForm
           v-model="form"
           :has-file="!!file || (!!existingFile && !removeExistingFile)"
+          :disabled="!canEdit"
+          :can-edit-company="canEditCompany"
           @submit="submit"
           @cancel="cancel"
         />
@@ -31,6 +34,7 @@ import ReceiptForm from './Form.vue'
 import { ReceiptStatus, type CreateReceiptBody } from '~/types/receipt'
 import { usePage } from '~/composables/usePage'
 import type { GetReceiptResponse } from '~/server/api/receipts/[id].get'
+import { useAuth } from '~/composables/useAuth'
 
 const emit = defineEmits<{
   (e: 'openMenu'): void
@@ -38,6 +42,11 @@ const emit = defineEmits<{
 
 const { setPage, pageMeta } = usePage()
 const { t } = useI18n()
+const { hasPermission } = useAuth()
+
+const canEdit = computed(() => hasPermission('receipts.edit'))
+const canEditCompany = computed(() => hasPermission('companies.edit'))
+const canViewFiles = computed(() => hasPermission('files.view') && (hasPermission('receipts.edit') || existingFile.value !== null))
 
 const isEditMode = ref(false)
 const receiptId = ref<number | null>(null)
@@ -94,6 +103,10 @@ function onRemoveFile() {
 }
 
 async function submit() {
+  if (!canEdit.value) {
+    alert(t('common.notAuthorized'))
+    return
+  }
   if (!form.value.company_id) {
     alert(t('receipt.required.enterCompany'))
     return

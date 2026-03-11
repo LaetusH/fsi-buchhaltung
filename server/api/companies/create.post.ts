@@ -22,6 +22,7 @@ interface MysqlError extends Error {
 export default defineEventHandler(async (event): Promise<CreateCompanyResponse> => {
   const current = await getCurrentUserFromEvent(event, false)
   if (!current.ok) return { ok: false, error: 'Not authenticated' }
+  if (!current.user.permissions.includes('companies.edit')) return { ok: false, error: 'Not authorized' }
 
   const body = await readBody<CreateCompanyBody>(event)
   if (!body.name) return { ok: false, error: 'Missing fields' }

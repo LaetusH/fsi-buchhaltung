@@ -19,6 +19,7 @@ type GetCostCentresResponse = GetCostCentresSuccess | GetCostCentresError
 export default defineEventHandler(async (event): Promise<GetCostCentresResponse> => {
   const current = await getCurrentUserFromEvent(event, true )
   if (!current.ok) return { ok: false, error: 'Not authenticated' }
+  if (!current.user.permissions.includes('cost_centres.view')) return { ok: false, error: 'Not authorized' }
 
   const rows = await query(`
     SELECT id, code, name, is_active, description, created_at

@@ -52,6 +52,7 @@ type ReimbursementLogField =
 export default defineEventHandler(async (event): Promise<UpdateReimbursementResponse> => {
   const current = await getCurrentUserFromEvent(event, true)
   if (!current.ok) return { ok: false, error: 'Not authenticated' }
+  if (!current.user.permissions.includes('reimbursements.edit')) return { ok: false, error: 'Not authorized' }
 
   const reimbursementId = Number(event.context.params?.id)
   if (!reimbursementId) return { ok: false, error: 'Invalid reimbursement id' }

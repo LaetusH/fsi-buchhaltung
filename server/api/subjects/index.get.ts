@@ -18,6 +18,7 @@ type GetSubjectsResponse = GetSubjectsSuccess | GetSubjectsError
 export default defineEventHandler(async (event): Promise<GetSubjectsResponse> => {
   const current = await getCurrentUserFromEvent(event, true)
   if (!current.ok) return { ok: false, error: 'Not authenticated' }
+  if (!current.user.permissions.includes('subjects.view')) return { ok: false, error: 'Not authorized' }
 
   const rows = await query<SubjectRow[]>(`
     SELECT id, name

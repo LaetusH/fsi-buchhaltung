@@ -18,6 +18,7 @@ type GetReimbursementResponse = GetReimbursementsSuccess | GetReimbursementsErro
 export default defineEventHandler(async (event): Promise<GetReimbursementResponse> => {
   const current = await getCurrentUserFromEvent(event, true)
   if (!current.ok) return { ok: false, error: 'Not authenticated' }
+  if (!current.user.permissions.includes('reimbursements.view')) return { ok: false, error: 'Not authorized' }
 
   try {
     const rows: ReimbursementOverview[] = await query(

@@ -8,6 +8,7 @@
           <div class="flex items-center gap-2 flex-wrap justify-end">
             <CommonGlobalSearchBar v-model="globalSearchInput" :placeholder="t('member.search')" />
             <button
+              v-if="canEdit"
               class="btn-primary"
               @click="setPage('MemberCreate', { returnTo: 'MemberList' })"
             >
@@ -152,6 +153,7 @@
 import { useAdvancedTable } from '~/composables/useAdvancedTable'
 import { useI18n } from '~/composables/useI18n'
 import { usePage } from '~/composables/usePage'
+import { useAuth } from '~/composables/useAuth'
 import { type MemberListItem, MemberStatus } from '~/types/member'
 
 const emit = defineEmits<{
@@ -160,6 +162,9 @@ const emit = defineEmits<{
 
 const { setPage } = usePage()
 const { locale, t } = useI18n()
+const { hasPermission } = useAuth()
+
+const canEdit = computed(() => hasPermission('members.edit'))
 
 const members = ref<MemberListItem[]>([])
 type MemberColumnKey = 'first_name' | 'last_name' | 'birthdate' | 'subject_name' | 'status' | 'joined_at' | 'left_at'
@@ -187,8 +192,12 @@ const {
 ])
 
 onMounted(async () => {
-  const res = await $fetch<{ ok: boolean, members?: MemberListItem[] }>('/api/members')
-  if (res.ok && res.members) members.value = res.members
+  const res = await $fetch('/api/members')
+  if (res.ok) {
+    members.value = res.members
+  } else {
+    console.log(res.error)
+  }
 })
 
 function formatDate(date?: string | null) {

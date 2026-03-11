@@ -18,6 +18,7 @@ type CreateSubjectResponse = CreateSubjectSuccess | CreateSubjectError
 export default defineEventHandler(async (event): Promise<CreateSubjectResponse> => {
   const current = await getCurrentUserFromEvent(event, false)
   if (!current.ok) return { ok: false, error: 'Not authenticated' }
+  if (!current.user.permissions.includes('subjects.edit')) return { ok: false, error: 'Not authorized' }
 
   const body = await readBody<CreateSubjectBody>(event)
   const name = body?.name?.trim()

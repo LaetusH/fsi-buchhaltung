@@ -21,6 +21,7 @@ interface MysqlError extends Error {
 export default defineEventHandler(async (event): Promise<UpdateCompanyResponse> => {
   const current = await getCurrentUserFromEvent(event, false)
   if (!current.ok) return { ok: false, error: 'Not authenticated' }
+  if (!current.user.permissions.includes('companies.edit')) return { ok: false, error: 'Not authorized' }
 
   const companyId = Number(event.context.params?.id)
   if (!companyId) return { ok: false, error: 'Invalid receipt id' }

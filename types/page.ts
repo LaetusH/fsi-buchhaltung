@@ -1,4 +1,4 @@
-import type { UserRole } from '~/types/user'
+import type { PermissionKey } from '~/config/permissions'
 import type { Component } from 'vue'
 import { PAGES } from '~/config/pages'
 
@@ -9,14 +9,16 @@ interface MainPage {
   labelKey: string
   component: Component
   icon: string
-  roles: UserRole[]
+  permissions: PermissionKey[]
+  allowGuest?: boolean
 }
 
 interface SubPage {
   main: false
   labelKey: string
   component: Component
-  roles: UserRole[]
+  permissions: PermissionKey[]
+  allowGuest?: boolean
 }
 
 export type PageName = keyof typeof PAGES

@@ -2,7 +2,7 @@
   <div class="flex items-center gap-3">
     <MenuDropdown v-model="open" :id="0">
       <template #trigger="{ styling }">
-        <button :class="[styling, statusClasses[modelValue]]" class="border-0 px-3 cursor-pointer shadow-none">
+        <button :class="[styling, disabled ? 'opacity-70' : 'cursor-pointer', statusClasses[modelValue]]" class="border-0 px-3 shadow-none" :disabled="disabled">
           {{ statusLabels[modelValue] }}
         </button>
       </template>
@@ -29,6 +29,7 @@ import { ReceiptStatus } from '~/types/receipt'
 
 const props = defineProps<{
   modelValue: ReceiptStatus
+  disabled?: boolean
 }>()
 
 const emit = defineEmits<{

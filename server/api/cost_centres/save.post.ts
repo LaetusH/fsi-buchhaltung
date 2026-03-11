@@ -22,6 +22,7 @@ interface MysqlError extends Error {
 export default defineEventHandler(async (event): Promise<SaveCostCentreResponse> => {
   const current = await getCurrentUserFromEvent(event, false)
   if (!current.ok) return { ok: false, error: 'Not authenticated' }
+  if (!current.user.permissions.includes('settings.cost_centres.manage')) return { ok: false, error: 'Not authorized' }
 
   const body = await readBody<SaveCostCentreBody>(event)
   if (!body.code || !body.name) return { ok: false, error: 'Missing fields' }
@@ -61,7 +62,7 @@ export default defineEventHandler(async (event): Promise<SaveCostCentreResponse>
           `UPDATE cost_centres
           SET code = ?, name = ?, description = ?
           WHERE id = ?`,
-          [updated.code, updated.name, updated.description],
+          [updated.code, updated.name, updated.description, updated.id],
           conn
         )
 

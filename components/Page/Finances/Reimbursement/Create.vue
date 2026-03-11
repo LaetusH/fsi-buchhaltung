@@ -2,19 +2,22 @@
   <Page :headline1="t('reimbursement.title')" @open-menu="$emit('openMenu')">
     <template #cards>
       <div class="col-span-6">
-        <ClientOnly>
+        <ClientOnly v-if="canViewFiles">
           <FileDrop
             v-model:model-value="file"
             :existing-file="existingFile"
+            :can-edit="canEdit"
             @remove-existing="onRemoveFile"
           />
         </ClientOnly>
       </div>
 
-      <div class="col-span-6">
+      <div :class="[canViewFiles ? 'col-span-6' : 'col-span-12 lg:col-span-8 lg:col-start-3']">
         <ReimbursementForm
           v-model="form"
           :has-file="!!file || (!!existingFile && !removeExistingFile)"
+          :disabled="!canEdit"
+          :can-create-receipt="canCreateReceipt"
           @submit="submit"
           @cancel="cancel"
         />
@@ -31,6 +34,7 @@ import ReimbursementForm from './Form.vue'
 import { usePage } from '~/composables/usePage'
 import type { CreateReimbursementBody } from '~/types/reimbursement'
 import type { GetReimbursementResponse } from '~/server/api/reimbursements/[id].get'
+import { useAuth } from '~/composables/useAuth'
 
 const emit = defineEmits<{
   (e: 'openMenu'): void
@@ -38,6 +42,11 @@ const emit = defineEmits<{
 
 const { setPage, pageMeta } = usePage()
 const { t } = useI18n()
+const { hasPermission } = useAuth()
+
+const canEdit = computed(() => hasPermission('reimbursements.edit'))
+const canCreateReceipt = computed(() => hasPermission('receipts.edit'))
+const canViewFiles = computed(() => hasPermission('files.view') && (hasPermission('reimbursements.edit') || existingFile.value !== null))
 
 const isEditMode = ref(false)
 const reimbursementId = ref<number | null>(null)
@@ -155,6 +164,10 @@ function onRemoveFile() {
 }
 
 async function submit() {
+  if (!canEdit.value) {
+    alert(t('common.notAuthorized'))
+    return
+  }
   if (!form.value.paid_by) {
     alert(t('reimbursement.required.selectPaidBy'))
     return

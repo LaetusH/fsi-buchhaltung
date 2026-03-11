@@ -37,6 +37,7 @@ function statusFromReimbursement(reimbursement: CreateReimbursementBody): Receip
 export default defineEventHandler(async (event): Promise<CreateReimbursementResponse> => {
   const current = await getCurrentUserFromEvent(event, true)
   if (!current.ok) return { ok: false, error: 'Not authenticated' }
+  if (!current.user.permissions.includes('reimbursements.edit')) return { ok: false, error: 'Not authorized' }
 
   const formData = await readMultipartFormData(event)
   if (!formData) return { ok: false, error: 'Invalid form data' }

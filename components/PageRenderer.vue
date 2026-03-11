@@ -16,7 +16,7 @@ const emit = defineEmits<{
 }>()
 
 const { currentPage } = usePage()
-const { user, fetchSession } = useAuth()
+const { user, fetchSession, hasPermission } = useAuth()
 
 const loaded = ref(false)
 
@@ -31,12 +31,11 @@ onMounted(async () => {
 
 const currentComponent = computed(() => {
   const page = PAGES[currentPage.value]
-  if (!user.value) return LoginPage
   if (!page) return LoginPage
-
-  if (page.roles.includes('guest')) return page.component
-
-  if (page.roles.includes(user.value.role)) return page.component
+  if (page.allowGuest) return page.component
+  if (!user.value) return LoginPage
+  if (!page.permissions.length) return page.component
+  if (hasPermission(page.permissions)) return page.component
   
   return LoginPage
 })

@@ -42,6 +42,7 @@ async function ensureSubjectId(subjectName: string, createdBy: number, conn: any
 export default defineEventHandler(async (event): Promise<CreateMemberResponse> => {
   const current = await getCurrentUserFromEvent(event, false)
   if (!current.ok) return { ok: false, error: 'Not authenticated' }
+  if (!current.user.permissions.includes('members.edit')) return { ok: false, error: 'Not authorized' }
 
   const body = await readBody<SaveMemberBody>(event)
 

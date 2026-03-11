@@ -1,5 +1,6 @@
 import { getCookie } from 'h3'
 import { getSessionByToken, touchSession, inactivityMinutes, deleteSessionByToken } from './auth'
+import { getUserPermissions, getUserPositionIds, getUserRoleIds } from './permissions'
 import { normalizeBigInt } from '~/server/utils/normalize'
 import type { User } from '~/types/user'
 
@@ -39,12 +40,17 @@ export async function getCurrentUserFromEvent(event: any, touch: boolean): Promi
   
   if (touch) await touchSession(token)
 
+  const roles = await getUserRoleIds(Number(session.user_id))
+  const positionIds = await getUserPositionIds(Number(session.user_id))
+  const permissions = await getUserPermissions(Number(session.user_id), roles, positionIds)
+
   return {
     ok: true,
     user: {
       id: session.user_id,
       username: session.username,
-      role: session.role,
+      roles,
+      permissions,
       is_active: session.is_active === 1 || session.is_active === '1'
     }
   }

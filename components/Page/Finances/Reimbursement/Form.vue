@@ -10,9 +10,10 @@
             <template #trigger="{ styling }">
               <input
                 v-model="paidByQuery"
-                :class="styling"
+                :class="[styling, disabled ? 'opacity-70' : '']"
                 :placeholder="t('reimbursement.memberSearch')"
                 @input="openPaidBy = 0"
+                :disabled="disabled"
               />
             </template>
 
@@ -35,14 +36,14 @@
 
         <div>
           <label class="text-sm font-medium text-slate-600">{{ t('reimbursement.submittedAt') }}</label>
-          <input v-model="submittedAtDate" type="date" class="input" />
+          <input v-model="submittedAtDate" type="date" class="input" :class="disabled ? 'opacity-70' : ''" :disabled="disabled" />
         </div>
       </div>
 
       <div class="flex items-center justify-between">
         <h3 class="font-medium">{{ t('reimbursement.bankDetails') }}</h3>
         <label class="inline-flex items-center gap-2 text-sm text-slate-700">
-          <input v-model="form.cash" type="checkbox" />
+          <input v-model="form.cash" type="checkbox" :disabled="disabled" />
           {{ t('reimbursement.cash') }}
         </label>
       </div>
@@ -50,22 +51,22 @@
       <div class="grid grid-cols-2 gap-4 transition-opacity" :class="form.cash ? 'opacity-50' : 'opacity-100'">
         <div>
           <label class="text-sm font-medium text-slate-600">{{ t('reimbursement.bankname') }}</label>
-          <input v-model="form.bankname" class="input" :disabled="form.cash" />
+          <input v-model="form.bankname" class="input" :class="disabled ? 'opacity-70' : ''" :disabled="disabled || form.cash" />
         </div>
 
         <div>
           <label class="text-sm font-medium text-slate-600">{{ t('reimbursement.accountHolder') }}</label>
-          <input v-model="form.account_holder" class="input" :disabled="form.cash" />
+          <input v-model="form.account_holder" class="input" :class="disabled ? 'opacity-70' : ''" :disabled="disabled || form.cash" />
         </div>
 
         <div>
           <label class="text-sm font-medium text-slate-600">{{ t('reimbursement.iban') }}</label>
-          <input v-model="form.iban" class="input" :disabled="form.cash" />
+          <input v-model="form.iban" class="input" :class="disabled ? 'opacity-70' : ''" :disabled="disabled || form.cash" />
         </div>
 
         <div>
           <label class="text-sm font-medium text-slate-600">{{ t('reimbursement.bic') }}</label>
-          <input v-model="form.bic" class="input" :disabled="form.cash" />
+          <input v-model="form.bic" class="input" :class="disabled ? 'opacity-70' : ''" :disabled="disabled || form.cash" />
         </div>
       </div>
     </section>
@@ -73,7 +74,7 @@
     <section class="bg-white rounded-xl shadow-lg p-4 space-y-3">
       <div class="flex items-center justify-between">
         <h3 class="font-semibold">{{ t('reimbursement.receiptsInReimbursement') }}</h3>
-        <button class="btn-primary" @click="createNewReceipt">
+        <button v-if="!disabled && canCreateReceipt" class="btn-primary" @click="createNewReceipt">
           ＋ {{ t('reimbursement.createReceipt') }}
         </button>
       </div>
@@ -88,9 +89,10 @@
           <template #trigger="{ styling }">
             <input
               v-model="receiptQueries[i]"
-              :class="styling"
+              :class="[styling, disabled ? 'opacity-70' : '']"
               :placeholder="t('reimbursement.receiptPlaceholder')"
               @input="openReceiptIndex = i"
+              :disabled="disabled"
             />
           </template>
 
@@ -119,7 +121,7 @@
         </div>
 
         <button
-          v-if="form.positions.length > 1"
+          v-if="!disabled && form.positions.length > 1"
           type="button"
           class="text-red-500 cursor-pointer p-2 w-10 rounded-md hover:bg-slate-100"
           @click="removePosition(i)"
@@ -128,8 +130,9 @@
         </button>
       </div>
 
-      <div class="flex justify-between pt-2 items-start gap-6">
+      <div class="flex pt-2 items-start gap-6" :class="disabled ? 'justify-end' : 'justify-between'">
         <button
+          v-if="!disabled"
           type="button"
           class="flex items-center gap-2 text-orange-500 font-medium cursor-pointer"
           @click="addPosition"
@@ -143,11 +146,13 @@
             <input
               type="text"
               class="input text-right w-42"
+              :class="disabled ? 'opacity-70' : ''"
               :value="displayAdvance"
               inputmode="decimal"
               @focus="onAdvanceFocus"
               @blur="onAdvanceBlur"
               @input="onAdvanceInput"
+              :disabled="disabled"
             />
           </div>
           <div class="flex justify-between text-slate-500">
@@ -176,9 +181,10 @@
             <template #trigger="{ styling }">
               <input
                 v-model="checkedByQuery"
-                :class="styling"
+                :class="[styling, disabled ? 'opacity-70' : '']"
                 :placeholder="t('reimbursement.memberSearch')"
                 @input="openCheckedBy = 1"
+                :disabled="disabled"
               />
             </template>
 
@@ -201,7 +207,7 @@
 
         <div>
           <label class="text-sm font-medium text-slate-600">{{ t('reimbursement.checkedAt') }}</label>
-          <input v-model="checkedAtDate" type="date" class="input" />
+          <input v-model="checkedAtDate" type="date" class="input" :class="disabled ? 'opacity-70' : ''" :disabled="disabled" />
         </div>
 
         <div>
@@ -210,9 +216,10 @@
             <template #trigger="{ styling }">
               <input
                 v-model="disbursedByQuery"
-                :class="styling"
+                :class="[styling, disabled ? 'opacity-70' : '']"
                 :placeholder="t('reimbursement.memberSearch')"
                 @input="openDisbursedBy = 2"
+                :disabled="disabled"
               />
             </template>
 
@@ -235,12 +242,12 @@
 
         <div>
           <label class="text-sm font-medium text-slate-600">{{ t('reimbursement.disbursedAt') }}</label>
-          <input v-model="disbursedAtDate" type="date" class="input" />
+          <input v-model="disbursedAtDate" type="date" class="input" :class="disabled ? 'opacity-70' : ''" :disabled="disabled" />
         </div>
       </div>
     </section>
 
-    <div class="grid grid-cols-2 gap-4">
+    <div v-if="!disabled" class="grid grid-cols-2 gap-4">
       <button class="btn-secondary" @click="emit('cancel')">
         {{ t('actions.cancel') }}
       </button>
@@ -253,6 +260,10 @@
       >
         {{ t('actions.save') }}
       </button>
+    </div>
+
+    <div v-else class="grid">
+      <button class="btn-secondary col-span-12" @click="emit('cancel')">{{ t('actions.close') }}</button>
     </div>
 
     <section
@@ -280,6 +291,7 @@ const props = defineProps<{
   modelValue: CreateReimbursementBody
   disabled?: boolean
   hasFile?: boolean
+  canCreateReceipt?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -297,6 +309,7 @@ const form = computed({
 })
 
 const disabled = computed(() => Boolean(props.disabled))
+const canCreateReceipt = computed(() => props.canCreateReceipt !== false)
 
 const validationErrors = computed(() => {
   const errors: string[] = []

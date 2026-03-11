@@ -1,6 +1,7 @@
 import type { SessionResponse } from '~/server/utils/sessionGuard'
 import type { LoginResponse } from '~/server/api/auth/login.post'
 import type { User } from '~/types/user'
+import type { PermissionKey } from '~/config/permissions'
 
 export const useAuth = () => {
   const user = useState<User | null>('auth_user', () => null)
@@ -40,11 +41,16 @@ export const useAuth = () => {
     user.value = null
   }
 
-  function hasRole(roles: string[] | string) {
+  function hasPermission(permissions: PermissionKey[] | PermissionKey) {
     if (!user.value) return false
-    if (Array.isArray(roles)) return roles.includes(user.value.role)
-    return user.value.role === roles
+    if (Array.isArray(permissions)) return permissions.some(p => user.value!.permissions.includes(p))
+    return user.value.permissions.includes(permissions)
   }
-  
-  return { user, fetchSession, login, logout, hasRole }
+
+  function hasAllPermissions(permissions: PermissionKey[]) {
+    if (!user.value) return false
+    return permissions.every(p => user.value!.permissions.includes(p))
+  }
+
+  return { user, fetchSession, login, logout, hasPermission, hasAllPermissions }
 }

@@ -29,22 +29,29 @@ import SettingsGeneral from './General.vue'
 import SettingsSpheres from './Spheres.vue'
 import SettingsCostCentres from './CostCentres.vue'
 import SettingsPositions from './Positions.vue'
+import SettingsPermissions from './Permissions.vue'
+import { useAuth } from '~/composables/useAuth'
 
 const emit = defineEmits<{
   (e: 'openMenu'): void
 }>()
 
-type SettingsTab = 'general' | 'spheres' | 'costCentres' | 'positions'
+type SettingsTab = 'general' | 'spheres' | 'costCentres' | 'positions' | 'permissions'
 
 const currentTab = ref<SettingsTab>('general')
 const { t } = useI18n()
+const { hasPermission } = useAuth()
 
-const tabs = computed(() => [
-  { key: 'general', label: t('settings.tabs.general') },
-  { key: 'spheres', label: t('settings.tabs.spheres') },
-  { key: 'costCentres', label: t('settings.tabs.costCentres') },
-  { key: 'positions', label: t('settings.tabs.positions') },
-] as const)
+const tabs = computed(() => {
+  const list = [
+    { key: 'general', label: t('settings.tabs.general'), show: true },
+    { key: 'spheres', label: t('settings.tabs.spheres'), show: hasPermission('settings.spheres.manage') },
+    { key: 'costCentres', label: t('settings.tabs.costCentres'), show: hasPermission('settings.cost_centres.manage') },
+    { key: 'positions', label: t('settings.tabs.positions'), show: hasPermission('settings.positions.manage') },
+    { key: 'permissions', label: t('settings.tabs.permissions'), show: hasPermission('permissions.manage') },
+  ] as const
+  return list.filter(tab => tab.show).map(({ show, ...rest }) => rest)
+})
 
 const activeComponent = computed(() => {
   switch (currentTab.value) {
@@ -56,8 +63,16 @@ const activeComponent = computed(() => {
       return SettingsCostCentres
     case 'positions':
       return SettingsPositions
+    case 'permissions':
+      return SettingsPermissions
     default:
       return SettingsGeneral
   }
 })
+
+watch(tabs, (available) => {
+  if (!available.find(tab => tab.key === currentTab.value)) {
+    currentTab.value = 'general'
+  }
+}, { immediate: true })
 </script>

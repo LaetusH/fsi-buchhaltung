@@ -22,6 +22,7 @@ export type GetReimbursementResponse = GetReimbursementSuccess | GetReimbursemen
 export default defineEventHandler(async (event): Promise<GetReimbursementResponse> => {
   const current = await getCurrentUserFromEvent(event, true)
   if (!current.ok) return { ok: false, error: 'Not authenticated' }
+  if (!current.user.permissions.includes('reimbursements.view')) return { ok: false, error: 'Not authorized' }
 
   const id = Number(event.context.params?.id)
   if (!id) return { ok: false, error: 'Invalid reimbursement id' }

@@ -6,26 +6,26 @@
       <div class="grid md:grid-cols-2 gap-4">
         <div>
           <label class="text-sm font-medium text-slate-600">{{ t('member.firstName') }}</label>
-          <input v-model="form.first_name" class="input" />
+          <input v-model="form.first_name" class="input" :class="disabled ? 'opacity-70' : ''" :disabled="disabled" />
         </div>
 
         <div>
           <label class="text-sm font-medium text-slate-600">{{ t('member.lastName') }}</label>
-          <input v-model="form.last_name" class="input" />
+          <input v-model="form.last_name" class="input" :class="disabled ? 'opacity-70' : ''" :disabled="disabled" />
         </div>
 
         <div>
           <label class="text-sm font-medium text-slate-600">{{ t('member.birthdate') }}</label>
-          <input v-model="form.birthdate" type="date" class="input" />
+          <input v-model="form.birthdate" type="date" class="input" :class="disabled ? 'opacity-70' : ''" :disabled="disabled" />
         </div>
 
         <div>
           <label class="text-sm font-medium text-slate-600">{{ t('member.status') }}</label>
           <MenuDropdown v-model="openStatus" :id="0">
             <template #trigger="{ styling }">
-              <button :class="styling" class="cursor-pointer">
+              <button :class="[styling, disabled ? 'opacity-70' : 'cursor-pointer']" :disabled="disabled">
                 <span>{{ statusLabel(form.status) }}</span>
-                <Icon name="material-symbols:keyboard-arrow-down-rounded" class="text-lg" />
+                <Icon v-if="!disabled" name="material-symbols:keyboard-arrow-down-rounded" class="text-lg" />
               </button>
             </template>
 
@@ -40,7 +40,8 @@
       </div>
 
       <label class="inline-flex items-center gap-2 text-sm text-slate-700">
-        <input v-model="form.honorary" type="checkbox" class="h-4 w-4" /> {{ t('member.honorary') }}
+        <input v-model="form.honorary" type="checkbox" class="h-4 w-4" :class="disabled ? 'opacity-70' : ''" :disabled="disabled"/>
+        {{ t('member.honorary') }}
       </label>
     </section>
 
@@ -50,32 +51,32 @@
       <div class="grid md:grid-cols-4 gap-4">
         <div class="md:col-span-3">
           <label class="text-sm font-medium text-slate-600">{{ t('member.street') }}</label>
-          <input v-model="form.street" class="input" />
+          <input v-model="form.street" class="input" :class="disabled ? 'opacity-70' : ''" :disabled="disabled" />
         </div>
 
         <div>
           <label class="text-sm font-medium text-slate-600">{{ t('member.streetNumber') }}</label>
-          <input v-model="form.street_number" class="input" />
+          <input v-model="form.street_number" class="input" :class="disabled ? 'opacity-70' : ''" :disabled="disabled" />
         </div>
 
         <div>
           <label class="text-sm font-medium text-slate-600">{{ t('member.postalCode') }}</label>
-          <input v-model="form.postal_code" class="input" />
+          <input v-model="form.postal_code" class="input" :class="disabled ? 'opacity-70' : ''" :disabled="disabled" />
         </div>
 
         <div class="md:col-span-3">
           <label class="text-sm font-medium text-slate-600">{{ t('member.city') }}</label>
-          <input v-model="form.city" class="input" />
+          <input v-model="form.city" class="input" :class="disabled ? 'opacity-70' : ''" :disabled="disabled" />
         </div>
 
         <div class="md:col-span-2">
           <label class="text-sm font-medium text-slate-600">{{ t('member.phone') }}</label>
-          <input v-model="form.phone" class="input" />
+          <input v-model="form.phone" class="input" :class="disabled ? 'opacity-70' : ''" :disabled="disabled" />
         </div>
 
         <div class="md:col-span-2">
           <label class="text-sm font-medium text-slate-600">{{ t('member.email') }}</label>
-          <input v-model="form.email" type="email" class="input" />
+          <input v-model="form.email" type="email" class="input" :class="disabled ? 'opacity-70' : ''" :disabled="disabled" />
         </div>
       </div>
     </section>
@@ -90,21 +91,22 @@
             <template #trigger="{ styling }">
               <input
                 v-model="subjectQuery"
-                :class="styling"
-                :placeholder="t('member.subjectPlaceholder')"
+                :class="[styling, disabled ? 'opacity-70' : '']"
+                :placeholder="canEditSubjects ? t('member.subjectEditablePlaceholder') : t('member.subjectPlaceholder')"
                 @input="onSubjectInput"
+                :disabled="disabled"
               />
             </template>
 
             <template #default="{ styling }">
-              <button type="button" :class="styling" @click="createSubjectFromQuery">
+              <button v-if="canEditSubjects" type="button" :class="styling" @click="createSubjectFromQuery" >
                 <div class="flex justify-between w-full">
                   <span>"{{ subjectQuery }}"</span>
                   <span class="text-orange-500 font-semibold">+ {{ t('actions.createNew') }}</span>
                 </div>
               </button>
 
-              <div class="border-t"></div>
+              <div v-if="canEditSubjects" class="border-t"></div>
 
               <button
                 v-for="subject in filteredSubjects"
@@ -124,23 +126,23 @@
 
         <div>
           <label class="text-sm font-medium text-slate-600">{{ t('member.appliedAt') }}</label>
-          <input v-model="form.applied_at" type="date" class="input" />
+          <input v-model="form.applied_at" type="date" class="input" :class="disabled ? 'opacity-70' : ''" :disabled="disabled" />
         </div>
 
         <div>
           <label class="text-sm font-medium text-slate-600">{{ t('member.joinedAt') }}</label>
-          <input v-model="form.joined_at" type="date" class="input" />
+          <input v-model="form.joined_at" type="date" class="input" :class="disabled ? 'opacity-70' : ''" :disabled="disabled" />
         </div>
 
         <div>
           <label class="text-sm font-medium text-slate-600">{{ t('member.leftAt') }}</label>
-          <input v-model="form.left_at" type="date" class="input" />
+          <input v-model="form.left_at" type="date" class="input" :class="disabled ? 'opacity-70' : ''" :disabled="disabled" />
         </div>
       </div>
 
       <div>
         <label class="text-sm font-medium text-slate-600">{{ t('member.notes') }}</label>
-        <textarea v-model="form.notes" rows="3" class="input resize-none" />
+        <textarea v-model="form.notes" rows="3" class="input resize-none" :class="disabled ? 'opacity-70' : ''" :disabled="disabled" />
       </div>
     </section>
 
@@ -156,9 +158,10 @@
           <template #trigger="{ styling }">
             <input
               v-model="positionQueries[i]"
-              :class="styling"
+              :class="[styling, disabled ? 'opacity-70' : '']"
               :placeholder="t('member.positionPlaceholder')"
               @input="onPositionInput(i)"
+              :disabled="disabled"
             />
           </template>
 
@@ -181,10 +184,11 @@
           </template>
         </MenuDropdown>
 
-        <input v-model="assignment.since" type="date" class="input" />
-        <input v-model="assignment.until" type="date" class="input" />
+        <input v-model="assignment.since" type="date" class="input" :class="disabled ? 'opacity-70' : ''" :disabled="disabled" />
+        <input v-model="assignment.until" type="date" class="input" :class="disabled ? 'opacity-70' : ''" :disabled="disabled" />
 
         <button
+          v-if="!disabled"
           class="text-red-500 cursor-pointer p-2 w-10 rounded-md hover:bg-slate-100"
           type="button"
           @click="removePosition(i)"
@@ -194,6 +198,7 @@
       </div>
 
       <button
+        v-if="!disabled"
         type="button"
         class="flex items-center gap-2 text-orange-500 font-medium cursor-pointer"
         @click="addPosition"
@@ -202,7 +207,7 @@
       </button>
     </section>
 
-    <div class="grid grid-cols-2 gap-4">
+    <div v-if="!disabled" class="grid grid-cols-2 gap-4">
       <button class="btn-secondary" @click="emit('cancel')">{{ t('actions.cancel') }}</button>
 
       <button
@@ -213,6 +218,10 @@
       >
         {{ t('actions.save') }}
       </button>
+    </div>
+
+    <div v-else class="grid">
+      <button class="btn-secondary col-span-12" @click="emit('cancel')">{{ t('actions.close') }}</button>
     </div>
 
     <section
@@ -236,6 +245,7 @@ import type { SubjectRow } from '~/types/subject'
 const props = defineProps<{
   modelValue: SaveMemberBody
   disabled?: boolean
+  canEditSubjects?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -250,6 +260,7 @@ const form = computed({
   get: () => props.modelValue,
   set: v => emit('update:modelValue', v)
 })
+const canEditSubjects = computed(() => props.canEditSubjects !== false)
 
 const subjects = ref<SubjectRow[]>([])
 const subjectQuery = ref('')
@@ -347,6 +358,7 @@ function filteredPositions(index: number) {
 }
 
 async function createSubjectFromQuery() {
+  if (!canEditSubjects.value) return
   const name = subjectQuery.value.trim()
   if (!name) return
 

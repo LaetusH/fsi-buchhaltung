@@ -22,6 +22,7 @@ interface MysqlError extends Error {
 export default defineEventHandler(async (event): Promise<SaveSphereResponse> => {
   const current = await getCurrentUserFromEvent(event, false)
   if (!current.ok) return { ok: false, error: 'Not authenticated' }
+  if (!current.user.permissions.includes('settings.spheres.manage')) return { ok: false, error: 'Not authorized' }
 
   const body = await readBody<SaveSphereBody>(event)
   if (!body.name || !body.code) return { ok: false, error: 'Missing fields' }

@@ -43,6 +43,7 @@ async function ensureSubjectId(subjectName: string, createdBy: number, conn: any
 export default defineEventHandler(async (event): Promise<UpdateMemberResponse> => {
   const current = await getCurrentUserFromEvent(event, false)
   if (!current.ok) return { ok: false, error: 'Not authenticated' }
+  if (!current.user.permissions.includes('members.edit')) return { ok: false, error: 'Not authorized' }
 
   const memberId = Number(getRouterParam(event, 'id'))
   if (!memberId) return { ok: false, error: 'Missing member id' }

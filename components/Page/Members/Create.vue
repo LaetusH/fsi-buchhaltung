@@ -4,6 +4,8 @@
       <div class="col-span-12 lg:col-span-8 lg:col-start-3">
         <MembersForm
           v-model="form"
+          :disabled="!canEdit"
+          :can-edit-subjects="canEditSubjects"
           @submit="submit"
           @cancel="cancel"
         />
@@ -17,6 +19,7 @@ import { useI18n } from '~/composables/useI18n'
 import { MemberStatus, type Member, type SaveMemberBody } from '~/types/member'
 import { usePage } from '~/composables/usePage'
 import MembersForm from './Form.vue'
+import { useAuth } from '~/composables/useAuth'
 
 const emit = defineEmits<{
   (e: 'openMenu'): void
@@ -24,6 +27,10 @@ const emit = defineEmits<{
 
 const { setPage, pageMeta } = usePage()
 const { t } = useI18n()
+const { hasPermission } = useAuth()
+
+const canEdit = computed(() => hasPermission('members.edit'))
+const canEditSubjects = computed(() => hasPermission('subjects.edit'))
 
 const isEditMode = ref(false)
 const memberId = ref<number | null>(null)
@@ -84,6 +91,10 @@ onMounted(async () => {
 })
 
 async function submit() {
+  if (!canEdit.value) {
+    alert(t('common.notAuthorized'))
+    return
+  }
   try {
     if (isEditMode.value && memberId.value) {
       const updateRes = await $fetch<{ ok: boolean, error?: string }>(`/api/members/${memberId.value}`, {

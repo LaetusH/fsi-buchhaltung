@@ -2,19 +2,12 @@ import { defineEventHandler, readBody, setCookie } from 'h3'
 import { query } from '~/server/utils/db'
 import { makeToken, createSession, comparePassword } from '~/server/utils/auth'
 import { normalizeBigInt } from '~/server/utils/normalize'
-import type { UserRole, User } from '~/types/user'
+import { getUserPermissions, getUserPositionIds, getUserRoleIds } from '~/server/utils/permissions'
+import type { User, UserRow } from '~/types/user'
 
 interface LoginBody {
   username: string
   password: string
-}
-
-interface UserRow {
-  id: number
-  username: string
-  password_hash: string
-  role: UserRole
-  is_active: number
 }
 
 interface LoginSuccess {
@@ -35,7 +28,7 @@ export default defineEventHandler(async (event): Promise<LoginResponse> => {
   const { username, password } = body
 
   const rows = await query(
-    'SELECT id, username, password_hash, role, is_active FROM users WHERE username = ? LIMIT 1', 
+    'SELECT id, username, password_hash, is_active FROM users WHERE username = ? LIMIT 1', 
     [username]
   ) as UserRow[]
 
@@ -62,12 +55,17 @@ export default defineEventHandler(async (event): Promise<LoginResponse> => {
     maxAge: maxAgeSeconds,
   })
 
+  const roles = await getUserRoleIds(user.id)
+  const positionIds = await getUserPositionIds(user.id)
+  const permissions = await getUserPermissions(user.id, roles, positionIds)
+
   return {
     ok: true,
-    user: { 
-      id: user.id, 
-      username: user.username, 
-      role: user.role,
+    user: {
+      id: user.id,
+      username: user.username,
+      roles,
+      permissions,
       is_active: user.is_active === 1
     }
   }

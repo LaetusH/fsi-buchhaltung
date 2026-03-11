@@ -11,13 +11,14 @@
           <div class="flex items-center gap-2">
             <input
               v-model="companyQuery"
-              :class="styling"
+              :class="[styling, disabled ? 'opacity-70' : '']"
               :placeholder="t('receipt.companyPlaceholder')"
               @input="openCompany = 0"
+              :disabled="disabled"
             />
 
             <button
-              v-if="selectedCompany"
+              v-if="selectedCompany && canEditCompany"
               type="button"
               @click.stop.prevent="openCompanyDrawer"
               class="p-2 h-10 w-10 rounded-md hover:bg-slate-100 text-orange-500 cursor-pointer"
@@ -29,14 +30,14 @@
         </template>
 
         <template #default="{ styling }">
-          <button type="button" :class="styling" @click="createCompanyFromQuery">
+          <button v-if="canEditCompany" type="button" :class="styling" @click="createCompanyFromQuery">
             <div class="flex justify-between w-full">
               <span>"{{ companyQuery }}"</span>
               <span class="text-orange-500 font-semibold">＋ {{ t('actions.createNew') }}</span>
             </div>
           </button>
 
-          <div class="border-t"></div>
+          <div v-if="canEditCompany" class="border-t"></div>
 
           <button
             v-for="c in filteredCompanies"
@@ -57,12 +58,12 @@
     <section class="bg-white rounded-xl shadow-lg p-4 grid grid-cols-2 gap-4">
       <div>
         <label class="text-sm font-medium text-slate-600">{{ t('receipt.receiptNumber') }}</label>
-        <input v-model="form.receipt_number" class="input" />
+        <input v-model="form.receipt_number" class="input" :class="disabled ? 'opacity-70' : ''" :disabled="disabled" />
       </div>
 
       <div>
         <label class="text-sm font-medium text-slate-600">{{ t('receipt.receiptDate') }}</label>
-        <input v-model="form.receipt_date" type="date" class="input" />
+        <input v-model="form.receipt_date" type="date" class="input" :class="disabled ? 'opacity-70' : ''" :disabled="disabled" />
       </div>
     </section>
 
@@ -78,9 +79,9 @@
         <!-- Sphere Dropdown -->
         <MenuDropdown v-model="openSphereIndex" :id="i">
           <template #trigger="{ styling }">
-            <button :class="styling" class="cursor-pointer">
+            <button :class="[styling, disabled ? 'opacity-70' : 'cursor-pointer']" :disabled="disabled">
               <span class="flex-1 overflow-hidden whitespace-nowrap text-ellipsis">{{ sphereLabel(i) }}</span>
-              <Icon name="material-symbols:keyboard-arrow-down-rounded" class="text-lg" />
+              <Icon v-if="!disabled" name="material-symbols:keyboard-arrow-down-rounded" class="text-lg" />
             </button>
           </template>
 
@@ -102,7 +103,7 @@
             <div class="flex items-center gap-2">
               <input
                 v-model="costCentreQueries[i]"
-                :class="styling"
+                :class="[styling, disabled ? 'opacity-70' : '']"
                 :placeholder="t('receipt.costCentrePlaceholder')"
                 @input="openCostCentreIndex = i"
               />
@@ -132,9 +133,9 @@
         <!-- Tax Dropdown -->
         <MenuDropdown v-model="openTaxIndex" :id="i">
           <template #trigger="{ styling }">
-            <button :class="styling" class="cursor-pointer">
+            <button :class="[styling, disabled ? 'opacity-70' : 'cursor-pointer']" :disabled="disabled">
               <span>{{ taxLabel(i) }}</span>
-              <Icon name="material-symbols:keyboard-arrow-down-rounded" class="text-lg" />
+              <Icon v-if="!disabled" name="material-symbols:keyboard-arrow-down-rounded" class="text-lg" />
             </button>
           </template>
 
@@ -148,15 +149,17 @@
         <input
           type="text"
           class="input text-right"
+          :class="disabled ? 'opacity-70' : ''"
           :value="displayAmount(i)"
           inputmode="decimal"
           @focus="onFocus($event, i)"
           @blur="onBlur(i)"
           @input="onInput($event, i)"
+          :disabled="disabled"
         />
 
         <button
-          v-if="form.positions.length > 1"
+          v-if="!disabled && form.positions.length > 1"
           class="text-red-500 cursor-pointer p-2 w-10 rounded-md hover:bg-slate-100"
           @click="removePosition(i)"
         >
@@ -164,8 +167,9 @@
         </button>
       </div>
 
-      <div class="flex justify-between pt-2 items-start gap-6">
+      <div class="flex pt-2 items-start gap-6" :class="disabled ? 'justify-end' : 'justify-between'">
         <button
+          v-if="!disabled"
           type="button"
           class="flex items-center gap-2 text-orange-500 font-medium cursor-pointer"
           @click="addPosition"
@@ -198,13 +202,14 @@
 
     <section class="bg-white rounded-xl shadow-lg p-4 flex items-center gap-4">
       <span class="font-medium">{{ t('receipt.paymentStatus') }}</span>
-      <PageFinancesPaymentStatus v-model="form.status" />
+      <PageFinancesPaymentStatus v-model="form.status" :disabled="disabled" />
     </section>
 
-    <div class="grid grid-cols-2 gap-4">
+    <div v-if="!disabled" class="grid grid-cols-2 gap-4">
       <button class="btn-secondary" @click="emit('cancel')">{{ t('actions.cancel') }}</button>
 
       <button
+        v-if="!disabled"
         class="btn-primary"
         :disabled="saveDisabled"
         :class="{ 'opacity-50 cursor-not-allowed': saveDisabled }"
@@ -212,6 +217,10 @@
       >
         {{ t('actions.save') }}
       </button>
+    </div>
+    
+    <div v-else class="grid">
+      <button class="btn-secondary col-span-12" @click="emit('cancel')">{{ t('actions.close') }}</button>
     </div>
 
     <section
@@ -271,6 +280,7 @@ const props = defineProps<{
   modelValue: CreateReceiptBody
   disabled?: boolean
   hasFile?: boolean
+  canEditCompany?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -285,6 +295,7 @@ const form = computed({
   get: () => props.modelValue,
   set: v => emit('update:modelValue', v)
 })
+const canEditCompany = computed(() => props.canEditCompany === true)
 
 const validationErrors = computed(() => {
   const errors: string[] = []
@@ -349,6 +360,7 @@ async function submit() {
 }
 
 async function createCompanyFromQuery() {
+  if (!canEditCompany.value) return
   const newCompanyName = companyQuery.value.trim()
   if (newCompanyName.length > 0) {
     const res = await $fetch('/api/companies/create', {
@@ -433,6 +445,7 @@ function selectTax(index: number, tax: number) {
 }
 
 function openCompanyDrawer() {
+  if (!canEditCompany.value) return
   openCompany.value = null
   openSphereIndex.value = null
   openCostCentreIndex.value = null

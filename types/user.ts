@@ -1,9 +1,16 @@
-export const USER_ROLES = ['user', 'admin']
-export type UserRole = typeof USER_ROLES[number]
+import type { PermissionKey } from '~/config/permissions'
 
 export interface User {
   id: number
   username: string
-  role: UserRole
+  roles: number[]
+  permissions: PermissionKey[]
   is_active: boolean
+}
+
+export interface UserRow {
+  id: number
+  username: string
+  password_hash: string
+  is_active: number
 }

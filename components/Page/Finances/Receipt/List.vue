@@ -8,6 +8,7 @@
           <div class="flex items-center gap-2 flex-wrap justify-end">
             <CommonGlobalSearchBar v-model="globalSearchInput" :placeholder="t('receipt.search')" />
             <button
+              v-if="canEdit"
               class="btn-primary"
               @click="setPage('ReceiptCreate', { returnTo: 'ReceiptList' })"
             >
@@ -127,6 +128,7 @@ import { computed } from 'vue'
 import { useAdvancedTable } from '~/composables/useAdvancedTable'
 import { useI18n } from '~/composables/useI18n'
 import { usePage } from '~/composables/usePage'
+import { useAuth } from '~/composables/useAuth'
 import { ReceiptStatus, type ReceiptRow } from '~/types/receipt'
 
 const emit = defineEmits<{
@@ -136,6 +138,9 @@ const emit = defineEmits<{
 
 const { setPage } = usePage()
 const { locale, t } = useI18n()
+const { hasPermission } = useAuth()
+
+const canEdit = computed(() => hasPermission('receipts.edit'))
 
 const receipts = ref<ReceiptRow[]>([])
 type ReceiptColumnKey = 'receipt_date' | 'receipt_number' | 'company_name' | 'total_amount' | 'status'
@@ -169,7 +174,11 @@ const {
 
 onMounted(async () => {
   const res = await $fetch('/api/receipts')
-  if (res.ok) receipts.value = res.receipts
+  if (res.ok) {
+    receipts.value = res.receipts
+  } else {
+    console.log(res.error)
+  }
 })
 
 function formatDate(date: string) {

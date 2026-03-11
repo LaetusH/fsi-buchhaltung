@@ -24,6 +24,7 @@ interface MysqlError extends Error {
 export default defineEventHandler(async (event): Promise<SavePositionResponse> => {
   const current = await getCurrentUserFromEvent(event, false)
   if (!current.ok) return { ok: false, error: 'Not authenticated' }
+  if (!current.user.permissions.includes('settings.positions.manage')) return { ok: false, error: 'Not authorized' }
 
   const body = await readBody<SavePositionBody>(event)
   if (!body.code || !body.name) return { ok: false, error: 'Missing fields' }

@@ -8,6 +8,7 @@
           <div class="flex items-center gap-2 flex-wrap justify-end">
             <CommonGlobalSearchBar v-model="globalSearchInput" :placeholder="t('reimbursement.search')" />
             <button
+              v-if="canEdit"
               class="btn-primary"
               @click="setPage('ReimbursementCreate', { returnTo: 'ReimbursementList' })"
             >
@@ -152,6 +153,7 @@ import { computed } from 'vue'
 import { useAdvancedTable } from '~/composables/useAdvancedTable'
 import { useI18n } from '~/composables/useI18n'
 import { usePage } from '~/composables/usePage'
+import { useAuth } from '~/composables/useAuth'
 import { ReimbursementStatus, type ReimbursementOverview } from '~/types/reimbursement'
 
 const emit = defineEmits<{
@@ -160,6 +162,9 @@ const emit = defineEmits<{
 
 const { setPage } = usePage()
 const { locale, t } = useI18n()
+const { hasPermission } = useAuth()
+
+const canEdit = computed(() => hasPermission('reimbursements.edit'))
 
 const reimbursements = ref<ReimbursementOverview[]>([])
 type ReimbursementColumnKey = 'submitted_at' | 'checked_at' | 'disbursed_at' | 'member_name' | 'receipt_count' | 'total_amount' | 'status'
@@ -195,7 +200,11 @@ const {
 
 onMounted(async () => {
   const res = await $fetch('/api/reimbursements')
-  if (res.ok) reimbursements.value = res.reimbursements
+  if (res.ok) {
+    reimbursements.value = res.reimbursements
+  } else {
+    console.log(res.error)
+  }
 })
 
 function formatDate(date: string) {

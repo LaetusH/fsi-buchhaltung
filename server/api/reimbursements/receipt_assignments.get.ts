@@ -22,6 +22,7 @@ type GetAssignmentsResponse = GetAssignmentsSuccess | GetAssignmentsError
 export default defineEventHandler(async (event): Promise<GetAssignmentsResponse> => {
   const current = await getCurrentUserFromEvent(event, true)
   if (!current.ok) return { ok: false, error: 'Not authenticated' }
+  if (!current.user.permissions.includes('reimbursements.view')) return { ok: false, error: 'Not authorized' }
 
   try {
     const rows: any[] = await query(

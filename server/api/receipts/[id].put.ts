@@ -31,6 +31,7 @@ const MAX_SIZE = Number(process.env.MAX_UPLOAD_MB || 5) * 1024 * 1024
 export default defineEventHandler(async (event): Promise<UpdateReceiptResponse> => {
   const current = await getCurrentUserFromEvent(event, true)
   if (!current.ok) return { ok: false, error: 'Not authenticated' }
+  if (!current.user.permissions.includes('receipts.edit')) return { ok: false, error: 'Not authorized' }
 
   const receiptId = Number(event.context.params?.id)
   if (!receiptId) return { ok: false, error: 'Invalid receipt id' }

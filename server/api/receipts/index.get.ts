@@ -18,6 +18,7 @@ type GetReceiptsResponse = GetReceiptsSuccess | GetReceiptsError
 export default defineEventHandler(async (event): Promise<GetReceiptsResponse> => {
   const current = await getCurrentUserFromEvent(event, true)
   if (!current.ok) return { ok: false, error: 'Not authenticated' }
+  if (!current.user.permissions.includes('receipts.view')) return { ok: false, error: 'Not authorized' }
 
   try {
     const receipts: any[] = await query(

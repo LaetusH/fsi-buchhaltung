@@ -2,12 +2,12 @@ import { defineEventHandler } from 'h3'
 import { query } from '~/server/utils/db'
 import { getCurrentUserFromEvent } from '~/server/utils/sessionGuard'
 import { normalizeBigInt } from '~/server/utils/normalize'
-import { UserRole } from '~/types/user'
+import type { PermissionKey } from '~/config/permissions'
 
 interface UserRow {
   id: number
   username: string
-  role: UserRole
+  role: string
   is_active: number
   created_at: string
 }
@@ -27,10 +27,10 @@ type GetUsersResponse = GetUsersSuccess | GetUsersError
 export default defineEventHandler(async (event): Promise<GetUsersResponse> => {
   const current = await getCurrentUserFromEvent(event, true )
   if (!current.ok) return { ok: false, error: 'Not authenticated' }
-  if (current.user.role !== 'admin') return { ok: false, error: 'Not authorized' }
+  if (!current.user.permissions.includes('users.view' as PermissionKey)) return { ok: false, error: 'Not authorized' }
 
   const rows = await query(`
-    SELECT id, username, role, is_active, created_at
+    SELECT id, username, is_active, created_at
     FROM users
     ORDER BY id ASC
   `) as UserRow[]
