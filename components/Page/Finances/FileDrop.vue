@@ -1,5 +1,5 @@
 <template>
-  <div class="w-full mx-auto text-slate-700">
+  <div ref="rootRef" class="w-full mx-auto text-slate-700">
     <div
       v-if="!modelValue && !existingFile"
       @dragover.prevent="isDragging = true"
@@ -27,7 +27,11 @@
       />
     </div>
 
-    <div v-else-if="previewUrl" class="relative w-full h-200 border border-slate-200 rounded-lg overflow-hidden bg-slate-800 group shadow-lg">
+    <div
+      v-else-if="previewUrl"
+      class="relative w-full border border-slate-200 rounded-lg overflow-hidden bg-slate-800 group shadow-lg"
+      :style="{ height: `${previewHeight}px` }"
+    >
       <div class="absolute top-0 left-0 right-0 flex z-20 items-center justify-between p-3 transition-opacity duration-200 bg-black/70 backdrop-blur-sm opacity-0 group-hover:opacity-100">
         <div class="flex items-center space-x-3 text-white">
           <span class="text-sm font-medium truncate max-w-50">{{ displayName }}</span>
@@ -61,7 +65,7 @@
         </div>
 
         <div>
-          <button @click="removeFile" class="flex items-center px-3 py-1.5 text-xs font-medium text-white bg-red-500/80 hover:bg-red-600 rounded transition backdrop-blur-sm" :class="{ 'opacity-50 cursor-not-allowed': !canEdit }"" :disabled="!canEdit">
+          <button @click="removeFile" class="flex items-center px-3 py-1.5 text-xs font-medium text-white bg-red-500/80 hover:bg-red-600 rounded transition backdrop-blur-sm" :class="{ 'opacity-50 cursor-not-allowed': !canEdit }" :disabled="!canEdit">
             <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
             {{ t('files.remove') }}
           </button>
@@ -82,10 +86,12 @@
 
         <div v-else-if="isImage" class="min-w-max transition-all duration-200">
           <img
+            ref="imageRef"
             :src="previewUrl"
             :style="{ width: computedWidth + 'px' }"
             class="block h-auto shadow-2xl"
             alt="Preview"
+            @load="onImageLoaded"
           />
         </div>
       </div>
@@ -96,6 +102,7 @@
 <script setup lang="ts">
 import { defineAsyncComponent } from 'vue'
 import { useI18n } from '~/composables/useI18n'
+import type { PDFDocumentProxy } from 'pdfjs-dist'
 
 const VuePdfEmbed = defineAsyncComponent(() => import('vue-pdf-embed'))
 
@@ -118,11 +125,16 @@ const emit = defineEmits<{
 
 const isDragging = ref<boolean>(false)
 const previewUrl = ref<string | undefined>(undefined)
+const rootRef = ref<HTMLDivElement | null>(null)
 const fileInput = ref<HTMLInputElement | null>(null)
+const imageRef = ref<HTMLImageElement | null>(null)
 const pdfPageCount = ref<number>(0)
 const currentPage = ref<number>(1)
 const containerRef = ref<HTMLDivElement | null>(null)
 const containerWidth = ref<number>(800)
+const previewHeight = ref<number>(800)
+const intrinsicContentHeight = ref<number>(800)
+const pdfDocument = shallowRef<PDFDocumentProxy | null>(null)
 const zoomLevel = ref<number>(1.0)
 const pdfLoading = ref<boolean>(false)
 const { t } = useI18n()
@@ -132,7 +144,7 @@ const MAX_ZOOM = 4.0
 const ZOOM_STEP = 0.25
 
 const computedWidth = computed<number>(() => {
-  return (containerWidth.value - 15) * zoomLevel.value
+  return containerWidth.value * zoomLevel.value
 })
 
 const activeFileType = computed(() => {
@@ -143,20 +155,132 @@ const activeFileType = computed(() => {
 const isPdf = computed(() => activeFileType.value === 'application/pdf')
 const isImage = computed(() => activeFileType.value?.startsWith('image/'))
 
+let resizeObserver: ResizeObserver | null = null
+
 const updateContainerWidth = (): void => {
   if (containerRef.value) {
     containerWidth.value = containerRef.value.clientWidth
   }
 }
 
-onMounted(() => {
+const getFormColumn = (): HTMLElement | null => {
+  const gridItem = rootRef.value?.parentElement
+  const grid = gridItem?.parentElement
+  if (!gridItem || !grid) return null
+  return Array.from(grid.children).find((child) =>
+    child !== gridItem && child instanceof HTMLElement && child.hasAttribute('data-finance-form-column')
+  ) as HTMLElement | null
+}
+
+const getFormContentHeight = (): number => {
+  const formColumn = getFormColumn()
+  if (!formColumn) return 0
+
+  const formContent = formColumn.firstElementChild
+  if (formContent instanceof HTMLElement) return formContent.getBoundingClientRect().height
+
+  return formColumn.getBoundingClientRect().height
+}
+
+const getCardsGrid = (): HTMLElement | null => {
+  const gridItem = rootRef.value?.parentElement
+  const grid = gridItem?.parentElement
+  return grid instanceof HTMLElement ? grid : null
+}
+
+const getVerticalPadding = (element: HTMLElement | null): number => {
+  if (!element) return 0
+  const style = window.getComputedStyle(element)
+  const top = Number.parseFloat(style.paddingTop || '0') || 0
+  const bottom = Number.parseFloat(style.paddingBottom || '0') || 0
+  return top + bottom
+}
+
+const getViewportAvailableHeight = (): number => {
+  if (!rootRef.value) return 0
+
+  const main = rootRef.value.closest('main') as HTMLElement | null
+  const pageRoot = rootRef.value.closest('#page-root') as HTMLElement | null
+  const cardsGrid = getCardsGrid()
+
+  const mainPadding = getVerticalPadding(main)
+  const pagePadding = getVerticalPadding(pageRoot)
+
+  let headerFootprint = 0
+  if (pageRoot && cardsGrid) {
+    const pageRootRect = pageRoot.getBoundingClientRect()
+    const cardsGridRect = cardsGrid.getBoundingClientRect()
+    const pagePaddingTop = Number.parseFloat(window.getComputedStyle(pageRoot).paddingTop || '0') || 0
+    headerFootprint = Math.max(0, cardsGridRect.top - pageRootRect.top - pagePaddingTop)
+  }
+
+  return Math.max(0, window.innerHeight - mainPadding - pagePadding - headerFootprint)
+}
+
+const updatePreviewHeight = (): void => {
+  if (!rootRef.value || !previewUrl.value) return
+  const viewportAvailableHeight = getViewportAvailableHeight()
+  const formHeight = getFormContentHeight()
+  const targetHeight = formHeight > viewportAvailableHeight ? formHeight : viewportAvailableHeight
+  previewHeight.value = Math.max(1, Math.min(intrinsicContentHeight.value, targetHeight))
+}
+
+const updateLayout = (): void => {
   updateContainerWidth()
-  window.addEventListener('resize', updateContainerWidth)
+  updatePreviewHeight()
+}
+
+let pdfMeasurementToken = 0
+
+const updateIntrinsicHeight = async (): Promise<void> => {
+  if (isImage.value) {
+    const image = imageRef.value
+    if (!image?.naturalWidth || !image.naturalHeight) return
+
+    intrinsicContentHeight.value = Math.ceil(computedWidth.value * (image.naturalHeight / image.naturalWidth))
+    updatePreviewHeight()
+    return
+  }
+
+  if (isPdf.value && pdfDocument.value) {
+    const measurementToken = ++pdfMeasurementToken
+    const page = await pdfDocument.value.getPage(currentPage.value)
+    if (measurementToken !== pdfMeasurementToken) return
+
+    const viewport = page.getViewport({ scale: 1 })
+    if (viewport.width > 0 && viewport.height > 0) {
+      intrinsicContentHeight.value = Math.ceil(computedWidth.value * (viewport.height / viewport.width))
+      updatePreviewHeight()
+    }
+  }
+}
+
+const initializeObservers = (): void => {
+  resizeObserver?.disconnect()
+  resizeObserver = null
+
+  if (typeof ResizeObserver === 'undefined') return
+
+  const targets = [containerRef.value, getFormColumn()].filter((el): el is HTMLElement => Boolean(el))
+  if (!targets.length) return
+
+  resizeObserver = new ResizeObserver(() => {
+    updateLayout()
+    void updateIntrinsicHeight()
+  })
+
+  for (const target of targets) resizeObserver.observe(target)
+}
+
+onMounted(() => {
+  updateLayout()
+  window.addEventListener('resize', updateLayout)
 })
 
 onUnmounted(() => {
   if (previewUrl.value) URL.revokeObjectURL(previewUrl.value)
-  window.removeEventListener('resize', updateContainerWidth)
+  window.removeEventListener('resize', updateLayout)
+  resizeObserver?.disconnect()
 })
 
 watch(
@@ -173,13 +297,22 @@ watch(
     }
 
     await nextTick()
-    updateContainerWidth()
-
     currentPage.value = 1
     zoomLevel.value = 1.0
+
+    intrinsicContentHeight.value = 800
+    pdfDocument.value = null
+    updateLayout()
+    initializeObservers()
+    void updateIntrinsicHeight()
   },
   { immediate: true }
 )
+
+watch([computedWidth, currentPage], async () => {
+  await nextTick()
+  void updateIntrinsicHeight()
+})
 
 const displayName = computed(() => {
   if (props.modelValue) return props.modelValue.name
@@ -193,13 +326,15 @@ const displaySize = computed(() => {
   return ''
 })
 
-type PdfDocumentProxy = {
-  numPages: number
-}
-
-function onPdfLoaded(doc: PdfDocumentProxy) {
+function onPdfLoaded(doc: PDFDocumentProxy) {
+  pdfDocument.value = doc
   pdfPageCount.value = doc.numPages
   pdfLoading.value = false
+  nextTick(() => void updateIntrinsicHeight())
+}
+
+function onImageLoaded() {
+  nextTick(() => void updateIntrinsicHeight())
 }
 
 function processFile(file: File) {

@@ -1,7 +1,7 @@
 <template>
   <Page :headline1="t('reimbursement.title')" @open-menu="$emit('openMenu')">
     <template #cards>
-      <div class="col-span-6">
+      <div class="col-span-6 self-start">
         <ClientOnly v-if="canViewFiles">
           <FileDrop
             v-model:model-value="file"
@@ -12,7 +12,10 @@
         </ClientOnly>
       </div>
 
-      <div :class="[canViewFiles ? 'col-span-6' : 'col-span-12 lg:col-span-8 lg:col-start-3']">
+      <div
+        data-finance-form-column
+        :class="[canViewFiles ? 'col-span-6 self-start' : 'col-span-12 lg:col-span-8 lg:col-start-3 self-start']"
+      >
         <ReimbursementForm
           v-model="form"
           :has-file="!!file || (!!existingFile && !removeExistingFile)"
