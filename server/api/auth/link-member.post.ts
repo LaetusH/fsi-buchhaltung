@@ -1,0 +1,52 @@
+import { defineEventHandler, readBody } from 'h3'
+import { query, withTransaction } from '~/server/utils/db'
+import { getCurrentUserFromEvent } from '~/server/utils/sessionGuard'
+import { assignMemberToUser, MemberAlreadyLinkedError, MemberNotFoundError } from '~/server/utils/userAccounts'
+
+interface LinkMemberBody {
+  user_id: number
+  member_id: number | null
+}
+
+interface LinkMemberSuccess {
+  ok: true
+}
+
+interface LinkMemberError {
+  ok: false
+  error: string
+}
+
+type LinkMemberResponse = LinkMemberSuccess | LinkMemberError
+
+export default defineEventHandler(async (event): Promise<LinkMemberResponse> => {
+  const current = await getCurrentUserFromEvent(event, false)
+  if (!current.ok) return { ok: false, error: 'Not authenticated' }
+  if (!current.user.permissions.includes('users.manage')) return { ok: false, error: 'Not authorized' }
+
+  const body = await readBody<LinkMemberBody>(event)
+  const userId = Number(body.user_id)
+  const memberId = body.member_id === null || body.member_id === undefined ? null : Number(body.member_id)
+
+  if (!userId) return { ok: false, error: 'Missing user id' }
+  if (memberId !== null && !memberId) return { ok: false, error: 'Missing member id' }
+
+  return withTransaction(async (conn) => {
+    const userRows = await query<{ id: number }[]>(`SELECT id FROM users WHERE id = ? LIMIT 1`, [userId], conn)
+    if (!userRows[0]) return { ok: false, error: 'User not found' }
+
+    try {
+      await assignMemberToUser(userId, memberId, current.user.id, conn)
+    } catch (err: any) {
+      if (err instanceof MemberAlreadyLinkedError) {
+        return { ok: false, error: 'Member already linked to another user' }
+      }
+      if (err instanceof MemberNotFoundError) {
+        return { ok: false, error: 'Member not found' }
+      }
+      return { ok: false, error: err.code}
+    }
+
+    return { ok: true }
+  })
+})

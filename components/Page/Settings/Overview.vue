@@ -30,13 +30,14 @@ import SettingsSpheres from './Spheres.vue'
 import SettingsCostCentres from './CostCentres.vue'
 import SettingsPositions from './Positions.vue'
 import SettingsPermissions from './Permissions.vue'
+import SettingsUsers from './Users.vue'
 import { useAuth } from '~/composables/useAuth'
 
 const emit = defineEmits<{
   (e: 'openMenu'): void
 }>()
 
-type SettingsTab = 'general' | 'spheres' | 'costCentres' | 'positions' | 'permissions'
+type SettingsTab = 'general' | 'spheres' | 'costCentres' | 'positions' | 'users' | 'permissions'
 
 const currentTab = ref<SettingsTab>('general')
 const { t } = useI18n()
@@ -48,6 +49,7 @@ const tabs = computed(() => {
     { key: 'spheres', label: t('settings.tabs.spheres'), show: hasPermission('settings.spheres.manage') },
     { key: 'costCentres', label: t('settings.tabs.costCentres'), show: hasPermission('settings.cost_centres.manage') },
     { key: 'positions', label: t('settings.tabs.positions'), show: hasPermission('settings.positions.manage') },
+    { key: 'users', label: t('settings.tabs.users'), show: hasPermission('users.manage') },
     { key: 'permissions', label: t('settings.tabs.permissions'), show: hasPermission('permissions.manage') },
   ] as const
   return list.filter(tab => tab.show).map(({ show, ...rest }) => rest)
@@ -63,6 +65,8 @@ const activeComponent = computed(() => {
       return SettingsCostCentres
     case 'positions':
       return SettingsPositions
+    case 'users':
+      return SettingsUsers
     case 'permissions':
       return SettingsPermissions
     default:

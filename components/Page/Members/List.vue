@@ -12,7 +12,7 @@
               class="btn-primary"
               @click="setPage('MemberCreate', { returnTo: 'MemberList' })"
             >
-              ＋ {{ t('member.new') }}
+              + {{ t('member.new') }}
             </button>
           </div>
         </div>
@@ -109,6 +109,7 @@
                     @reset-filter="resetFilter('left_at')"
                   />
                 </th>
+                <th v-if="canViewUsers" class="py-2">{{ t('member.hasAccount') }}</th>
                 <th class="py-2 text-right">{{ t('common.actions') }}</th>
               </tr>
             </thead>
@@ -126,6 +127,7 @@
                 <td class="py-2">{{ statusLabel(member.status) || t('common.notAvailable') }}</td>
                 <td class="py-2">{{ formatDate(member.joined_at) }}</td>
                 <td class="py-2">{{ member.left_at ? formatDate(member.left_at) : t('common.notAvailable') }}</td>
+                <td v-if="canViewUsers" class="py-2">{{ member.has_account ? t('common.yes') : t('common.no') }}</td>
                 <td class="py-2 text-right space-x-2">
                   <button
                     class="text-blue-600 hover:underline cursor-pointer"
@@ -137,7 +139,7 @@
               </tr>
 
               <tr v-if="processedRows.length === 0">
-                <td colspan="8" class="py-6 text-center text-slate-500">
+                <td :colspan="canViewUsers ? 9 : 8" class="py-6 text-center text-slate-500">
                   {{ t('member.none') }}
                 </td>
               </tr>
@@ -165,6 +167,7 @@ const { locale, t } = useI18n()
 const { hasPermission } = useAuth()
 
 const canEdit = computed(() => hasPermission('members.edit'))
+const canViewUsers = computed(() => hasPermission(['users.view', 'users.manage']))
 
 const members = ref<MemberListItem[]>([])
 type MemberColumnKey = 'first_name' | 'last_name' | 'birthdate' | 'subject_name' | 'status' | 'joined_at' | 'left_at'

@@ -1,4 +1,4 @@
-﻿export enum MemberStatus {
+export enum MemberStatus {
   Active = 'active',
   Passive = 'passive',
   Hold = 'hold',
@@ -15,6 +15,7 @@ export interface MemberListItem {
   subject_name: string | null
   joined_at: string
   left_at: string | null
+  has_account?: boolean | null
 }
 
 export interface MemberPositionAssignment {
@@ -22,6 +23,12 @@ export interface MemberPositionAssignment {
   position_id: number
   since: string
   until: string | null
+}
+
+export interface NewMemberAccount {
+  username: string
+  password: string
+  is_active: boolean
 }
 
 export interface Member {
@@ -49,6 +56,7 @@ export interface Member {
 
 export interface SaveMemberBody {
   account?: number | null
+  new_account?: NewMemberAccount | null
   last_name: string
   first_name: string
   birthdate: string

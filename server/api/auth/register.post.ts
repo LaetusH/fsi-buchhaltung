@@ -1,13 +1,20 @@
 import { defineEventHandler, readBody } from 'h3'
-import { query } from '~/server/utils/db'
-import { hashPassword } from '~/server/utils/auth'
 import { getCurrentUserFromEvent } from '~/server/utils/sessionGuard'
 import type { PermissionKey } from '~/config/permissions'
+import { withTransaction } from '~/server/utils/db'
+import {
+  assignMemberToUser,
+  createUserAccount,
+  DuplicateUsernameError,
+  MemberAlreadyLinkedError,
+  MemberNotFoundError,
+} from '~/server/utils/userAccounts'
 
 interface RegisterBody {
   username: string
   password: string
   is_active?: boolean
+  member_id?: number | null
 }
 
 interface RegisterSuccess {
@@ -21,10 +28,6 @@ interface RegisterError {
 
 type RegisterResponse = RegisterSuccess | RegisterError
 
-interface MysqlError extends Error {
-  code?: string
-}
-
 export default defineEventHandler(async (event): Promise<RegisterResponse> => {
   const current = await getCurrentUserFromEvent(event, false)
   if (!current.ok) return { ok: false, error: 'Not authenticated' }
@@ -32,22 +35,25 @@ export default defineEventHandler(async (event): Promise<RegisterResponse> => {
 
   const body = await readBody<RegisterBody>(event)
   if (!body.username || !body.password) return { ok: false, error: 'Missing fields' }
-  const { username, password, is_active = true } = body
-
-  const passwordHash = await hashPassword(password)
 
   try {
-    await query(
-      `INSERT INTO users (username, password_hash, is_active) VALUES (?, ?, ?)`,
-      [username, passwordHash, is_active ? 1 : 0]
-    )
-  } catch (err: unknown) {
-    const error = err as MysqlError
-
-    if (error.code === 'ER_DUP_ENTRY') {
+    await withTransaction(async (conn) => {
+      const userId = await createUserAccount(body, conn)
+      if (body.member_id !== undefined) {
+        await assignMemberToUser(userId, body.member_id ?? null, current.user.id, conn)
+      }
+    })
+  } catch (err: any) {
+    if (err instanceof DuplicateUsernameError) {
       return { ok: false, error: 'Username already exists' }
     }
-    throw err
+    if (err instanceof MemberAlreadyLinkedError) {
+      return { ok: false, error: 'Member already linked to another user' }
+    }
+    if (err instanceof MemberNotFoundError) {
+      return { ok: false, error: 'Member not found' }
+    }
+    return { ok: false, error: err.code }
   }
 
   return { ok: true }

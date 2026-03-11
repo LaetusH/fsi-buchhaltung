@@ -2,6 +2,7 @@ import { defineEventHandler, readBody } from 'h3'
 import { MemberStatus, type SaveMemberBody } from '~/types/member'
 import { query, withTransaction } from '~/server/utils/db'
 import { getCurrentUserFromEvent } from '~/server/utils/sessionGuard'
+import { createUserAccount, DuplicateUsernameError } from '~/server/utils/userAccounts'
 
 interface CreateMemberSuccess {
   ok: true
@@ -60,13 +61,22 @@ export default defineEventHandler(async (event): Promise<CreateMemberResponse> =
   try {
     return await withTransaction(async (conn) => {
       const subjectId = await ensureSubjectId(body.subject_name, current.user.id, conn)
+      let accountId = body.account ?? null
+
+      if (body.new_account) {
+        if (!current.user.permissions.includes('users.manage')) {
+          return { ok: false, error: 'Not authorized to create accounts' }
+        }
+
+        accountId = await createUserAccount(body.new_account, conn)
+      }
 
       const insertMemberRes = await query<any>(
         `INSERT INTO members
           (account, last_name, first_name, birthdate, street, street_number, postal_code, city, subject, phone, email, notes, status, honorary, applied_at, joined_at, left_at, created_by)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
-          body.account ?? null,
+          accountId,
           body.last_name,
           body.first_name,
           body.birthdate,
@@ -106,6 +116,9 @@ export default defineEventHandler(async (event): Promise<CreateMemberResponse> =
       return { ok: true, id: memberId }
     })
   } catch (err: any) {
+    if (err instanceof DuplicateUsernameError) {
+      return { ok: false, error: 'Username already exists' }
+    }
     return { ok: false, error: `Failed to create member: ${err?.code || err}` }
   }
 })

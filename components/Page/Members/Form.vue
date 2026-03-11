@@ -39,7 +39,7 @@
         </div>
       </div>
 
-      <label class="inline-flex items-center gap-2 text-sm text-slate-700">
+      <label class="inline-flex items-center gap-2 text-sm text-slate-700 cursor-pointer">
         <input v-model="form.honorary" type="checkbox" class="h-4 w-4" :class="disabled ? 'opacity-70' : ''" :disabled="disabled"/>
         {{ t('member.honorary') }}
       </label>
@@ -207,6 +207,54 @@
       </button>
     </section>
 
+    <section v-if="canManageUsers && showAccountCreation" class="bg-white rounded-xl shadow-lg p-4 space-y-3">
+      <h3 class="font-semibold">{{ t('member.accountTitle') }}</h3>
+
+      <label class="inline-flex items-center gap-2 text-sm text-slate-700 cursor-pointer">
+        <input v-model="accountCreationEnabled" type="checkbox" class="h-4 w-4" :disabled="disabled" />
+        {{ t('member.createAccount') }}
+      </label>
+
+      <div v-if="accountCreationEnabled" class="grid md:grid-cols-2 gap-4">
+        <div>
+          <label class="text-sm font-medium text-slate-600">{{ t('member.accountUsername') }}</label>
+          <input
+            v-model="form.new_account!.username"
+            class="input"
+            :class="disabled ? 'opacity-70' : ''"
+            :disabled="disabled"
+            name="new-account-username"
+            autocomplete="off"
+            autocapitalize="off"
+            spellcheck="false"
+            data-lpignore="true"
+            @input="usernameManuallyEdited = true"
+          />
+        </div>
+
+        <div>
+          <label class="text-sm font-medium text-slate-600">{{ t('member.accountPassword') }}</label>
+          <input
+            v-model="form.new_account!.password"
+            type="password"
+            class="input"
+            :class="disabled ? 'opacity-70' : ''"
+            :disabled="disabled"
+            name="new-account-password"
+            autocomplete="new-password"
+            autocapitalize="off"
+            spellcheck="false"
+            data-lpignore="true"
+          />
+        </div>
+      </div>
+
+      <label v-if="accountCreationEnabled" class="inline-flex items-center gap-2 text-sm text-slate-700 cursor-pointer">
+        <input v-model="form.new_account!.is_active" type="checkbox" class="h-4 w-4" :disabled="disabled" />
+        {{ t('member.accountActive') }}
+      </label>
+    </section>
+
     <div v-if="!disabled" class="grid grid-cols-2 gap-4">
       <button class="btn-secondary" @click="emit('cancel')">{{ t('actions.cancel') }}</button>
 
@@ -246,6 +294,8 @@ const props = defineProps<{
   modelValue: SaveMemberBody
   disabled?: boolean
   canEditSubjects?: boolean
+  canManageUsers?: boolean
+  showAccountCreation?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -261,6 +311,23 @@ const form = computed({
   set: v => emit('update:modelValue', v)
 })
 const canEditSubjects = computed(() => props.canEditSubjects !== false)
+const canManageUsers = computed(() => props.canManageUsers === true)
+const showAccountCreation = computed(() => props.showAccountCreation === true)
+const usernameManuallyEdited = ref(false)
+
+const accountCreationEnabled = computed({
+  get: () => Boolean(form.value.new_account),
+  set: (enabled: boolean) => {
+    usernameManuallyEdited.value = false
+    form.value.new_account = enabled
+      ? {
+          username: buildDefaultAccountUsername(form.value.first_name, form.value.last_name),
+          password: '',
+          is_active: true,
+        }
+      : null
+  }
+})
 
 const subjects = ref<SubjectRow[]>([])
 const subjectQuery = ref('')
@@ -295,6 +362,8 @@ const validationErrors = computed(() => {
   if (!form.value.status?.trim()) errors.push(t('member.required.status'))
   if (!form.value.applied_at) errors.push(t('member.required.appliedAt'))
   if (!form.value.joined_at) errors.push(t('member.required.joinedAt'))
+  if (form.value.new_account && !form.value.new_account.username.trim()) errors.push(t('member.required.accountUsername'))
+  if (form.value.new_account && !form.value.new_account.password.trim()) errors.push(t('member.required.accountPassword'))
   if (form.value.status === MemberStatus.Left && !form.value.left_at) {
     errors.push(t('member.required.leftDateNeeded'))
   }
@@ -490,6 +559,26 @@ function selectStatus(status: MemberStatus) {
   openStatus.value = null
 }
 
+function normalizeUsernamePart(value: string | null | undefined) {
+  return (value || '')
+    .trim()
+    .toLowerCase()
+    .replaceAll('\u00E4', 'ae')
+    .replaceAll('\u00F6', 'oe')
+    .replaceAll('\u00FC', 'ue')
+    .replaceAll('\u00DF', 'ss')
+    .replace(/\s+/g, '')
+    .replace(/[^a-z0-9.-]/g, '')
+}
+
+function buildDefaultAccountUsername(firstName: string | null | undefined, lastName: string | null | undefined) {
+  const first = normalizeUsernamePart(firstName)
+  const last = normalizeUsernamePart(lastName)
+
+  if (first && last) return `${first}.${last}`
+  return first || last || ''
+}
+
 watch(
   [positions, () => form.value.positions],
   () => {
@@ -503,5 +592,14 @@ watch(
     })
   },
   { immediate: true, deep: true }
+)
+
+watch(
+  () => [form.value.first_name, form.value.last_name, form.value.new_account] as const,
+  ([firstName, lastName, newAccount]) => {
+    if (!newAccount || usernameManuallyEdited.value) return
+    newAccount.username = buildDefaultAccountUsername(firstName, lastName)
+  },
+  { immediate: true }
 )
 </script>
