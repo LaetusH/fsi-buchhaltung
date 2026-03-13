@@ -3,7 +3,7 @@
     <div class="bg-white rounded-b-xl rounded-tl-xl shadow-lg p-6 space-y-8 col-span-12">
       <h2 class="text-lg font-semibold">{{ t('settings.permissions.title') }}</h2>
 
-      <section class="space-y-4">
+      <section class="rounded-xl border border-slate-300 p-4 space-y-4">
         <div class="flex items-center justify-between">
           <h3 class="font-semibold">{{ t('settings.permissions.rolesTitle') }}</h3>
           <button class="btn-primary" @click="openRoleEditor()">
@@ -45,7 +45,7 @@
         </div>
       </section>
 
-      <section class="space-y-4">
+      <section class="rounded-xl border border-slate-300 p-4 space-y-4">
         <div class="flex items-center justify-between">
           <h3 class="font-semibold">{{ t('settings.permissions.positionsTitle') }}</h3>
         </div>
@@ -79,7 +79,7 @@
         </div>
       </section>
 
-      <section class="space-y-4">
+      <section class="rounded-xl border border-slate-300 p-4 space-y-4">
         <div class="flex items-center justify-between">
           <h3 class="font-semibold">{{ t('settings.permissions.usersTitle') }}</h3>
         </div>
