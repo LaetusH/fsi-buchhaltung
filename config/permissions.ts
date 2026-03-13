@@ -9,6 +9,8 @@ export type PermissionKey =
   | 'receipts.edit'
   | 'reimbursements.view'
   | 'reimbursements.edit'
+  | 'cash_counts.view'
+  | 'cash_counts.edit'
   | 'companies.view'
   | 'companies.edit'
   | 'spheres.view'
@@ -40,6 +42,8 @@ export const PERMISSIONS: PermissionDefinition[] = [
   { key: 'receipts.edit', labelKey: 'permissions.items.receiptsEdit', categoryKey: 'permissions.categories.receipts' },
   { key: 'reimbursements.view', labelKey: 'permissions.items.reimbursementsView', categoryKey: 'permissions.categories.reimbursements' },
   { key: 'reimbursements.edit', labelKey: 'permissions.items.reimbursementsEdit', categoryKey: 'permissions.categories.reimbursements' },
+  { key: 'cash_counts.view', labelKey: 'permissions.items.cashCountsView', categoryKey: 'permissions.categories.cashCounts' },
+  { key: 'cash_counts.edit', labelKey: 'permissions.items.cashCountsEdit', categoryKey: 'permissions.categories.cashCounts' },
   { key: 'companies.view', labelKey: 'permissions.items.companiesView', categoryKey: 'permissions.categories.companies' },
   { key: 'companies.edit', labelKey: 'permissions.items.companiesEdit', categoryKey: 'permissions.categories.companies' },
   { key: 'spheres.view', labelKey: 'permissions.items.spheresView', categoryKey: 'permissions.categories.settings' },
@@ -58,6 +62,7 @@ export const implied: Partial<Record<PermissionKey, PermissionKey[]>> = {
   'members.edit': ['members.view'],
   'receipts.edit': ['receipts.view'],
   'reimbursements.edit': ['reimbursements.view'],
+  'cash_counts.edit': ['cash_counts.view'],
   'companies.edit': ['companies.view'],
   'subjects.edit': ['subjects.view'],
   'settings.spheres.manage': ['spheres.view', 'settings.access'],

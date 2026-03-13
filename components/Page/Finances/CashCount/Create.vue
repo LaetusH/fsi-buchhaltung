@@ -1,0 +1,216 @@
+<template>
+  <Page :headline1="t('cashCount.title')" @open-menu="$emit('openMenu')">
+    <template #cards>
+      <div class="col-span-6 self-start">
+        <ClientOnly v-if="canViewFiles">
+          <FileDrop
+            v-model:model-value="file"
+            :existing-file="existingFile"
+            :can-edit="canEdit"
+            @remove-existing="onRemoveFile"
+          />
+        </ClientOnly>
+      </div>
+
+      <div
+        data-finance-form-column
+        :class="[canViewFiles ? 'col-span-6 self-start' : 'col-span-12 lg:col-span-8 lg:col-start-3 self-start']"
+      >
+        <CashCountForm
+          v-model="form"
+          :has-file="!!file || (!!existingFile && !removeExistingFile)"
+          :disabled="!canEdit"
+          @submit="submit"
+          @cancel="cancel"
+        />
+      </div>
+    </template>
+  </Page>
+</template>
+
+<script setup lang="ts">
+import Page from '~/components/Page.vue'
+import { useI18n } from '~/composables/useI18n'
+import FileDrop from '../FileDrop.vue'
+import CashCountForm from './Form.vue'
+import { usePage } from '~/composables/usePage'
+import { useAuth } from '~/composables/useAuth'
+import type { CreateCashCountBody } from '~/types/cashCount'
+import type { GetCashCountResponse } from '~/server/api/cash_counts/[id].get'
+
+const emit = defineEmits<{
+  (e: 'openMenu'): void
+}>()
+
+const { setPage, pageMeta } = usePage()
+const { t } = useI18n()
+const { hasPermission } = useAuth()
+
+const canEdit = computed(() => hasPermission('cash_counts.edit'))
+const canViewFiles = computed(() => hasPermission('files.view') && (hasPermission('cash_counts.edit') || existingFile.value !== null))
+
+const isEditMode = ref(false)
+const cashCountId = ref<number | null>(null)
+const file = ref<File | null>(null)
+const existingFile = ref<{ id: number, url: string, name: string, mime_type: string, size: number } | null>(null)
+const removeExistingFile = ref(false)
+
+const form = ref<CreateCashCountBody>({
+  event_name: '',
+  counted_by_first: 0,
+  counted_by_second: 0,
+  checked_by: 0,
+  counted_before_at: '',
+  counted_after_at: '',
+  positions: [{ amount_before: 0, amount_after: 0, notes: null }],
+})
+
+onMounted(async () => {
+  cashCountId.value = pageMeta.value?.cashCountId || null
+  if (!cashCountId.value) return
+
+  isEditMode.value = true
+
+  const res = await $fetch<GetCashCountResponse>(`/api/cash_counts/${cashCountId.value}`, { method: 'GET' })
+  if (!res.ok) {
+    isEditMode.value = false
+    return
+  }
+
+  form.value = {
+    event_name: res.cashCount.event_name,
+    counted_by_first: res.cashCount.counted_by_first,
+    counted_by_second: res.cashCount.counted_by_second,
+    checked_by: res.cashCount.checked_by,
+    counted_before_at: res.cashCount.counted_before_at,
+    counted_after_at: res.cashCount.counted_after_at,
+    positions: res.cashCount.positions.map(position => ({
+      id: position.id,
+      register_number: position.register_number,
+      amount_before: position.amount_before,
+      amount_after: position.amount_after,
+      notes: position.notes,
+    })),
+  }
+
+  if (!res.file) return
+  existingFile.value = {
+    id: res.file.id,
+    url: `/api/files/${res.file.id}`,
+    name: res.file.original_name,
+    mime_type: res.file.mime_type,
+    size: res.file.file_size,
+  }
+  removeExistingFile.value = false
+})
+
+function onRemoveFile() {
+  existingFile.value = null
+  removeExistingFile.value = true
+}
+
+function hasDistinctMembers() {
+  return new Set([
+    Number(form.value.counted_by_first || 0),
+    Number(form.value.counted_by_second || 0),
+    Number(form.value.checked_by || 0),
+  ]).size === 3
+}
+
+function hasValidDateOrder() {
+  const beforeTs = Date.parse(form.value.counted_before_at)
+  const afterTs = Date.parse(form.value.counted_after_at)
+  return Number.isFinite(beforeTs) && Number.isFinite(afterTs) && afterTs > beforeTs
+}
+
+function hasCompletePositions() {
+  return form.value.positions.every(position => {
+    const beforeAmount = Number(position.amount_before)
+    const afterAmount = Number(position.amount_after)
+    return Number.isFinite(beforeAmount) && Number.isFinite(afterAmount)
+  })
+}
+
+async function submit() {
+  if (!canEdit.value) {
+    alert(t('common.notAuthorized'))
+    return
+  }
+  if (!form.value.event_name.trim()) {
+    alert(t('cashCount.required.event'))
+    return
+  }
+  if (!form.value.counted_by_first) {
+    alert(t('cashCount.required.countedByFirst'))
+    return
+  }
+  if (!form.value.counted_by_second) {
+    alert(t('cashCount.required.countedBySecond'))
+    return
+  }
+  if (!form.value.checked_by) {
+    alert(t('cashCount.required.checkedBy'))
+    return
+  }
+  if (!hasDistinctMembers()) {
+    alert(t('cashCount.required.distinctMembers'))
+    return
+  }
+  if (!form.value.counted_before_at) {
+    alert(t('cashCount.required.countedBeforeAt'))
+    return
+  }
+  if (!form.value.counted_after_at) {
+    alert(t('cashCount.required.countedAfterAt'))
+    return
+  }
+  if (!hasValidDateOrder()) {
+    alert(t('cashCount.required.order'))
+    return
+  }
+  if (!form.value.positions.length) {
+    alert(t('cashCount.required.addPosition'))
+    return
+  }
+  if (!hasCompletePositions()) {
+    alert(t('cashCount.required.completePosition'))
+    return
+  }
+  if (!file.value && (!existingFile.value || removeExistingFile.value)) {
+    alert(t('cashCount.required.file'))
+    return
+  }
+
+  const body = new FormData()
+  if (file.value) body.append('file', file.value)
+  body.append('cashCount', JSON.stringify(form.value))
+
+  try {
+    if (isEditMode.value) {
+      body.append('removeExistingFile', String(removeExistingFile.value))
+      const updateRes = await $fetch<{ ok: boolean, error?: string }>(`/api/cash_counts/${cashCountId.value}`, {
+        method: 'PUT',
+        body,
+      })
+      if (!updateRes.ok) throw new Error(updateRes.error || t('cashCount.saved.failedUpdate'))
+    } else {
+      const createRes = await $fetch<{ ok: boolean, error?: string }>('/api/cash_counts/create', {
+        method: 'POST',
+        body,
+      })
+      if (!createRes.ok) throw new Error(createRes.error || t('cashCount.saved.failedCreate'))
+    }
+
+    alert(isEditMode.value ? t('cashCount.saved.updated') : t('cashCount.saved.created'))
+    const returnTo = pageMeta.value?.returnTo || 'CashCountList'
+    setPage(returnTo)
+  } catch (err: any) {
+    alert(err?.message || t('cashCount.saved.failedSave'))
+  }
+}
+
+function cancel() {
+  const returnTo = pageMeta.value?.returnTo || 'CashCountList'
+  setPage(returnTo)
+}
+</script>

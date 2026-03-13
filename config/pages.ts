@@ -5,6 +5,8 @@ import ReceiptListPage from '~/components/Page/Finances/Receipt/List.vue'
 import ReceiptCreatePage from '~/components/Page/Finances/Receipt/Create.vue'
 import ReimbursementListPage from '~/components/Page/Finances/Reimbursement/List.vue'
 import ReimbursementCreatePage from '~/components/Page/Finances/Reimbursement/Create.vue'
+import CashCountListPage from '~/components/Page/Finances/CashCount/List.vue'
+import CashCountCreatePage from '~/components/Page/Finances/CashCount/Create.vue'
 import MemberListPage from '~/components/Page/Members/List.vue'
 import MemberCreatePage from '~/components/Page/Members/Create.vue'
 import SettingsPage from '~/components/Page/Settings/Overview.vue'
@@ -17,6 +19,8 @@ export const PAGES: Record<string, AppPage> = {
   ReceiptCreate: { main: false, labelKey: 'pages.createReceipt', component: ReceiptCreatePage, permissions: ['receipts.view'] },
   ReimbursementList: { main: true, labelKey: 'pages.reimbursements', component: ReimbursementListPage, icon: '', permissions: ['reimbursements.view'] },
   ReimbursementCreate: { main: false, labelKey: 'pages.createReimbursement', component: ReimbursementCreatePage, permissions: ['reimbursements.view'] },
+  CashCountList: { main: true, labelKey: 'pages.cashCounts', component: CashCountListPage, icon: '', permissions: ['cash_counts.view'] },
+  CashCountCreate: { main: false, labelKey: 'pages.createCashCount', component: CashCountCreatePage, permissions: ['cash_counts.view'] },
   MemberList: { main: true, labelKey: 'pages.members', component: MemberListPage, icon: '', permissions: ['members.view'] },
   MemberCreate: { main: false, labelKey: 'pages.createMember', component: MemberCreatePage, permissions: ['members.view'] },
   Settings: { main: true, labelKey: 'pages.settings', component: SettingsPage, icon: '', permissions: ['settings.access'] },

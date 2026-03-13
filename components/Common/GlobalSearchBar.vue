@@ -9,7 +9,7 @@
       <Icon name="material-symbols:search-rounded" class="w-5 h-5 text-slate-600" />
     </button>
 
-    <div v-else class="relative w-64 max-w-[75vw]">
+    <div v-else class="relative w-66 max-w-[75vw]">
       <Icon
         name="material-symbols:search-rounded"
         class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 pointer-events-none"

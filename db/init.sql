@@ -256,3 +256,33 @@ CREATE TABLE IF NOT EXISTS reimbursement_positions (
   FOREIGN KEY (reimbursement_id) REFERENCES reimbursements(id) ON DELETE CASCADE,
   FOREIGN KEY (receipt_id) REFERENCES receipts(id)
 );
+
+CREATE TABLE IF NOT EXISTS cash_counts (
+  id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  event_name VARCHAR(255) NOT NULL,
+  counted_by_first BIGINT UNSIGNED NOT NULL,
+  counted_by_second BIGINT UNSIGNED NOT NULL,
+  checked_by BIGINT UNSIGNED NOT NULL,
+  counted_before_at TIMESTAMP NOT NULL,
+  counted_after_at TIMESTAMP NOT NULL,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  created_by BIGINT UNSIGNED NOT NULL,
+  FOREIGN KEY (created_by) REFERENCES users(id),
+  FOREIGN KEY (counted_by_first) REFERENCES members(id),
+  FOREIGN KEY (counted_by_second) REFERENCES members(id),
+  FOREIGN KEY (checked_by) REFERENCES members(id)
+);
+
+CREATE TABLE IF NOT EXISTS cash_count_positions (
+  id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  cash_count_id BIGINT UNSIGNED NOT NULL,
+  register_number SMALLINT UNSIGNED NOT NULL,
+  amount_before DECIMAL(10,2) NOT NULL DEFAULT 0,
+  amount_after DECIMAL(10,2) NOT NULL DEFAULT 0,
+  notes TEXT,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  created_by BIGINT UNSIGNED NOT NULL,
+  FOREIGN KEY (created_by) REFERENCES users(id),
+  FOREIGN KEY (cash_count_id) REFERENCES cash_counts(id) ON DELETE CASCADE,
+  UNIQUE KEY uq_cash_count_register (cash_count_id, register_number)
+);
