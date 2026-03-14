@@ -37,8 +37,8 @@ const { t } = useI18n()
 const toast = useToast()
 const { hasPermission } = useAuth()
 
-const canEdit = computed(() => hasPermission('cash_counts.edit'))
-const canViewFiles = computed(() => hasPermission('files.view') && (hasPermission('cash_counts.edit') || existingFile.value !== null))
+const canEdit = computed(() => !pageMeta.value?.forceReadonly && hasPermission('cash_counts.edit'))
+const canViewFiles = computed(() => hasPermission('files.view') && (canEdit.value || existingFile.value !== null))
 
 const isEditMode = ref(false)
 const cashCountId = ref<number | null>(null)
@@ -194,7 +194,8 @@ async function submit() {
 
     toast.success(isEditMode.value ? t('cashCount.saved.updated') : t('cashCount.saved.created'))
     const returnTo = pageMeta.value?.returnTo || 'CashCountList'
-    setPage(returnTo)
+    const returnToMeta = pageMeta.value?.returnToMeta ? { ...pageMeta.value.returnToMeta } : undefined
+    setPage(returnTo, returnToMeta)
   } catch (err: any) {
     toast.error(err?.message || t('cashCount.saved.failedSave'))
   }
@@ -202,6 +203,7 @@ async function submit() {
 
 function cancel() {
   const returnTo = pageMeta.value?.returnTo || 'CashCountList'
-  setPage(returnTo)
+  const returnToMeta = pageMeta.value?.returnToMeta ? { ...pageMeta.value.returnToMeta } : undefined
+  setPage(returnTo, returnToMeta)
 }
 </script>

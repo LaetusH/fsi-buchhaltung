@@ -16,7 +16,7 @@ const emit = defineEmits<{
 }>()
 
 const { currentPage } = usePage()
-const { user, fetchSession, hasPermission } = useAuth()
+const { user, fetchSession, hasPermission, hasAllPermissions } = useAuth()
 
 const loaded = ref(false)
 
@@ -35,7 +35,9 @@ const currentComponent = computed(() => {
   if (page.allowGuest) return page.component
   if (!user.value) return LoginPage
   if (!page.permissions.length) return page.component
-  if (hasPermission(page.permissions)) return page.component
+  if (page.requireAllPermissions ? hasAllPermissions(page.permissions) : hasPermission(page.permissions)) {
+    return page.component
+  }
   
   return LoginPage
 })

@@ -38,9 +38,9 @@ const { t } = useI18n()
 const toast = useToast()
 const { hasPermission } = useAuth()
 
-const canEdit = computed(() => hasPermission('receipts.edit'))
-const canEditCompany = computed(() => hasPermission('companies.edit'))
-const canViewFiles = computed(() => hasPermission('files.view') && (hasPermission('receipts.edit') || existingFile.value !== null))
+const canEdit = computed(() => !pageMeta.value?.forceReadonly && hasPermission('receipts.edit'))
+const canEditCompany = computed(() => canEdit.value && hasPermission('companies.edit'))
+const canViewFiles = computed(() => hasPermission('files.view') && (canEdit.value || existingFile.value !== null))
 
 const isEditMode = ref(false)
 const receiptId = ref<number | null>(null)

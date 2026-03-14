@@ -10,6 +10,7 @@ interface MainPage {
   component: Component
   icon: string
   permissions: PermissionKey[]
+  requireAllPermissions?: boolean
   allowGuest?: boolean
 }
 
@@ -18,6 +19,7 @@ interface SubPage {
   labelKey: string
   component: Component
   permissions: PermissionKey[]
+  requireAllPermissions?: boolean
   allowGuest?: boolean
 }
 

@@ -20,7 +20,7 @@
 import { useAuth } from '~/composables/useAuth'
 import { PAGES } from '~/config/pages'
 
-const { user, fetchSession, hasPermission } = useAuth()
+const { user, fetchSession, hasPermission, hasAllPermissions } = useAuth()
 
 const menuOpen = ref(false)
 const openMenu = ref(false)
@@ -35,7 +35,7 @@ const filteredMenuItems = computed(() => {
     if (it.allowGuest) return !user.value
     if (!user.value) return false
     if (!it.permissions.length) return true
-    return hasPermission(it.permissions)
+    return it.requireAllPermissions ? hasAllPermissions(it.permissions) : hasPermission(it.permissions)
   })
 })
 
