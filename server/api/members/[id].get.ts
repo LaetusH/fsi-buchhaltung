@@ -1,7 +1,9 @@
-import { defineEventHandler, getRouterParam } from 'h3'
-import { MemberStatus, type Member, type MemberPositionAssignment } from '~/types/member'
+import { defineEventHandler } from 'h3'
+import type { Member, MemberPositionAssignment } from '~/types/member'
 import { query } from '~/server/utils/db'
-import { getCurrentUserFromEvent } from '~/server/utils/sessionGuard'
+import { requirePermission } from '~/server/utils/api/guards'
+import { getNumericRouteParam } from '~/server/utils/api/request'
+import { parseMemberStatus } from '~/server/utils/members'
 
 interface GetMemberSuccess {
   ok: true
@@ -15,19 +17,11 @@ interface GetMemberError {
 
 type GetMemberResponse = GetMemberSuccess | GetMemberError
 
-function parseStatus(value: unknown): MemberStatus {
-  if (value === MemberStatus.Active || value === MemberStatus.Passive || value === MemberStatus.Hold || value === MemberStatus.Left) {
-    return value
-  }
-  return MemberStatus.Active
-}
-
 export default defineEventHandler(async (event): Promise<GetMemberResponse> => {
-  const current = await getCurrentUserFromEvent(event, true)
-  if (!current.ok) return { ok: false, error: 'Not authenticated' }
-  if (!current.user.permissions.includes('members.view')) return { ok: false, error: 'Not authorized' }
+  const current = await requirePermission(event, 'members.view')
+  if (!current.ok) return current
 
-  const id = Number(getRouterParam(event, 'id'))
+  const id = getNumericRouteParam(event)
   if (!id) return { ok: false, error: 'Missing member id' }
 
   const rows = await query<any[]>(
@@ -67,7 +61,7 @@ export default defineEventHandler(async (event): Promise<GetMemberResponse> => {
       phone: String(row.phone),
       email: String(row.email),
       notes: row.notes ? String(row.notes) : null,
-      status: parseStatus(String(row.status)),
+      status: parseMemberStatus(String(row.status)),
       honorary: Boolean(row.honorary),
       applied_at: String(row.applied_at),
       joined_at: String(row.joined_at),

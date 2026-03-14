@@ -1,6 +1,6 @@
 import { defineEventHandler } from 'h3'
 import { query } from '~/server/utils/db'
-import { getCurrentUserFromEvent } from '~/server/utils/sessionGuard'
+import { requirePermission } from '~/server/utils/api/guards'
 import { isValidPermissionKey } from '~/server/utils/permissions'
 
 interface RoleRow {
@@ -36,9 +36,8 @@ interface GetRolesError {
 type GetRolesResponse = GetRolesSuccess | GetRolesError
 
 export default defineEventHandler(async (event): Promise<GetRolesResponse> => {
-  const current = await getCurrentUserFromEvent(event, true)
-  if (!current.ok) return { ok: false, error: 'Not authenticated' }
-  if (!current.user.permissions.includes('permissions.manage')) return { ok: false, error: 'Not authorized' }
+  const current = await requirePermission(event, 'permissions.manage')
+  if (!current.ok) return current
 
   const roles = await query<RoleRow[]>(
     `SELECT id, code, name, is_active, description
@@ -60,13 +59,13 @@ export default defineEventHandler(async (event): Promise<GetRolesResponse> => {
 
   return {
     ok: true,
-    roles: roles.map(r => ({
-      id: r.id,
-      code: r.code,
-      name: r.name,
-      is_active: r.is_active === 1,
-      description: r.description ?? null,
-      permissions: permissionsByRole.get(r.id) ?? []
+    roles: roles.map(role => ({
+      id: role.id,
+      code: role.code,
+      name: role.name,
+      is_active: role.is_active === 1,
+      description: role.description ?? null,
+      permissions: permissionsByRole.get(role.id) ?? []
     }))
   }
 })

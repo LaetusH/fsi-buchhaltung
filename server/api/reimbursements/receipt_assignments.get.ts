@@ -1,6 +1,6 @@
 import { defineEventHandler } from 'h3'
 import { query } from '~/server/utils/db'
-import { getCurrentUserFromEvent } from '~/server/utils/sessionGuard'
+import { requirePermission } from '~/server/utils/api/guards'
 
 interface ReceiptAssignment {
   receipt_id: number
@@ -20,9 +20,8 @@ interface GetAssignmentsError {
 type GetAssignmentsResponse = GetAssignmentsSuccess | GetAssignmentsError
 
 export default defineEventHandler(async (event): Promise<GetAssignmentsResponse> => {
-  const current = await getCurrentUserFromEvent(event, true)
-  if (!current.ok) return { ok: false, error: 'Not authenticated' }
-  if (!current.user.permissions.includes('reimbursements.view')) return { ok: false, error: 'Not authorized' }
+  const current = await requirePermission(event, 'reimbursements.view')
+  if (!current.ok) return current
 
   try {
     const rows: any[] = await query(

@@ -1,6 +1,6 @@
 import { defineEventHandler, readBody } from 'h3'
 import { query } from '~/server/utils/db'
-import { getCurrentUserFromEvent } from '~/server/utils/sessionGuard'
+import { requirePermission } from '~/server/utils/api/guards'
 import type { CreateSubjectBody } from '~/types/subject'
 
 interface CreateSubjectSuccess {
@@ -16,9 +16,8 @@ interface CreateSubjectError {
 type CreateSubjectResponse = CreateSubjectSuccess | CreateSubjectError
 
 export default defineEventHandler(async (event): Promise<CreateSubjectResponse> => {
-  const current = await getCurrentUserFromEvent(event, false)
-  if (!current.ok) return { ok: false, error: 'Not authenticated' }
-  if (!current.user.permissions.includes('subjects.edit')) return { ok: false, error: 'Not authorized' }
+  const current = await requirePermission(event, 'subjects.edit', { touch: false })
+  if (!current.ok) return current
 
   const body = await readBody<CreateSubjectBody>(event)
   const name = body?.name?.trim()

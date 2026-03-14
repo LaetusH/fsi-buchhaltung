@@ -1,7 +1,7 @@
 import { defineEventHandler } from 'h3'
 import { query } from '~/server/utils/db'
-import { getCurrentUserFromEvent } from '~/server/utils/sessionGuard'
 import { normalizeBigInt } from '~/server/utils/normalize'
+import { requirePermission } from '~/server/utils/api/guards'
 import type { CostCentreRow } from '~/types/costCentre'
 
 interface GetCostCentresSuccess {
@@ -17,9 +17,8 @@ interface GetCostCentresError {
 type GetCostCentresResponse = GetCostCentresSuccess | GetCostCentresError
 
 export default defineEventHandler(async (event): Promise<GetCostCentresResponse> => {
-  const current = await getCurrentUserFromEvent(event, true )
-  if (!current.ok) return { ok: false, error: 'Not authenticated' }
-  if (!current.user.permissions.includes('cost_centres.view')) return { ok: false, error: 'Not authorized' }
+  const current = await requirePermission(event, 'cost_centres.view')
+  if (!current.ok) return current
 
   const rows = await query(`
     SELECT id, code, name, is_active, description, created_at

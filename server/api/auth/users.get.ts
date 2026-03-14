@@ -1,7 +1,7 @@
 import { defineEventHandler } from 'h3'
 import { query } from '~/server/utils/db'
-import { getCurrentUserFromEvent } from '~/server/utils/sessionGuard'
 import { normalizeBigInt } from '~/server/utils/normalize'
+import { requirePermission } from '~/server/utils/api/guards'
 
 interface UserRow {
   id: number
@@ -25,11 +25,8 @@ interface GetUsersError {
 type GetUsersResponse = GetUsersSuccess | GetUsersError
 
 export default defineEventHandler(async (event): Promise<GetUsersResponse> => {
-  const current = await getCurrentUserFromEvent(event, true)
-  if (!current.ok) return { ok: false, error: 'Not authenticated' }
-
-  const canViewUsers = current.user.permissions.includes('users.view') || current.user.permissions.includes('users.manage')
-  if (!canViewUsers) return { ok: false, error: 'Not authorized' }
+  const current = await requirePermission(event, ['users.view', 'users.manage'])
+  if (!current.ok) return current
 
   const rows = await query(`
     SELECT

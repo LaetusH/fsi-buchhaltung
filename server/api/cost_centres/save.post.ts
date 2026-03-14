@@ -1,6 +1,8 @@
 import { defineEventHandler, readBody } from 'h3'
 import { query, withTransaction } from '~/server/utils/db'
-import { getCurrentUserFromEvent } from '~/server/utils/sessionGuard'
+import { logFieldChanges } from '~/server/utils/api/audit'
+import { requirePermission } from '~/server/utils/api/guards'
+import { toDbBoolean } from '~/server/utils/api/request'
 import type { CostCentreRow, SaveCostCentreBody } from '~/types/costCentre'
 
 interface SaveCostCentreSuccess {
@@ -20,16 +22,15 @@ interface MysqlError extends Error {
 }
 
 export default defineEventHandler(async (event): Promise<SaveCostCentreResponse> => {
-  const current = await getCurrentUserFromEvent(event, false)
-  if (!current.ok) return { ok: false, error: 'Not authenticated' }
-  if (!current.user.permissions.includes('settings.cost_centres.manage')) return { ok: false, error: 'Not authorized' }
+  const current = await requirePermission(event, 'settings.cost_centres.manage', { touch: false })
+  if (!current.ok) return current
 
   const body = await readBody<SaveCostCentreBody>(event)
   if (!body.code || !body.name) return { ok: false, error: 'Missing fields' }
   const updated = body
 
   if (updated.is_active === undefined || updated.is_active === null) updated.is_active = true
-  const active = updated.is_active ? 1 : 0
+  const active = toDbBoolean(updated.is_active)
 
   try {
     return await withTransaction(async (conn) => {
@@ -44,19 +45,16 @@ export default defineEventHandler(async (event): Promise<SaveCostCentreResponse>
         const existing = existingRows[0]
 
         const fields = ['code', 'name', 'description'] as (keyof SaveCostCentreBody)[]
-            
-        for (const field of fields) {
-          await logChange({
-            entityType: 'cost_centre',
-            entityId: updated.id,
-            subEntityType: null,
-            subEntityId: null,
-            field,
-            oldValue: existing[field],
-            newValue: updated[field],
-            userId: current.user.id,
-          }, conn)
-        }
+
+        await logFieldChanges({
+          entityType: 'cost_centre',
+          entityId: updated.id,
+          fields,
+          previous: existing,
+          next: updated,
+          userId: current.user.id,
+          conn,
+        })
 
         await query(
           `UPDATE cost_centres

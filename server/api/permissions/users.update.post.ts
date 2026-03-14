@@ -1,7 +1,9 @@
 import { defineEventHandler, readBody } from 'h3'
 import { query, withTransaction } from '~/server/utils/db'
-import { getCurrentUserFromEvent } from '~/server/utils/sessionGuard'
 import { isValidPermissionKey } from '~/server/utils/permissions'
+import { logChange } from '~/server/utils/changeLogger'
+import { syncScalarCollection } from '~/server/utils/api/audit'
+import { requirePermission } from '~/server/utils/api/guards'
 
 interface UpdateUserAccessBody {
   user_id: number
@@ -21,9 +23,8 @@ interface UpdateUserAccessError {
 type UpdateUserAccessResponse = UpdateUserAccessSuccess | UpdateUserAccessError
 
 export default defineEventHandler(async (event): Promise<UpdateUserAccessResponse> => {
-  const current = await getCurrentUserFromEvent(event, false)
-  if (!current.ok) return { ok: false, error: 'Not authenticated' }
-  if (!current.user.permissions.includes('permissions.manage')) return { ok: false, error: 'Not authorized' }
+  const current = await requirePermission(event, 'permissions.manage', { touch: false })
+  if (!current.ok) return current
 
   const body = await readBody<UpdateUserAccessBody>(event)
   const userId = Number(body.user_id)
@@ -35,9 +36,9 @@ export default defineEventHandler(async (event): Promise<UpdateUserAccessRespons
   )
   if (!userRows.length) return { ok: false, error: 'User not found' }
 
-  const newRoles = Array.isArray(body.roles) ? body.roles : []
-  const newPermissions = Array.isArray(body.permissions) 
-    ? body.permissions.filter(isValidPermissionKey) 
+  const newRoles = Array.isArray(body.roles) ? [...body.roles] : []
+  const newPermissions = Array.isArray(body.permissions)
+    ? body.permissions.filter(isValidPermissionKey)
     : []
 
   if (newRoles.length) {
@@ -45,8 +46,8 @@ export default defineEventHandler(async (event): Promise<UpdateUserAccessRespons
       `SELECT id FROM roles WHERE id IN (${newRoles.map(() => '?').join(',')})`,
       newRoles
     )
-    const validRoleSet = new Set(validRoles.map(r => r.id))
-    const filtered = newRoles.filter(r => validRoleSet.has(r))
+    const validRoleSet = new Set(validRoles.map(role => role.id))
+    const filtered = newRoles.filter(role => validRoleSet.has(role))
     newRoles.length = 0
     newRoles.push(...filtered)
   }
@@ -61,13 +62,12 @@ export default defineEventHandler(async (event): Promise<UpdateUserAccessRespons
         conn
       )
 
-      const existingRoles = existingRoleRows.map(r => r.role_id)
+      const existingRoles = existingRoleRows.map(row => row.role_id)
 
-      const existingRoleSet = new Set(existingRoles)
-      const newRoleSet = new Set(newRoles)
-
-      for (const role of existingRoles) {
-        if (!newRoleSet.has(role)) {
+      await syncScalarCollection({
+        existing: existingRoles,
+        incoming: newRoles,
+        onRemove: async (role) => {
           await logChange({
             entityType: 'user',
             entityId: userId,
@@ -85,11 +85,8 @@ export default defineEventHandler(async (event): Promise<UpdateUserAccessRespons
             [userId, role],
             conn
           )
-        }
-      }
-
-      for (const role of newRoles) {
-        if (!existingRoleSet.has(role)) {
+        },
+        onAdd: async (role) => {
           await logChange({
             entityType: 'user',
             entityId: userId,
@@ -107,9 +104,8 @@ export default defineEventHandler(async (event): Promise<UpdateUserAccessRespons
             [userId, role],
             conn
           )
-        }
-      }
-
+        },
+      })
 
       const existingRows = await query<{ permission_key: string }[]>(
         `SELECT permission_key
@@ -119,16 +115,14 @@ export default defineEventHandler(async (event): Promise<UpdateUserAccessRespons
         conn
       )
 
-      const existing = existingRows.map(r => r.permission_key)
-      const existingPermissions = Array.isArray(existing)
-        ? existing.filter(isValidPermissionKey)
-        : []
+      const existingPermissions = existingRows
+        .map(row => row.permission_key)
+        .filter(isValidPermissionKey)
 
-      const existingSet = new Set(existingPermissions)
-      const newSet = new Set(newPermissions)
-
-      for (const perm of existingPermissions) {
-        if (!newSet.has(perm)) {
+      await syncScalarCollection({
+        existing: existingPermissions,
+        incoming: newPermissions,
+        onRemove: async (perm) => {
           await logChange({
             entityType: 'user',
             entityId: userId,
@@ -146,11 +140,8 @@ export default defineEventHandler(async (event): Promise<UpdateUserAccessRespons
             [userId, perm],
             conn
           )
-        }
-      }
-
-      for (const perm of newPermissions) {
-        if (!existingSet.has(perm)) {
+        },
+        onAdd: async (perm) => {
           await logChange({
             entityType: 'user',
             entityId: userId,
@@ -168,8 +159,8 @@ export default defineEventHandler(async (event): Promise<UpdateUserAccessRespons
             [userId, perm],
             conn
           )
-        }
-      }
+        },
+      })
     })
 
     return { ok: true }

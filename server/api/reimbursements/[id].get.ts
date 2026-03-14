@@ -1,10 +1,12 @@
-import { defineEventHandler, createError } from 'h3'
+import { defineEventHandler } from 'h3'
 import { query } from '~/server/utils/db'
-import { getCurrentUserFromEvent } from '~/server/utils/sessionGuard'
 import { normalizeBigInt } from '~/server/utils/normalize'
-import type { FileRow } from '~/types/file'
+import { requirePermission } from '~/server/utils/api/guards'
+import { getNumericRouteParam } from '~/server/utils/api/request'
+import { getAttachedFile } from '~/server/utils/files'
 import { Reimbursement, ReimbursementPosition, ReimbursementRow } from '~/types/reimbursement'
 import { ReceiptStatus } from '~/types/receipt'
+import type { FileRow } from '~/types/file'
 
 interface GetReimbursementSuccess {
   ok: true
@@ -20,31 +22,27 @@ interface GetReimbursementError {
 export type GetReimbursementResponse = GetReimbursementSuccess | GetReimbursementError
 
 export default defineEventHandler(async (event): Promise<GetReimbursementResponse> => {
-  const current = await getCurrentUserFromEvent(event, true)
-  if (!current.ok) return { ok: false, error: 'Not authenticated' }
-  if (!current.user.permissions.includes('reimbursements.view')) return { ok: false, error: 'Not authorized' }
+  const current = await requirePermission(event, 'reimbursements.view')
+  if (!current.ok) return current
 
-  const id = Number(event.context.params?.id)
+  const id = getNumericRouteParam(event)
   if (!id) return { ok: false, error: 'Invalid reimbursement id' }
 
   try {
     const reimbursementRows: ReimbursementRow[] = await query(
       `
-      SELECT 
+      SELECT
         r.id,
         r.paid_by,
         r.submitted_at,
-
         r.bankname,
         r.account_holder,
         r.iban,
         r.bic,
         r.advance,
         r.cash,
-
         r.checked_by,
         r.checked_at,
-
         r.disbursed_by,
         r.disbursed_at
       FROM reimbursements r
@@ -60,11 +58,10 @@ export default defineEventHandler(async (event): Promise<GetReimbursementRespons
 
     const reimbursement = normalizeBigInt(reimbursementRows[0])
 
-    const rows = await query(
+    const rows = await query<any[]>(
       `
-      SELECT 
-        rp.id,
-
+      SELECT
+        rp.id AS reimbursement_position_id,
         rp.receipt_id,
         rec.receipt_date,
         rec.receipt_number,
@@ -72,8 +69,7 @@ export default defineEventHandler(async (event): Promise<GetReimbursementRespons
         rec.status,
         rec.company_id,
         c.name AS company_name,
-        
-        rpos.id AS receipt_postion_id,
+        rpos.id AS receipt_position_id,
         rpos.sphere,
         rpos.cost_centre,
         rpos.amount,
@@ -90,51 +86,38 @@ export default defineEventHandler(async (event): Promise<GetReimbursementRespons
 
     const map = new Map<number, ReimbursementPosition>()
 
-    for (const r of rows) {
-      if (!map.has(r.receipt_id)) {
-        map.set(r.receipt_id, {
-          id: Number(r.reimbursement_position_id),
+    for (const row of rows) {
+      if (!map.has(Number(row.receipt_id))) {
+        map.set(Number(row.receipt_id), {
+          id: Number(row.reimbursement_position_id),
           receipt: {
-            id: Number(r.receipt_id),
-            receipt_date: String(r.receipt_date),
-            receipt_number: r.receipt_number ?? null,
-            description: r.description ?? null,
-            status: r.status as ReceiptStatus,
-            company_id: r.company_id != null ? Number(r.company_id) : null,
-            company_name: r.company_name ?? null,
+            id: Number(row.receipt_id),
+            receipt_date: String(row.receipt_date),
+            receipt_number: row.receipt_number ?? null,
+            description: row.description ?? null,
+            status: row.status as ReceiptStatus,
+            company_id: row.company_id != null ? Number(row.company_id) : null,
+            company_name: row.company_name ?? null,
             positions: []
           }
         })
       }
-    
-      if (r.receipt_position_id) {
-        map.get(r.receipt_id)!.receipt.positions.push({
-          id: Number(r.receipt_position_id),
-          sphere: Number(r.sphere),
-          cost_centre: Number(r.cost_centre),
-          amount: Number(r.amount),
-          tax: Number(r.tax)
+
+      if (row.receipt_position_id) {
+        map.get(Number(row.receipt_id))!.receipt.positions.push({
+          id: Number(row.receipt_position_id),
+          sphere: Number(row.sphere),
+          cost_centre: Number(row.cost_centre),
+          amount: Number(row.amount),
+          tax: Number(row.tax)
         })
       }
     }
 
-    const positions: ReimbursementPosition[] = Array.from(map.values())
+    const file = await getAttachedFile('reimbursement', id)
 
-    const fileRows: FileRow[] = await query(
-      `
-      SELECT f.id, f.file_path, f.original_name, f.mime_type, f.file_size
-      FROM file_attachments fa
-      JOIN files f ON f.id = fa.file_id
-      WHERE fa.entity_type = 'reimbursement'
-        AND fa.entity_id = ?
-        AND fa.detached_at IS NULL
-      LIMIT 1
-      `,
-      [id]
-    )
-
-    return { 
-      ok: true, 
+    return {
+      ok: true,
       reimbursement: {
         id: Number(reimbursement.id),
         paid_by: Number(reimbursement.paid_by),
@@ -149,11 +132,10 @@ export default defineEventHandler(async (event): Promise<GetReimbursementRespons
         checked_at: reimbursement.checked_at ?? null,
         disbursed_by: reimbursement.disbursed_by != null ? Number(reimbursement.disbursed_by) : null,
         disbursed_at: reimbursement.disbursed_at ?? null,
-        positions
+        positions: Array.from(map.values())
       },
-      file: fileRows.length ? fileRows[0] : null
+      file: file ?? null
     }
-
   } catch (err: any) {
     return { ok: false, error: `An error occurred while fetching a reimbursement: ${err}` }
   }

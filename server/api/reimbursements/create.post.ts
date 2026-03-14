@@ -1,11 +1,9 @@
-import { defineEventHandler, readMultipartFormData } from 'h3'
+import { defineEventHandler } from 'h3'
 import { query, withTransaction } from '~/server/utils/db'
-import { getCurrentUserFromEvent } from '~/server/utils/sessionGuard'
-import fs from 'fs/promises'
-import path from 'path'
-import crypto from 'crypto'
-import type { CreateReimbursementBody } from '~/types/reimbursement'
-import { ReceiptStatus } from '~/types/receipt'
+import { requirePermission } from '~/server/utils/api/guards'
+import { readMultipart } from '~/server/utils/api/request'
+import { statusFromReimbursement, validateReimbursementBody } from '~/server/utils/reimbursements'
+import { storeAndAttachUploadedFile, validateUploadedFile } from '~/server/utils/files'
 
 interface CreateReimbursementSuccess {
   ok: true
@@ -19,64 +17,22 @@ interface CreateReimbursementError {
 
 type CreateReimbursementResponse = CreateReimbursementSuccess | CreateReimbursementError
 
-const ALLOWED_MIME = [
-  'application/pdf',
-  'image/jpeg',
-  'image/jpg',
-  'image/png',
-]
-
-const MAX_SIZE = Number(process.env.MAX_UPLOAD_MB || 5) * 1024 * 1024
-
-function statusFromReimbursement(reimbursement: CreateReimbursementBody): ReceiptStatus {
-  if (reimbursement.disbursed_at) return ReceiptStatus.Paid
-  if (reimbursement.checked_at) return ReceiptStatus.Open
-  return ReceiptStatus.Draft
-}
-
 export default defineEventHandler(async (event): Promise<CreateReimbursementResponse> => {
-  const current = await getCurrentUserFromEvent(event, true)
-  if (!current.ok) return { ok: false, error: 'Not authenticated' }
-  if (!current.user.permissions.includes('reimbursements.edit')) return { ok: false, error: 'Not authorized' }
+  const current = await requirePermission(event, 'reimbursements.edit')
+  if (!current.ok) return current
 
-  const formData = await readMultipartFormData(event)
-  if (!formData) return { ok: false, error: 'Invalid form data' }
+  const multipart = await readMultipart(event)
+  if (!multipart) return { ok: false, error: 'Invalid form data' }
 
-  const getField = (name: string) =>
-    formData.find(f => f.name === name)?.data?.toString()
+  const fileError = validateUploadedFile(multipart.file, 'A file is required for reimbursements')
+  if (fileError) return { ok: false, error: fileError }
 
-  const file = formData.find(f => f.type && f.filename)
-  if (!file) return { ok: false, error: 'No file uploaded' }
-
-  if (!ALLOWED_MIME.includes(file.type || '')) return { ok: false, error: 'Invalid file type' }
-  if (file.data.length > MAX_SIZE) return { ok: false, error: 'File too large' }
-
-  const reimbursementJson = getField('reimbursement')
+  const reimbursementJson = multipart.getField('reimbursement')
   if (!reimbursementJson) return { ok: false, error: 'Missing reimbursement data' }
 
-  const reimbursement = JSON.parse(reimbursementJson) as CreateReimbursementBody
-
-  if (!reimbursement.paid_by || !reimbursement.submitted_at || !Array.isArray(reimbursement.positions) || !reimbursement.positions.length) {
-    return { ok: false, error: 'Missing required reimbursement fields' }
-  }
-  if (typeof reimbursement.cash !== 'boolean') {
-    return { ok: false, error: 'cash is required and must be boolean' }
-  }
-  if (!reimbursement.cash) {
-    if (!reimbursement.bankname?.trim()) return { ok: false, error: 'bankname is required when cash is false' }
-    if (!reimbursement.iban?.trim()) return { ok: false, error: 'iban is required when cash is false' }
-  }
-  if (reimbursement.positions.some(position => !position.receipt_id)) {
-    return { ok: false, error: 'Each reimbursement position requires a receipt id' }
-  }
-
-  if (Boolean(reimbursement.checked_by) !== Boolean(reimbursement.checked_at)) {
-    return { ok: false, error: 'checked_by and checked_at must both be set or both be empty' }
-  }
-
-  if (Boolean(reimbursement.disbursed_by) !== Boolean(reimbursement.disbursed_at)) {
-    return { ok: false, error: 'disbursed_by and disbursed_at must both be set or both be empty' }
-  }
+  const reimbursement = JSON.parse(reimbursementJson)
+  const validationError = validateReimbursementBody(reimbursement)
+  if (validationError) return { ok: false, error: validationError }
 
   const submittedAt = reimbursement.submitted_at
     || new Date().toISOString().slice(0, 19).replace('T', ' ')
@@ -85,8 +41,8 @@ export default defineEventHandler(async (event): Promise<CreateReimbursementResp
     return await withTransaction(async (conn) => {
       const uniqueReceiptIds = [...new Set(
         reimbursement.positions
-          .map(position => Number(position.receipt_id))
-          .filter(receiptId => Boolean(receiptId))
+          .map((position: any) => Number(position.receipt_id))
+          .filter((receiptId: number) => Boolean(receiptId))
       )]
 
       if (uniqueReceiptIds.length !== reimbursement.positions.length) {
@@ -156,43 +112,13 @@ export default defineEventHandler(async (event): Promise<CreateReimbursementResp
         conn
       )
 
-      const uploadRoot = process.env.UPLOAD_DIR!
-      const uploadDir = path.join(uploadRoot, 'reimbursements')
-      await fs.mkdir(uploadDir, { recursive: true })
-
-      const ext = path.extname(file.filename!)
-      const filename = crypto.randomUUID() + ext
-      const filePath = path.join(uploadDir, filename)
-
-      await fs.writeFile(filePath, file.data, { mode: 0o640 })
-
-      const fileResult: any = await query(
-        `INSERT INTO files
-          (file_path, original_name, mime_type, file_size, uploaded_by)
-        VALUES (?, ?, ?, ?, ?)`,
-        [
-          `/uploads/reimbursements/${filename}`,
-          file.filename,
-          file.type,
-          file.data.length,
-          current.user.id,
-        ],
-        conn
-      )
-
-      const fileId = Number(fileResult.insertId)
-
-      await query(
-        `INSERT INTO file_attachments
-          (file_id, entity_type, entity_id, attached_by)
-        VALUES (?, ?, ?, ?)`,
-        [
-          fileId,
-          'reimbursement',
-          reimbursementId,
-          current.user.id,
-        ],
-        conn
+      await storeAndAttachUploadedFile(
+        multipart.file!,
+        'reimbursements',
+        'reimbursement',
+        reimbursementId,
+        current.user.id,
+        conn,
       )
 
       return { ok: true, reimbursementId }

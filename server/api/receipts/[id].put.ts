@@ -1,12 +1,17 @@
-import { defineEventHandler, readMultipartFormData, createError } from 'h3'
+import { defineEventHandler } from 'h3'
 import { query, withTransaction } from '~/server/utils/db'
-import { getCurrentUserFromEvent } from '~/server/utils/sessionGuard'
 import { logChange } from '~/server/utils/changeLogger'
-import fs from 'fs/promises'
-import path from 'path'
-import crypto from 'crypto'
+import { logFieldChanges } from '~/server/utils/api/audit'
+import { requirePermission } from '~/server/utils/api/guards'
+import { getNumericRouteParam, readMultipart } from '~/server/utils/api/request'
+import {
+  detachFileAttachment,
+  getActiveFileAttachment,
+  storeAndAttachUploadedFile,
+  validateUploadedFile,
+} from '~/server/utils/files'
+import { receiptRequiresFile, validateReceiptPayload } from '~/server/utils/receipts'
 import { ReceiptPosition, ReceiptRow } from '~/types/receipt'
-import { FileAttachment } from '~/types/file'
 
 interface UpdateReceiptSuccess {
   ok: true
@@ -19,42 +24,24 @@ interface UpdateReceiptError {
 
 type UpdateReceiptResponse = UpdateReceiptSuccess | UpdateReceiptError
 
-const ALLOWED_MIME = [
-  'application/pdf',
-  'image/jpeg',
-  'image/jpg',
-  'image/png',
-]
-
-const MAX_SIZE = Number(process.env.MAX_UPLOAD_MB || 5) * 1024 * 1024
-
 export default defineEventHandler(async (event): Promise<UpdateReceiptResponse> => {
-  const current = await getCurrentUserFromEvent(event, true)
-  if (!current.ok) return { ok: false, error: 'Not authenticated' }
-  if (!current.user.permissions.includes('receipts.edit')) return { ok: false, error: 'Not authorized' }
+  const current = await requirePermission(event, 'receipts.edit')
+  if (!current.ok) return current
 
-  const receiptId = Number(event.context.params?.id)
+  const receiptId = getNumericRouteParam(event)
   if (!receiptId) return { ok: false, error: 'Invalid receipt id' }
 
-  const formData = await readMultipartFormData(event)
-  if (!formData) return { ok: false, error: 'Missing form data' }
+  const multipart = await readMultipart(event)
+  if (!multipart) return { ok: false, error: 'Missing form data' }
 
-  const getField = (name: string) =>
-    formData.find(f => f.name === name)?.data?.toString()
-
-  const file = formData.find(f => f.type && f.filename)
-  const receiptJson = getField('receipt')
-  const removeExistingFile = getField('removeExistingFile') === 'true'
+  const receiptJson = multipart.getField('receipt')
+  const removeExistingFile = multipart.getField('removeExistingFile') === 'true'
 
   if (!receiptJson) return { ok: false, error: 'Missing receipt' }
 
   const updated = JSON.parse(receiptJson)
-  if (!updated.company_id || !updated.receipt_date || !updated.status || !Array.isArray(updated.positions) || updated.positions.length === 0) {
-    return { ok: false, error: 'Missing required receipt fields' }
-  }
-  if (updated.positions.some((p: any) => !p?.sphere || !p?.cost_centre || p?.amount === null || p?.amount === undefined)) {
-    return { ok: false, error: 'Each position requires sphere, cost centre and amount' }
-  }
+  const validationError = validateReceiptPayload(updated)
+  if (validationError) return { ok: false, error: validationError }
 
   try {
     return await withTransaction(async (conn) => {
@@ -67,38 +54,27 @@ export default defineEventHandler(async (event): Promise<UpdateReceiptResponse> 
       if (!existingRows.length) return { ok: false, error: 'No matching receipts in database' }
       const existing = existingRows[0]
 
-      const existingAttachment: FileAttachment[] = await query(
-        `SELECT id, file_id
-         FROM file_attachments
-         WHERE entity_type = 'receipt' AND entity_id = ? AND detached_at IS NULL`,
-        [receiptId],
-        conn
-      )
+      const existingAttachment = await getActiveFileAttachment('receipt', receiptId, conn)
+      const hasExistingFile = Boolean(existingAttachment)
+      const hasFileAfterSave = Boolean(multipart.file) || (hasExistingFile && !removeExistingFile)
 
-      const hasExistingFile = existingAttachment.length > 0
-      const hasFileAfterSave = Boolean(file) || (hasExistingFile && !removeExistingFile)
-      const requiresFile = updated.status === 'open' || updated.status === 'paid'
-
-      if (requiresFile && !hasFileAfterSave) {
+      if (receiptRequiresFile(updated.status) && !hasFileAfterSave) {
         return { ok: false, error: 'A file is required for open or paid receipts' }
       }
 
-      const fields = ['receipt_date', 'receipt_number', 'status', 'company_id', 'description'] as (keyof ReceiptRow)[]
+      const fileError = validateUploadedFile(multipart.file)
+      if (fileError && multipart.file) return { ok: false, error: fileError }
 
-      for (const field of fields) {
-        if (String(existing[field]) !== String(updated[field])) {
-          await logChange({
-            entityType: 'receipt',
-            entityId: receiptId,
-            subEntityType: null,
-            subEntityId: null,
-            field,
-            oldValue: existing[field],
-            newValue: updated[field],
-            userId: current.user.id,
-          }, conn)
-        }
-      }
+      const receiptFields = ['receipt_date', 'receipt_number', 'status', 'company_id', 'description'] as const
+      await logFieldChanges({
+        entityType: 'receipt',
+        entityId: receiptId,
+        fields: receiptFields,
+        previous: existing,
+        next: updated,
+        userId: current.user.id,
+        conn,
+      })
 
       await query(
         `UPDATE receipts SET
@@ -124,63 +100,54 @@ export default defineEventHandler(async (event): Promise<UpdateReceiptResponse> 
         [receiptId],
         conn
       )
-      
-      const existingMap = new Map(
-        existingPositions.map(p => [p.id, p])
-      )
-      
+
+      const existingMap = new Map(existingPositions.map(position => [position.id, position]))
       const incomingMap = new Map(
         updated.positions
-          .filter((p: any) => p.id)
-          .map((p: any) => [p.id, p])
+          .filter((position: any) => position.id)
+          .map((position: any) => [position.id, position])
       )
 
-      // Detect Removed Positions
-      for (const existing of existingPositions) {
-        if (!incomingMap.has(existing.id)) {
+      for (const existingPosition of existingPositions) {
+        if (!incomingMap.has(existingPosition.id)) {
           await logChange({
             entityType: 'receipt',
             entityId: receiptId,
             subEntityType: 'receipt_position',
-            subEntityId: existing.id,
+            subEntityId: existingPosition.id,
             field: 'position_removed',
-            oldValue: JSON.stringify(existing),
+            oldValue: JSON.stringify(existingPosition),
             newValue: null,
             userId: current.user.id,
           }, conn)
-      
-          await query(`DELETE FROM receipt_positions WHERE id = ?`, [existing.id], conn)
+
+          await query(`DELETE FROM receipt_positions WHERE id = ?`, [existingPosition.id], conn)
         }
       }
 
-      // Detect Updated Positions
+      const positionFields = ['sphere', 'cost_centre', 'amount', 'tax'] as const
       for (const incoming of updated.positions) {
         if (!incoming.id) continue
-      
-        const existing = existingMap.get(incoming.id)
-        if (!existing) continue
-      
-        const fields = ['sphere', 'cost_centre', 'amount', 'tax'] as (keyof ReceiptPosition)[]
-      
-        for (const field of fields) {
-          if (String(existing[field]) !== String(incoming[field])) {
-            await logChange({
-              entityType: 'receipt',
-              entityId: receiptId,
-              subEntityType: 'receipt_position',
-              subEntityId: incoming.id,
-              field,
-              oldValue: existing[field],
-              newValue: incoming[field],
-              userId: current.user.id,
-            }, conn)
-          }
-        }
-      
+
+        const existingPosition = existingMap.get(incoming.id)
+        if (!existingPosition) continue
+
+        await logFieldChanges({
+          entityType: 'receipt',
+          entityId: receiptId,
+          subEntityType: 'receipt_position',
+          subEntityId: incoming.id,
+          fields: positionFields,
+          previous: existingPosition,
+          next: incoming,
+          userId: current.user.id,
+          conn,
+        })
+
         await query(
           `UPDATE receipt_positions
-          SET sphere=?, cost_centre=?, amount=?, tax=?
-          WHERE id=?`,
+          SET sphere = ?, cost_centre = ?, amount = ?, tax = ?
+          WHERE id = ?`,
           [
             incoming.sphere,
             incoming.cost_centre,
@@ -192,10 +159,9 @@ export default defineEventHandler(async (event): Promise<UpdateReceiptResponse> 
         )
       }
 
-      // Detect Added Positions
       for (const incoming of updated.positions) {
         if (incoming.id) continue
-      
+
         const result: any = await query(
           `INSERT INTO receipt_positions
           (receipt_id, sphere, cost_centre, amount, tax, created_by)
@@ -210,12 +176,12 @@ export default defineEventHandler(async (event): Promise<UpdateReceiptResponse> 
           ],
           conn
         )
-      
+
         await logChange({
           entityType: 'receipt',
           entityId: receiptId,
           subEntityType: 'receipt_position',
-          subEntityId: result.insertId,
+          subEntityId: Number(result.insertId),
           field: 'position_added',
           oldValue: null,
           newValue: JSON.stringify(incoming),
@@ -223,76 +189,36 @@ export default defineEventHandler(async (event): Promise<UpdateReceiptResponse> 
         }, conn)
       }
 
-      if (removeExistingFile) {
-        if (existingAttachment.length) {
-          await query(
-            `UPDATE file_attachments
-            SET detached_at=NOW(), detached_by=?
-            WHERE id=?`,
-            [current.user.id, existingAttachment[0].id],
-            conn
-          )
-      
-          await logChange({
-            entityType: 'receipt',
-            entityId: receiptId,
-            subEntityType: 'file_attachment',
-            subEntityId: existingAttachment[0].id,
-            field: 'file_detached',
-            oldValue: existingAttachment[0].file_id,
-            newValue: null,
-            userId: current.user.id,
-          }, conn)
-        }
+      if (removeExistingFile && existingAttachment) {
+        await detachFileAttachment(existingAttachment.id, current.user.id, conn)
+
+        await logChange({
+          entityType: 'receipt',
+          entityId: receiptId,
+          subEntityType: 'file_attachment',
+          subEntityId: existingAttachment.id,
+          field: 'file_detached',
+          oldValue: existingAttachment.file_id,
+          newValue: null,
+          userId: current.user.id,
+        }, conn)
       }
 
-      if (file) {
-        if (!ALLOWED_MIME.includes(file.type || '')) return { ok: false, error: 'Invalid file type' }
-        if (file.data.length > MAX_SIZE) return { ok: false, error: 'File too large' }
-
-        const uploadRoot = process.env.UPLOAD_DIR!
-        const uploadDir = path.join(uploadRoot, 'receipts')
-        await fs.mkdir(uploadDir, { recursive: true })
-
-        const ext = path.extname(file.filename!)
-        const filename = crypto.randomUUID() + ext
-        const filePath = path.join(uploadDir, filename)
-
-        await fs.writeFile(filePath, file.data)
-
-        const fileResult: any = await query(
-          `INSERT INTO files
-          (file_path, original_name, mime_type, file_size, uploaded_by)
-          VALUES (?, ?, ?, ?, ?)`,
-          [
-            `/uploads/receipts/${filename}`,
-            file.filename,
-            file.type,
-            file.data.length,
-            current.user.id,
-          ],
-          conn
-        )
-
-        const fileId = Number(fileResult.insertId)
-
-        const attachmentResult: any = await query(
-          `INSERT INTO file_attachments
-          (file_id, entity_type, entity_id, attached_by)
-          VALUES (?, 'receipt', ?, ?)`,
-          [
-            fileId,
-            receiptId,
-            current.user.id,
-          ],
-          conn
+      if (multipart.file) {
+        const { fileId, attachmentId } = await storeAndAttachUploadedFile(
+          multipart.file,
+          'receipts',
+          'receipt',
+          receiptId,
+          current.user.id,
+          conn,
         )
 
         await logChange({
           entityType: 'receipt',
           entityId: receiptId,
           subEntityType: 'file_attachment',
-          subEntityId: attachmentResult.insertId,
+          subEntityId: attachmentId,
           field: 'file_attached',
           oldValue: null,
           newValue: fileId,

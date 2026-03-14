@@ -1,7 +1,9 @@
 import { defineEventHandler, readBody } from 'h3'
 import { query, withTransaction } from '~/server/utils/db'
-import { getCurrentUserFromEvent } from '~/server/utils/sessionGuard'
 import { isValidPermissionKey } from '~/server/utils/permissions'
+import { logChange } from '~/server/utils/changeLogger'
+import { syncScalarCollection } from '~/server/utils/api/audit'
+import { requirePermission } from '~/server/utils/api/guards'
 
 interface SetPositionPermissionsBody {
   position_id: number
@@ -20,9 +22,8 @@ interface SetPositionPermissionsError {
 type SetPositionPermissionsResponse = SetPositionPermissionsSuccess | SetPositionPermissionsError
 
 export default defineEventHandler(async (event): Promise<SetPositionPermissionsResponse> => {
-  const current = await getCurrentUserFromEvent(event, false)
-  if (!current.ok) return { ok: false, error: 'Not authenticated' }
-  if (!current.user.permissions.includes('permissions.manage')) return { ok: false, error: 'Not authorized' }
+  const current = await requirePermission(event, 'permissions.manage', { touch: false })
+  if (!current.ok) return current
 
   const body = await readBody<SetPositionPermissionsBody>(event)
   const positionId = Number(body.position_id)
@@ -48,16 +49,14 @@ export default defineEventHandler(async (event): Promise<SetPositionPermissionsR
         conn
       )
 
-      const existing = existingRows.map(r => r.permission_key)
-      const existingPermissions = Array.isArray(existing)
-        ? existing.filter(isValidPermissionKey)
-        : []
+      const existingPermissions = existingRows
+        .map(row => row.permission_key)
+        .filter(isValidPermissionKey)
 
-      const existingSet = new Set(existingPermissions)
-      const newSet = new Set(newPermissions)
-
-      for (const perm of existingPermissions) {
-        if (!newSet.has(perm)) {
+      await syncScalarCollection({
+        existing: existingPermissions,
+        incoming: newPermissions,
+        onRemove: async (perm) => {
           await logChange({
             entityType: 'position',
             entityId: positionId,
@@ -75,11 +74,8 @@ export default defineEventHandler(async (event): Promise<SetPositionPermissionsR
             [positionId, perm],
             conn
           )
-        }
-      }
-
-      for (const perm of newPermissions) {
-        if (!existingSet.has(perm)) {
+        },
+        onAdd: async (perm) => {
           await logChange({
             entityType: 'position',
             entityId: positionId,
@@ -97,8 +93,8 @@ export default defineEventHandler(async (event): Promise<SetPositionPermissionsR
             [positionId, perm],
             conn
           )
-        }
-      }
+        },
+      })
     })
 
     return { ok: true }

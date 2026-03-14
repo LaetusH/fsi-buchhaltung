@@ -1,6 +1,6 @@
 import { defineEventHandler } from 'h3'
 import { query } from '~/server/utils/db'
-import { getCurrentUserFromEvent } from '~/server/utils/sessionGuard'
+import { requirePermission } from '~/server/utils/api/guards'
 
 interface MemberOptionRow {
   id: number
@@ -22,9 +22,8 @@ interface GetMemberOptionsError {
 type GetMemberOptionsResponse = GetMemberOptionsSuccess | GetMemberOptionsError
 
 export default defineEventHandler(async (event): Promise<GetMemberOptionsResponse> => {
-  const current = await getCurrentUserFromEvent(event, true)
-  if (!current.ok) return { ok: false, error: 'Not authenticated' }
-  if (!current.user.permissions.includes('users.manage')) return { ok: false, error: 'Not authorized' }
+  const current = await requirePermission(event, 'users.manage')
+  if (!current.ok) return current
 
   const rows = await query(`
     SELECT

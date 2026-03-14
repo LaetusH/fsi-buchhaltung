@@ -1,6 +1,8 @@
 import { defineEventHandler, readBody } from 'h3'
-import { query } from '~/server/utils/db'
-import { getCurrentUserFromEvent } from '~/server/utils/sessionGuard'
+import { query, withTransaction } from '~/server/utils/db'
+import { logFieldChanges } from '~/server/utils/api/audit'
+import { requirePermission } from '~/server/utils/api/guards'
+import { toDbBoolean } from '~/server/utils/api/request'
 
 interface SaveRoleBody {
   id?: number
@@ -22,9 +24,8 @@ interface SaveRoleError {
 type SaveRoleResponse = SaveRoleSuccess | SaveRoleError
 
 export default defineEventHandler(async (event): Promise<SaveRoleResponse> => {
-  const current = await getCurrentUserFromEvent(event, false)
-  if (!current.ok) return { ok: false, error: 'Not authenticated' }
-  if (!current.user.permissions.includes('permissions.manage')) return { ok: false, error: 'Not authorized' }
+  const current = await requirePermission(event, 'permissions.manage', { touch: false })
+  if (!current.ok) return current
 
   const body = await readBody<SaveRoleBody>(event)
   if (!body.code?.trim() || !body.name?.trim()) return { ok: false, error: 'Missing fields' }
@@ -40,8 +41,8 @@ export default defineEventHandler(async (event): Promise<SaveRoleResponse> => {
   try {
     return await withTransaction(async (conn) => {
       if (updated.id && updated.id > 0) {
-        const existingRows = await query(
-          `SELECT id, code, name, description FROM roles WHERE id = ? LIMIT 1`,
+        const existingRows = await query<any[]>(
+          `SELECT id, code, name, description, is_active FROM roles WHERE id = ? LIMIT 1`,
           [updated.id],
           conn
         )
@@ -49,26 +50,26 @@ export default defineEventHandler(async (event): Promise<SaveRoleResponse> => {
         if (!existingRows.length) return { ok: false, error: 'No matching role in database' }
         const existing = existingRows[0]
 
-        const fields = ['code', 'name', 'description', 'is_active'] as (keyof SaveRoleBody)[]
+        const fields = ['code', 'name', 'description', 'is_active'] as (keyof typeof updated)[]
 
-        for (const field of fields) {
-          await logChange({
-            entityType: 'role',
-            entityId: updated.id,
-            subEntityType: null,
-            subEntityId: null,
-            field,
-            oldValue: existing[field],
-            newValue: updated[field],
-            userId: current.user.id,
-          }, conn)
-        }
+        await logFieldChanges({
+          entityType: 'role',
+          entityId: updated.id,
+          fields,
+          previous: existing,
+          next: {
+            ...updated,
+            is_active: toDbBoolean(updated.is_active),
+          },
+          userId: current.user.id,
+          conn,
+        })
 
         await query(
           `UPDATE roles
           SET code = ?, name = ?, description = ?, is_active = ?
           WHERE id = ?`,
-          [updated.code, updated.name, updated.description, updated.is_active ? 1 : 0, updated.id],
+          [updated.code, updated.name, updated.description, toDbBoolean(updated.is_active), updated.id],
           conn
         )
 
@@ -78,7 +79,7 @@ export default defineEventHandler(async (event): Promise<SaveRoleResponse> => {
       await query(
         `INSERT INTO roles (code, name, is_active, description, created_by)
         VALUES (?, ?, ?, ?, ?)`,
-        [updated.code, updated.name, updated.is_active ? 1 : 0, updated.description, current.user.id],
+        [updated.code, updated.name, toDbBoolean(updated.is_active), updated.description, current.user.id],
         conn
       )
 

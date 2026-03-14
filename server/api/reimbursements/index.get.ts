@@ -1,6 +1,6 @@
 import { defineEventHandler } from 'h3'
 import { query } from '~/server/utils/db'
-import { getCurrentUserFromEvent } from '~/server/utils/sessionGuard'
+import { requirePermission } from '~/server/utils/api/guards'
 import type { ReimbursementOverview } from '~/types/reimbursement'
 
 interface GetReimbursementsSuccess {
@@ -16,9 +16,8 @@ interface GetReimbursementsError {
 type GetReimbursementResponse = GetReimbursementsSuccess | GetReimbursementsError
 
 export default defineEventHandler(async (event): Promise<GetReimbursementResponse> => {
-  const current = await getCurrentUserFromEvent(event, true)
-  if (!current.ok) return { ok: false, error: 'Not authenticated' }
-  if (!current.user.permissions.includes('reimbursements.view')) return { ok: false, error: 'Not authorized' }
+  const current = await requirePermission(event, 'reimbursements.view')
+  if (!current.ok) return current
 
   try {
     const rows: ReimbursementOverview[] = await query(
@@ -42,17 +41,16 @@ export default defineEventHandler(async (event): Promise<GetReimbursementRespons
       `
     )
 
-    return { ok: true, reimbursements: rows.map(r => ({
-      id: Number(r.id),
-      paid_by: Number(r.paid_by),
-      member_name: String(r.member_name),
-      submitted_at: String(r.submitted_at),
-      checked_at: r.checked_at ? String(r.checked_at) : null,
-      disbursed_at: r.disbursed_at ? String(r.disbursed_at) : null,
-      receipt_count: Number(r.receipt_count),
-      total_amount: Number(r.total_amount),
+    return { ok: true, reimbursements: rows.map(row => ({
+      id: Number(row.id),
+      paid_by: Number(row.paid_by),
+      member_name: String(row.member_name),
+      submitted_at: String(row.submitted_at),
+      checked_at: row.checked_at ? String(row.checked_at) : null,
+      disbursed_at: row.disbursed_at ? String(row.disbursed_at) : null,
+      receipt_count: Number(row.receipt_count),
+      total_amount: Number(row.total_amount),
     }))}
-    
   } catch (err: any) {
     return { ok: false, error: `Failed to load receipts: ${err}` }
   }

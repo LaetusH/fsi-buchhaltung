@@ -1,6 +1,6 @@
-import { defineEventHandler, createError } from 'h3'
+import { defineEventHandler } from 'h3'
 import { query } from '~/server/utils/db'
-import { getCurrentUserFromEvent } from '~/server/utils/sessionGuard'
+import { requirePermission } from '~/server/utils/api/guards'
 import { ReceiptRow, ReceiptStatus } from '~/types/receipt'
 
 interface GetReceiptsSuccess {
@@ -16,9 +16,8 @@ interface GetReceiptsError {
 type GetReceiptsResponse = GetReceiptsSuccess | GetReceiptsError
 
 export default defineEventHandler(async (event): Promise<GetReceiptsResponse> => {
-  const current = await getCurrentUserFromEvent(event, true)
-  if (!current.ok) return { ok: false, error: 'Not authenticated' }
-  if (!current.user.permissions.includes('receipts.view')) return { ok: false, error: 'Not authorized' }
+  const current = await requirePermission(event, 'receipts.view')
+  if (!current.ok) return current
 
   try {
     const receipts: any[] = await query(
@@ -40,17 +39,16 @@ export default defineEventHandler(async (event): Promise<GetReceiptsResponse> =>
       `
     )
 
-    return { ok: true, receipts: receipts.map(r => ({
-      id: Number(r.id),
-      receipt_date: String(r.receipt_date),
-      receipt_number: r.receipt_number ? String(r.receipt_number) : null,
-      company_name: r.company_name ? String(r.company_name) : null,
-      company_id: Number(r.company_id),
-      status: r.status as ReceiptStatus,
-      description: r.description ? String(r.description) : null,
-      total_amount: Number(r.total_amount),
+    return { ok: true, receipts: receipts.map(receipt => ({
+      id: Number(receipt.id),
+      receipt_date: String(receipt.receipt_date),
+      receipt_number: receipt.receipt_number ? String(receipt.receipt_number) : null,
+      company_name: receipt.company_name ? String(receipt.company_name) : null,
+      company_id: Number(receipt.company_id),
+      status: receipt.status as ReceiptStatus,
+      description: receipt.description ? String(receipt.description) : null,
+      total_amount: Number(receipt.total_amount),
     }))}
-
   } catch (err: any) {
     return { ok: false, error: `Failed to load receipts: ${err}` }
   }

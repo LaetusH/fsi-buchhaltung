@@ -1,6 +1,6 @@
 import { defineEventHandler } from 'h3'
 import { PermissionDefinition, PERMISSIONS } from '~/config/permissions'
-import { getCurrentUserFromEvent } from '~/server/utils/sessionGuard'
+import { requirePermission } from '~/server/utils/api/guards'
 
 interface DefinitionsSuccess {
   ok: true
@@ -15,9 +15,8 @@ interface DefinitionsError {
 type DefinitionsResponse = DefinitionsSuccess | DefinitionsError
 
 export default defineEventHandler(async (event): Promise<DefinitionsResponse> => {
-  const current = await getCurrentUserFromEvent(event, true)
-  if (!current.ok) return { ok: false, error: 'Not authenticated' }
-  if (!current.user.permissions.includes('permissions.manage')) return { ok: false, error: 'Not authorized' }
+  const current = await requirePermission(event, 'permissions.manage')
+  if (!current.ok) return current
 
   return { ok: true, permissions: PERMISSIONS }
 })

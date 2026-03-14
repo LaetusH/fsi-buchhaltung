@@ -1,6 +1,6 @@
 import { defineEventHandler, readBody } from 'h3'
 import { query, withTransaction } from '~/server/utils/db'
-import { getCurrentUserFromEvent } from '~/server/utils/sessionGuard'
+import { requirePermission } from '~/server/utils/api/guards'
 import { assignMemberToUser, MemberAlreadyLinkedError, MemberNotFoundError } from '~/server/utils/userAccounts'
 
 interface LinkMemberBody {
@@ -20,9 +20,8 @@ interface LinkMemberError {
 type LinkMemberResponse = LinkMemberSuccess | LinkMemberError
 
 export default defineEventHandler(async (event): Promise<LinkMemberResponse> => {
-  const current = await getCurrentUserFromEvent(event, false)
-  if (!current.ok) return { ok: false, error: 'Not authenticated' }
-  if (!current.user.permissions.includes('users.manage')) return { ok: false, error: 'Not authorized' }
+  const current = await requirePermission(event, 'users.manage', { touch: false })
+  if (!current.ok) return current
 
   const body = await readBody<LinkMemberBody>(event)
   const userId = Number(body.user_id)
@@ -44,7 +43,7 @@ export default defineEventHandler(async (event): Promise<LinkMemberResponse> => 
       if (err instanceof MemberNotFoundError) {
         return { ok: false, error: 'Member not found' }
       }
-      return { ok: false, error: err.code}
+      return { ok: false, error: err.code }
     }
 
     return { ok: true }

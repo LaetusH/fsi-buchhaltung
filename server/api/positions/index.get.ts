@@ -2,7 +2,7 @@ import { defineEventHandler } from 'h3'
 import type { PositionRow } from '~/types/position'
 import { normalizeBigInt } from '~/server/utils/normalize'
 import { query } from '~/server/utils/db'
-import { getCurrentUserFromEvent } from '~/server/utils/sessionGuard'
+import { requirePermission } from '~/server/utils/api/guards'
 
 interface GetPositionsSuccess {
   ok: true
@@ -17,9 +17,8 @@ interface GetPositionsError {
 type GetPositionsResponse = GetPositionsSuccess | GetPositionsError
 
 export default defineEventHandler(async (event): Promise<GetPositionsResponse> => {
-  const current = await getCurrentUserFromEvent(event, true)
-  if (!current.ok) return { ok: false, error: 'Not authenticated' }
-  if (!current.user.permissions.includes('positions.view')) return { ok: false, error: 'Not authorized' }
+  const current = await requirePermission(event, 'positions.view')
+  if (!current.ok) return current
 
   const rows = await query(`
     SELECT id, code, name, is_active, description, created_at

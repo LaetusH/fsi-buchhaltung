@@ -1,8 +1,9 @@
 import { defineEventHandler, readBody } from 'h3'
 import { query, withTransaction } from '~/server/utils/db'
-import { getCurrentUserFromEvent } from '~/server/utils/sessionGuard'
 import { isValidPermissionKey } from '~/server/utils/permissions'
 import { logChange } from '~/server/utils/changeLogger'
+import { syncScalarCollection } from '~/server/utils/api/audit'
+import { requirePermission } from '~/server/utils/api/guards'
 
 interface SetRolePermissionsBody {
   role_id: number
@@ -21,12 +22,11 @@ interface SetRolePermissionsError {
 type SetRolePermissionsResponse = SetRolePermissionsSuccess | SetRolePermissionsError
 
 export default defineEventHandler(async (event): Promise<SetRolePermissionsResponse> => {
-  const current = await getCurrentUserFromEvent(event, false)
-  if (!current.ok) return { ok: false, error: 'Not authenticated' }
-  if (!current.user.permissions.includes('permissions.manage')) return { ok: false, error: 'Not authorized' }
+  const current = await requirePermission(event, 'permissions.manage', { touch: false })
+  if (!current.ok) return current
 
   const body = await readBody<SetRolePermissionsBody>(event)
-  const roleId = body.role_id
+  const roleId = Number(body.role_id)
   if (!roleId) return { ok: false, error: 'Missing role id' }
 
   const roleRows = await query<{ id: number }[]>(
@@ -49,16 +49,14 @@ export default defineEventHandler(async (event): Promise<SetRolePermissionsRespo
         conn
       )
 
-      const existing = existingRows.map(r => r.permission_key)
-      const existingPermissions = Array.isArray(existing)
-        ? existing.filter(isValidPermissionKey)
-        : []
+      const existingPermissions = existingRows
+        .map(row => row.permission_key)
+        .filter(isValidPermissionKey)
 
-      const existingSet = new Set(existingPermissions)
-      const newSet = new Set(newPermissions)
-
-      for (const perm of existingPermissions) {
-        if (!newSet.has(perm)) {
+      await syncScalarCollection({
+        existing: existingPermissions,
+        incoming: newPermissions,
+        onRemove: async (perm) => {
           await logChange({
             entityType: 'role',
             entityId: roleId,
@@ -76,11 +74,8 @@ export default defineEventHandler(async (event): Promise<SetRolePermissionsRespo
             [roleId, perm],
             conn
           )
-        }
-      }
-
-      for (const perm of newPermissions) {
-        if (!existingSet.has(perm)) {
+        },
+        onAdd: async (perm) => {
           await logChange({
             entityType: 'role',
             entityId: roleId,
@@ -98,8 +93,8 @@ export default defineEventHandler(async (event): Promise<SetRolePermissionsRespo
             [roleId, perm],
             conn
           )
-        }
-      }
+        },
+      })
     })
 
     return { ok: true }

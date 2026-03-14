@@ -1,8 +1,10 @@
-import { defineEventHandler, getRouterParam, readBody } from 'h3'
-import { MemberStatus, type SaveMemberBody } from '~/types/member'
-import { logChange } from '~/server/utils/changeLogger'
+import { defineEventHandler, readBody } from 'h3'
+import type { SaveMemberBody } from '~/types/member'
 import { query, withTransaction } from '~/server/utils/db'
-import { getCurrentUserFromEvent } from '~/server/utils/sessionGuard'
+import { logFieldChanges } from '~/server/utils/api/audit'
+import { requirePermission } from '~/server/utils/api/guards'
+import { getNumericRouteParam } from '~/server/utils/api/request'
+import { ensureSubjectId, validateMemberPayload } from '~/server/utils/members'
 
 interface UpdateMemberSuccess {
   ok: true
@@ -16,50 +18,16 @@ interface UpdateMemberError {
 
 type UpdateMemberResponse = UpdateMemberSuccess | UpdateMemberError
 
-function isMemberStatus(value: unknown): value is MemberStatus {
-  return value === MemberStatus.Active || value === MemberStatus.Passive || value === MemberStatus.Hold || value === MemberStatus.Left
-}
-
-async function ensureSubjectId(subjectName: string, createdBy: number, conn: any) {
-  const name = subjectName.trim()
-
-  const existing = await query<{ id: number }[]>(
-    `SELECT id FROM subjects WHERE LOWER(name) = LOWER(?) LIMIT 1`,
-    [name],
-    conn
-  )
-
-  if (existing.length) return Number(existing[0]!.id)
-
-  const created = await query<any>(
-    `INSERT INTO subjects (name, created_by) VALUES (?, ?)`,
-    [name, createdBy],
-    conn
-  )
-
-  return Number(created.insertId)
-}
-
 export default defineEventHandler(async (event): Promise<UpdateMemberResponse> => {
-  const current = await getCurrentUserFromEvent(event, false)
-  if (!current.ok) return { ok: false, error: 'Not authenticated' }
-  if (!current.user.permissions.includes('members.edit')) return { ok: false, error: 'Not authorized' }
+  const current = await requirePermission(event, 'members.edit', { touch: false })
+  if (!current.ok) return current
 
-  const memberId = Number(getRouterParam(event, 'id'))
+  const memberId = getNumericRouteParam(event)
   if (!memberId) return { ok: false, error: 'Missing member id' }
 
   const body = await readBody<SaveMemberBody>(event)
-
-  if (!body.first_name || !body.last_name || !body.birthdate || !body.street || !body.street_number || !body.postal_code || !body.city || !body.phone || !body.email || !body.status || !body.applied_at || !body.joined_at || !body.subject_name?.trim()) {
-    return { ok: false, error: 'Missing fields' }
-  }
-  if (!isMemberStatus(body.status)) return { ok: false, error: 'Invalid status' }
-  if (body.status === MemberStatus.Left && !body.left_at) {
-    return { ok: false, error: 'Status left requires left_at' }
-  }
-  if (body.status !== MemberStatus.Left && body.left_at) {
-    return { ok: false, error: 'left_at is only allowed with status left' }
-  }
+  const validationError = validateMemberPayload(body)
+  if (validationError) return { ok: false, error: validationError }
 
   try {
     return await withTransaction(async (conn) => {
@@ -89,18 +57,15 @@ export default defineEventHandler(async (event): Promise<UpdateMemberResponse> =
         left_at: body.left_at || null,
       }
 
-      for (const [field, value] of Object.entries(updatedFields)) {
-        await logChange({
-          entityType: 'member',
-          entityId: memberId,
-          subEntityType: null,
-          subEntityId: null,
-          field,
-          oldValue: existing[field],
-          newValue: value,
-          userId: current.user.id,
-        }, conn)
-      }
+      await logFieldChanges({
+        entityType: 'member',
+        entityId: memberId,
+        fields: Object.keys(updatedFields) as (keyof typeof updatedFields)[],
+        previous: existing,
+        next: updatedFields,
+        userId: current.user.id,
+        conn,
+      })
 
       await query(
         `UPDATE members

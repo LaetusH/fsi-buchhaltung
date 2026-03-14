@@ -1,7 +1,8 @@
 import { defineEventHandler } from 'h3'
 import { query } from '~/server/utils/db'
-import { getCurrentUserFromEvent } from '~/server/utils/sessionGuard'
+import { requirePermission } from '~/server/utils/api/guards'
 import { MemberStatus, type MemberListItem } from '~/types/member'
+import { parseMemberStatus } from '~/server/utils/members'
 
 interface GetMembersSuccess {
   ok: true
@@ -15,17 +16,9 @@ interface GetMembersError {
 
 type GetMembersResponse = GetMembersSuccess | GetMembersError
 
-function parseStatus(value: unknown): MemberStatus {
-  if (value === MemberStatus.Active || value === MemberStatus.Passive || value === MemberStatus.Hold || value === MemberStatus.Left) {
-    return value
-  }
-  return MemberStatus.Active
-}
-
 export default defineEventHandler(async (event): Promise<GetMembersResponse> => {
-  const current = await getCurrentUserFromEvent(event, true)
-  if (!current.ok) return { ok: false, error: 'Not authenticated' }
-  if (!current.user.permissions.includes('members.view')) return { ok: false, error: 'Not authorized' }
+  const current = await requirePermission(event, 'members.view')
+  if (!current.ok) return current
 
   const canViewUsers = current.user.permissions.includes('users.view') || current.user.permissions.includes('users.manage')
 
@@ -56,7 +49,7 @@ export default defineEventHandler(async (event): Promise<GetMembersResponse> => 
         first_name: String(row.first_name),
         last_name: String(row.last_name),
         birthdate: String(row.birthdate),
-        status: parseStatus(String(row.status)),
+        status: parseMemberStatus(String(row.status)) as MemberStatus,
         honorary: Boolean(row.honorary),
         subject_name: row.subject_name ? String(row.subject_name) : null,
         joined_at: String(row.joined_at),

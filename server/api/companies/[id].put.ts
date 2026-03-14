@@ -1,6 +1,8 @@
 import { defineEventHandler, readBody } from 'h3'
 import { query, withTransaction } from '~/server/utils/db'
-import { getCurrentUserFromEvent } from '~/server/utils/sessionGuard'
+import { logFieldChanges } from '~/server/utils/api/audit'
+import { requirePermission } from '~/server/utils/api/guards'
+import { getNumericRouteParam } from '~/server/utils/api/request'
 import type { CompanyRow, UpdateCompanyBody } from '~/types/company'
 
 interface UpdateCompanySuccess {
@@ -19,12 +21,11 @@ interface MysqlError extends Error {
 }
 
 export default defineEventHandler(async (event): Promise<UpdateCompanyResponse> => {
-  const current = await getCurrentUserFromEvent(event, false)
-  if (!current.ok) return { ok: false, error: 'Not authenticated' }
-  if (!current.user.permissions.includes('companies.edit')) return { ok: false, error: 'Not authorized' }
+  const current = await requirePermission(event, 'companies.edit', { touch: false })
+  if (!current.ok) return current
 
-  const companyId = Number(event.context.params?.id)
-  if (!companyId) return { ok: false, error: 'Invalid receipt id' }
+  const companyId = getNumericRouteParam(event)
+  if (!companyId) return { ok: false, error: 'Invalid company id' }
 
   const body = await readBody<UpdateCompanyBody>(event)
   if (!body.name) return { ok: false, error: 'Missing fields' }
@@ -37,26 +38,21 @@ export default defineEventHandler(async (event): Promise<UpdateCompanyResponse> 
         [companyId],
         conn
       )
-      
+
       if (!existingRows.length) return { ok: false, error: 'No matching companies in database' }
       const existing = existingRows[0]
-      
+
       const fields = ['name', 'street', 'street_number', 'postal_code', 'city', 'country', 'iban', 'bic', 'bankname', 'vat_id', 'email', 'phone', 'notes'] as (keyof UpdateCompanyBody)[]
-      
-      for (const field of fields) {
-        if (String(existing[field]) !== String(updated[field])) {
-          await logChange({
-            entityType: 'company',
-            entityId: companyId,
-            subEntityType: null,
-            subEntityId: null,
-            field,
-            oldValue: existing[field],
-            newValue: updated[field],
-            userId: current.user.id,
-          }, conn)
-        }
-      }
+
+      await logFieldChanges({
+        entityType: 'company',
+        entityId: companyId,
+        fields,
+        previous: existing,
+        next: updated,
+        userId: current.user.id,
+        conn,
+      })
 
       await query(
         `UPDATE companies
@@ -76,19 +72,19 @@ export default defineEventHandler(async (event): Promise<UpdateCompanyResponse> 
           notes = ?
         WHERE id = ?`,
         [
-          updated.name, 
-          updated.street || null, 
-          updated.street_number || null, 
-          updated.postal_code || null, 
-          updated.city || null, 
-          updated.country || null, 
-          updated.iban || null, 
-          updated.bic || null, 
-          updated.bankname || null, 
-          updated.vat_id || null, 
-          updated.email || null, 
-          updated.phone || null, 
-          updated.notes || null, 
+          updated.name,
+          updated.street || null,
+          updated.street_number || null,
+          updated.postal_code || null,
+          updated.city || null,
+          updated.country || null,
+          updated.iban || null,
+          updated.bic || null,
+          updated.bankname || null,
+          updated.vat_id || null,
+          updated.email || null,
+          updated.phone || null,
+          updated.notes || null,
           companyId,
         ],
         conn

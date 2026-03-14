@@ -1,6 +1,6 @@
 import { defineEventHandler } from 'h3'
 import { query } from '~/server/utils/db'
-import { getCurrentUserFromEvent } from '~/server/utils/sessionGuard'
+import { requirePermission } from '~/server/utils/api/guards'
 import { isValidPermissionKey } from '~/server/utils/permissions'
 
 interface PositionRow {
@@ -34,9 +34,8 @@ interface GetPositionsError {
 type GetPositionsResponse = GetPositionsSuccess | GetPositionsError
 
 export default defineEventHandler(async (event): Promise<GetPositionsResponse> => {
-  const current = await getCurrentUserFromEvent(event, true)
-  if (!current.ok) return { ok: false, error: 'Not authenticated' }
-  if (!current.user.permissions.includes('permissions.manage')) return { ok: false, error: 'Not authorized' }
+  const current = await requirePermission(event, 'permissions.manage')
+  if (!current.ok) return current
 
   const positions = await query<PositionRow[]>(
     `SELECT id, code, name, is_active
@@ -59,12 +58,12 @@ export default defineEventHandler(async (event): Promise<GetPositionsResponse> =
 
   return {
     ok: true,
-    positions: positions.map(p => ({
-      id: Number(p.id),
-      code: p.code,
-      name: p.name,
-      is_active: p.is_active === 1,
-      permissions: permissionsByPosition.get(Number(p.id)) ?? []
+    positions: positions.map(position => ({
+      id: Number(position.id),
+      code: position.code,
+      name: position.name,
+      is_active: position.is_active === 1,
+      permissions: permissionsByPosition.get(Number(position.id)) ?? []
     }))
   }
 })

@@ -1,49 +1,23 @@
 import { defineEventHandler, readBody } from 'h3'
-import { query, withTransaction } from '~/server/utils/db'
-import { getCurrentUserFromEvent } from '~/server/utils/sessionGuard'
+import { requirePermission } from '~/server/utils/api/guards'
+import { toggleActiveRecord } from '~/server/utils/api/toggle'
 import type { ActivateBody, ActivateResponse } from '~/types/activate'
-import { CostCentreRow } from '~/types/costCentre'
 
 export default defineEventHandler(async (event): Promise<ActivateResponse> => {
-  const current = await getCurrentUserFromEvent(event, true )
-  if (!current.ok) return { ok: false, error: 'Not authenticated' }
-  if (!current.user.permissions.includes('settings.cost_centres.manage')) return { ok: false, error: 'Not authorized' }
+  const current = await requirePermission(event, 'settings.cost_centres.manage')
+  if (!current.ok) return current
 
   const { id, is_active } = await readBody<ActivateBody>(event)
   if (id === undefined || id === null || is_active === undefined || is_active === null) return { ok: false, error: 'Missing fields' }
-  const active = 1 ? is_active : 0
 
   try {
-    return await withTransaction(async (conn) => {
-      const existingRows: CostCentreRow[] = await query(
-        `SELECT * FROM cost_centres WHERE id = ? LIMIT 1`,
-        [id],
-        conn
-      )
-
-      if (!existingRows.length) return { ok: false, error: 'No matching cost centres in database' }
-      const existing = existingRows[0]
-
-      await logChange({
-        entityType: 'cost_centre',
-        entityId: id,
-        subEntityType: null,
-        subEntityId: null,
-        field: 'is_active',
-        oldValue: existing['is_active'],
-        newValue: active,
-        userId: current.user.id,
-      }, conn)
-
-      await query(
-        `UPDATE cost_centres 
-          SET is_active = ? 
-        WHERE id = ?`, 
-        [active, id], 
-        conn
-      )
-      
-      return { ok: true }
+    return await toggleActiveRecord({
+      table: 'cost_centres',
+      entityType: 'cost_centre',
+      id,
+      isActive: is_active,
+      userId: current.user.id,
+      notFoundMessage: 'No matching cost centres in database',
     })
   } catch (err: any) {
     return { ok: false, error: `An error occured while activating/deactivating the cost centre: ${err}` }

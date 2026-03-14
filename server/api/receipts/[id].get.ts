@@ -1,7 +1,9 @@
-import { defineEventHandler, createError } from 'h3'
+import { defineEventHandler } from 'h3'
 import { query } from '~/server/utils/db'
-import { getCurrentUserFromEvent } from '~/server/utils/sessionGuard'
 import { normalizeBigInt } from '~/server/utils/normalize'
+import { requirePermission } from '~/server/utils/api/guards'
+import { getNumericRouteParam } from '~/server/utils/api/request'
+import { getAttachedFile } from '~/server/utils/files'
 import type { Receipt, ReceiptPosition, ReceiptRow } from '~/types/receipt'
 import type { FileRow } from '~/types/file'
 
@@ -19,11 +21,10 @@ interface GetReceiptError {
 export type GetReceiptResponse = GetReceiptSuccess | GetReceiptError
 
 export default defineEventHandler(async (event): Promise<GetReceiptResponse> => {
-  const current = await getCurrentUserFromEvent(event, true)
-  if (!current.ok) return { ok: false, error: 'Not authenticated' }
-  if (!current.user.permissions.includes('receipts.view')) return { ok: false, error: 'Not authorized' }
+  const current = await requirePermission(event, 'receipts.view')
+  if (!current.ok) return current
 
-  const id = Number(event.context.params?.id)
+  const id = getNumericRouteParam(event)
   if (!id) {
     return { ok: false, error: 'Invalid receipt id' }
   }
@@ -31,7 +32,7 @@ export default defineEventHandler(async (event): Promise<GetReceiptResponse> => 
   try {
     const receiptRows: ReceiptRow[] = await query(
       `
-      SELECT 
+      SELECT
         r.id,
         c.id AS company_id,
         c.name AS company_name,
@@ -62,21 +63,10 @@ export default defineEventHandler(async (event): Promise<GetReceiptResponse> => 
       [id]
     )
 
-    const fileRows: FileRow[] = await query(
-      `
-      SELECT f.id, f.file_path, f.original_name, f.mime_type, f.file_size
-      FROM file_attachments fa
-      JOIN files f ON f.id = fa.file_id
-      WHERE fa.entity_type = 'receipt'
-        AND fa.entity_id = ?
-        AND fa.detached_at IS NULL
-      LIMIT 1
-      `,
-      [id]
-    )
+    const file = await getAttachedFile('receipt', id)
 
-    return { 
-      ok: true, 
+    return {
+      ok: true,
       receipt: normalizeBigInt({
         id: Number(receipt.id),
         receipt_date: receipt.receipt_date,
@@ -86,9 +76,8 @@ export default defineEventHandler(async (event): Promise<GetReceiptResponse> => 
         status: receipt.status,
         positions: normalizeBigInt(positions) as ReceiptPosition[],
       }),
-      file: fileRows.length ? normalizeBigInt(fileRows[0]) : null
+      file: file ? normalizeBigInt(file) : null
     }
-
   } catch (err: any) {
     return { ok: false, error: `An error occurred while fetching a receipt: ${err}` }
   }

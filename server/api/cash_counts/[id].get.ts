@@ -1,9 +1,11 @@
 import { defineEventHandler } from 'h3'
 import { query } from '~/server/utils/db'
-import { getCurrentUserFromEvent } from '~/server/utils/sessionGuard'
 import { normalizeBigInt } from '~/server/utils/normalize'
-import type { FileRow } from '~/types/file'
+import { requirePermission } from '~/server/utils/api/guards'
+import { getNumericRouteParam } from '~/server/utils/api/request'
+import { getAttachedFile } from '~/server/utils/files'
 import type { CashCount, CashCountPosition, CashCountRow } from '~/types/cashCount'
+import type { FileRow } from '~/types/file'
 
 interface GetCashCountSuccess {
   ok: true
@@ -19,11 +21,10 @@ interface GetCashCountError {
 export type GetCashCountResponse = GetCashCountSuccess | GetCashCountError
 
 export default defineEventHandler(async (event): Promise<GetCashCountResponse> => {
-  const current = await getCurrentUserFromEvent(event, true)
-  if (!current.ok) return { ok: false, error: 'Not authenticated' }
-  if (!current.user.permissions.includes('cash_counts.view')) return { ok: false, error: 'Not authorized' }
+  const current = await requirePermission(event, 'cash_counts.view')
+  if (!current.ok) return current
 
-  const id = Number(event.context.params?.id)
+  const id = getNumericRouteParam(event)
   if (!id) return { ok: false, error: 'Invalid cash count id' }
 
   try {
@@ -68,18 +69,7 @@ export default defineEventHandler(async (event): Promise<GetCashCountResponse> =
       difference: Number(position.amount_after) - Number(position.amount_before),
     }))
 
-    const fileRows: FileRow[] = await query(
-      `
-      SELECT f.id, f.file_path, f.original_name, f.mime_type, f.file_size
-      FROM file_attachments fa
-      JOIN files f ON f.id = fa.file_id
-      WHERE fa.entity_type = 'cash_count'
-        AND fa.entity_id = ?
-        AND fa.detached_at IS NULL
-      LIMIT 1
-      `,
-      [id]
-    )
+    const file = await getAttachedFile('cash_count', id)
 
     return {
       ok: true,
@@ -93,7 +83,7 @@ export default defineEventHandler(async (event): Promise<GetCashCountResponse> =
         counted_after_at: String(cashCount.counted_after_at),
         positions,
       },
-      file: fileRows.length ? normalizeBigInt(fileRows[0]) : null,
+      file: file ? normalizeBigInt(file) : null,
     }
   } catch (err: any) {
     return { ok: false, error: `An error occurred while fetching a cash count: ${err}` }

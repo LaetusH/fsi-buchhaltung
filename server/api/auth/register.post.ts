@@ -1,7 +1,6 @@
 import { defineEventHandler, readBody } from 'h3'
-import { getCurrentUserFromEvent } from '~/server/utils/sessionGuard'
-import type { PermissionKey } from '~/config/permissions'
 import { withTransaction } from '~/server/utils/db'
+import { requirePermission } from '~/server/utils/api/guards'
 import {
   assignMemberToUser,
   createUserAccount,
@@ -29,9 +28,8 @@ interface RegisterError {
 type RegisterResponse = RegisterSuccess | RegisterError
 
 export default defineEventHandler(async (event): Promise<RegisterResponse> => {
-  const current = await getCurrentUserFromEvent(event, false)
-  if (!current.ok) return { ok: false, error: 'Not authenticated' }
-  if (!current.user.permissions.includes('users.manage' as PermissionKey)) return { ok: false, error: 'Not authorized' }
+  const current = await requirePermission(event, 'users.manage', { touch: false })
+  if (!current.ok) return current
 
   const body = await readBody<RegisterBody>(event)
   if (!body.username || !body.password) return { ok: false, error: 'Missing fields' }

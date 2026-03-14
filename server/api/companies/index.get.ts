@@ -1,7 +1,7 @@
 import { defineEventHandler } from 'h3'
 import { query } from '~/server/utils/db'
-import { getCurrentUserFromEvent } from '~/server/utils/sessionGuard'
 import { normalizeBigInt } from '~/server/utils/normalize'
+import { requirePermission } from '~/server/utils/api/guards'
 import type { CompanyRow } from '~/types/company'
 
 interface GetCompaniesSuccess {
@@ -17,9 +17,8 @@ interface GetCompaniesError {
 type GetCompaniesResponse = GetCompaniesSuccess | GetCompaniesError
 
 export default defineEventHandler(async (event): Promise<GetCompaniesResponse> => {
-  const current = await getCurrentUserFromEvent(event, true )
-  if (!current.ok) return { ok: false, error: 'Not authenticated' }
-  if (!current.user.permissions.includes('companies.view')) return { ok: false, error: 'Not authorized' }
+  const current = await requirePermission(event, 'companies.view')
+  if (!current.ok) return current
 
   const rows = await query(`
     SELECT id, name, street, street_number, postal_code, city, country, iban, bic, bankname, vat_id, email, phone, notes, created_at

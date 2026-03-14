@@ -1,6 +1,9 @@
 import { defineEventHandler, readBody } from 'h3'
 import { query, withTransaction } from '~/server/utils/db'
-import { getCurrentUserFromEvent } from '~/server/utils/sessionGuard'
+import { normalizeBigInt } from '~/server/utils/normalize'
+import { logFieldChanges } from '~/server/utils/api/audit'
+import { requirePermission } from '~/server/utils/api/guards'
+import { toDbBoolean } from '~/server/utils/api/request'
 import type { SaveSphereBody, SphereRow } from '~/types/sphere'
 
 interface SaveSphereSuccess {
@@ -20,16 +23,15 @@ interface MysqlError extends Error {
 }
 
 export default defineEventHandler(async (event): Promise<SaveSphereResponse> => {
-  const current = await getCurrentUserFromEvent(event, false)
-  if (!current.ok) return { ok: false, error: 'Not authenticated' }
-  if (!current.user.permissions.includes('settings.spheres.manage')) return { ok: false, error: 'Not authorized' }
+  const current = await requirePermission(event, 'settings.spheres.manage', { touch: false })
+  if (!current.ok) return current
 
   const body = await readBody<SaveSphereBody>(event)
   if (!body.name || !body.code) return { ok: false, error: 'Missing fields' }
   const updated = body
 
   if (updated.is_active === undefined || updated.is_active === null) updated.is_active = true
-  const active = 1 ? updated.is_active : 0
+  const active = toDbBoolean(updated.is_active)
 
   try {
     return await withTransaction(async (conn) => {
@@ -39,24 +41,21 @@ export default defineEventHandler(async (event): Promise<SaveSphereResponse> => 
           [updated.id],
           conn
         )
-      
-        if (!existingRows.length) return { ok: false, error: 'No matching spheres in database' }           
+
+        if (!existingRows.length) return { ok: false, error: 'No matching spheres in database' }
         const existing = existingRows[0]
-    
+
         const fields = ['code', 'name', 'description'] as (keyof SaveSphereBody)[]
-            
-        for (const field of fields) {
-          await logChange({
-            entityType: 'sphere',
-            entityId: updated.id,
-            subEntityType: null,
-            subEntityId: null,
-            field,
-            oldValue: existing[field],
-            newValue: updated[field],
-            userId: current.user.id,
-          }, conn)
-        }
+
+        await logFieldChanges({
+          entityType: 'sphere',
+          entityId: updated.id,
+          fields,
+          previous: existing,
+          next: updated,
+          userId: current.user.id,
+          conn,
+        })
 
         await query(
           `UPDATE spheres

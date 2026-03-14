@@ -1,9 +1,10 @@
 import { defineEventHandler, readBody } from 'h3'
 import type { PositionRow, SavePositionBody } from '~/types/position'
-import { logChange } from '~/server/utils/changeLogger'
 import { query, withTransaction } from '~/server/utils/db'
 import { normalizeBigInt } from '~/server/utils/normalize'
-import { getCurrentUserFromEvent } from '~/server/utils/sessionGuard'
+import { logFieldChanges } from '~/server/utils/api/audit'
+import { requirePermission } from '~/server/utils/api/guards'
+import { toDbBoolean } from '~/server/utils/api/request'
 
 interface SavePositionSuccess {
   ok: true
@@ -22,16 +23,15 @@ interface MysqlError extends Error {
 }
 
 export default defineEventHandler(async (event): Promise<SavePositionResponse> => {
-  const current = await getCurrentUserFromEvent(event, false)
-  if (!current.ok) return { ok: false, error: 'Not authenticated' }
-  if (!current.user.permissions.includes('settings.positions.manage')) return { ok: false, error: 'Not authorized' }
+  const current = await requirePermission(event, 'settings.positions.manage', { touch: false })
+  if (!current.ok) return current
 
   const body = await readBody<SavePositionBody>(event)
   if (!body.code || !body.name) return { ok: false, error: 'Missing fields' }
   const updated = body
 
   if (updated.is_active === undefined || updated.is_active === null) updated.is_active = true
-  const active = updated.is_active ? 1 : 0
+  const active = toDbBoolean(updated.is_active)
 
   try {
     return await withTransaction(async (conn) => {
@@ -47,18 +47,15 @@ export default defineEventHandler(async (event): Promise<SavePositionResponse> =
 
         const fields = ['code', 'name', 'description'] as (keyof SavePositionBody)[]
 
-        for (const field of fields) {
-          await logChange({
-            entityType: 'position',
-            entityId: updated.id,
-            subEntityType: null,
-            subEntityId: null,
-            field,
-            oldValue: existing[field],
-            newValue: updated[field],
-            userId: current.user.id,
-          }, conn)
-        }
+        await logFieldChanges({
+          entityType: 'position',
+          entityId: updated.id,
+          fields,
+          previous: existing,
+          next: updated,
+          userId: current.user.id,
+          conn,
+        })
 
         await query(
           `UPDATE positions
