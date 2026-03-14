@@ -32,6 +32,7 @@
 <script setup lang="ts">
 import Page from '~/components/Page.vue'
 import { useI18n } from '~/composables/useI18n'
+import { useToast } from '~/composables/useToast'
 import FileDrop from '../FileDrop.vue'
 import ReimbursementForm from './Form.vue'
 import { usePage } from '~/composables/usePage'
@@ -45,6 +46,7 @@ const emit = defineEmits<{
 
 const { setPage, pageMeta } = usePage()
 const { t } = useI18n()
+const toast = useToast()
 const { hasPermission } = useAuth()
 
 const canEdit = computed(() => hasPermission('reimbursements.edit'))
@@ -168,47 +170,47 @@ function onRemoveFile() {
 
 async function submit() {
   if (!canEdit.value) {
-    alert(t('common.notAuthorized'))
+    toast.error(t('common.notAuthorized'))
     return
   }
   if (!form.value.paid_by) {
-    alert(t('reimbursement.required.selectPaidBy'))
+    toast.error(t('reimbursement.required.selectPaidBy'))
     return
   }
   if (!form.value.submitted_at) {
-    alert(t('reimbursement.required.enterSubmittedDate'))
+    toast.error(t('reimbursement.required.enterSubmittedDate'))
     return
   }
   if (!form.value.positions.length) {
-    alert(t('reimbursement.required.addReceipt'))
+    toast.error(t('reimbursement.required.addReceipt'))
     return
   }
 
   const hasFile = !!file.value || (!!existingFile.value && !removeExistingFile.value)
   if (!hasFile) {
-    alert(t('reimbursement.required.fileNeeded'))
+    toast.error(t('reimbursement.required.fileNeeded'))
     return
   }
 
   const hasCheckedPair = Boolean(form.value.checked_by) === Boolean(form.value.checked_at)
   if (!hasCheckedPair) {
-    alert(t('reimbursement.required.checkedPair'))
+    toast.error(t('reimbursement.required.checkedPair'))
     return
   }
 
   const hasDisbursedPair = Boolean(form.value.disbursed_by) === Boolean(form.value.disbursed_at)
   if (!hasDisbursedPair) {
-    alert(t('reimbursement.required.disbursedPair'))
+    toast.error(t('reimbursement.required.disbursedPair'))
     return
   }
 
   if (!form.value.cash) {
     if (!form.value.bankname?.trim()) {
-      alert(t('reimbursement.required.bankname'))
+      toast.error(t('reimbursement.required.bankname'))
       return
     }
     if (!form.value.iban?.trim()) {
-      alert(t('reimbursement.required.iban'))
+      toast.error(t('reimbursement.required.iban'))
       return
     }
   }
@@ -217,7 +219,7 @@ async function submit() {
   if (file.value) body.append('file', file.value)
 
   if (form.value.positions.some(position => !position.receipt_id && !position.receipt?.id)) {
-    alert(t('reimbursement.required.receiptId'))
+    toast.error(t('reimbursement.required.receiptId'))
     return
   }
 
@@ -246,11 +248,11 @@ async function submit() {
       if (!createRes.ok) throw new Error(createRes.error || t('reimbursement.saved.failedCreate'))
     }
 
-    alert(isEditMode.value ? t('reimbursement.saved.updated') : t('reimbursement.saved.created'))
+    toast.success(isEditMode.value ? t('reimbursement.saved.updated') : t('reimbursement.saved.created'))
     const returnTo = pageMeta.value?.returnTo || 'ReimbursementList'
     setPage(returnTo)
   } catch (err: any) {
-    alert(err?.message || t('reimbursement.saved.failedSave'))
+    toast.error(err?.message || t('reimbursement.saved.failedSave'))
   }
 }
 

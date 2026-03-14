@@ -229,6 +229,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useI18n } from '~/composables/useI18n'
+import { useToast } from '~/composables/useToast'
 import type { PermissionDefinition } from '~/config/permissions'
 
 interface RoleRow {
@@ -257,6 +258,7 @@ interface UserRow {
 }
 
 const { t } = useI18n()
+const toast = useToast()
 
 const permissions = ref<PermissionDefinition[]>([])
 const roles = ref<RoleRow[]>([])
@@ -370,7 +372,7 @@ async function saveRole() {
     body: payload,
   })
   if (!res.ok) {
-    alert(`${t('settings.permissions.saveFailed')}: ${res.error}`)
+    toast.error(`${t('settings.permissions.saveFailed')}: ${res.error}`)
     return
   }
   showRoleModal.value = false
@@ -412,7 +414,7 @@ async function savePermissionModal() {
     body,
   })
   if (!res.ok) {
-    alert(`${t('settings.permissions.saveFailed')}: ${res.error}`)
+    toast.error(`${t('settings.permissions.saveFailed')}: ${res.error}`)
     return
   }
   permissionModal.value = null
@@ -440,7 +442,7 @@ async function saveUserAccess() {
     body: payload,
   })
   if (!res.ok) {
-    alert(`${t('settings.permissions.saveFailed')}: ${res.error}`)
+    toast.error(`${t('settings.permissions.saveFailed')}: ${res.error}`)
     return
   }
   userModal.value = null

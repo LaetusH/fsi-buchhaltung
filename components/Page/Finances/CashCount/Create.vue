@@ -31,6 +31,7 @@
 <script setup lang="ts">
 import Page from '~/components/Page.vue'
 import { useI18n } from '~/composables/useI18n'
+import { useToast } from '~/composables/useToast'
 import FileDrop from '../FileDrop.vue'
 import CashCountForm from './Form.vue'
 import { usePage } from '~/composables/usePage'
@@ -44,6 +45,7 @@ const emit = defineEmits<{
 
 const { setPage, pageMeta } = usePage()
 const { t } = useI18n()
+const toast = useToast()
 const { hasPermission } = useAuth()
 
 const canEdit = computed(() => hasPermission('cash_counts.edit'))
@@ -133,51 +135,51 @@ function hasCompletePositions() {
 
 async function submit() {
   if (!canEdit.value) {
-    alert(t('common.notAuthorized'))
+    toast.error(t('common.notAuthorized'))
     return
   }
   if (!form.value.event_name.trim()) {
-    alert(t('cashCount.required.event'))
+    toast.error(t('cashCount.required.event'))
     return
   }
   if (!form.value.counted_by_first) {
-    alert(t('cashCount.required.countedByFirst'))
+    toast.error(t('cashCount.required.countedByFirst'))
     return
   }
   if (!form.value.counted_by_second) {
-    alert(t('cashCount.required.countedBySecond'))
+    toast.error(t('cashCount.required.countedBySecond'))
     return
   }
   if (!form.value.checked_by) {
-    alert(t('cashCount.required.checkedBy'))
+    toast.error(t('cashCount.required.checkedBy'))
     return
   }
   if (!hasDistinctMembers()) {
-    alert(t('cashCount.required.distinctMembers'))
+    toast.error(t('cashCount.required.distinctMembers'))
     return
   }
   if (!form.value.counted_before_at) {
-    alert(t('cashCount.required.countedBeforeAt'))
+    toast.error(t('cashCount.required.countedBeforeAt'))
     return
   }
   if (!form.value.counted_after_at) {
-    alert(t('cashCount.required.countedAfterAt'))
+    toast.error(t('cashCount.required.countedAfterAt'))
     return
   }
   if (!hasValidDateOrder()) {
-    alert(t('cashCount.required.order'))
+    toast.error(t('cashCount.required.order'))
     return
   }
   if (!form.value.positions.length) {
-    alert(t('cashCount.required.addPosition'))
+    toast.error(t('cashCount.required.addPosition'))
     return
   }
   if (!hasCompletePositions()) {
-    alert(t('cashCount.required.completePosition'))
+    toast.error(t('cashCount.required.completePosition'))
     return
   }
   if (!file.value && (!existingFile.value || removeExistingFile.value)) {
-    alert(t('cashCount.required.file'))
+    toast.error(t('cashCount.required.file'))
     return
   }
 
@@ -201,11 +203,11 @@ async function submit() {
       if (!createRes.ok) throw new Error(createRes.error || t('cashCount.saved.failedCreate'))
     }
 
-    alert(isEditMode.value ? t('cashCount.saved.updated') : t('cashCount.saved.created'))
+    toast.success(isEditMode.value ? t('cashCount.saved.updated') : t('cashCount.saved.created'))
     const returnTo = pageMeta.value?.returnTo || 'CashCountList'
     setPage(returnTo)
   } catch (err: any) {
-    alert(err?.message || t('cashCount.saved.failedSave'))
+    toast.error(err?.message || t('cashCount.saved.failedSave'))
   }
 }
 

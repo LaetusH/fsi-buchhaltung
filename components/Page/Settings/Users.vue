@@ -198,6 +198,7 @@
 
 <script setup lang="ts">
 import { useI18n } from '~/composables/useI18n'
+import { useToast } from '~/composables/useToast'
 import { useAuth } from '~/composables/useAuth'
 
 interface UserListRow {
@@ -217,6 +218,7 @@ interface MemberOptionRow {
 }
 
 const { locale, t } = useI18n()
+const toast = useToast()
 const { hasPermission } = useAuth()
 
 const hasAccess = computed(() => hasPermission('users.manage'))
@@ -342,7 +344,7 @@ async function createUser() {
   }
 
   if (!payload.username || !payload.password) {
-    alert(t('settings.users.missingFields'))
+    toast.error(t('settings.users.missingFields'))
     return
   }
 
@@ -353,22 +355,22 @@ async function createUser() {
 
   if (!res.ok) {
     if (res.error === 'Username already exists') {
-      alert(t('settings.users.usernameExists'))
+      toast.error(t('settings.users.usernameExists'))
       return
     }
     if (res.error === 'Member already linked to another user') {
-      alert(t('settings.users.memberAlreadyLinked'))
+      toast.error(t('settings.users.memberAlreadyLinked'))
       return
     }
     if (res.error === 'Member not found') {
-      alert(t('settings.users.memberNotFound'))
+      toast.error(t('settings.users.memberNotFound'))
       return
     }
-    alert(`${t('settings.users.createFailed')}: ${res.error}`)
+    toast.error(`${t('settings.users.createFailed')}: ${res.error}`)
     return
   }
 
-  alert(t('settings.users.created'))
+  toast.success(t('settings.users.created'))
   closeCreateModal()
   await Promise.all([loadUsers(), loadMemberOptions()])
 }
@@ -386,18 +388,18 @@ async function saveMemberLink() {
 
   if (!res.ok) {
     if (res.error === 'Member already linked to another user') {
-      alert(t('settings.users.memberAlreadyLinked'))
+      toast.error(t('settings.users.memberAlreadyLinked'))
       return
     }
     if (res.error === 'Member not found') {
-      alert(t('settings.users.memberNotFound'))
+      toast.error(t('settings.users.memberNotFound'))
       return
     }
-    alert(`${t('settings.users.memberSaveFailed')}: ${res.error}`)
+    toast.error(`${t('settings.users.memberSaveFailed')}: ${res.error}`)
     return
   }
 
-  alert(t('settings.users.memberSaved'))
+  toast.success(t('settings.users.memberSaved'))
   closeMemberModal()
   await Promise.all([loadUsers(), loadMemberOptions()])
 }
@@ -412,7 +414,7 @@ async function toggleUserActive(user: UserListRow) {
   })
 
   if (!res.ok) {
-    alert(`${t('settings.users.activationFailed')}: ${res.error}`)
+    toast.error(`${t('settings.users.activationFailed')}: ${res.error}`)
     return
   }
 

@@ -108,6 +108,7 @@
 <script setup lang="ts">
 import { defineAsyncComponent } from 'vue'
 import { useI18n } from '~/composables/useI18n'
+import { useToast } from '~/composables/useToast'
 import type { PDFDocumentProxy } from 'pdfjs-dist'
 
 const VuePdfEmbed = defineAsyncComponent(() => import('vue-pdf-embed'))
@@ -144,6 +145,7 @@ const pdfDocument = shallowRef<PDFDocumentProxy | null>(null)
 const zoomLevel = ref<number>(1.0)
 const pdfLoading = ref<boolean>(false)
 const { t } = useI18n()
+const toast = useToast()
 
 const MIN_ZOOM = 0.5
 const MAX_ZOOM = 4.0
@@ -347,7 +349,7 @@ function processFile(file: File) {
   if (file.type === 'application/pdf' || file.type === 'image/png' || file.type === 'image/jpg' || file.type === 'image/jpeg') {
     emit('update:modelValue', file)
   } else {
-    alert(t('files.uploadError'))
+    toast.error(t('files.uploadError'))
   }
 }
 

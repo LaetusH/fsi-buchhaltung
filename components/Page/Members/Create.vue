@@ -18,6 +18,7 @@
 
 <script setup lang="ts">
 import { useI18n } from '~/composables/useI18n'
+import { useToast } from '~/composables/useToast'
 import { MemberStatus, type Member, type SaveMemberBody } from '~/types/member'
 import { usePage } from '~/composables/usePage'
 import MembersForm from './Form.vue'
@@ -29,6 +30,7 @@ const emit = defineEmits<{
 
 const { setPage, pageMeta } = usePage()
 const { t } = useI18n()
+const toast = useToast()
 const { hasPermission } = useAuth()
 
 const canEdit = computed(() => hasPermission('members.edit'))
@@ -97,7 +99,7 @@ onMounted(async () => {
 
 async function submit() {
   if (!canEdit.value) {
-    alert(t('common.notAuthorized'))
+    toast.error(t('common.notAuthorized'))
     return
   }
   try {
@@ -117,11 +119,11 @@ async function submit() {
       if (!createRes.ok) throw new Error(createRes.error || t('member.saved.failedCreate'))
     }
 
-    alert(isEditMode.value ? t('member.saved.updated') : t('member.saved.created'))
+    toast.success(isEditMode.value ? t('member.saved.updated') : t('member.saved.created'))
     const returnTo = pageMeta.value?.returnTo || 'MemberList'
     setPage(returnTo)
   } catch (err: any) {
-    alert(err?.message || t('member.saved.failedSave'))
+    toast.error(err?.message || t('member.saved.failedSave'))
   }
 }
 

@@ -8,9 +8,11 @@
       @toggle-collapse="toggleDesktopMenu"
     />
 
-    <main :class="['flex-1 p-6 bg-gray-100 transition-[margin] duration-200', menuCollapsed ? 'md:ml-[4.5rem]' : 'md:ml-36']" @click="handleClick">
+    <main :class="['flex-1 p-6 bg-gray-100 transition-[margin] duration-200', menuCollapsed ? 'md:ml-18' : 'md:ml-36']" @click="handleClick">
       <PageRenderer @open-menu="handleOpen" />
     </main>
+
+    <ToastViewport />
   </div>
 </template>
 

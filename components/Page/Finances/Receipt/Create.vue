@@ -32,6 +32,7 @@
 <script setup lang="ts">
 import Page from '~/components/Page.vue'
 import { useI18n } from '~/composables/useI18n'
+import { useToast } from '~/composables/useToast'
 import FileDrop from '../FileDrop.vue'
 import ReceiptForm from './Form.vue'
 import { ReceiptStatus, type CreateReceiptBody } from '~/types/receipt'
@@ -45,6 +46,7 @@ const emit = defineEmits<{
 
 const { setPage, pageMeta } = usePage()
 const { t } = useI18n()
+const toast = useToast()
 const { hasPermission } = useAuth()
 
 const canEdit = computed(() => hasPermission('receipts.edit'))
@@ -107,33 +109,33 @@ function onRemoveFile() {
 
 async function submit() {
   if (!canEdit.value) {
-    alert(t('common.notAuthorized'))
+    toast.error(t('common.notAuthorized'))
     return
   }
   if (!form.value.company_id) {
-    alert(t('receipt.required.enterCompany'))
+    toast.error(t('receipt.required.enterCompany'))
     return
   }
 
   if (!form.value.receipt_date) {
-    alert(t('receipt.required.enterDate'))
+    toast.error(t('receipt.required.enterDate'))
     return
   }
 
   if (!form.value.positions.length) {
-    alert(t('receipt.required.addPosition'))
+    toast.error(t('receipt.required.addPosition'))
     return
   }
 
   if (form.value.positions.some(p => !p.sphere || !p.cost_centre || p.amount === null || p.amount === undefined)) {
-    alert(t('receipt.required.completePosition'))
+    toast.error(t('receipt.required.completePosition'))
     return
   }
 
   const hasFile = !!file.value || (!!existingFile.value && !removeExistingFile.value)
   const requiresFile = form.value.status === ReceiptStatus.Open || form.value.status === ReceiptStatus.Paid
   if (requiresFile && !hasFile) {
-    alert(t('receipt.required.fileForStatus'))
+    toast.error(t('receipt.required.fileForStatus'))
     return
   }
 
@@ -159,7 +161,7 @@ async function submit() {
       if (createRes.receiptId) createdReceiptId = createRes.receiptId
     }
 
-    alert(isEditMode.value ? t('receipt.saved.updated') : t('receipt.saved.created'))
+    toast.success(isEditMode.value ? t('receipt.saved.updated') : t('receipt.saved.created'))
     const returnTo = pageMeta.value?.returnTo || 'ReceiptList'
     const returnToMeta = pageMeta.value?.returnToMeta ? { ...pageMeta.value.returnToMeta } : undefined
 
@@ -173,7 +175,7 @@ async function submit() {
 
     setPage(returnTo, returnToMeta)
   } catch (err: any) {
-    alert(err?.message || t('receipt.saved.failedUpload'))
+    toast.error(err?.message || t('receipt.saved.failedUpload'))
   }
 }
 
