@@ -1,38 +1,27 @@
-<template>
-  <Page :headline1="t('cashCount.title')" @open-menu="$emit('openMenu')">
-    <template #cards>
-      <div class="col-span-6 self-start">
-        <ClientOnly v-if="canViewFiles">
-          <FileDrop
-            v-model:model-value="file"
-            :existing-file="existingFile"
-            :can-edit="canEdit"
-            @remove-existing="onRemoveFile"
-          />
-        </ClientOnly>
-      </div>
-
-      <div
-        data-finance-form-column
-        :class="[canViewFiles ? 'col-span-6 self-start' : 'col-span-12 lg:col-span-8 lg:col-start-3 self-start']"
-      >
-        <CashCountForm
-          v-model="form"
-          :has-file="!!file || (!!existingFile && !removeExistingFile)"
-          :disabled="!canEdit"
-          @submit="submit"
-          @cancel="cancel"
-        />
-      </div>
-    </template>
-  </Page>
+﻿<template>
+  <PageFinancesEditorLayout
+    :headline1="t('cashCount.title')"
+    :can-view-files="canViewFiles"
+    :model-value="file"
+    :existing-file="existingFile"
+    :can-edit="canEdit"
+    @open-menu="$emit('openMenu')"
+    @update:model-value="file = $event"
+    @remove-existing="onRemoveFile"
+  >
+    <CashCountForm
+      v-model="form"
+      :has-file="!!file || (!!existingFile && !removeExistingFile)"
+      :disabled="!canEdit"
+      @submit="submit"
+      @cancel="cancel"
+    />
+  </PageFinancesEditorLayout>
 </template>
 
 <script setup lang="ts">
-import Page from '~/components/Page.vue'
 import { useI18n } from '~/composables/useI18n'
 import { useToast } from '~/composables/useToast'
-import FileDrop from '../FileDrop.vue'
 import CashCountForm from './Form.vue'
 import { usePage } from '~/composables/usePage'
 import { useAuth } from '~/composables/useAuth'

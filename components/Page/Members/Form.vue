@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div class="space-y-6">
     <section class="bg-white rounded-xl shadow-lg p-4 space-y-3">
       <h2 class="text-lg font-semibold">{{ t('member.masterData') }}</h2>
@@ -6,17 +6,17 @@
       <div class="grid md:grid-cols-2 gap-4">
         <div>
           <label class="text-sm font-medium text-slate-600">{{ t('member.firstName') }}</label>
-          <input v-model="form.first_name" class="input" :class="disabled ? 'opacity-70' : ''" :disabled="disabled" />
+          <input v-model="form.first_name" class="input" :class="disabled ? 'opacity-70' : ''" :disabled="disabled">
         </div>
 
         <div>
           <label class="text-sm font-medium text-slate-600">{{ t('member.lastName') }}</label>
-          <input v-model="form.last_name" class="input" :class="disabled ? 'opacity-70' : ''" :disabled="disabled" />
+          <input v-model="form.last_name" class="input" :class="disabled ? 'opacity-70' : ''" :disabled="disabled">
         </div>
 
         <div>
           <label class="text-sm font-medium text-slate-600">{{ t('member.birthdate') }}</label>
-          <input v-model="form.birthdate" type="date" class="input" :class="disabled ? 'opacity-70' : ''" :disabled="disabled" />
+          <input v-model="form.birthdate" type="date" class="input" :class="disabled ? 'opacity-70' : ''" :disabled="disabled">
         </div>
 
         <div>
@@ -40,7 +40,7 @@
       </div>
 
       <label class="inline-flex items-center gap-2 text-sm text-slate-700 cursor-pointer">
-        <input v-model="form.honorary" type="checkbox" class="h-4 w-4" :class="disabled ? 'opacity-70' : ''" :disabled="disabled"/>
+        <input v-model="form.honorary" type="checkbox" class="h-4 w-4" :class="disabled ? 'opacity-70' : ''" :disabled="disabled">
         {{ t('member.honorary') }}
       </label>
     </section>
@@ -51,32 +51,32 @@
       <div class="grid md:grid-cols-4 gap-4">
         <div class="md:col-span-3">
           <label class="text-sm font-medium text-slate-600">{{ t('member.street') }}</label>
-          <input v-model="form.street" class="input" :class="disabled ? 'opacity-70' : ''" :disabled="disabled" />
+          <input v-model="form.street" class="input" :class="disabled ? 'opacity-70' : ''" :disabled="disabled">
         </div>
 
         <div>
           <label class="text-sm font-medium text-slate-600">{{ t('member.streetNumber') }}</label>
-          <input v-model="form.street_number" class="input" :class="disabled ? 'opacity-70' : ''" :disabled="disabled" />
+          <input v-model="form.street_number" class="input" :class="disabled ? 'opacity-70' : ''" :disabled="disabled">
         </div>
 
         <div>
           <label class="text-sm font-medium text-slate-600">{{ t('member.postalCode') }}</label>
-          <input v-model="form.postal_code" class="input" :class="disabled ? 'opacity-70' : ''" :disabled="disabled" />
+          <input v-model="form.postal_code" class="input" :class="disabled ? 'opacity-70' : ''" :disabled="disabled">
         </div>
 
         <div class="md:col-span-3">
           <label class="text-sm font-medium text-slate-600">{{ t('member.city') }}</label>
-          <input v-model="form.city" class="input" :class="disabled ? 'opacity-70' : ''" :disabled="disabled" />
+          <input v-model="form.city" class="input" :class="disabled ? 'opacity-70' : ''" :disabled="disabled">
         </div>
 
         <div class="md:col-span-2">
           <label class="text-sm font-medium text-slate-600">{{ t('member.phone') }}</label>
-          <input v-model="form.phone" class="input" :class="disabled ? 'opacity-70' : ''" :disabled="disabled" />
+          <input v-model="form.phone" class="input" :class="disabled ? 'opacity-70' : ''" :disabled="disabled">
         </div>
 
         <div class="md:col-span-2">
           <label class="text-sm font-medium text-slate-600">{{ t('member.email') }}</label>
-          <input v-model="form.email" type="email" class="input" :class="disabled ? 'opacity-70' : ''" :disabled="disabled" />
+          <input v-model="form.email" type="email" class="input" :class="disabled ? 'opacity-70' : ''" :disabled="disabled">
         </div>
       </div>
     </section>
@@ -87,56 +87,34 @@
       <div class="grid md:grid-cols-3 gap-4 items-end">
         <div class="md:col-span-3">
           <label class="text-sm font-medium text-slate-600">{{ t('member.subject') }}</label>
-          <MenuDropdown v-model="openSubject" :id="0" class="w-full">
-            <template #trigger="{ styling }">
-              <input
-                v-model="subjectQuery"
-                :class="[styling, disabled ? 'opacity-70' : '']"
-                :placeholder="canEditSubjects ? t('member.subjectEditablePlaceholder') : t('member.subjectPlaceholder')"
-                @input="onSubjectInput"
-                :disabled="disabled"
-              />
-            </template>
-
-            <template #default="{ styling }">
-              <button v-if="canEditSubjects" type="button" :class="styling" @click="createSubjectFromQuery" >
-                <div class="flex justify-between w-full">
-                  <span>"{{ subjectQuery }}"</span>
-                  <span class="text-orange-500 font-semibold">+ {{ t('actions.createNew') }}</span>
-                </div>
-              </button>
-
-              <div v-if="canEditSubjects" class="border-t"></div>
-
-              <button
-                v-for="subject in filteredSubjects"
-                :key="subject.id"
-                type="button"
-                :class="styling"
-                @click="selectSubject(subject.name)"
-              >
-                {{ subject.name }}
-              </button>
-              <div v-if="filteredSubjects.length === 0" class="px-3 py-2 text-sm text-gray-500">
-                {{ t('member.noSubjects') }}
-              </div>
-            </template>
-          </MenuDropdown>
+          <CommonSearchSelect
+            v-model="subjectQuery"
+            :options="subjectOptions"
+            :selected-label="form.subject_name || ''"
+            :placeholder="canEditSubjects ? t('member.subjectEditablePlaceholder') : t('member.subjectPlaceholder')"
+            :empty-text="t('member.noSubjects')"
+            :disabled="disabled"
+            :allow-create="canEditSubjects"
+            :create-action-label="t('actions.createNew')"
+            @select="onSubjectSelect"
+            @create="createSubjectFromQuery"
+            @clear-selection="form.subject_name = ''"
+          />
         </div>
 
         <div>
           <label class="text-sm font-medium text-slate-600">{{ t('member.appliedAt') }}</label>
-          <input v-model="form.applied_at" type="date" class="input" :class="disabled ? 'opacity-70' : ''" :disabled="disabled" />
+          <input v-model="form.applied_at" type="date" class="input" :class="disabled ? 'opacity-70' : ''" :disabled="disabled">
         </div>
 
         <div>
           <label class="text-sm font-medium text-slate-600">{{ t('member.joinedAt') }}</label>
-          <input v-model="form.joined_at" type="date" class="input" :class="disabled ? 'opacity-70' : ''" :disabled="disabled" />
+          <input v-model="form.joined_at" type="date" class="input" :class="disabled ? 'opacity-70' : ''" :disabled="disabled">
         </div>
 
         <div>
           <label class="text-sm font-medium text-slate-600">{{ t('member.leftAt') }}</label>
-          <input v-model="form.left_at" type="date" class="input" :class="disabled ? 'opacity-70' : ''" :disabled="disabled" />
+          <input v-model="form.left_at" type="date" class="input" :class="disabled ? 'opacity-70' : ''" :disabled="disabled">
         </div>
       </div>
 
@@ -154,38 +132,19 @@
         :key="i"
         class="grid grid-cols-1 md:grid-cols-[3fr_2fr_2fr_auto] gap-2 items-center"
       >
-        <MenuDropdown v-model="openPositionIndex" :id="i">
-          <template #trigger="{ styling }">
-            <input
-              v-model="positionQueries[i]"
-              :class="[styling, disabled ? 'opacity-70' : '']"
-              :placeholder="t('member.positionPlaceholder')"
-              @input="onPositionInput(i)"
-              :disabled="disabled"
-            />
-          </template>
+        <CommonSearchSelect
+          v-model="positionQueries[i]"
+          :options="positionOptions"
+          :selected-label="selectedPositionLabel(i)"
+          :placeholder="t('member.positionPlaceholder')"
+          :empty-text="t('member.noPositions')"
+          :disabled="disabled"
+          @select="selectPositionFromOption(i, $event)"
+          @clear-selection="clearPosition(i)"
+        />
 
-          <template #default="{ styling }">
-            <button
-              v-for="position in filteredPositions(i)"
-              :key="position.id"
-              type="button"
-              :class="styling"
-              @click="selectPosition(i, position.id)"
-            >
-              {{ position.code }} - {{ position.name }}
-            </button>
-            <div
-              v-if="filteredPositions(i).length === 0"
-              class="px-3 py-2 text-sm text-gray-500"
-            >
-              {{ t('member.noPositions') }}
-            </div>
-          </template>
-        </MenuDropdown>
-
-        <input v-model="assignment.since" type="date" class="input" :class="disabled ? 'opacity-70' : ''" :disabled="disabled" />
-        <input v-model="assignment.until" type="date" class="input" :class="disabled ? 'opacity-70' : ''" :disabled="disabled" />
+        <input v-model="assignment.since" type="date" class="input" :class="disabled ? 'opacity-70' : ''" :disabled="disabled">
+        <input v-model="assignment.until" type="date" class="input" :class="disabled ? 'opacity-70' : ''" :disabled="disabled">
 
         <button
           v-if="!disabled"
@@ -211,7 +170,7 @@
       <h3 class="font-semibold">{{ t('member.accountTitle') }}</h3>
 
       <label class="inline-flex items-center gap-2 text-sm text-slate-700 cursor-pointer">
-        <input v-model="accountCreationEnabled" type="checkbox" class="h-4 w-4" :disabled="disabled" />
+        <input v-model="accountCreationEnabled" type="checkbox" class="h-4 w-4" :disabled="disabled">
         {{ t('member.createAccount') }}
       </label>
 
@@ -229,7 +188,7 @@
             spellcheck="false"
             data-lpignore="true"
             @input="usernameManuallyEdited = true"
-          />
+          >
         </div>
 
         <div>
@@ -245,46 +204,32 @@
             autocapitalize="off"
             spellcheck="false"
             data-lpignore="true"
-          />
+          >
         </div>
       </div>
 
       <label v-if="accountCreationEnabled" class="inline-flex items-center gap-2 text-sm text-slate-700 cursor-pointer">
-        <input v-model="form.new_account!.is_active" type="checkbox" class="h-4 w-4" :disabled="disabled" />
+        <input v-model="form.new_account!.is_active" type="checkbox" class="h-4 w-4" :disabled="disabled">
         {{ t('member.accountActive') }}
       </label>
     </section>
 
-    <div v-if="!disabled" class="grid grid-cols-2 gap-4">
-      <button class="btn-secondary" @click="emit('cancel')">{{ t('actions.cancel') }}</button>
+    <CommonFormActions
+      :disabled="Boolean(props.disabled)"
+      :save-disabled="saveDisabled"
+      :cancel-label="t('actions.cancel')"
+      :submit-label="t('actions.save')"
+      :close-label="t('actions.close')"
+      @cancel="emit('cancel')"
+      @submit="emit('submit')"
+    />
 
-      <button
-        class="btn-primary"
-        :disabled="saveDisabled"
-        :class="{ 'opacity-50 cursor-not-allowed': saveDisabled }"
-        @click="emit('submit')"
-      >
-        {{ t('actions.save') }}
-      </button>
-    </div>
-
-    <div v-else class="grid">
-      <button class="btn-secondary col-span-12" @click="emit('cancel')">{{ t('actions.close') }}</button>
-    </div>
-
-    <section
-      v-if="validationErrors.length"
-      class="bg-red-50 border border-red-200 rounded-xl p-3 text-sm text-red-700"
-    >
-      <p class="font-semibold mb-1">{{ t('common.validationBlocked') }}</p>
-      <ul class="list-disc list-inside">
-        <li v-for="error in validationErrors" :key="error">{{ error }}</li>
-      </ul>
-    </section>
+    <CommonValidationSummary :errors="validationErrors" :title="t('common.validationBlocked')" />
   </div>
 </template>
 
 <script setup lang="ts">
+import type { SearchSelectOption } from '~/components/Common/SearchSelect.vue'
 import { useI18n } from '~/composables/useI18n'
 import type { PositionRow } from '~/types/position'
 import { MemberStatus, type SaveMemberBody } from '~/types/member'
@@ -308,8 +253,9 @@ const { t } = useI18n()
 
 const form = computed({
   get: () => props.modelValue,
-  set: v => emit('update:modelValue', v)
+  set: v => emit('update:modelValue', v),
 })
+const disabled = computed(() => Boolean(props.disabled))
 const canEditSubjects = computed(() => props.canEditSubjects !== false)
 const canManageUsers = computed(() => props.canManageUsers === true)
 const showAccountCreation = computed(() => props.showAccountCreation === true)
@@ -326,25 +272,25 @@ const accountCreationEnabled = computed({
           is_active: true,
         }
       : null
-  }
+  },
 })
 
 const subjects = ref<SubjectRow[]>([])
 const subjectQuery = ref('')
-const openSubject = ref<number | null>(null)
+const subjectOptions = computed<SearchSelectOption<string>[]>(() => subjects.value.map(subject => ({
+  key: subject.id,
+  label: subject.name,
+  value: subject.name,
+})))
 const positions = ref<PositionRow[]>([])
-const openPositionIndex = ref<number | null>(null)
 const positionQueries = ref<Record<number, string>>({})
+const positionOptions = computed<SearchSelectOption<PositionRow>[]>(() => positions.value.map(position => ({
+  key: position.id,
+  label: `${position.code} - ${position.name}`,
+  value: position,
+  searchText: `${position.code} ${position.name}`,
+})))
 const openStatus = ref<number | null>(null)
-
-const filteredSubjects = computed(() => {
-  const q = subjectQuery.value.trim().toLowerCase()
-  if (!q) return subjects.value
-
-  return subjects.value.filter(subject =>
-    subject.name.toLowerCase().includes(q)
-  )
-})
 
 const validationErrors = computed(() => {
   const errors: string[] = []
@@ -383,13 +329,8 @@ const validationErrors = computed(() => {
 const saveDisabled = computed(() => Boolean(props.disabled) || validationErrors.value.length > 0)
 
 onMounted(() => {
-  window.addEventListener('keydown', onKeydown)
   loadSubjects()
   loadPositions()
-})
-
-onBeforeUnmount(() => {
-  window.removeEventListener('keydown', onKeydown)
 })
 
 watch(
@@ -397,7 +338,7 @@ watch(
   (newValue) => {
     subjectQuery.value = newValue || ''
   },
-  { immediate: true }
+  { immediate: true },
 )
 
 async function loadSubjects() {
@@ -412,20 +353,6 @@ async function loadPositions() {
   }
 }
 
-function filteredPositions(index: number) {
-  const q = positionQueries.value[index]?.toLowerCase().trim()
-  if (!q) return positions.value
-
-  const byCode = positions.value.filter(position =>
-    position.code.toLowerCase().includes(q)
-  )
-  if (byCode.length) return byCode
-
-  return positions.value.filter(position =>
-    position.name.toLowerCase().includes(q)
-  )
-}
-
 async function createSubjectFromQuery() {
   if (!canEditSubjects.value) return
   const name = subjectQuery.value.trim()
@@ -433,35 +360,20 @@ async function createSubjectFromQuery() {
 
   const res = await $fetch<{ ok: boolean, id?: number }>('/api/subjects/create', {
     method: 'POST',
-    body: { name }
+    body: { name },
   })
 
   if (!res.ok) return
 
   form.value.subject_name = name
   subjectQuery.value = name
-  openSubject.value = null
   await loadSubjects()
 }
 
-function selectSubject(name: string) {
+function onSubjectSelect(value: unknown) {
+  const name = value as string
   form.value.subject_name = name
   subjectQuery.value = name
-  openSubject.value = null
-}
-
-function onSubjectInput() {
-  openSubject.value = 0
-  if (!subjectQuery.value.trim()) {
-    form.value.subject_name = ''
-  }
-}
-
-function onPositionInput(index: number) {
-  openPositionIndex.value = index
-  if (!positionQueries.value[index]?.trim() && form.value.positions[index]) {
-    form.value.positions[index]!.position_id = 0
-  }
 }
 
 function addPosition() {
@@ -476,75 +388,27 @@ function removePosition(index: number) {
   form.value.positions.splice(index, 1)
 }
 
-function selectPosition(index: number, positionId: number) {
-  if (!form.value.positions[index]) return
-  form.value.positions[index]!.position_id = positionId
+function selectedPositionLabel(index: number) {
+  const positionId = form.value.positions[index]?.position_id
+  if (!positionId) return ''
   const selected = positions.value.find(position => position.id === positionId)
-  positionQueries.value[index] = selected ? `${selected.code} - ${selected.name}` : ''
-  openPositionIndex.value = null
+  return selected ? `${selected.code} - ${selected.name}` : ''
 }
 
-function tryAutoSelectSubject() {
-  if (filteredSubjects.value.length === 1) {
-    const subject = filteredSubjects.value[0]
-    if (subject) selectSubject(subject.name)
-    return
-  }
-
-  const q = subjectQuery.value.trim().toLowerCase()
-  if (!q) return
-
-  const exact = subjects.value.filter(subject => subject.name.toLowerCase() === q)
-  if (exact.length === 1) {
-    const subject = exact[0]
-    if (subject) selectSubject(subject.name)
-  }
+function selectPosition(index: number, position: PositionRow) {
+  if (!form.value.positions[index]) return
+  form.value.positions[index]!.position_id = position.id
+  positionQueries.value[index] = `${position.code} - ${position.name}`
 }
 
-function tryAutoSelectPosition() {
-  if (openPositionIndex.value === null) return
-  const index = openPositionIndex.value
-
-  const filtered = filteredPositions(index)
-  if (filtered.length === 1) {
-    const position = filtered[0]
-    if (position) selectPosition(index, position.id)
-    return
-  }
-
-  const q = positionQueries.value[index]?.trim().toLowerCase()
-  if (!q) return
-
-  const byCode = positions.value.filter(position => position.code.toLowerCase() === q)
-  if (byCode.length === 1) {
-    const position = byCode[0]
-    if (position) selectPosition(index, position.id)
-    return
-  }
-
-  const byName = positions.value.filter(position => position.name.toLowerCase() === q)
-  if (byName.length === 1) {
-    const position = byName[0]
-    if (position) selectPosition(index, position.id)
-  }
+function selectPositionFromOption(index: number, value: unknown) {
+  selectPosition(index, value as PositionRow)
 }
 
-function onKeydown(e: KeyboardEvent) {
-  if (openSubject.value !== null) {
-    if (e.key === 'Escape') openSubject.value = null
-    if (e.key === 'Enter' || e.key === 'Tab') {
-      tryAutoSelectSubject()
-      openSubject.value = null
-    }
-  }
-
-  if (openPositionIndex.value !== null) {
-    if (e.key === 'Escape') openPositionIndex.value = null
-    if (e.key === 'Enter' || e.key === 'Tab') {
-      tryAutoSelectPosition()
-      openPositionIndex.value = null
-    }
-  }
+function clearPosition(index: number) {
+  if (!form.value.positions[index]) return
+  form.value.positions[index]!.position_id = 0
+  positionQueries.value[index] = ''
 }
 
 function statusLabel(status: MemberStatus) {
@@ -591,7 +455,7 @@ watch(
       positionQueries.value[index] = `${selected.code} - ${selected.name}`
     })
   },
-  { immediate: true, deep: true }
+  { immediate: true, deep: true },
 )
 
 watch(
@@ -600,6 +464,7 @@ watch(
     if (!newAccount || usernameManuallyEdited.value) return
     newAccount.username = buildDefaultAccountUsername(firstName, lastName)
   },
-  { immediate: true }
+  { immediate: true },
 )
 </script>
+

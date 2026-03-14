@@ -1,22 +1,15 @@
-<template>
+﻿<template>
   <Page :headline1="t('cashCount.listTitle')" @open-menu="$emit('openMenu')">
     <template #cards>
-      <div class="bg-white rounded-xl shadow-lg p-6 space-y-6 col-span-12">
-        <div class="flex justify-between items-center gap-3 flex-wrap">
-          <h2 class="text-lg font-semibold">{{ t('cashCount.stored') }}</h2>
-
-          <div class="flex items-center gap-2 flex-wrap justify-end">
-            <CommonGlobalSearchBar v-model="globalSearchInput" :placeholder="t('cashCount.search')" />
-            <button
-              v-if="canEdit"
-              class="btn-primary"
-              @click="setPage('CashCountCreate', { returnTo: 'CashCountList' })"
-            >
-              + {{ t('cashCount.new') }}
-            </button>
-          </div>
-        </div>
-
+      <CommonPageTableCard
+        :title="t('cashCount.stored')"
+        :search-value="globalSearchInput"
+        :search-placeholder="t('cashCount.search')"
+        :can-create="canEdit"
+        :create-label="`+ ${t('cashCount.new')}`"
+        @update:search-value="globalSearchInput = $event"
+        @create="setPage('CashCountCreate', { returnTo: 'CashCountList' })"
+      >
         <div class="overflow-x-auto">
           <table class="w-full text-sm border-collapse">
             <thead>
@@ -140,7 +133,7 @@
             </tbody>
           </table>
         </div>
-      </div>
+      </CommonPageTableCard>
     </template>
   </Page>
 </template>
@@ -149,6 +142,7 @@
 import { computed } from 'vue'
 import { useAdvancedTable } from '~/composables/useAdvancedTable'
 import { useI18n } from '~/composables/useI18n'
+import { useLocaleFormatters } from '~/composables/useLocaleFormatters'
 import { usePage } from '~/composables/usePage'
 import { useAuth } from '~/composables/useAuth'
 import type { CashCountOverview } from '~/types/cashCount'
@@ -162,7 +156,8 @@ const emit = defineEmits<{
 }>()
 
 const { setPage } = usePage()
-const { locale, t } = useI18n()
+const { t } = useI18n()
+const { formatCurrency, formatDateTime } = useLocaleFormatters()
 const { hasPermission } = useAuth()
 
 const canEdit = computed(() => hasPermission('cash_counts.edit'))
@@ -210,23 +205,6 @@ onMounted(async () => {
     console.log(res.error)
   }
 })
-
-function formatDateTime(value: string) {
-  return new Date(value).toLocaleString(locale.value, {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  })
-}
-
-function formatCurrency(amount: number) {
-  return new Intl.NumberFormat(locale.value, {
-    style: 'currency',
-    currency: 'EUR',
-  }).format(amount)
-}
 
 function openCashCount(id: number) {
   setPage('CashCountCreate', { cashCountId: id, returnTo: 'CashCountList' })

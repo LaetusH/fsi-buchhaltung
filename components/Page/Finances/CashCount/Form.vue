@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div class="space-y-6">
     <section class="bg-white rounded-xl shadow-lg p-4 space-y-4">
       <h2 class="text-lg font-semibold">{{ t('cashCount.countData') }}</h2>
@@ -11,98 +11,50 @@
           :class="disabled ? 'opacity-70' : ''"
           :placeholder="t('cashCount.eventPlaceholder')"
           :disabled="disabled"
-        />
+        >
       </div>
 
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
           <label class="text-sm font-medium text-slate-600">{{ t('cashCount.countedByFirst') }}</label>
-          <MenuDropdown v-model="openCountedByFirst" :id="0" class="w-full">
-            <template #trigger="{ styling }">
-              <input
-                v-model="countedByFirstQuery"
-                :class="[styling, disabled ? 'opacity-70' : '']"
-                :placeholder="t('cashCount.memberSearch')"
-                @input="openCountedByFirst = 0"
-                :disabled="disabled"
-              />
-            </template>
-
-            <template #default="{ styling }">
-              <button
-                v-for="member in filteredMembers(countedByFirstQuery)"
-                :key="member.id"
-                type="button"
-                :class="styling"
-                @click="selectMember('counted_by_first', member)"
-              >
-                {{ memberLabel(member) }}
-              </button>
-              <div v-if="filteredMembers(countedByFirstQuery).length === 0" class="px-3 py-2 text-sm text-gray-500">
-                {{ t('reimbursement.noMatchingMembers') }}
-              </div>
-            </template>
-          </MenuDropdown>
+          <CommonSearchSelect
+            v-model="countedByFirstQuery"
+            :options="memberOptions"
+            :selected-label="selectedMemberLabel(form.counted_by_first)"
+            :placeholder="t('cashCount.memberSearch')"
+            :empty-text="t('reimbursement.noMatchingMembers')"
+            :disabled="disabled"
+            @select="onCountedByFirstSelect"
+            @clear-selection="form.counted_by_first = 0"
+          />
         </div>
 
         <div>
           <label class="text-sm font-medium text-slate-600">{{ t('cashCount.countedBySecond') }}</label>
-          <MenuDropdown v-model="openCountedBySecond" :id="1" class="w-full">
-            <template #trigger="{ styling }">
-              <input
-                v-model="countedBySecondQuery"
-                :class="[styling, disabled ? 'opacity-70' : '']"
-                :placeholder="t('cashCount.memberSearch')"
-                @input="openCountedBySecond = 1"
-                :disabled="disabled"
-              />
-            </template>
-
-            <template #default="{ styling }">
-              <button
-                v-for="member in filteredMembers(countedBySecondQuery)"
-                :key="member.id"
-                type="button"
-                :class="styling"
-                @click="selectMember('counted_by_second', member)"
-              >
-                {{ memberLabel(member) }}
-              </button>
-              <div v-if="filteredMembers(countedBySecondQuery).length === 0" class="px-3 py-2 text-sm text-gray-500">
-                {{ t('reimbursement.noMatchingMembers') }}
-              </div>
-            </template>
-          </MenuDropdown>
+          <CommonSearchSelect
+            v-model="countedBySecondQuery"
+            :options="memberOptions"
+            :selected-label="selectedMemberLabel(form.counted_by_second)"
+            :placeholder="t('cashCount.memberSearch')"
+            :empty-text="t('reimbursement.noMatchingMembers')"
+            :disabled="disabled"
+            @select="onCountedBySecondSelect"
+            @clear-selection="form.counted_by_second = 0"
+          />
         </div>
 
         <div class="md:col-span-2">
           <label class="text-sm font-medium text-slate-600">{{ t('cashCount.checkedBy') }}</label>
-          <MenuDropdown v-model="openCheckedBy" :id="2" class="w-full">
-            <template #trigger="{ styling }">
-              <input
-                v-model="checkedByQuery"
-                :class="[styling, disabled ? 'opacity-70' : '']"
-                :placeholder="t('cashCount.memberSearch')"
-                @input="openCheckedBy = 2"
-                :disabled="disabled"
-              />
-            </template>
-
-            <template #default="{ styling }">
-              <button
-                v-for="member in filteredMembers(checkedByQuery)"
-                :key="member.id"
-                type="button"
-                :class="styling"
-                @click="selectMember('checked_by', member)"
-              >
-                {{ memberLabel(member) }}
-              </button>
-              <div v-if="filteredMembers(checkedByQuery).length === 0" class="px-3 py-2 text-sm text-gray-500">
-                {{ t('reimbursement.noMatchingMembers') }}
-              </div>
-            </template>
-          </MenuDropdown>
+          <CommonSearchSelect
+            v-model="checkedByQuery"
+            :options="memberOptions"
+            :selected-label="selectedMemberLabel(form.checked_by)"
+            :placeholder="t('cashCount.memberSearch')"
+            :empty-text="t('reimbursement.noMatchingMembers')"
+            :disabled="disabled"
+            @select="onCheckedBySelect"
+            @clear-selection="form.checked_by = 0"
+          />
         </div>
 
         <div>
@@ -113,7 +65,7 @@
             class="input"
             :class="disabled ? 'opacity-70' : ''"
             :disabled="disabled"
-          />
+          >
         </div>
 
         <div>
@@ -124,7 +76,7 @@
             class="input"
             :class="disabled ? 'opacity-70' : ''"
             :disabled="disabled"
-          />
+          >
         </div>
       </div>
     </section>
@@ -170,11 +122,11 @@
               :class="disabled ? 'opacity-70' : ''"
               :value="displayAmount(index, 'amount_before')"
               inputmode="decimal"
+              :disabled="disabled"
               @focus="onAmountFocus($event, index, 'amount_before')"
               @blur="onAmountBlur(index, 'amount_before')"
               @input="onAmountInput($event, index, 'amount_before')"
-              :disabled="disabled"
-            />
+            >
           </div>
 
           <div>
@@ -185,11 +137,11 @@
               :class="disabled ? 'opacity-70' : ''"
               :value="displayAmount(index, 'amount_after')"
               inputmode="decimal"
+              :disabled="disabled"
               @focus="onAmountFocus($event, index, 'amount_after')"
               @blur="onAmountBlur(index, 'amount_after')"
               @input="onAmountInput($event, index, 'amount_after')"
-              :disabled="disabled"
-            />
+            >
           </div>
 
           <div>
@@ -206,7 +158,7 @@
               class="input"
               :class="disabled ? 'opacity-70' : ''"
               :disabled="disabled"
-            />
+            >
           </div>
 
           <button
@@ -246,36 +198,25 @@
       </div>
     </section>
 
-    <div v-if="!disabled" class="grid grid-cols-2 gap-4">
-      <button class="btn-secondary" @click="emit('cancel')">{{ t('actions.cancel') }}</button>
-      <button
-        class="btn-primary"
-        :disabled="saveDisabled"
-        :class="{ 'opacity-50 cursor-not-allowed': saveDisabled }"
-        @click="emit('submit')"
-      >
-        {{ t('actions.save') }}
-      </button>
-    </div>
+    <CommonFormActions
+      :disabled="disabled"
+      :save-disabled="saveDisabled"
+      :cancel-label="t('actions.cancel')"
+      :submit-label="t('actions.save')"
+      :close-label="t('actions.close')"
+      @cancel="emit('cancel')"
+      @submit="emit('submit')"
+    />
 
-    <div v-else class="grid">
-      <button class="btn-secondary col-span-12" @click="emit('cancel')">{{ t('actions.close') }}</button>
-    </div>
-
-    <section
-      v-if="validationErrors.length"
-      class="bg-red-50 border border-red-200 rounded-xl p-3 text-sm text-red-700"
-    >
-      <p class="font-semibold mb-1">{{ t('common.validationBlocked') }}</p>
-      <ul class="list-disc list-inside">
-        <li v-for="error in validationErrors" :key="error">{{ error }}</li>
-      </ul>
-    </section>
+    <CommonValidationSummary :errors="validationErrors" :title="t('common.validationBlocked')" />
   </div>
 </template>
 
 <script setup lang="ts">
+import type { SearchSelectOption } from '~/components/Common/SearchSelect.vue'
 import { useI18n } from '~/composables/useI18n'
+import { focusAndSelectInput, sanitizeCurrencyInput } from '~/composables/useCurrencyInput'
+import { useLocaleFormatters } from '~/composables/useLocaleFormatters'
 import type { MemberListItem } from '~/types/member'
 import type { CreateCashCountBody, CreateCashCountPositionBody } from '~/types/cashCount'
 
@@ -294,7 +235,8 @@ const emit = defineEmits<{
   (e: 'cancel'): void
 }>()
 
-const { locale, t } = useI18n()
+const { t } = useI18n()
+const { formatCurrency } = useLocaleFormatters()
 
 const form = computed({
   get: () => props.modelValue,
@@ -303,13 +245,16 @@ const form = computed({
 
 const disabled = computed(() => Boolean(props.disabled))
 const members = ref<MemberListItem[]>([])
-const openCountedByFirst = ref<number | null>(null)
-const openCountedBySecond = ref<number | null>(null)
-const openCheckedBy = ref<number | null>(null)
 const countedByFirstQuery = ref('')
 const countedBySecondQuery = ref('')
 const checkedByQuery = ref('')
 const focusedAmountField = ref<{ index: number, field: AmountField } | null>(null)
+
+const memberOptions = computed<SearchSelectOption<MemberListItem>[]>(() => members.value.map(member => ({
+  key: member.id,
+  label: memberLabel(member),
+  value: member,
+})))
 
 const validationErrors = computed(() => {
   const errors: string[] = []
@@ -382,63 +327,38 @@ function memberLabel(member: MemberListItem) {
   return `${member.first_name} ${member.last_name}`
 }
 
-function filteredMembers(query: string) {
-  const normalized = query.toLowerCase().trim()
-  if (!normalized) return members.value
-  return members.value.filter(member => memberLabel(member).toLowerCase().includes(normalized))
+function selectedMemberLabel(memberId: number) {
+  const member = members.value.find(entry => entry.id === memberId)
+  return member ? memberLabel(member) : ''
 }
 
 function selectMember(field: MemberField, member: MemberListItem) {
   if (field === 'counted_by_first') {
     form.value.counted_by_first = member.id
     countedByFirstQuery.value = memberLabel(member)
-    openCountedByFirst.value = null
     return
   }
 
   if (field === 'counted_by_second') {
     form.value.counted_by_second = member.id
     countedBySecondQuery.value = memberLabel(member)
-    openCountedBySecond.value = null
     return
   }
 
   form.value.checked_by = member.id
   checkedByQuery.value = memberLabel(member)
-  openCheckedBy.value = null
 }
 
-function syncMemberQuery(field: MemberField, memberId: number) {
-  const member = members.value.find(entry => entry.id === memberId)
-  const label = member ? memberLabel(member) : ''
-
-  if (field === 'counted_by_first') countedByFirstQuery.value = label
-  if (field === 'counted_by_second') countedBySecondQuery.value = label
-  if (field === 'checked_by') checkedByQuery.value = label
+function onCountedByFirstSelect(value: unknown) {
+  selectMember('counted_by_first', value as MemberListItem)
 }
 
-function tryAutoSelectMember(field: MemberField) {
-  const query = field === 'counted_by_first'
-    ? countedByFirstQuery.value
-    : field === 'counted_by_second'
-      ? countedBySecondQuery.value
-      : checkedByQuery.value
+function onCountedBySecondSelect(value: unknown) {
+  selectMember('counted_by_second', value as MemberListItem)
+}
 
-  const filtered = filteredMembers(query)
-  if (filtered.length === 1) {
-    const member = filtered[0]
-    if (member) selectMember(field, member)
-    return
-  }
-
-  const normalized = query.trim().toLowerCase()
-  if (!normalized) return
-
-  const exactMatches = members.value.filter(member => memberLabel(member).toLowerCase() === normalized)
-  if (exactMatches.length === 1) {
-    const member = exactMatches[0]
-    if (member) selectMember(field, member)
-  }
+function onCheckedBySelect(value: unknown) {
+  selectMember('checked_by', value as MemberListItem)
 }
 
 async function loadMembers() {
@@ -480,36 +400,18 @@ function displayAmount(index: number, field: AmountField) {
   return formatCurrency(Number(value))
 }
 
-function formatCurrency(value: number) {
-  return new Intl.NumberFormat(locale.value, {
-    style: 'currency',
-    currency: 'EUR',
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  }).format(value)
-}
-
 function onAmountFocus(event: FocusEvent, index: number, field: AmountField) {
   focusedAmountField.value = { index, field }
-  nextTick(() => {
-    const input = event.target as HTMLInputElement
-    input.select()
-  })
+  focusAndSelectInput(event)
 }
 
 function onAmountInput(event: Event, index: number, field: AmountField) {
-  let value = (event.target as HTMLInputElement).value
-  value = value.replace(/[^0-9.,]/g, '')
-  value = value.replace(',', '.')
-
-  const parts = value.split('.')
-  if (parts.length > 2) value = parts[0] + '.' + parts.slice(1).join('')
-
+  const value = sanitizeCurrencyInput((event.target as HTMLInputElement).value)
   const parsed = parseFloat(value)
   const position = form.value.positions[index]
   if (!position) return
 
-  position[field] = isNaN(parsed) ? 0 : parsed
+  position[field] = Number.isNaN(parsed) ? 0 : parsed
   ;(event.target as HTMLInputElement).value = value
 }
 
@@ -525,60 +427,14 @@ function onAmountBlur(index: number, field: AmountField) {
   }
 }
 
-function onKeydown(event: KeyboardEvent) {
-  if (openCountedByFirst.value !== null) {
-    if (event.key === 'Escape') openCountedByFirst.value = null
-    if (event.key === 'Enter' || event.key === 'Tab') {
-      tryAutoSelectMember('counted_by_first')
-      openCountedByFirst.value = null
-    }
-  }
-
-  if (openCountedBySecond.value !== null) {
-    if (event.key === 'Escape') openCountedBySecond.value = null
-    if (event.key === 'Enter' || event.key === 'Tab') {
-      tryAutoSelectMember('counted_by_second')
-      openCountedBySecond.value = null
-    }
-  }
-
-  if (openCheckedBy.value !== null) {
-    if (event.key === 'Escape') openCheckedBy.value = null
-    if (event.key === 'Enter' || event.key === 'Tab') {
-      tryAutoSelectMember('checked_by')
-      openCheckedBy.value = null
-    }
-  }
-}
-
 watch([members, () => form.value.counted_by_first, () => form.value.counted_by_second, () => form.value.checked_by], () => {
-  syncMemberQuery('counted_by_first', Number(form.value.counted_by_first || 0))
-  syncMemberQuery('counted_by_second', Number(form.value.counted_by_second || 0))
-  syncMemberQuery('checked_by', Number(form.value.checked_by || 0))
+  countedByFirstQuery.value = selectedMemberLabel(Number(form.value.counted_by_first || 0))
+  countedBySecondQuery.value = selectedMemberLabel(Number(form.value.counted_by_second || 0))
+  checkedByQuery.value = selectedMemberLabel(Number(form.value.checked_by || 0))
 }, { immediate: true })
 
-watch(countedByFirstQuery, value => {
-  const selected = members.value.find(member => member.id === form.value.counted_by_first)
-  if (selected && value !== memberLabel(selected)) form.value.counted_by_first = 0
-})
-
-watch(countedBySecondQuery, value => {
-  const selected = members.value.find(member => member.id === form.value.counted_by_second)
-  if (selected && value !== memberLabel(selected)) form.value.counted_by_second = 0
-})
-
-watch(checkedByQuery, value => {
-  const selected = members.value.find(member => member.id === form.value.checked_by)
-  if (selected && value !== memberLabel(selected)) form.value.checked_by = 0
-})
-
 onMounted(() => {
-  window.addEventListener('keydown', onKeydown)
   if (!form.value.positions.length) addPosition()
   loadMembers()
-})
-
-onBeforeUnmount(() => {
-  window.removeEventListener('keydown', onKeydown)
 })
 </script>

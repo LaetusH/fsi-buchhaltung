@@ -1,39 +1,28 @@
-<template>
-  <Page :headline1="t('receipt.title')" @open-menu="$emit('openMenu')">
-    <template #cards>
-      <div class="col-span-6 self-start">
-        <ClientOnly v-if="canViewFiles">
-          <FileDrop
-            v-model:model-value="file"
-            :existing-file="existingFile"
-            :can-edit="canEdit"
-            @remove-existing="onRemoveFile"
-          />
-        </ClientOnly>
-      </div>
-
-      <div
-        data-finance-form-column
-        :class="[canViewFiles ? 'col-span-6 self-start' : 'col-span-12 lg:col-span-8 lg:col-start-3 self-start']"
-      >
-        <ReceiptForm
-          v-model="form"
-          :has-file="!!file || (!!existingFile && !removeExistingFile)"
-          :disabled="!canEdit"
-          :can-edit-company="canEditCompany"
-          @submit="submit"
-          @cancel="cancel"
-        />
-      </div>
-    </template>
-  </Page>
+﻿<template>
+  <PageFinancesEditorLayout
+    :headline1="t('receipt.title')"
+    :can-view-files="canViewFiles"
+    :model-value="file"
+    :existing-file="existingFile"
+    :can-edit="canEdit"
+    @open-menu="$emit('openMenu')"
+    @update:model-value="file = $event"
+    @remove-existing="onRemoveFile"
+  >
+    <ReceiptForm
+      v-model="form"
+      :has-file="!!file || (!!existingFile && !removeExistingFile)"
+      :disabled="!canEdit"
+      :can-edit-company="canEditCompany"
+      @submit="submit"
+      @cancel="cancel"
+    />
+  </PageFinancesEditorLayout>
 </template>
 
 <script setup lang="ts">
-import Page from '~/components/Page.vue'
 import { useI18n } from '~/composables/useI18n'
 import { useToast } from '~/composables/useToast'
-import FileDrop from '../FileDrop.vue'
 import ReceiptForm from './Form.vue'
 import { ReceiptStatus, type CreateReceiptBody } from '~/types/receipt'
 import { usePage } from '~/composables/usePage'
@@ -65,7 +54,7 @@ const form = ref<CreateReceiptBody>({
   description: null,
   status: ReceiptStatus.Open,
   company_id: null,
-  positions: [{ sphere: 0, cost_centre: 0, amount: 0.0, tax: 19 }]
+  positions: [{ sphere: 0, cost_centre: 0, amount: 0.0, tax: 19 }],
 })
 
 onMounted(async () => {
@@ -87,7 +76,7 @@ onMounted(async () => {
     description: res.receipt.description,
     status: res.receipt.status,
     company_id: res.receipt.company_id,
-    positions: res.receipt.positions
+    positions: res.receipt.positions,
   }
 
   if (!res.file) return
@@ -96,7 +85,7 @@ onMounted(async () => {
     url: `/api/files/${res.file.id}`,
     name: res.file.original_name,
     mime_type: res.file.mime_type,
-    size: res.file.file_size
+    size: res.file.file_size,
   }
   file.value = null
   removeExistingFile.value = false

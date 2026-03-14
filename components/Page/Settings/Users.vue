@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div v-if="hasAccess" class="bg-white rounded-b-xl rounded-tl-xl shadow-lg p-6 space-y-6 col-span-12">
     <div class="flex justify-between items-center gap-3 flex-wrap">
       <h2 class="text-lg font-semibold">{{ t('settings.users.title') }}</h2>
@@ -69,7 +69,7 @@
             autocapitalize="off"
             spellcheck="false"
             data-lpignore="true"
-          />
+          >
         </div>
 
         <div class="field">
@@ -83,48 +83,25 @@
             autocapitalize="off"
             spellcheck="false"
             data-lpignore="true"
-          />
+          >
         </div>
 
         <div class="field">
           <label>{{ t('settings.users.linkedMember') }}</label>
-          <MenuDropdown v-model="openCreateMemberDropdown" :id="0" class="w-full">
-            <template #trigger="{ styling }">
-              <input
-                v-model="createMemberQuery"
-                :class="styling"
-                :placeholder="t('settings.users.memberPlaceholder')"
-                @input="onCreateMemberInput"
-              />
-            </template>
-
-            <template #default="{ styling }">
-              <button type="button" :class="styling" @click="clearCreateMember">
-                {{ t('settings.users.noLinkedMember') }}
-              </button>
-
-              <div class="border-t"></div>
-
-              <button
-                v-for="member in filteredCreateMembers"
-                :key="member.id"
-                type="button"
-                :class="styling"
-                @click="selectCreateMember(member)"
-              >
-                {{ member.full_name }}
-              </button>
-
-              <div v-if="filteredCreateMembers.length === 0" class="px-3 py-2 text-sm text-gray-500">
-                {{ t('settings.users.noAvailableMembers') }}
-              </div>
-            </template>
-          </MenuDropdown>
+          <CommonSearchSelect
+            v-model="createMemberQuery"
+            :options="createMemberOptions"
+            :selected-label="selectedCreateMemberLabel"
+            :placeholder="t('settings.users.memberPlaceholder')"
+            :empty-text="t('settings.users.noAvailableMembers')"
+            @select="selectCreateMember"
+            @clear-selection="form.member_id = null"
+          />
         </div>
       </div>
 
       <label class="inline-flex items-center gap-2 text-sm text-slate-700">
-        <input v-model="form.is_active" type="checkbox" class="h-4 w-4" />
+        <input v-model="form.is_active" type="checkbox" class="h-4 w-4">
         {{ t('settings.users.active') }}
       </label>
 
@@ -149,38 +126,15 @@
 
       <div class="field">
         <label>{{ t('settings.users.linkedMember') }}</label>
-        <MenuDropdown v-model="openEditMemberDropdown" :id="1" class="w-full">
-          <template #trigger="{ styling }">
-            <input
-              v-model="editMemberQuery"
-              :class="styling"
-              :placeholder="t('settings.users.memberPlaceholder')"
-              @input="onEditMemberInput"
-            />
-          </template>
-
-          <template #default="{ styling }">
-            <button type="button" :class="styling" @click="clearEditMember">
-              {{ t('settings.users.noLinkedMember') }}
-            </button>
-
-            <div class="border-t"></div>
-
-            <button
-              v-for="member in filteredEditMembers"
-              :key="member.id"
-              type="button"
-              :class="styling"
-              @click="selectEditMember(member)"
-            >
-              {{ member.full_name }}
-            </button>
-
-            <div v-if="filteredEditMembers.length === 0" class="px-3 py-2 text-sm text-gray-500">
-              {{ t('settings.users.noAvailableMembers') }}
-            </div>
-          </template>
-        </MenuDropdown>
+        <CommonSearchSelect
+          v-model="editMemberQuery"
+          :options="editMemberOptions"
+          :selected-label="selectedEditMemberLabel"
+          :placeholder="t('settings.users.memberPlaceholder')"
+          :empty-text="t('settings.users.noAvailableMembers')"
+          @select="selectEditMember"
+          @clear-selection="editingMemberId = null"
+        />
       </div>
 
       <div class="flex justify-end gap-3 pt-2">
@@ -197,8 +151,10 @@
 </template>
 
 <script setup lang="ts">
+import type { SearchSelectOption } from '~/components/Common/SearchSelect.vue'
 import { useI18n } from '~/composables/useI18n'
 import { useToast } from '~/composables/useToast'
+import { useLocaleFormatters } from '~/composables/useLocaleFormatters'
 import { useAuth } from '~/composables/useAuth'
 
 interface UserListRow {
@@ -217,7 +173,8 @@ interface MemberOptionRow {
   account_username: string | null
 }
 
-const { locale, t } = useI18n()
+const { t } = useI18n()
+const { formatDate } = useLocaleFormatters()
 const toast = useToast()
 const { hasPermission } = useAuth()
 
@@ -226,8 +183,6 @@ const users = ref<UserListRow[]>([])
 const memberOptions = ref<MemberOptionRow[]>([])
 const showCreateModal = ref(false)
 const editingUser = ref<UserListRow | null>(null)
-const openCreateMemberDropdown = ref<number | null>(null)
-const openEditMemberDropdown = ref<number | null>(null)
 const createMemberQuery = ref('')
 const editMemberQuery = ref('')
 const form = ref({
@@ -238,22 +193,30 @@ const form = ref({
 })
 const editingMemberId = ref<number | null>(null)
 
-const filteredCreateMembers = computed(() => {
-  const query = createMemberQuery.value.trim().toLowerCase()
-  return memberOptions.value.filter((member) => {
-    if (member.account !== null) return false
-    return !query || member.full_name.toLowerCase().includes(query)
-  })
-})
-
-const filteredEditMembers = computed(() => {
-  const query = editMemberQuery.value.trim().toLowerCase()
+const createMemberOptions = computed<SearchSelectOption<MemberOptionRow>[]>(() => memberOptions.value
+  .filter(member => member.account === null)
+  .map(member => ({
+    key: member.id,
+    label: member.full_name,
+    value: member,
+  })))
+const editMemberOptions = computed<SearchSelectOption<MemberOptionRow>[]>(() => {
   const userId = editingUser.value?.id ?? null
-
-  return memberOptions.value.filter((member) => {
-    if (member.account !== null && member.account !== userId) return false
-    return !query || member.full_name.toLowerCase().includes(query)
-  })
+  return memberOptions.value
+    .filter(member => member.account === null || member.account === userId)
+    .map(member => ({
+      key: member.id,
+      label: member.full_name,
+      value: member,
+    }))
+})
+const selectedCreateMemberLabel = computed(() => {
+  const selected = memberOptions.value.find(member => member.id === form.value.member_id)
+  return selected?.full_name || ''
+})
+const selectedEditMemberLabel = computed(() => {
+  const selected = memberOptions.value.find(member => member.id === editingMemberId.value)
+  return selected?.full_name || ''
 })
 
 function resetForm() {
@@ -264,7 +227,6 @@ function resetForm() {
     member_id: null,
   }
   createMemberQuery.value = ''
-  openCreateMemberDropdown.value = null
 }
 
 function openCreateModal() {
@@ -281,48 +243,24 @@ function openMemberModal(user: UserListRow) {
   editingUser.value = { ...user }
   editingMemberId.value = user.member_id
   editMemberQuery.value = user.member_name || ''
-  openEditMemberDropdown.value = null
 }
 
 function closeMemberModal() {
   editingUser.value = null
   editingMemberId.value = null
   editMemberQuery.value = ''
-  openEditMemberDropdown.value = null
 }
 
-function onCreateMemberInput() {
-  form.value.member_id = null
-  openCreateMemberDropdown.value = 0
-}
-
-function onEditMemberInput() {
-  editingMemberId.value = null
-  openEditMemberDropdown.value = 1
-}
-
-function selectCreateMember(member: MemberOptionRow) {
+function selectCreateMember(value: unknown) {
+  const member = value as MemberOptionRow
   form.value.member_id = member.id
   createMemberQuery.value = member.full_name
-  openCreateMemberDropdown.value = null
 }
 
-function selectEditMember(member: MemberOptionRow) {
+function selectEditMember(value: unknown) {
+  const member = value as MemberOptionRow
   editingMemberId.value = member.id
   editMemberQuery.value = member.full_name
-  openEditMemberDropdown.value = null
-}
-
-function clearCreateMember() {
-  form.value.member_id = null
-  createMemberQuery.value = ''
-  openCreateMemberDropdown.value = null
-}
-
-function clearEditMember() {
-  editingMemberId.value = null
-  editMemberQuery.value = ''
-  openEditMemberDropdown.value = null
 }
 
 async function loadUsers() {
@@ -419,14 +357,6 @@ async function toggleUserActive(user: UserListRow) {
   }
 
   await loadUsers()
-}
-
-function formatDate(value: string) {
-  return new Date(value).toLocaleDateString(locale.value, {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric',
-  })
 }
 
 onMounted(async () => {

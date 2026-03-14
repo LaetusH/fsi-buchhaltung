@@ -1,69 +1,46 @@
-<template>
+﻿<template>
   <div class="space-y-6">
     <section class="bg-white rounded-xl shadow-lg p-4 space-y-1">
       <h2 class="text-lg font-semibold">{{ t('receipt.issue') }}</h2>
 
       <label class="section-title">{{ t('receipt.company') }}</label>
 
-      <!-- Select Company Dropdown -->
-      <MenuDropdown v-model="openCompany" :id="0" class="w-full">
-        <template #trigger="{ styling }">
-          <div class="flex items-center gap-2">
-            <input
-              v-model="companyQuery"
-              :class="[styling, disabled ? 'opacity-70' : '']"
-              :placeholder="t('receipt.companyPlaceholder')"
-              @input="openCompany = 0"
-              :disabled="disabled"
-            />
-
-            <button
-              v-if="selectedCompany && canEditCompany"
-              type="button"
-              @click.stop.prevent="openCompanyDrawer"
-              class="p-2 h-10 w-10 rounded-md hover:bg-slate-100 text-orange-500 cursor-pointer"
-              :title="t('receipt.editCompany')"
-            >
-              ✏️
-            </button>
-          </div>
-        </template>
-
-        <template #default="{ styling }">
-          <button v-if="canEditCompany" type="button" :class="styling" @click="createCompanyFromQuery">
-            <div class="flex justify-between w-full">
-              <span>"{{ companyQuery }}"</span>
-              <span class="text-orange-500 font-semibold">＋ {{ t('actions.createNew') }}</span>
-            </div>
-          </button>
-
-          <div v-if="canEditCompany" class="border-t"></div>
-
+      <CommonSearchSelect
+        v-model="companyQuery"
+        :options="companyOptions"
+        :selected-label="selectedCompany?.name || ''"
+        :placeholder="t('receipt.companyPlaceholder')"
+        :empty-text="t('receipt.noCompanies')"
+        :disabled="disabled"
+        :allow-create="canEditCompany"
+        :create-action-label="t('actions.createNew')"
+        @select="onCompanySelect"
+        @create="createCompanyFromQuery"
+        @clear-selection="clearSelectedCompany"
+      >
+        <template #after-trigger>
           <button
-            v-for="c in filteredCompanies"
-            :key="c.id"
+            v-if="selectedCompany && canEditCompany"
             type="button"
-            :class="styling"
-            @click="selectCompany(c)"
+            class="p-2 h-10 w-10 rounded-md hover:bg-slate-100 text-orange-500 cursor-pointer"
+            :title="t('receipt.editCompany')"
+            @click.stop.prevent="openCompanyDrawer"
           >
-            {{ c.name }}
+            <Icon name="material-symbols:edit-square-outline-rounded" class="text-xl" />
           </button>
-          <div v-if="filteredCompanies.length === 0" class="px-3 py-2 text-sm text-gray-500">
-            {{ t('receipt.noCompanies') }}
-          </div>
         </template>
-      </MenuDropdown>
+      </CommonSearchSelect>
     </section>
 
     <section class="bg-white rounded-xl shadow-lg p-4 grid grid-cols-2 gap-4">
       <div>
         <label class="text-sm font-medium text-slate-600">{{ t('receipt.receiptNumber') }}</label>
-        <input v-model="form.receipt_number" class="input" :class="disabled ? 'opacity-70' : ''" :disabled="disabled" />
+        <input v-model="form.receipt_number" class="input" :class="disabled ? 'opacity-70' : ''" :disabled="disabled">
       </div>
 
       <div>
         <label class="text-sm font-medium text-slate-600">{{ t('receipt.receiptDate') }}</label>
-        <input v-model="form.receipt_date" type="date" class="input" :class="disabled ? 'opacity-70' : ''" :disabled="disabled" />
+        <input v-model="form.receipt_date" type="date" class="input" :class="disabled ? 'opacity-70' : ''" :disabled="disabled">
       </div>
     </section>
 
@@ -76,7 +53,6 @@
         class="grid gap-2 items-center"
         :class="form.positions.length > 1 ? 'grid-cols-[3fr_2fr_2fr_2fr_auto]' : 'grid-cols-[3fr_2fr_2fr_3fr]'"
       >
-        <!-- Sphere Dropdown -->
         <MenuDropdown v-model="openSphereIndex" :id="i" class="min-w-0">
           <template #trigger="{ styling }">
             <button :class="[styling, disabled ? 'opacity-70' : 'cursor-pointer']" :disabled="disabled">
@@ -100,40 +76,19 @@
           </template>
         </MenuDropdown>
 
-        <!-- Cost Centre Dropdown -->
-        <MenuDropdown v-model="openCostCentreIndex" :id="i" menu-width="wide">
-          <template #trigger="{ styling }">
-            <div class="flex items-center gap-2">
-              <input
-                v-model="costCentreQueries[i]"
-                :class="[styling, disabled ? 'opacity-70' : '']"
-                :placeholder="t('receipt.costCentrePlaceholder')"
-                @input="openCostCentreIndex = i"
-              />
-            </div>
-          </template>
+        <CommonSearchSelect
+          v-model="costCentreQueries[i]"
+          :options="costCentreOptions"
+          :selected-label="selectedCostCentreLabel(i)"
+          :placeholder="t('receipt.costCentrePlaceholder')"
+          :empty-text="t('receipt.noCostCentres')"
+          :disabled="disabled"
+          menu-width="wide"
+          option-class="overflow-hidden text-ellipsis"
+          @select="selectCostCentreFromOption(i, $event)"
+          @clear-selection="clearCostCentre(i)"
+        />
 
-          <template #default="{ styling }">
-            <button
-              v-for="c in filteredCostCentres(i)"
-              :key="c.id"
-              type="button"
-              :class="styling"
-              class="overflow-hidden text-ellipsis"
-              @click="selectCostCentre(i, c)"
-            >
-              {{ c.code }} - {{ c.name }}
-            </button>
-            <div
-              v-if="filteredCostCentres(i).length === 0"
-              class="px-3 py-2 text-sm text-gray-500"
-            >
-              {{ t('receipt.noCostCentres') }}
-            </div>
-          </template>
-        </MenuDropdown>
-
-        <!-- Tax Dropdown -->
         <MenuDropdown v-model="openTaxIndex" :id="i">
           <template #trigger="{ styling }">
             <button :class="[styling, disabled ? 'opacity-70' : 'cursor-pointer']" :disabled="disabled">
@@ -155,11 +110,11 @@
           :class="disabled ? 'opacity-70' : ''"
           :value="displayAmount(i)"
           inputmode="decimal"
+          :disabled="disabled"
           @focus="onFocus($event, i)"
           @blur="onBlur(i)"
           @input="onInput($event, i)"
-          :disabled="disabled"
-        />
+        >
 
         <button
           v-if="!disabled && form.positions.length > 1"
@@ -208,33 +163,17 @@
       <PageFinancesPaymentStatus v-model="form.status" :disabled="disabled" />
     </section>
 
-    <div v-if="!disabled" class="grid grid-cols-2 gap-4">
-      <button class="btn-secondary" @click="emit('cancel')">{{ t('actions.cancel') }}</button>
+    <CommonFormActions
+      :disabled="Boolean(disabled)"
+      :save-disabled="saveDisabled"
+      :cancel-label="t('actions.cancel')"
+      :submit-label="t('actions.save')"
+      :close-label="t('actions.close')"
+      @cancel="emit('cancel')"
+      @submit="submit"
+    />
 
-      <button
-        v-if="!disabled"
-        class="btn-primary"
-        :disabled="saveDisabled"
-        :class="{ 'opacity-50 cursor-not-allowed': saveDisabled }"
-        @click="submit"
-      >
-        {{ t('actions.save') }}
-      </button>
-    </div>
-    
-    <div v-else class="grid">
-      <button class="btn-secondary col-span-12" @click="emit('cancel')">{{ t('actions.close') }}</button>
-    </div>
-
-    <section
-      v-if="validationErrors.length"
-      class="bg-red-50 border border-red-200 rounded-xl p-3 text-sm text-red-700"
-    >
-      <p class="font-semibold mb-1">{{ t('common.validationBlocked') }}</p>
-      <ul class="list-disc list-inside">
-        <li v-for="error in validationErrors" :key="error">{{ error }}</li>
-      </ul>
-    </section>
+    <CommonValidationSummary :errors="validationErrors" :title="t('common.validationBlocked')" />
   </div>
 
   <teleport to="body">
@@ -272,7 +211,10 @@
   </teleport>
 </template>
 <script setup lang="ts">
+import type { SearchSelectOption } from '~/components/Common/SearchSelect.vue'
 import { useI18n } from '~/composables/useI18n'
+import { focusAndSelectInput, sanitizeCurrencyInput } from '~/composables/useCurrencyInput'
+import { useLocaleFormatters } from '~/composables/useLocaleFormatters'
 import type { CompanyRow, Company } from '~/types/company'
 import { ReceiptStatus, type CreateReceiptBody } from '~/types/receipt'
 import type { SphereRow } from '~/types/sphere'
@@ -292,13 +234,15 @@ const emit = defineEmits<{
   (e: 'cancel'): void
 }>()
 
-const { locale, t } = useI18n()
+const { t } = useI18n()
+const { formatCurrency } = useLocaleFormatters()
 
 const form = computed({
   get: () => props.modelValue,
-  set: v => emit('update:modelValue', v)
+  set: v => emit('update:modelValue', v),
 })
 const canEditCompany = computed(() => props.canEditCompany === true)
+const disabled = computed(() => Boolean(props.disabled))
 
 const validationErrors = computed(() => {
   const errors: string[] = []
@@ -317,29 +261,25 @@ const validationErrors = computed(() => {
 const saveDisabled = computed(() => Boolean(props.disabled) || validationErrors.value.length > 0)
 const companies = ref<CompanyRow[]>([])
 const companyQuery = ref('')
-const openCompany = ref<number | null>(null)
 const selectedCompany = ref<Company | null>(null)
-const filteredCompanies = computed(() => {
-  const q = companyQuery.value.toLowerCase().trim()
-  if (!q) return companies.value
-  return companies.value.filter(c => c.name.toLowerCase().includes(q))
-})
+const companyOptions = computed<SearchSelectOption<CompanyRow>[]>(() => companies.value.map(company => ({
+  key: company.id,
+  label: company.name,
+  value: company,
+})))
 const spheres = ref<SphereRow[]>([])
 const openSphereIndex = ref<number | null>(null)
 const costCentres = ref<CostCentreRow[]>([])
-const openCostCentreIndex = ref<number | null>(null)
+const costCentreOptions = computed<SearchSelectOption<CostCentreRow>[]>(() => costCentres.value.map(costCentre => ({
+  key: costCentre.id,
+  label: `${costCentre.code} - ${costCentre.name}`,
+  value: costCentre,
+  searchText: `${costCentre.code} ${costCentre.name}`,
+})))
 const costCentreQueries = ref<Record<number, string>>({})
 const focusedIndex = ref<number | null>(null)
 const openTaxIndex = ref<number | null>(null)
 const showCompanyDrawer = ref(false)
-
-function filteredCostCentres(i: number) {
-  const q = costCentreQueries.value[i]?.toLowerCase().trim()
-  if (!q) return costCentres.value
-  const filtered = costCentres.value.filter(c => c.code.toLowerCase().includes(q))
-  if (filtered.length > 0) return filtered
-  return costCentres.value.filter(c => c.name.toLowerCase().includes(q))
-}
 
 async function loadSpheres() {
   const res = await $fetch('/api/spheres', { method: 'GET' })
@@ -358,7 +298,7 @@ async function loadCompanies() {
 
 async function submit() {
   const newCompanyName = companyQuery.value.trim()
-  if (newCompanyName.length > 0) createCompanyFromQuery()
+  if (!selectedCompany.value && newCompanyName.length > 0) await createCompanyFromQuery()
   emit('submit')
 }
 
@@ -368,36 +308,17 @@ async function createCompanyFromQuery() {
   if (newCompanyName.length > 0) {
     const res = await $fetch('/api/companies/create', {
       method: 'POST',
-      body: { name: newCompanyName }
+      body: { name: newCompanyName },
     })
     if (res.ok) {
       selectedCompany.value = { id: res.id, name: newCompanyName }
       form.value.company_id = res.id
     }
   }
-  openCompany.value = null
-  loadCompanies()
-}
-
-function onKeydown(e: KeyboardEvent) {
-  if (openCompany.value !== null) {
-    if (e.key === 'Escape') openCompany.value = null
-    if (e.key === 'Enter' || e.key === 'Tab') {
-      tryAutoSelectCompany()
-      openCompany.value = null
-    }
-  }
-  if (openCostCentreIndex.value !== null) {
-    if (e.key === 'Escape') openCostCentreIndex.value = null
-    if (e.key === 'Enter' || e.key === 'Tab') {
-      tryAutoSelectCostCentre()
-      openCostCentreIndex.value = null
-    }
-  }
+  await loadCompanies()
 }
 
 onMounted(() => {
-  window.addEventListener('keydown', onKeydown)
   loadCompanies()
   loadSpheres()
   loadCostCentres()
@@ -416,19 +337,18 @@ watch([costCentres, () => form.value.positions], () => {
   form.value.positions.forEach((p, index) => {
     if (!p.cost_centre) return
     const cc = costCentres.value.find(c => c.id === p.cost_centre)
-    if (cc) costCentreQueries.value[index] = cc.code
+    if (cc) costCentreQueries.value[index] = `${cc.code} - ${cc.name}`
   })
 }, { immediate: true, deep: true })
 
-onBeforeUnmount(() => {
-  window.removeEventListener('keydown', onKeydown)
-})
+function onCompanySelect(value: unknown) {
+  selectCompany(value as Company)
+}
 
 function selectCompany(company: Company) {
   selectedCompany.value = company
   form.value.company_id = company.id
   companyQuery.value = company.name
-  openCompany.value = null
 }
 
 function selectSphere(index: number, sphere: SphereRow) {
@@ -438,8 +358,24 @@ function selectSphere(index: number, sphere: SphereRow) {
 
 function selectCostCentre(index: number, costCentre: CostCentreRow) {
   form.value.positions[index]!.cost_centre = costCentre.id
-  costCentreQueries.value[index] = costCentre.code
-  openCostCentreIndex.value = null
+  costCentreQueries.value[index] = `${costCentre.code} - ${costCentre.name}`
+}
+
+function selectCostCentreFromOption(index: number, value: unknown) {
+  selectCostCentre(index, value as CostCentreRow)
+}
+
+function clearCostCentre(index: number) {
+  if (!form.value.positions[index]) return
+  form.value.positions[index]!.cost_centre = 0
+  costCentreQueries.value[index] = ''
+}
+
+function selectedCostCentreLabel(index: number) {
+  const costCentreId = form.value.positions[index]?.cost_centre
+  if (!costCentreId) return ''
+  const costCentre = costCentres.value.find(c => c.id === costCentreId)
+  return costCentre ? `${costCentre.code} - ${costCentre.name}` : ''
 }
 
 function selectTax(index: number, tax: number) {
@@ -449,9 +385,7 @@ function selectTax(index: number, tax: number) {
 
 function openCompanyDrawer() {
   if (!canEditCompany.value) return
-  openCompany.value = null
   openSphereIndex.value = null
-  openCostCentreIndex.value = null
   openTaxIndex.value = null
   showCompanyDrawer.value = true
 }
@@ -460,8 +394,8 @@ function closeCompanyDrawer() {
   showCompanyDrawer.value = false
 }
 
-function savedCompanyDrawer() {
-  loadCompanies()
+async function savedCompanyDrawer() {
+  await loadCompanies()
   if (selectedCompany.value) companyQuery.value = selectedCompany.value.name
   showCompanyDrawer.value = false
 }
@@ -470,43 +404,6 @@ function clearSelectedCompany() {
   selectedCompany.value = null
   form.value.company_id = null
 }
-
-function tryAutoSelectCompany() {
-  if (selectedCompany.value) return
-  if (filteredCompanies.value.length === 1 && filteredCompanies.value[0]) {
-    selectCompany(filteredCompanies.value[0])
-  }
-  const q = companyQuery.value.trim().toLowerCase()
-  if (!q) return
-  const exactMatches = companies.value.filter(c => c.name.toLowerCase() === q)
-  if (exactMatches.length === 1 && exactMatches[0]) {
-    selectCompany(exactMatches[0])
-  }
-}
-
-function tryAutoSelectCostCentre() {
-  if (openCostCentreIndex.value === null) return
-  if (filteredCostCentres(openCostCentreIndex.value).length === 1) {
-    const filter = filteredCostCentres(openCostCentreIndex.value)[0]
-    if (filter) selectCostCentre(openCostCentreIndex.value, filter)
-  }
-  const q = costCentreQueries.value[openCostCentreIndex.value]?.trim().toLowerCase()
-  if (!q) return
-  const exactMatchesCode = costCentres.value.filter(c => c.code.toLowerCase() === q)
-  if (exactMatchesCode.length === 1 && exactMatchesCode[0]) {
-    selectCostCentre(openCostCentreIndex.value, exactMatchesCode[0])
-  }
-  const exactMatchesName = costCentres.value.filter(c => c.name.toLowerCase() === q)
-  if (exactMatchesName.length === 1 && exactMatchesName[0]) {
-    selectCostCentre(openCostCentreIndex.value, exactMatchesName[0])
-  }
-}
-
-watch(companyQuery, (newVal) => {
-  if (selectedCompany.value && newVal !== selectedCompany.value.name) {
-    clearSelectedCompany()
-  }
-})
 
 function addPosition() {
   form.value.positions.push({ sphere: 0, cost_centre: 0, amount: 0.0, tax: 19 })
@@ -536,32 +433,16 @@ function displayAmount(i: number) {
   return formatCurrency(value)
 }
 
-function formatCurrency(value: number) {
-  return new Intl.NumberFormat(locale.value, {
-    style: 'currency',
-    currency: 'EUR',
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  }).format(value)
-}
-
 function onFocus(e: FocusEvent, i: number) {
   focusedIndex.value = i
-  nextTick(() => {
-    const input = e.target as HTMLInputElement
-    input.select()
-  })
+  focusAndSelectInput(e)
 }
 
 function onInput(e: Event, i: number) {
-  let value = (e.target as HTMLInputElement).value
-  value = value.replace(/[^0-9.,]/g, '')
-  value = value.replace(',', '.')
-  const parts = value.split('.')
-  if (parts.length > 2) value = parts[0] + '.' + parts.slice(1).join('')
+  const value = sanitizeCurrencyInput((e.target as HTMLInputElement).value)
   const parsed = parseFloat(value)
   if (!form.value.positions[i]) return
-  form.value.positions[i].amount = isNaN(parsed) ? 0 : parsed
+  form.value.positions[i].amount = Number.isNaN(parsed) ? 0 : parsed
   ;(e.target as HTMLInputElement).value = value
 }
 

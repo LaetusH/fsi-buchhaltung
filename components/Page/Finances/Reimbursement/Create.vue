@@ -1,39 +1,28 @@
-<template>
-  <Page :headline1="t('reimbursement.title')" @open-menu="$emit('openMenu')">
-    <template #cards>
-      <div class="col-span-6 self-start">
-        <ClientOnly v-if="canViewFiles">
-          <FileDrop
-            v-model:model-value="file"
-            :existing-file="existingFile"
-            :can-edit="canEdit"
-            @remove-existing="onRemoveFile"
-          />
-        </ClientOnly>
-      </div>
-
-      <div
-        data-finance-form-column
-        :class="[canViewFiles ? 'col-span-6 self-start' : 'col-span-12 lg:col-span-8 lg:col-start-3 self-start']"
-      >
-        <ReimbursementForm
-          v-model="form"
-          :has-file="!!file || (!!existingFile && !removeExistingFile)"
-          :disabled="!canEdit"
-          :can-create-receipt="canCreateReceipt"
-          @submit="submit"
-          @cancel="cancel"
-        />
-      </div>
-    </template>
-  </Page>
+﻿<template>
+  <PageFinancesEditorLayout
+    :headline1="t('reimbursement.title')"
+    :can-view-files="canViewFiles"
+    :model-value="file"
+    :existing-file="existingFile"
+    :can-edit="canEdit"
+    @open-menu="$emit('openMenu')"
+    @update:model-value="file = $event"
+    @remove-existing="onRemoveFile"
+  >
+    <ReimbursementForm
+      v-model="form"
+      :has-file="!!file || (!!existingFile && !removeExistingFile)"
+      :disabled="!canEdit"
+      :can-create-receipt="canCreateReceipt"
+      @submit="submit"
+      @cancel="cancel"
+    />
+  </PageFinancesEditorLayout>
 </template>
 
 <script setup lang="ts">
-import Page from '~/components/Page.vue'
 import { useI18n } from '~/composables/useI18n'
 import { useToast } from '~/composables/useToast'
-import FileDrop from '../FileDrop.vue'
 import ReimbursementForm from './Form.vue'
 import { usePage } from '~/composables/usePage'
 import type { CreateReimbursementBody } from '~/types/reimbursement'
@@ -72,12 +61,12 @@ const form = ref<CreateReimbursementBody>({
   checked_by: null,
   disbursed_at: null,
   disbursed_by: null,
-  positions: []
+  positions: [],
 })
 
 function mergeNewReceiptIntoForm(newReceiptId: number) {
   const alreadyPresent = form.value.positions.some(position =>
-    (position.receipt_id || position.receipt?.id) === newReceiptId
+    (position.receipt_id || position.receipt?.id) === newReceiptId,
   )
   if (!alreadyPresent) form.value.positions.push({ receipt_id: newReceiptId })
 }
@@ -98,7 +87,7 @@ function applyDraft(draft: Partial<CreateReimbursementBody>) {
     disbursed_by: draft.disbursed_by ?? null,
     positions: Array.isArray(draft.positions) ? draft.positions.map(position => ({
       receipt_id: Number(position.receipt_id || position.receipt?.id || 0),
-      receipt: position.receipt
+      receipt: position.receipt,
     })) : [],
   }
 }
@@ -118,7 +107,7 @@ onMounted(async () => {
           url: `/api/files/${res.file.id}`,
           name: res.file.original_name,
           mime_type: res.file.mime_type,
-          size: res.file.file_size
+          size: res.file.file_size,
         }
       }
     }
@@ -145,8 +134,8 @@ onMounted(async () => {
     ...res.reimbursement,
     positions: res.reimbursement.positions.map(position => ({
       receipt_id: position.receipt.id,
-      receipt: position.receipt
-    }))
+      receipt: position.receipt,
+    })),
   }
 
   if (pageMeta.value?.newReceiptId) mergeNewReceiptIntoForm(Number(pageMeta.value.newReceiptId))
@@ -157,7 +146,7 @@ onMounted(async () => {
     url: `/api/files/${res.file.id}`,
     name: res.file.original_name,
     mime_type: res.file.mime_type,
-    size: res.file.file_size
+    size: res.file.file_size,
   }
   file.value = null
   removeExistingFile.value = false
@@ -226,8 +215,8 @@ async function submit() {
   const payload: CreateReimbursementBody = {
     ...form.value,
     positions: form.value.positions.map(position => ({
-      receipt_id: position.receipt_id || position.receipt!.id
-    }))
+      receipt_id: position.receipt_id || position.receipt!.id,
+    })),
   }
 
   body.append('reimbursement', JSON.stringify(payload))

@@ -1,22 +1,15 @@
-<template>
+﻿<template>
   <Page :headline1="t('reimbursement.listTitle')" @open-menu="$emit('openMenu')">
     <template #cards>
-      <div class="bg-white rounded-xl shadow-lg p-6 space-y-6 col-span-12">
-        <div class="flex justify-between items-center gap-3 flex-wrap">
-          <h2 class="text-lg font-semibold">{{ t('reimbursement.stored') }}</h2>
-
-          <div class="flex items-center gap-2 flex-wrap justify-end">
-            <CommonGlobalSearchBar v-model="globalSearchInput" :placeholder="t('reimbursement.search')" />
-            <button
-              v-if="canEdit"
-              class="btn-primary"
-              @click="setPage('ReimbursementCreate', { returnTo: 'ReimbursementList' })"
-            >
-              ＋ {{ t('reimbursement.new') }}
-            </button>
-          </div>
-        </div>
-
+      <CommonPageTableCard
+        :title="t('reimbursement.stored')"
+        :search-value="globalSearchInput"
+        :search-placeholder="t('reimbursement.search')"
+        :can-create="canEdit"
+        :create-label="`+ ${t('reimbursement.new')}`"
+        @update:search-value="globalSearchInput = $event"
+        @create="setPage('ReimbursementCreate', { returnTo: 'ReimbursementList' })"
+      >
         <div class="overflow-x-auto">
           <table class="w-full text-sm border-collapse">
             <thead>
@@ -124,9 +117,7 @@
                 <td class="py-2 text-right font-medium">{{ reimbursement.receipt_count }}</td>
                 <td class="py-2 text-right font-medium">{{ formatCurrency(reimbursement.total_amount) }}</td>
                 <td class="py-2 text-center">
-                  <span class="px-3 py-1 rounded-full text-xs font-medium" :class="statusClass(status(reimbursement))">
-                    {{ statusLabels[status(reimbursement)] }}
-                  </span>
+                  <CommonStatusBadge :label="statusLabels[status(reimbursement)]" :tone="statusTone(status(reimbursement))" />
                 </td>
                 <td class="py-2 text-right space-x-2">
                   <button class="text-blue-600 hover:underline cursor-pointer" @click="openReimbursement(reimbursement.id)">
@@ -143,7 +134,7 @@
             </tbody>
           </table>
         </div>
-      </div>
+      </CommonPageTableCard>
     </template>
   </Page>
 </template>
@@ -152,6 +143,7 @@
 import { computed } from 'vue'
 import { useAdvancedTable } from '~/composables/useAdvancedTable'
 import { useI18n } from '~/composables/useI18n'
+import { useLocaleFormatters } from '~/composables/useLocaleFormatters'
 import { usePage } from '~/composables/usePage'
 import { useAuth } from '~/composables/useAuth'
 import { ReimbursementStatus, type ReimbursementOverview } from '~/types/reimbursement'
@@ -161,7 +153,8 @@ const emit = defineEmits<{
 }>()
 
 const { setPage } = usePage()
-const { locale, t } = useI18n()
+const { t } = useI18n()
+const { formatDate, formatCurrency } = useLocaleFormatters()
 const { hasPermission } = useAuth()
 
 const canEdit = computed(() => hasPermission('reimbursements.edit'))
@@ -207,21 +200,6 @@ onMounted(async () => {
   }
 })
 
-function formatDate(date: string) {
-  return new Date(date).toLocaleDateString(locale.value, {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric',
-  })
-}
-
-function formatCurrency(amount: number) {
-  return new Intl.NumberFormat(locale.value, {
-    style: 'currency',
-    currency: 'EUR',
-  }).format(amount)
-}
-
 function status(reimbursement: ReimbursementOverview): ReimbursementStatus {
   if (reimbursement.disbursed_at) return ReimbursementStatus.Disbursed
   if (reimbursement.checked_at) return ReimbursementStatus.Checked
@@ -229,18 +207,18 @@ function status(reimbursement: ReimbursementOverview): ReimbursementStatus {
   return ReimbursementStatus.Cancelled
 }
 
-function statusClass(statusValue: string) {
+function statusTone(statusValue: ReimbursementStatus) {
   switch (statusValue) {
     case ReimbursementStatus.Submitted:
-      return 'bg-slate-300 text-slate-900'
+      return 'slate'
     case ReimbursementStatus.Checked:
-      return 'bg-yellow-300 text-yellow-900'
+      return 'yellow'
     case ReimbursementStatus.Disbursed:
-      return 'bg-green-300 text-green-900'
+      return 'green'
     case ReimbursementStatus.Cancelled:
-      return 'bg-red-300 text-red-900 line-through'
+      return 'red'
     default:
-      return 'bg-gray-100 text-gray-500'
+      return 'gray'
   }
 }
 

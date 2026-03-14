@@ -1,22 +1,15 @@
-<template>
+﻿<template>
   <Page :headline1="t('member.listTitle')" @open-menu="$emit('openMenu')">
     <template #cards>
-      <div class="bg-white rounded-xl shadow-lg p-6 space-y-6 col-span-12">
-        <div class="flex justify-between items-center gap-3 flex-wrap">
-          <h2 class="text-lg font-semibold">{{ t('member.stored') }}</h2>
-
-          <div class="flex items-center gap-2 flex-wrap justify-end">
-            <CommonGlobalSearchBar v-model="globalSearchInput" :placeholder="t('member.search')" />
-            <button
-              v-if="canEdit"
-              class="btn-primary"
-              @click="setPage('MemberCreate', { returnTo: 'MemberList' })"
-            >
-              + {{ t('member.new') }}
-            </button>
-          </div>
-        </div>
-
+      <CommonPageTableCard
+        :title="t('member.stored')"
+        :search-value="globalSearchInput"
+        :search-placeholder="t('member.search')"
+        :can-create="canEdit"
+        :create-label="`+ ${t('member.new')}`"
+        @update:search-value="globalSearchInput = $event"
+        @create="setPage('MemberCreate', { returnTo: 'MemberList' })"
+      >
         <div class="overflow-x-auto">
           <table class="w-full text-sm border-collapse">
             <thead>
@@ -146,7 +139,7 @@
             </tbody>
           </table>
         </div>
-      </div>
+      </CommonPageTableCard>
     </template>
   </Page>
 </template>
@@ -154,6 +147,7 @@
 <script setup lang="ts">
 import { useAdvancedTable } from '~/composables/useAdvancedTable'
 import { useI18n } from '~/composables/useI18n'
+import { useLocaleFormatters } from '~/composables/useLocaleFormatters'
 import { usePage } from '~/composables/usePage'
 import { useAuth } from '~/composables/useAuth'
 import { type MemberListItem, MemberStatus } from '~/types/member'
@@ -163,7 +157,8 @@ const emit = defineEmits<{
 }>()
 
 const { setPage } = usePage()
-const { locale, t } = useI18n()
+const { t } = useI18n()
+const { formatDate } = useLocaleFormatters()
 const { hasPermission } = useAuth()
 
 const canEdit = computed(() => hasPermission('members.edit'))
@@ -202,15 +197,6 @@ onMounted(async () => {
     console.log(res.error)
   }
 })
-
-function formatDate(date?: string | null) {
-  if (!date) return t('common.notAvailable')
-  return new Date(date).toLocaleDateString(locale.value, {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric',
-  })
-}
 
 function statusLabel(status: MemberStatus) {
   if (status === MemberStatus.Active) return t('member.states.active')
