@@ -1,0 +1,473 @@
+export type SpreadsheetCellType = 'String' | 'Number'
+export type WorksheetOrientation = 'portrait' | 'landscape'
+
+export interface SpreadsheetCell {
+  value: string | number
+  styleId?: string
+  mergeAcross?: number
+  type?: SpreadsheetCellType
+}
+
+export interface SpreadsheetRowDefinition {
+  cells: SpreadsheetCell[]
+  height?: number
+}
+
+export interface SpreadsheetWorksheetDefinition {
+  name: string
+  columnWidths: number[]
+  rows: SpreadsheetRowDefinition[]
+  orientation?: WorksheetOrientation
+}
+
+export interface SpreadsheetWorkbookDefinition {
+  sheets: SpreadsheetWorksheetDefinition[]
+  stylesXml?: string
+  author?: string
+  company?: string
+}
+
+const XLSX_MIME_TYPE = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+
+const TEXT_ENCODER = new TextEncoder()
+
+const STYLE_INDEX = {
+  Default: 0,
+  Title: 1,
+  Subtitle: 2,
+  Section: 3,
+  Label: 4,
+  Body: 5,
+  BodyMuted: 6,
+  Header: 7,
+  TextCell: 8,
+  CurrencyCell: 9,
+  CountCell: 10,
+  PositiveCurrencyCell: 11,
+  NegativeCurrencyCell: 12,
+  PositiveCountCell: 13,
+  NegativeCountCell: 14,
+} as const
+
+const CRC_TABLE = createCrcTable()
+
+function createCrcTable() {
+  const table = new Uint32Array(256)
+
+  for (let index = 0; index < 256; index += 1) {
+    let value = index
+    for (let bit = 0; bit < 8; bit += 1) {
+      value = (value & 1) === 1 ? 0xEDB88320 ^ (value >>> 1) : value >>> 1
+    }
+    table[index] = value >>> 0
+  }
+
+  return table
+}
+
+function crc32(bytes: Uint8Array) {
+  let value = 0xFFFFFFFF
+
+  for (const byte of bytes) {
+    value = CRC_TABLE[(value ^ byte) & 0xFF] ^ (value >>> 8)
+  }
+
+  return (value ^ 0xFFFFFFFF) >>> 0
+}
+
+function xmlEscape(value: string) {
+  return value
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&apos;')
+    .replaceAll('\n', '&#10;')
+}
+
+function sanitizeSheetName(value: string) {
+  const sanitized = value.replace(/[\\/?*\[\]:]/g, ' ').trim()
+  return sanitized.slice(0, 31) || 'Sheet1'
+}
+
+function columnName(columnNumber: number) {
+  let result = ''
+  let current = columnNumber
+
+  while (current > 0) {
+    const remainder = (current - 1) % 26
+    result = String.fromCharCode(65 + remainder) + result
+    current = Math.floor((current - 1) / 26)
+  }
+
+  return result || 'A'
+}
+
+function cellReference(rowNumber: number, columnNumber: number) {
+  return `${columnName(columnNumber)}${rowNumber}`
+}
+
+function encodeXml(content: string) {
+  return TEXT_ENCODER.encode(content)
+}
+
+function preserveWhitespace(value: string) {
+  return /^\s|\s$|\n/.test(value)
+}
+
+function excelColumnWidth(width: number) {
+  return Number(Math.max(width / 7, 6).toFixed(2))
+}
+
+function getStyleIndex(styleId?: string) {
+  if (!styleId) return STYLE_INDEX.Body
+  return STYLE_INDEX[styleId as keyof typeof STYLE_INDEX] ?? STYLE_INDEX.Body
+}
+
+function createWorksheetXml(sheet: SpreadsheetWorksheetDefinition) {
+  const orientation = sheet.orientation === 'portrait' ? 'portrait' : 'landscape'
+  const merges: string[] = []
+  const rowXml: string[] = []
+  let maxColumn = Math.max(sheet.columnWidths.length, 1)
+
+  sheet.rows.forEach((row, rowIndex) => {
+    let currentColumn = 1
+    const cellXml: string[] = []
+
+    row.cells.forEach((cell) => {
+      const reference = cellReference(rowIndex + 1, currentColumn)
+      const styleIndex = getStyleIndex(cell.styleId)
+
+      if (cell.type === 'Number' && typeof cell.value === 'number' && Number.isFinite(cell.value)) {
+        cellXml.push(`<c r="${reference}" s="${styleIndex}"><v>${cell.value}</v></c>`)
+      } else {
+        const textValue = String(cell.value ?? '')
+        const preserve = preserveWhitespace(textValue) ? ' xml:space="preserve"' : ''
+        cellXml.push(`<c r="${reference}" s="${styleIndex}" t="inlineStr"><is><t${preserve}>${xmlEscape(textValue)}</t></is></c>`)
+      }
+
+      const mergeAcross = cell.mergeAcross ?? 0
+      if (mergeAcross > 0) {
+        merges.push(`<mergeCell ref="${reference}:${cellReference(rowIndex + 1, currentColumn + mergeAcross)}"/>`)
+      }
+
+      currentColumn += mergeAcross + 1
+    })
+
+    maxColumn = Math.max(maxColumn, currentColumn - 1)
+
+    const heightAttributes = row.height ? ` ht="${row.height}" customHeight="1"` : ''
+    rowXml.push(`<row r="${rowIndex + 1}"${heightAttributes}>${cellXml.join('')}</row>`)
+  })
+
+  const dimensionEnd = cellReference(Math.max(sheet.rows.length, 1), maxColumn)
+  const columnsXml = sheet.columnWidths
+    .map((width, index) => `<col min="${index + 1}" max="${index + 1}" width="${excelColumnWidth(width)}" customWidth="1"/>`)
+    .join('')
+
+  return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
+  <sheetPr>
+    <pageSetUpPr fitToPage="1" autoPageBreaks="0"/>
+  </sheetPr>
+  <dimension ref="A1:${dimensionEnd}"/>
+  <sheetViews>
+    <sheetView workbookViewId="0"/>
+  </sheetViews>
+  <sheetFormatPr defaultRowHeight="15"/>
+  <cols>${columnsXml}</cols>
+  <sheetData>${rowXml.join('')}</sheetData>
+  ${merges.length > 0 ? `<mergeCells count="${merges.length}">${merges.join('')}</mergeCells>` : ''}
+  <pageMargins left="0.4" right="0.4" top="0.55" bottom="0.55" header="0.25" footer="0.25"/>
+  <pageSetup orientation="${orientation}" paperSize="9" fitToWidth="1" fitToHeight="0"/>
+</worksheet>`
+}
+
+function createWorkbookXml(sheetNames: string[]) {
+  const sheetsXml = sheetNames
+    .map((name, index) => `<sheet name="${xmlEscape(name)}" sheetId="${index + 1}" r:id="rId${index + 1}"/>`)
+    .join('')
+
+  return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
+  <bookViews>
+    <workbookView activeTab="0"/>
+  </bookViews>
+  <sheets>${sheetsXml}</sheets>
+</workbook>`
+}
+
+function createWorkbookRelationshipsXml(sheetCount: number) {
+  const sheetRelationships = Array.from({ length: sheetCount }, (_, index) => {
+    return `<Relationship Id="rId${index + 1}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet${index + 1}.xml"/>`
+  }).join('')
+
+  return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+  ${sheetRelationships}
+  <Relationship Id="rId${sheetCount + 1}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>
+</Relationships>`
+}
+
+function createRootRelationshipsXml() {
+  return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+  <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/>
+  <Relationship Id="rId2" Type="http://schemas.openxmlformats.org/package/2006/relationships/metadata/core-properties" Target="docProps/core.xml"/>
+  <Relationship Id="rId3" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/extended-properties" Target="docProps/app.xml"/>
+</Relationships>`
+}
+
+function createContentTypesXml(sheetCount: number) {
+  const worksheetOverrides = Array.from({ length: sheetCount }, (_, index) => {
+    return `<Override PartName="/xl/worksheets/sheet${index + 1}.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>`
+  }).join('')
+
+  return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
+  <Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>
+  <Default Extension="xml" ContentType="application/xml"/>
+  <Override PartName="/docProps/app.xml" ContentType="application/vnd.openxmlformats-officedocument.extended-properties+xml"/>
+  <Override PartName="/docProps/core.xml" ContentType="application/vnd.openxmlformats-package.core-properties+xml"/>
+  <Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>
+  <Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>
+  ${worksheetOverrides}
+</Types>`
+}
+
+function createAppPropertiesXml(sheetNames: string[], company: string) {
+  const titles = sheetNames.map(name => `<vt:lpstr>${xmlEscape(name)}</vt:lpstr>`).join('')
+
+  return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Properties xmlns="http://schemas.openxmlformats.org/officeDocument/2006/extended-properties" xmlns:vt="http://schemas.openxmlformats.org/officeDocument/2006/docPropsVTypes">
+  <Application>FSi Accounting</Application>
+  <Company>${xmlEscape(company)}</Company>
+  <HeadingPairs>
+    <vt:vector size="2" baseType="variant">
+      <vt:variant><vt:lpstr>Worksheets</vt:lpstr></vt:variant>
+      <vt:variant><vt:i4>${sheetNames.length}</vt:i4></vt:variant>
+    </vt:vector>
+  </HeadingPairs>
+  <TitlesOfParts>
+    <vt:vector size="${sheetNames.length}" baseType="lpstr">${titles}</vt:vector>
+  </TitlesOfParts>
+</Properties>`
+}
+
+function createCorePropertiesXml(author: string) {
+  const timestamp = new Date().toISOString()
+
+  return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<cp:coreProperties xmlns:cp="http://schemas.openxmlformats.org/package/2006/metadata/core-properties" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:dcterms="http://purl.org/dc/terms/" xmlns:dcmitype="http://purl.org/dc/dcmitype/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <dc:creator>${xmlEscape(author)}</dc:creator>
+  <cp:lastModifiedBy>${xmlEscape(author)}</cp:lastModifiedBy>
+  <dcterms:created xsi:type="dcterms:W3CDTF">${timestamp}</dcterms:created>
+  <dcterms:modified xsi:type="dcterms:W3CDTF">${timestamp}</dcterms:modified>
+</cp:coreProperties>`
+}
+
+function createStylesXml() {
+  return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
+  <numFmts count="4">
+    <numFmt numFmtId="164" formatCode="#,##0.00 [$&#x20AC;-407]"/>
+    <numFmt numFmtId="165" formatCode="0"/>
+    <numFmt numFmtId="166" formatCode="+#,##0.00 [$&#x20AC;-407];-#,##0.00 [$&#x20AC;-407];0.00 [$&#x20AC;-407]"/>
+    <numFmt numFmtId="167" formatCode="+0;-0;0"/>
+  </numFmts>
+  <fonts count="9">
+    <font><sz val="11"/><color rgb="FF0F172A"/><name val="Calibri"/><family val="2"/></font>
+    <font><b/><sz val="16"/><color rgb="FF9A3412"/><name val="Calibri"/><family val="2"/></font>
+    <font><i/><sz val="11"/><color rgb="FF64748B"/><name val="Calibri"/><family val="2"/></font>
+    <font><b/><sz val="12"/><color rgb="FF0F172A"/><name val="Calibri"/><family val="2"/></font>
+    <font><b/><sz val="11"/><color rgb="FF334155"/><name val="Calibri"/><family val="2"/></font>
+    <font><b/><sz val="11"/><color rgb="FFFFFFFF"/><name val="Calibri"/><family val="2"/></font>
+    <font><sz val="11"/><color rgb="FF64748B"/><name val="Calibri"/><family val="2"/></font>
+    <font><b/><sz val="11"/><color rgb="FF047857"/><name val="Calibri"/><family val="2"/></font>
+    <font><b/><sz val="11"/><color rgb="FFB91C1C"/><name val="Calibri"/><family val="2"/></font>
+  </fonts>
+  <fills count="5">
+    <fill><patternFill patternType="none"/></fill>
+    <fill><patternFill patternType="gray125"/></fill>
+    <fill><patternFill patternType="solid"><fgColor rgb="FFFFF7ED"/><bgColor indexed="64"/></patternFill></fill>
+    <fill><patternFill patternType="solid"><fgColor rgb="FFF1F5F9"/><bgColor indexed="64"/></patternFill></fill>
+    <fill><patternFill patternType="solid"><fgColor rgb="FF0F172A"/><bgColor indexed="64"/></patternFill></fill>
+  </fills>
+  <borders count="3">
+    <border><left/><right/><top/><bottom/><diagonal/></border>
+    <border><left/><right/><top/><bottom style="thin"><color rgb="FFE2E8F0"/></bottom><diagonal/></border>
+    <border><left/><right/><top/><bottom style="thin"><color rgb="FFCBD5E1"/></bottom><diagonal/></border>
+  </borders>
+  <cellStyleXfs count="1">
+    <xf numFmtId="0" fontId="0" fillId="0" borderId="0"/>
+  </cellStyleXfs>
+  <cellXfs count="15">
+    <xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/>
+    <xf numFmtId="0" fontId="1" fillId="2" borderId="0" xfId="0" applyFont="1" applyFill="1" applyAlignment="1"><alignment vertical="center" wrapText="1"/></xf>
+    <xf numFmtId="0" fontId="2" fillId="0" borderId="0" xfId="0" applyFont="1" applyAlignment="1"><alignment vertical="center" wrapText="1"/></xf>
+    <xf numFmtId="0" fontId="3" fillId="3" borderId="2" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment vertical="center" wrapText="1"/></xf>
+    <xf numFmtId="0" fontId="4" fillId="0" borderId="0" xfId="0" applyFont="1" applyAlignment="1"><alignment vertical="center" wrapText="1"/></xf>
+    <xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0" applyAlignment="1"><alignment vertical="center" wrapText="1"/></xf>
+    <xf numFmtId="0" fontId="6" fillId="0" borderId="0" xfId="0" applyFont="1" applyAlignment="1"><alignment vertical="center" wrapText="1"/></xf>
+    <xf numFmtId="0" fontId="5" fillId="4" borderId="0" xfId="0" applyFont="1" applyFill="1" applyAlignment="1"><alignment horizontal="center" vertical="center" wrapText="1"/></xf>
+    <xf numFmtId="0" fontId="0" fillId="0" borderId="1" xfId="0" applyBorder="1" applyAlignment="1"><alignment vertical="center" wrapText="1"/></xf>
+    <xf numFmtId="164" fontId="0" fillId="0" borderId="1" xfId="0" applyBorder="1" applyNumberFormat="1" applyAlignment="1"><alignment horizontal="right" vertical="center"/></xf>
+    <xf numFmtId="165" fontId="0" fillId="0" borderId="1" xfId="0" applyBorder="1" applyNumberFormat="1" applyAlignment="1"><alignment horizontal="right" vertical="center"/></xf>
+    <xf numFmtId="166" fontId="7" fillId="0" borderId="1" xfId="0" applyFont="1" applyBorder="1" applyNumberFormat="1" applyAlignment="1"><alignment horizontal="right" vertical="center"/></xf>
+    <xf numFmtId="166" fontId="8" fillId="0" borderId="1" xfId="0" applyFont="1" applyBorder="1" applyNumberFormat="1" applyAlignment="1"><alignment horizontal="right" vertical="center"/></xf>
+    <xf numFmtId="167" fontId="7" fillId="0" borderId="1" xfId="0" applyFont="1" applyBorder="1" applyNumberFormat="1" applyAlignment="1"><alignment horizontal="right" vertical="center"/></xf>
+    <xf numFmtId="167" fontId="8" fillId="0" borderId="1" xfId="0" applyFont="1" applyBorder="1" applyNumberFormat="1" applyAlignment="1"><alignment horizontal="right" vertical="center"/></xf>
+  </cellXfs>
+  <cellStyles count="1">
+    <cellStyle name="Normal" xfId="0" builtinId="0"/>
+  </cellStyles>
+  <dxfs count="0"/>
+  <tableStyles count="0" defaultTableStyle="TableStyleMedium2" defaultPivotStyle="PivotStyleLight16"/>
+</styleSheet>`
+}
+
+function getDosDateTime(date: Date) {
+  const year = Math.max(date.getFullYear(), 1980)
+  const dosDate = ((year - 1980) << 9) | ((date.getMonth() + 1) << 5) | date.getDate()
+  const dosTime = (date.getHours() << 11) | (date.getMinutes() << 5) | Math.floor(date.getSeconds() / 2)
+
+  return { dosDate, dosTime }
+}
+
+function createZip(entries: { name: string, data: Uint8Array }[]) {
+  const localFiles: Uint8Array[] = []
+  const centralDirectory: Uint8Array[] = []
+  const { dosDate, dosTime } = getDosDateTime(new Date())
+  let offset = 0
+
+  for (const entry of entries) {
+    const fileName = TEXT_ENCODER.encode(entry.name)
+    const crc = crc32(entry.data)
+
+    const localHeader = new Uint8Array(30 + fileName.length + entry.data.length)
+    const localView = new DataView(localHeader.buffer)
+    localView.setUint32(0, 0x04034B50, true)
+    localView.setUint16(4, 20, true)
+    localView.setUint16(6, 0x0800, true)
+    localView.setUint16(8, 0, true)
+    localView.setUint16(10, dosTime, true)
+    localView.setUint16(12, dosDate, true)
+    localView.setUint32(14, crc, true)
+    localView.setUint32(18, entry.data.length, true)
+    localView.setUint32(22, entry.data.length, true)
+    localView.setUint16(26, fileName.length, true)
+    localView.setUint16(28, 0, true)
+    localHeader.set(fileName, 30)
+    localHeader.set(entry.data, 30 + fileName.length)
+    localFiles.push(localHeader)
+
+    const centralHeader = new Uint8Array(46 + fileName.length)
+    const centralView = new DataView(centralHeader.buffer)
+    centralView.setUint32(0, 0x02014B50, true)
+    centralView.setUint16(4, 20, true)
+    centralView.setUint16(6, 20, true)
+    centralView.setUint16(8, 0x0800, true)
+    centralView.setUint16(10, 0, true)
+    centralView.setUint16(12, dosTime, true)
+    centralView.setUint16(14, dosDate, true)
+    centralView.setUint32(16, crc, true)
+    centralView.setUint32(20, entry.data.length, true)
+    centralView.setUint32(24, entry.data.length, true)
+    centralView.setUint16(28, fileName.length, true)
+    centralView.setUint16(30, 0, true)
+    centralView.setUint16(32, 0, true)
+    centralView.setUint16(34, 0, true)
+    centralView.setUint16(36, 0, true)
+    centralView.setUint32(38, 0, true)
+    centralView.setUint32(42, offset, true)
+    centralHeader.set(fileName, 46)
+    centralDirectory.push(centralHeader)
+
+    offset += localHeader.length
+  }
+
+  const centralDirectoryOffset = offset
+  const centralDirectorySize = centralDirectory.reduce((total, part) => total + part.length, 0)
+  const endRecord = new Uint8Array(22)
+  const endView = new DataView(endRecord.buffer)
+  endView.setUint32(0, 0x06054B50, true)
+  endView.setUint16(4, 0, true)
+  endView.setUint16(6, 0, true)
+  endView.setUint16(8, entries.length, true)
+  endView.setUint16(10, entries.length, true)
+  endView.setUint32(12, centralDirectorySize, true)
+  endView.setUint32(16, centralDirectoryOffset, true)
+  endView.setUint16(20, 0, true)
+
+  const archiveSize = localFiles.reduce((total, part) => total + part.length, 0) + centralDirectorySize + endRecord.length
+  const archive = new Uint8Array(archiveSize)
+  let cursor = 0
+
+  for (const part of [...localFiles, ...centralDirectory, endRecord]) {
+    archive.set(part, cursor)
+    cursor += part.length
+  }
+
+  return archive
+}
+
+export function sanitizeFileNamePart(value: string) {
+  return value
+    .replace(/[^a-zA-Z0-9_-]+/g, '-')
+    .replace(/-+/g, '-')
+    .replace(/^-|-$/g, '')
+}
+
+export function createSpreadsheetCell(cell: SpreadsheetCell) {
+  return {
+    styleId: 'Body',
+    mergeAcross: 0,
+    type: 'String' as SpreadsheetCellType,
+    ...cell,
+  }
+}
+
+export function createSpreadsheetRow(cells: SpreadsheetCell[], height?: number): SpreadsheetRowDefinition {
+  return {
+    cells: cells.map(createSpreadsheetCell),
+    height,
+  }
+}
+
+export function createSpreadsheetWorkbook({ sheets, author = 'FSi Accounting', company = 'FSi Accounting' }: SpreadsheetWorkbookDefinition) {
+  const preparedSheets = sheets.map(sheet => ({
+    ...sheet,
+    name: sanitizeSheetName(sheet.name),
+  }))
+
+  const entries = [
+    { name: '[Content_Types].xml', data: encodeXml(createContentTypesXml(preparedSheets.length)) },
+    { name: '_rels/.rels', data: encodeXml(createRootRelationshipsXml()) },
+    { name: 'docProps/app.xml', data: encodeXml(createAppPropertiesXml(preparedSheets.map(sheet => sheet.name), company)) },
+    { name: 'docProps/core.xml', data: encodeXml(createCorePropertiesXml(author)) },
+    { name: 'xl/workbook.xml', data: encodeXml(createWorkbookXml(preparedSheets.map(sheet => sheet.name))) },
+    { name: 'xl/_rels/workbook.xml.rels', data: encodeXml(createWorkbookRelationshipsXml(preparedSheets.length)) },
+    { name: 'xl/styles.xml', data: encodeXml(createStylesXml()) },
+    ...preparedSheets.map((sheet, index) => ({
+      name: `xl/worksheets/sheet${index + 1}.xml`,
+      data: encodeXml(createWorksheetXml(sheet)),
+    })),
+  ]
+
+  return new Blob([createZip(entries)], { type: XLSX_MIME_TYPE })
+}
+
+export function downloadExcelWorkbook(content: Blob, fileName: string) {
+  const objectUrl = URL.createObjectURL(content)
+  const link = document.createElement('a')
+  link.href = objectUrl
+  link.download = fileName
+  document.body.appendChild(link)
+  link.click()
+  document.body.removeChild(link)
+  window.setTimeout(() => URL.revokeObjectURL(objectUrl), 0)
+}
+
+
+
+

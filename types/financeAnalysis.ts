@@ -9,11 +9,25 @@ export interface FinanceAnalysisReceiptItem {
   total_amount: number
 }
 
+export interface FinanceAnalysisReceiptBreakdownItem {
+  group_type: 'costCentre' | 'sphere'
+  group_id: number | null
+  group_code: string
+  group_name: string
+  month_key: string
+  status: ReceiptStatus
+  receipt_count: number
+  total_amount: number
+}
+
 export interface FinanceAnalysisCashCountItem {
   id: number
   event_name: string
   counted_before_at: string
   counted_after_at: string
+  counted_by_first_name: string
+  counted_by_second_name: string
+  checked_by_name: string
   register_count: number
   total_before_amount: number
   total_after_amount: number
@@ -44,5 +58,6 @@ export interface FinanceAnalysisSummary {
 export interface FinanceAnalysisData {
   summary: FinanceAnalysisSummary
   receipts: FinanceAnalysisReceiptItem[]
+  receiptBreakdown: FinanceAnalysisReceiptBreakdownItem[]
   cashCounts: FinanceAnalysisCashCountItem[]
 }

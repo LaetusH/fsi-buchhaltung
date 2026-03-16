@@ -144,25 +144,96 @@
             <p class="text-sm text-slate-500">{{ activePeriodLabel }}</p>
           </div>
 
-          <div class="flex items-center justify-between gap-3 rounded-xl border border-slate-200 px-4 py-3 sm:min-w-fit">
-            <label class="text-sm font-medium text-slate-900" for="comparison-toggle">
-              {{ t('financeAnalysis.compareWithPreviousYear') }}
-            </label>
-            <button
-              id="comparison-toggle"
-              type="button"
-              role="switch"
-              :aria-checked="compareWithPreviousYear"
-              :title="t('financeAnalysis.compareWithPreviousYear')"
-              class="relative inline-flex h-6 w-11 items-center rounded-full transition cursor-pointer"
-              :class="compareWithPreviousYear ? 'bg-orange-500' : 'bg-slate-300'"
-              @click="toggleComparisonMode"
-            >
-              <span
-                class="inline-block h-4 w-4 transform rounded-full bg-white transition"
-                :class="compareWithPreviousYear ? 'translate-x-6' : 'translate-x-1'"
-              />
-            </button>
+          <div class="flex flex-wrap items-center justify-end gap-3">
+            <div class="relative">
+              <button
+                type="button"
+                class="inline-flex items-center gap-2 rounded-xl bg-orange-500 px-4 py-3 text-sm font-medium text-white transition hover:bg-orange-600 cursor-pointer"
+                :class="!canExportAnalysis ? 'cursor-not-allowed opacity-70 hover:bg-orange-500' : ''"
+                :disabled="!canExportAnalysis"
+                :title="t('financeAnalysis.exportReport')"
+                @click="toggleExportMenu"
+              >
+                <Icon :name="isExporting ? 'material-symbols:hourglass-top-rounded' : 'material-symbols:download-rounded'" class="h-5 w-5" />
+                <span>{{ isExporting ? t('financeAnalysis.exportingReport') : t('financeAnalysis.exportReport') }}</span>
+              </button>
+
+              <div v-if="isExportMenuOpen && canExportAnalysis" class="absolute right-0 top-full z-20 mt-2 w-80 rounded-xl border border-slate-200 bg-white p-4 shadow-xl space-y-4">
+                <div class="space-y-2">
+                  <div class="text-sm font-semibold text-slate-900">{{ t('financeAnalysis.exportOptionsTitle') }}</div>
+                  <div class="grid grid-cols-3 gap-2">
+                    <button
+                      type="button"
+                      :class="exportGroupingButtonClass('none')"
+                      @click="setExportGrouping('none')"
+                    >
+                      {{ t('financeAnalysis.exportGroupingNone') }}
+                    </button>
+                    <button
+                      type="button"
+                      :class="exportGroupingButtonClass('costCentres')"
+                      @click="setExportGrouping('costCentres')"
+                    >
+                      {{ t('financeAnalysis.exportGroupingCostCentres') }}
+                    </button>
+                    <button
+                      type="button"
+                      :class="exportGroupingButtonClass('spheres')"
+                      @click="setExportGrouping('spheres')"
+                    >
+                      {{ t('financeAnalysis.exportGroupingSpheres') }}
+                    </button>
+                  </div>
+                </div>
+
+                <div class="grid grid-cols-1 gap-2">
+                  <button
+                    type="button"
+                    :class="exportToggleButtonClass(exportSplitByMonth)"
+                    @click="exportSplitByMonth = !exportSplitByMonth"
+                  >
+                    {{ t('financeAnalysis.exportSplitByMonth') }}
+                  </button>
+                  <button
+                    type="button"
+                    :class="exportToggleButtonClass(exportSplitByPaymentStatus)"
+                    @click="exportSplitByPaymentStatus = !exportSplitByPaymentStatus"
+                  >
+                    {{ t('financeAnalysis.exportSplitByPaymentStatus') }}
+                  </button>
+                </div>
+
+                <div class="flex items-center justify-between gap-2">
+                  <button type="button" class="btn-secondary" @click="closeExportMenu">
+                    {{ t('actions.cancel') }}
+                  </button>
+                  <button type="button" class="btn-primary" :disabled="isExporting" @click="exportAnalysisReport">
+                    {{ isExporting ? t('financeAnalysis.exportingReport') : t('financeAnalysis.exportNow') }}
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div class="flex items-center justify-between gap-3 rounded-xl border border-slate-200 px-4 py-3 sm:min-w-fit">
+              <label class="text-sm font-medium text-slate-900" for="comparison-toggle">
+                {{ t('financeAnalysis.compareWithPreviousYear') }}
+              </label>
+              <button
+                id="comparison-toggle"
+                type="button"
+                role="switch"
+                :aria-checked="compareWithPreviousYear"
+                :title="t('financeAnalysis.compareWithPreviousYear')"
+                class="relative inline-flex h-6 w-11 items-center rounded-full transition cursor-pointer"
+                :class="compareWithPreviousYear ? 'bg-orange-500' : 'bg-slate-300'"
+                @click="toggleComparisonMode"
+              >
+                <span
+                  class="inline-block h-4 w-4 transform rounded-full bg-white transition"
+                  :class="compareWithPreviousYear ? 'translate-x-6' : 'translate-x-1'"
+                />
+              </button>
+            </div>
           </div>
         </div>
 
@@ -415,7 +486,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, watch } from 'vue'
 import type { SearchSelectOption } from '~/components/Common/SearchSelect.vue'
 import { useAuth } from '~/composables/useAuth'
 import { useI18n } from '~/composables/useI18n'
@@ -424,6 +495,7 @@ import { usePage } from '~/composables/usePage'
 import type { CostCentreRow } from '~/types/costCentre'
 import type { FinanceAnalysisData, FinanceAnalysisReceiptItem } from '~/types/financeAnalysis'
 import { ReceiptStatus } from '~/types/receipt'
+import { downloadFinanceAnalysisReport, type FinanceAnalysisExportGrouping } from '~/utils/excel/financeAnalysisReport'
 
 type QuickSemester = '' | 'summer' | 'winter'
 type ManualDateField = 'start' | 'end'
@@ -438,6 +510,28 @@ interface FinanceAnalysisErrorResponse {
   ok: false
   error: string
 }
+
+interface PersistedFinanceAnalysisState {
+  startDate?: string
+  endDate?: string
+  quickYear?: string
+  quickSemester?: QuickSemester
+  quickMonth?: string
+  compareWithPreviousYear?: boolean
+  selectedStatuses?: ReceiptStatus[]
+  receiptsExpanded?: boolean
+  cashCountsExpanded?: boolean
+  selectedCostCentreId?: number | null
+}
+
+interface PersistedFinanceAnalysisExportState {
+  exportGrouping?: FinanceAnalysisExportGrouping
+  exportSplitByMonth?: boolean
+  exportSplitByPaymentStatus?: boolean
+}
+
+const ANALYSIS_STATE_STORAGE_KEY = 'fsi.finance-analysis.state'
+const ANALYSIS_EXPORT_STORAGE_KEY = 'fsi.finance-analysis.export'
 
 const emit = defineEmits<{
   (e: 'openMenu'): void
@@ -454,6 +548,7 @@ const statusOrder: ReceiptStatus[] = [ReceiptStatus.Draft, ReceiptStatus.Open, R
 const analysis = ref<FinanceAnalysisData | null>(null)
 const comparisonAnalysis = ref<FinanceAnalysisData | null>(null)
 const isLoading = ref(false)
+const isExporting = ref(false)
 const errorMessage = ref('')
 const startDate = ref(`${currentYear}-01-01`)
 const endDate = ref(`${currentYear}-12-31`)
@@ -467,6 +562,10 @@ const cashCountsExpanded = ref(false)
 const costCentres = ref<CostCentreRow[]>([])
 const costCentreQuery = ref('')
 const selectedCostCentre = ref<CostCentreRow | null>(null)
+const isExportMenuOpen = ref(false)
+const exportGrouping = ref<FinanceAnalysisExportGrouping>('none')
+const exportSplitByMonth = ref(false)
+const exportSplitByPaymentStatus = ref(false)
 const hasCostCentreAccess = computed(() => hasPermission('cost_centres.view'))
 
 const yearOptions = computed(() => {
@@ -516,6 +615,7 @@ const comparisonSummary = computed(() => comparisonAnalysis.value?.summary ?? nu
 const receipts = computed(() => analysis.value?.receipts ?? [])
 const cashCounts = computed(() => analysis.value?.cashCounts ?? [])
 const hasValidDateRange = computed(() => Boolean(startDate.value && endDate.value && startDate.value <= endDate.value))
+const canExportAnalysis = computed(() => Boolean(summary.value) && !isLoading.value && !isExporting.value)
 const activePeriodLabel = computed(() => {
   const from = summary.value?.start_date || startDate.value
   const to = summary.value?.end_date || endDate.value
@@ -592,6 +692,96 @@ const comparisonCards = computed(() => {
     },
   ]
 })
+
+function readStoredJson<T>(key: string): T | null {
+  if (!import.meta.client) return null
+
+  try {
+    const rawValue = window.localStorage.getItem(key)
+    return rawValue ? JSON.parse(rawValue) as T : null
+  } catch {
+    return null
+  }
+}
+
+function writeStoredJson(key: string, value: unknown) {
+  if (!import.meta.client) return
+
+  try {
+    window.localStorage.setItem(key, JSON.stringify(value))
+  } catch {
+    // Ignore storage errors and keep the current in-memory state.
+  }
+}
+
+function restoreSelectedCostCentre(costCentreId: number | null | undefined) {
+  if (typeof costCentreId !== 'number') {
+    selectedCostCentre.value = null
+    costCentreQuery.value = ''
+    return
+  }
+
+  const restoredCostCentre = costCentres.value.find(costCentre => costCentre.id === costCentreId) || null
+  selectedCostCentre.value = restoredCostCentre
+  costCentreQuery.value = restoredCostCentre ? `${restoredCostCentre.code} - ${restoredCostCentre.name}` : ''
+}
+
+function applyAnalysisState(state?: PersistedFinanceAnalysisState | null) {
+  if (!state) return
+
+  if (typeof state.startDate === 'string') startDate.value = state.startDate
+  if (typeof state.endDate === 'string') endDate.value = state.endDate
+  if (typeof state.quickYear === 'string') quickYear.value = state.quickYear
+  if (state.quickSemester === '' || state.quickSemester === 'summer' || state.quickSemester === 'winter') {
+    quickSemester.value = state.quickSemester
+  }
+  if (typeof state.quickMonth === 'string') quickMonth.value = state.quickMonth
+  if (typeof state.compareWithPreviousYear === 'boolean') compareWithPreviousYear.value = state.compareWithPreviousYear
+  if (Array.isArray(state.selectedStatuses)) {
+    selectedStatuses.value = state.selectedStatuses.filter((status): status is ReceiptStatus => statusOrder.includes(status as ReceiptStatus))
+  }
+  if (typeof state.receiptsExpanded === 'boolean') receiptsExpanded.value = state.receiptsExpanded
+  if (typeof state.cashCountsExpanded === 'boolean') cashCountsExpanded.value = state.cashCountsExpanded
+  restoreSelectedCostCentre(state.selectedCostCentreId)
+}
+
+function restoreStoredAnalysisState() {
+  applyAnalysisState(readStoredJson<PersistedFinanceAnalysisState>(ANALYSIS_STATE_STORAGE_KEY))
+}
+
+function restoreStoredExportState() {
+  const state = readStoredJson<PersistedFinanceAnalysisExportState>(ANALYSIS_EXPORT_STORAGE_KEY)
+  if (!state) return
+
+  if (state.exportGrouping === 'none' || state.exportGrouping === 'costCentres' || state.exportGrouping === 'spheres') {
+    exportGrouping.value = state.exportGrouping
+  }
+  if (typeof state.exportSplitByMonth === 'boolean') exportSplitByMonth.value = state.exportSplitByMonth
+  if (typeof state.exportSplitByPaymentStatus === 'boolean') exportSplitByPaymentStatus.value = state.exportSplitByPaymentStatus
+}
+
+function persistAnalysisState() {
+  writeStoredJson(ANALYSIS_STATE_STORAGE_KEY, {
+    startDate: startDate.value,
+    endDate: endDate.value,
+    quickYear: quickYear.value,
+    quickSemester: quickSemester.value,
+    quickMonth: quickMonth.value,
+    compareWithPreviousYear: compareWithPreviousYear.value,
+    selectedStatuses: [...selectedStatuses.value],
+    receiptsExpanded: receiptsExpanded.value,
+    cashCountsExpanded: cashCountsExpanded.value,
+    selectedCostCentreId: selectedCostCentre.value?.id ?? null,
+  } satisfies PersistedFinanceAnalysisState)
+}
+
+function persistExportState() {
+  writeStoredJson(ANALYSIS_EXPORT_STORAGE_KEY, {
+    exportGrouping: exportGrouping.value,
+    exportSplitByMonth: exportSplitByMonth.value,
+    exportSplitByPaymentStatus: exportSplitByPaymentStatus.value,
+  } satisfies PersistedFinanceAnalysisExportState)
+}
 
 function pad(value: number) {
   return String(value).padStart(2, '0')
@@ -732,6 +922,38 @@ function monthButtonClass(value: string) {
   ]
 }
 
+function exportGroupingButtonClass(value: FinanceAnalysisExportGrouping) {
+  const selected = exportGrouping.value === value
+  return [
+    'rounded-lg border px-3 py-2 text-xs font-medium transition cursor-pointer',
+    selected
+      ? 'border-orange-400 bg-orange-50 text-orange-700'
+      : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50',
+  ]
+}
+
+function exportToggleButtonClass(selected: boolean) {
+  return [
+    'w-full rounded-lg border px-3 py-2 text-sm font-medium text-left transition cursor-pointer',
+    selected
+      ? 'border-orange-400 bg-orange-50 text-orange-700'
+      : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50',
+  ]
+}
+
+function setExportGrouping(value: FinanceAnalysisExportGrouping) {
+  exportGrouping.value = value
+}
+
+function closeExportMenu() {
+  isExportMenuOpen.value = false
+}
+
+function toggleExportMenu() {
+  if (!canExportAnalysis.value) return
+  isExportMenuOpen.value = !isExportMenuOpen.value
+}
+
 function formatComparisonValue(value: number, type: ComparisonValueType) {
   if (type === 'currency') return formatCurrency(value)
   return new Intl.NumberFormat(locale.value).format(value)
@@ -746,6 +968,38 @@ function comparisonDifferenceClass(value: number) {
   if (value > 0) return 'text-emerald-700'
   if (value < 0) return 'text-red-700'
   return 'text-slate-600'
+}
+
+async function exportAnalysisReport() {
+  if (!summary.value || isExporting.value) return
+
+  isExporting.value = true
+
+  try {
+    downloadFinanceAnalysisReport({
+      t,
+      locale: locale.value,
+      analysis: analysis.value as FinanceAnalysisData,
+      comparisonAnalysis: comparisonAnalysis.value,
+      startDate: startDate.value,
+      endDate: endDate.value,
+      includeComparison: compareWithPreviousYear.value,
+      selectedStatuses: selectedStatuses.value,
+      receiptStatusLabels: receiptStatusLabels.value,
+      selectedCostCentre: selectedCostCentre.value,
+      exportGrouping: exportGrouping.value,
+      exportSplitByMonth: exportSplitByMonth.value,
+      exportSplitByPaymentStatus: exportSplitByPaymentStatus.value,
+      formatCurrency,
+      formatDate,
+      formatDateTime,
+    })
+    closeExportMenu()
+  } catch {
+    errorMessage.value = t('financeAnalysis.exportFailed')
+  } finally {
+    isExporting.value = false
+  }
 }
 
 function toggleComparisonMode() {
@@ -779,37 +1033,13 @@ function getAnalysisPageMeta() {
       selectedStatuses: [...selectedStatuses.value],
       receiptsExpanded: receiptsExpanded.value,
       cashCountsExpanded: cashCountsExpanded.value,
-      costCentreQuery: costCentreQuery.value,
       selectedCostCentreId: selectedCostCentre.value?.id ?? null,
     },
   }
 }
 
 function restoreAnalysisPageMeta() {
-  const state = pageMeta.value?.analysisState
-  if (!state) return
-
-  if (typeof state.startDate === 'string') startDate.value = state.startDate
-  if (typeof state.endDate === 'string') endDate.value = state.endDate
-  if (typeof state.quickYear === 'string') quickYear.value = state.quickYear
-  if (state.quickSemester === '' || state.quickSemester === 'summer' || state.quickSemester === 'winter') {
-    quickSemester.value = state.quickSemester
-  }
-  if (typeof state.quickMonth === 'string') quickMonth.value = state.quickMonth
-  if (typeof state.compareWithPreviousYear === 'boolean') compareWithPreviousYear.value = state.compareWithPreviousYear
-  if (typeof state.costCentreQuery === 'string') costCentreQuery.value = state.costCentreQuery
-  if (Array.isArray(state.selectedStatuses)) {
-    selectedStatuses.value = state.selectedStatuses.filter((status: any): status is ReceiptStatus => {
-      return statusOrder.includes(status as ReceiptStatus)
-    })
-  }
-  if (typeof state.receiptsExpanded === 'boolean') receiptsExpanded.value = state.receiptsExpanded
-  if (typeof state.cashCountsExpanded === 'boolean') cashCountsExpanded.value = state.cashCountsExpanded
-  if (typeof state.selectedCostCentreId === 'number') {
-    const restoredCostCentre = costCentres.value.find(costCentre => costCentre.id === state.selectedCostCentreId) || null
-    selectedCostCentre.value = restoredCostCentre
-    if (restoredCostCentre) costCentreQuery.value = `${restoredCostCentre.code} - ${restoredCostCentre.name}`
-  }
+  applyAnalysisState(pageMeta.value?.analysisState as PersistedFinanceAnalysisState | undefined)
 }
 
 async function loadCostCentres() {
@@ -838,6 +1068,7 @@ function selectCostCentreFromOption(value: unknown) {
 
 function clearSelectedCostCentre() {
   selectedCostCentre.value = null
+  costCentreQuery.value = ''
 }
 
 function openReceipt(id: number) {
@@ -917,8 +1148,33 @@ function receiptStatusDotClass(status: FinanceAnalysisReceiptItem['status']) {
   }
 }
 
+watch(() => ({
+  startDate: startDate.value,
+  endDate: endDate.value,
+  quickYear: quickYear.value,
+  quickSemester: quickSemester.value,
+  quickMonth: quickMonth.value,
+  compareWithPreviousYear: compareWithPreviousYear.value,
+  selectedStatuses: [...selectedStatuses.value],
+  receiptsExpanded: receiptsExpanded.value,
+  cashCountsExpanded: cashCountsExpanded.value,
+  selectedCostCentreId: selectedCostCentre.value?.id ?? null,
+}), () => {
+  persistAnalysisState()
+}, { deep: true })
+
+watch(() => ({
+  exportGrouping: exportGrouping.value,
+  exportSplitByMonth: exportSplitByMonth.value,
+  exportSplitByPaymentStatus: exportSplitByPaymentStatus.value,
+}), () => {
+  persistExportState()
+}, { deep: true })
+
 onMounted(async () => {
   await loadCostCentres()
+  restoreStoredAnalysisState()
+  restoreStoredExportState()
   restoreAnalysisPageMeta()
   await loadAnalysis()
 })

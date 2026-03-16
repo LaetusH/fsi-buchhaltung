@@ -1,7 +1,12 @@
 import { defineEventHandler, getQuery } from 'h3'
 import { query } from '~/server/utils/db'
 import { requirePermission } from '~/server/utils/api/guards'
-import type { FinanceAnalysisCashCountItem, FinanceAnalysisData, FinanceAnalysisReceiptItem } from '~/types/financeAnalysis'
+import type {
+  FinanceAnalysisCashCountItem,
+  FinanceAnalysisData,
+  FinanceAnalysisReceiptBreakdownItem,
+  FinanceAnalysisReceiptItem,
+} from '~/types/financeAnalysis'
 import { ReceiptStatus } from '~/types/receipt'
 
 interface FinanceAnalysisSuccess {
@@ -63,6 +68,11 @@ export default defineEventHandler(async (event): Promise<FinanceAnalysisResponse
   }
 
   try {
+    const statusPlaceholders = selectedStatuses.map(() => '?').join(', ')
+    const receiptFilterParams = costCentreId
+      ? [startDate, endDate, ...selectedStatuses, costCentreId]
+      : [startDate, endDate, ...selectedStatuses]
+
     const receiptRows: any[] = selectedStatuses.length
       ? await query(
           `
@@ -77,14 +87,60 @@ export default defineEventHandler(async (event): Promise<FinanceAnalysisResponse
           LEFT JOIN companies c ON c.id = r.company_id
           LEFT JOIN receipt_positions rp ON rp.receipt_id = r.id
           WHERE r.receipt_date BETWEEN ? AND ?
-            AND r.status IN (${selectedStatuses.map(() => '?').join(', ')})
+            AND r.status IN (${statusPlaceholders})
             ${costCentreId ? 'AND rp.cost_centre = ?' : ''}
           GROUP BY r.id
           ORDER BY r.receipt_date DESC, r.id DESC
           `,
-          costCentreId
-            ? [startDate, endDate, ...selectedStatuses, costCentreId]
-            : [startDate, endDate, ...selectedStatuses],
+          receiptFilterParams,
+        )
+      : []
+
+
+    const receiptBreakdownRows: any[] = selectedStatuses.length
+      ? await query(
+          `
+          SELECT *
+          FROM (
+            SELECT
+              'costCentre' AS group_type,
+              cc.id AS group_id,
+              cc.code AS group_code,
+              cc.name AS group_name,
+              DATE_FORMAT(r.receipt_date, '%Y-%m') AS month_key,
+              r.status,
+              COUNT(DISTINCT r.id) AS receipt_count,
+              IFNULL(SUM(rp.amount), 0) AS total_amount
+            FROM receipts r
+            INNER JOIN receipt_positions rp ON rp.receipt_id = r.id
+            INNER JOIN cost_centres cc ON cc.id = rp.cost_centre
+            WHERE r.receipt_date BETWEEN ? AND ?
+              AND r.status IN (${statusPlaceholders})
+              ${costCentreId ? 'AND rp.cost_centre = ?' : ''}
+            GROUP BY cc.id, cc.code, cc.name, month_key, r.status
+
+            UNION ALL
+
+            SELECT
+              'sphere' AS group_type,
+              s.id AS group_id,
+              s.code AS group_code,
+              s.name AS group_name,
+              DATE_FORMAT(r.receipt_date, '%Y-%m') AS month_key,
+              r.status,
+              COUNT(DISTINCT r.id) AS receipt_count,
+              IFNULL(SUM(rp.amount), 0) AS total_amount
+            FROM receipts r
+            INNER JOIN receipt_positions rp ON rp.receipt_id = r.id
+            INNER JOIN spheres s ON s.id = rp.sphere
+            WHERE r.receipt_date BETWEEN ? AND ?
+              AND r.status IN (${statusPlaceholders})
+              ${costCentreId ? 'AND rp.cost_centre = ?' : ''}
+            GROUP BY s.id, s.code, s.name, month_key, r.status
+          ) breakdown
+          ORDER BY breakdown.group_type, breakdown.group_code, breakdown.group_name, breakdown.month_key, breakdown.status
+          `,
+          [...receiptFilterParams, ...receiptFilterParams],
         )
       : []
 
@@ -97,11 +153,17 @@ export default defineEventHandler(async (event): Promise<FinanceAnalysisResponse
             cc.event_name,
             cc.counted_before_at,
             cc.counted_after_at,
+            CONCAT(m1.first_name, ' ', m1.last_name) AS counted_by_first_name,
+            CONCAT(m2.first_name, ' ', m2.last_name) AS counted_by_second_name,
+            CONCAT(m3.first_name, ' ', m3.last_name) AS checked_by_name,
             COUNT(DISTINCT ccp.id) AS register_count,
             IFNULL(SUM(ccp.amount_before), 0) AS total_before_amount,
             IFNULL(SUM(ccp.amount_after), 0) AS total_after_amount,
             IFNULL(SUM(ccp.amount_after - ccp.amount_before), 0) AS total_difference
           FROM cash_counts cc
+          LEFT JOIN members m1 ON m1.id = cc.counted_by_first
+          LEFT JOIN members m2 ON m2.id = cc.counted_by_second
+          LEFT JOIN members m3 ON m3.id = cc.checked_by
           LEFT JOIN cash_count_positions ccp ON ccp.cash_count_id = cc.id
           WHERE DATE(cc.counted_after_at) BETWEEN ? AND ?
           GROUP BY cc.id
@@ -119,11 +181,25 @@ export default defineEventHandler(async (event): Promise<FinanceAnalysisResponse
       total_amount: Number(row.total_amount || 0),
     }))
 
+    const receiptBreakdown: FinanceAnalysisReceiptBreakdownItem[] = receiptBreakdownRows.map(row => ({
+      group_type: row.group_type === 'sphere' ? 'sphere' : 'costCentre',
+      group_id: row.group_id === null || row.group_id === undefined ? null : Number(row.group_id),
+      group_code: String(row.group_code || ''),
+      group_name: String(row.group_name || ''),
+      month_key: String(row.month_key || ''),
+      status: row.status as ReceiptStatus,
+      receipt_count: Number(row.receipt_count || 0),
+      total_amount: Number(row.total_amount || 0),
+    }))
+
     const cashCounts: FinanceAnalysisCashCountItem[] = cashCountRows.map(row => ({
       id: Number(row.id),
       event_name: String(row.event_name || ''),
       counted_before_at: String(row.counted_before_at),
       counted_after_at: String(row.counted_after_at),
+      counted_by_first_name: String(row.counted_by_first_name || ''),
+      counted_by_second_name: String(row.counted_by_second_name || ''),
+      checked_by_name: String(row.checked_by_name || ''),
       register_count: Number(row.register_count || 0),
       total_before_amount: Number(row.total_before_amount || 0),
       total_after_amount: Number(row.total_after_amount || 0),
@@ -203,6 +279,7 @@ export default defineEventHandler(async (event): Promise<FinanceAnalysisResponse
           net_result: Number((cashCountSummary.cash_count_total_difference - receiptSummary.receipt_total).toFixed(2)),
         },
         receipts,
+        receiptBreakdown,
         cashCounts,
       },
     }
