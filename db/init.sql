@@ -180,9 +180,11 @@ CREATE TABLE IF NOT EXISTS cost_centres (
   name VARCHAR(255) NOT NULL,
   is_active TINYINT(1) NOT NULL DEFAULT 1,
   description TEXT,
+  parent_id MEDIUMINT UNSIGNED NULL,
   created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   created_by BIGINT UNSIGNED NOT NULL,
-  FOREIGN KEY (created_by) REFERENCES users(id)
+  FOREIGN KEY (created_by) REFERENCES users(id),
+  FOREIGN KEY (parent_id) REFERENCES cost_centres(id) ON DELETE SET NULL
 );
 
 CREATE TABLE IF NOT EXISTS spheres (

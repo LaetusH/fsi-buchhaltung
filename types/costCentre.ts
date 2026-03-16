@@ -4,6 +4,7 @@ export interface SaveCostCentreBody {
   name: string
   is_active?: boolean
   description?: string
+  parent_id?: number | null
 }
 
 export interface CostCentreRow {
@@ -12,5 +13,6 @@ export interface CostCentreRow {
   name: string
   is_active: boolean
   description: string
+  parent_id: number | null
   created_at: string
 }
