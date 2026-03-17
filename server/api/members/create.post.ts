@@ -4,6 +4,7 @@ import { query, withTransaction } from '~/server/utils/db'
 import { requirePermission } from '~/server/utils/api/guards'
 import { createUserAccount, DuplicateUsernameError } from '~/server/utils/userAccounts'
 import { ensureSubjectId, validateMemberPayload } from '~/server/utils/members'
+import { getSubdivisionLabels, normalizeRelationIds, syncSubdivisionAssignments } from '~/server/utils/subdivisions'
 
 interface CreateMemberSuccess {
   ok: true
@@ -24,6 +25,13 @@ export default defineEventHandler(async (event): Promise<CreateMemberResponse> =
   const body = await readBody<SaveMemberBody>(event)
   const validationError = validateMemberPayload(body)
   if (validationError) return { ok: false, error: validationError }
+
+  const canManageSubdivisions = current.user.permissions.includes('settings.subdivisions.manage')
+  const subdivisionIds = body.subdivision_ids === undefined ? [] : normalizeRelationIds(body.subdivision_ids)
+  if (subdivisionIds === null) return { ok: false, error: 'Invalid subdivision list' }
+  if (!canManageSubdivisions && subdivisionIds.length > 0) {
+    return { ok: false, error: 'Not authorized to manage subdivisions' }
+  }
 
   try {
     return await withTransaction(async (conn) => {
@@ -78,6 +86,25 @@ export default defineEventHandler(async (event): Promise<CreateMemberResponse> =
             conn
           )
         }
+      }
+
+      if (canManageSubdivisions && subdivisionIds.length) {
+        const subdivisionLabels = await getSubdivisionLabels(subdivisionIds, conn)
+        if (subdivisionLabels.size !== subdivisionIds.length) {
+          return { ok: false, error: 'One or more selected subdivisions do not exist' }
+        }
+
+        await syncSubdivisionAssignments({
+          existingIds: [],
+          nextIds: subdivisionIds,
+          getAssignment: (subdivisionId) => ({
+            subdivisionId,
+            memberId,
+            memberLabel: `${body.first_name} ${body.last_name}`.trim(),
+          }),
+          userId: current.user.id,
+          conn,
+        })
       }
 
       return { ok: true, id: memberId }

@@ -15,9 +15,11 @@ export type PermissionKey =
   | 'companies.edit'
   | 'spheres.view'
   | 'cost_centres.view'
+  | 'subdivisions.view'
   | 'settings.access'
   | 'settings.spheres.manage'
   | 'settings.cost_centres.manage'
+  | 'settings.subdivisions.manage'
   | 'settings.positions.manage'
   | 'permissions.manage'
   | 'files.view'
@@ -48,9 +50,11 @@ export const PERMISSIONS: PermissionDefinition[] = [
   { key: 'companies.edit', labelKey: 'permissions.items.companiesEdit', categoryKey: 'permissions.categories.companies' },
   { key: 'spheres.view', labelKey: 'permissions.items.spheresView', categoryKey: 'permissions.categories.settings' },
   { key: 'cost_centres.view', labelKey: 'permissions.items.costCentresView', categoryKey: 'permissions.categories.settings' },
+  { key: 'subdivisions.view', labelKey: 'permissions.items.subdivisionsView', categoryKey: 'permissions.categories.settings' },
   { key: 'settings.access', labelKey: 'permissions.items.settingsAccess', categoryKey: 'permissions.categories.settings' },
   { key: 'settings.spheres.manage', labelKey: 'permissions.items.settingsSpheresManage', categoryKey: 'permissions.categories.settings' },
   { key: 'settings.cost_centres.manage', labelKey: 'permissions.items.settingsCostCentresManage', categoryKey: 'permissions.categories.settings' },
+  { key: 'settings.subdivisions.manage', labelKey: 'permissions.items.settingsSubdivisionsManage', categoryKey: 'permissions.categories.settings' },
   { key: 'settings.positions.manage', labelKey: 'permissions.items.settingsPositionsManage', categoryKey: 'permissions.categories.settings' },
   { key: 'permissions.manage', labelKey: 'permissions.items.permissionsManage', categoryKey: 'permissions.categories.settings' },
   { key: 'files.view', labelKey: 'permissions.items.filesView', categoryKey: 'permissions.categories.files' },
@@ -67,6 +71,7 @@ export const implied: Partial<Record<PermissionKey, PermissionKey[]>> = {
   'subjects.edit': ['subjects.view'],
   'settings.spheres.manage': ['spheres.view', 'settings.access'],
   'settings.cost_centres.manage': ['cost_centres.view', 'settings.access'],
+  'settings.subdivisions.manage': ['subdivisions.view', 'settings.access'],
   'settings.positions.manage': ['positions.view', 'settings.access'],
   'permissions.manage': ['settings.access', 'users.view'],
   'users.manage': ['users.view'],

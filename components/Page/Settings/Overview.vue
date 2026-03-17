@@ -28,6 +28,7 @@ import { useI18n } from '~/composables/useI18n'
 import SettingsGeneral from './General.vue'
 import SettingsSpheres from './Spheres.vue'
 import SettingsCostCentres from './CostCentres.vue'
+import SettingsSubdivisions from './Subdivisions.vue'
 import SettingsPositions from './Positions.vue'
 import SettingsPermissions from './Permissions.vue'
 import SettingsUsers from './Users.vue'
@@ -37,7 +38,7 @@ const emit = defineEmits<{
   (e: 'openMenu'): void
 }>()
 
-type SettingsTab = 'general' | 'spheres' | 'costCentres' | 'positions' | 'users' | 'permissions'
+type SettingsTab = 'general' | 'spheres' | 'costCentres' | 'subdivisions' | 'positions' | 'users' | 'permissions'
 
 const currentTab = ref<SettingsTab>('general')
 const { t } = useI18n()
@@ -48,6 +49,7 @@ const tabs = computed(() => {
     { key: 'general', label: t('settings.tabs.general'), show: true },
     { key: 'spheres', label: t('settings.tabs.spheres'), show: hasPermission('settings.spheres.manage') },
     { key: 'costCentres', label: t('settings.tabs.costCentres'), show: hasPermission('settings.cost_centres.manage') },
+    { key: 'subdivisions', label: t('settings.tabs.subdivisions'), show: hasPermission('settings.subdivisions.manage') },
     { key: 'positions', label: t('settings.tabs.positions'), show: hasPermission('settings.positions.manage') },
     { key: 'users', label: t('settings.tabs.users'), show: hasPermission('users.manage') },
     { key: 'permissions', label: t('settings.tabs.permissions'), show: hasPermission('permissions.manage') },
@@ -63,6 +65,8 @@ const activeComponent = computed(() => {
       return SettingsSpheres
     case 'costCentres':
       return SettingsCostCentres
+    case 'subdivisions':
+      return SettingsSubdivisions
     case 'positions':
       return SettingsPositions
     case 'users':

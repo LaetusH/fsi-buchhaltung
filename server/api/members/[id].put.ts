@@ -5,6 +5,7 @@ import { logFieldChanges } from '~/server/utils/api/audit'
 import { requirePermission } from '~/server/utils/api/guards'
 import { getNumericRouteParam } from '~/server/utils/api/request'
 import { ensureSubjectId, validateMemberPayload } from '~/server/utils/members'
+import { getSubdivisionLabels, normalizeRelationIds, syncSubdivisionAssignments } from '~/server/utils/subdivisions'
 
 interface UpdateMemberSuccess {
   ok: true
@@ -28,6 +29,13 @@ export default defineEventHandler(async (event): Promise<UpdateMemberResponse> =
   const body = await readBody<SaveMemberBody>(event)
   const validationError = validateMemberPayload(body)
   if (validationError) return { ok: false, error: validationError }
+
+  const canManageSubdivisions = current.user.permissions.includes('settings.subdivisions.manage')
+  const subdivisionIds = body.subdivision_ids === undefined ? undefined : normalizeRelationIds(body.subdivision_ids)
+  if (subdivisionIds === null) return { ok: false, error: 'Invalid subdivision list' }
+  if (!canManageSubdivisions && subdivisionIds !== undefined && subdivisionIds.length > 0) {
+    return { ok: false, error: 'Not authorized to manage subdivisions' }
+  }
 
   try {
     return await withTransaction(async (conn) => {
@@ -107,6 +115,35 @@ export default defineEventHandler(async (event): Promise<UpdateMemberResponse> =
             conn
           )
         }
+      }
+
+      if (canManageSubdivisions && subdivisionIds !== undefined) {
+        const existingSubdivisionRows = await query<{ subdivision_id: number }[]>(
+          `SELECT subdivision_id
+           FROM subdivision_members
+           WHERE member_id = ?`,
+          [memberId],
+          conn,
+        )
+
+        const existingSubdivisionIds = existingSubdivisionRows.map(row => Number(row.subdivision_id))
+        const allSubdivisionIds = Array.from(new Set([...existingSubdivisionIds, ...subdivisionIds]))
+        const subdivisionLabels = await getSubdivisionLabels(allSubdivisionIds, conn)
+        if (subdivisionLabels.size !== allSubdivisionIds.length) {
+          return { ok: false, error: 'One or more selected subdivisions do not exist' }
+        }
+
+        await syncSubdivisionAssignments({
+          existingIds: existingSubdivisionIds,
+          nextIds: subdivisionIds,
+          getAssignment: (subdivisionId) => ({
+            subdivisionId,
+            memberId,
+            memberLabel: `${body.first_name} ${body.last_name}`.trim(),
+          }),
+          userId: current.user.id,
+          conn,
+        })
       }
 
       return { ok: true, id: memberId }

@@ -1,5 +1,5 @@
 import { defineEventHandler } from 'h3'
-import type { Member, MemberPositionAssignment } from '~/types/member'
+import type { Member, MemberPositionAssignment, MemberSubdivisionAssignment } from '~/types/member'
 import { query } from '~/server/utils/db'
 import { requirePermission } from '~/server/utils/api/guards'
 import { getNumericRouteParam } from '~/server/utils/api/request'
@@ -44,6 +44,17 @@ export default defineEventHandler(async (event): Promise<GetMemberResponse> => {
     [id]
   )
 
+  const subdivisions = current.user.permissions.includes('settings.subdivisions.manage')
+    ? await query<MemberSubdivisionAssignment[]>(
+        `SELECT s.id, s.code, s.name, s.is_active
+         FROM subdivision_members sm
+         JOIN subdivisions s ON s.id = sm.subdivision_id
+         WHERE sm.member_id = ?
+         ORDER BY s.code ASC, s.name ASC`,
+        [id]
+      )
+    : []
+
   return {
     ok: true,
     member: {
@@ -71,6 +82,12 @@ export default defineEventHandler(async (event): Promise<GetMemberResponse> => {
         position_id: Number(position.position_id),
         since: String(position.since),
         until: position.until ? String(position.until) : null,
+      })),
+      subdivisions: subdivisions.map(subdivision => ({
+        id: Number(subdivision.id),
+        code: String(subdivision.code),
+        name: String(subdivision.name),
+        is_active: Boolean(subdivision.is_active),
       })),
     }
   }

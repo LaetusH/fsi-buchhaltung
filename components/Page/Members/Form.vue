@@ -124,6 +124,26 @@
       </div>
     </section>
 
+    <section v-if="canManageSubdivisions" class="bg-white rounded-xl shadow-lg p-4 space-y-3">
+      <h3 class="font-semibold">{{ t('member.subdivisions') }}</h3>
+
+      <CommonSelectionListField
+        :query="subdivisionQuery"
+        :options="subdivisionOptions"
+        :selected-items="selectedSubdivisionItems"
+        :placeholder="t('member.subdivisionPlaceholder')"
+        :empty-text="t('member.noSubdivisions')"
+        :empty-selection-text="t('member.noSubdivisionsAssigned')"
+        :remove-label="t('actions.remove')"
+        :helper-text="t('member.subdivisionHelper')"
+        :disabled="disabled"
+        @update:query="subdivisionQuery = $event"
+        @select="selectSubdivision"
+        @clear-selection="subdivisionQuery = ''"
+        @remove="removeSubdivision"
+      />
+    </section>
+
     <section class="bg-white rounded-xl shadow-lg p-4 space-y-3">
       <h3 class="font-semibold">{{ t('member.positions') }}</h3>
 
@@ -230,8 +250,10 @@
 
 <script setup lang="ts">
 import type { SearchSelectOption } from '~/components/Common/SearchSelect.vue'
+import type { SelectionListItem } from '~/components/Common/SelectionListField.vue'
 import { useI18n } from '~/composables/useI18n'
 import type { PositionRow } from '~/types/position'
+import type { SubdivisionOption } from '~/types/subdivision'
 import { MemberStatus, type SaveMemberBody } from '~/types/member'
 import type { SubjectRow } from '~/types/subject'
 
@@ -240,6 +262,7 @@ const props = defineProps<{
   disabled?: boolean
   canEditSubjects?: boolean
   canManageUsers?: boolean
+  canManageSubdivisions?: boolean
   showAccountCreation?: boolean
 }>()
 
@@ -258,6 +281,7 @@ const form = computed({
 const disabled = computed(() => Boolean(props.disabled))
 const canEditSubjects = computed(() => props.canEditSubjects !== false)
 const canManageUsers = computed(() => props.canManageUsers === true)
+const canManageSubdivisions = computed(() => props.canManageSubdivisions === true)
 const showAccountCreation = computed(() => props.showAccountCreation === true)
 const usernameManuallyEdited = ref(false)
 
@@ -283,13 +307,40 @@ const subjectOptions = computed<SearchSelectOption<string>[]>(() => subjects.val
   value: subject.name,
 })))
 const positions = ref<PositionRow[]>([])
+const subdivisions = ref<SubdivisionOption[]>([])
 const positionQueries = ref<Record<number, string>>({})
+const subdivisionQuery = ref('')
 const positionOptions = computed<SearchSelectOption<PositionRow>[]>(() => positions.value.map(position => ({
   key: position.id,
   label: `${position.code} - ${position.name}`,
   value: position,
   searchText: `${position.code} ${position.name}`,
 })))
+const subdivisionsById = computed(() => {
+  return new Map(subdivisions.value.map(subdivision => [subdivision.id, subdivision]))
+})
+const selectedSubdivisionItems = computed<SelectionListItem[]>(() => {
+  return (form.value.subdivision_ids ?? [])
+    .map(subdivisionId => subdivisionsById.value.get(subdivisionId))
+    .filter((subdivision): subdivision is SubdivisionOption => Boolean(subdivision))
+    .map(subdivision => ({
+      id: subdivision.id,
+      label: subdivision.name,
+      meta: subdivision.code,
+    }))
+})
+const subdivisionOptions = computed<SearchSelectOption<number>[]>(() => {
+  const selectedIds = new Set(form.value.subdivision_ids ?? [])
+
+  return subdivisions.value
+    .filter(subdivision => (subdivision.is_active || selectedIds.has(subdivision.id)) && !selectedIds.has(subdivision.id))
+    .map(subdivision => ({
+      key: subdivision.id,
+      label: `${subdivision.code} - ${subdivision.name}`,
+      value: subdivision.id,
+      searchText: `${subdivision.code} ${subdivision.name}`,
+    }))
+})
 const openStatus = ref<number | null>(null)
 
 const validationErrors = computed(() => {
@@ -331,6 +382,7 @@ const saveDisabled = computed(() => Boolean(props.disabled) || validationErrors.
 onMounted(() => {
   loadSubjects()
   loadPositions()
+  if (canManageSubdivisions.value) loadSubdivisions()
 })
 
 watch(
@@ -350,6 +402,13 @@ async function loadPositions() {
   const res = await $fetch<{ ok: boolean, positions?: PositionRow[] }>('/api/positions')
   if (res.ok && res.positions) {
     positions.value = res.positions.filter(position => position.is_active)
+  }
+}
+
+async function loadSubdivisions() {
+  const res = await $fetch('/api/subdivisions/options')
+  if (res.ok) {
+    subdivisions.value = res.subdivisions
   }
 }
 
@@ -374,6 +433,22 @@ function onSubjectSelect(value: unknown) {
   const name = value as string
   form.value.subject_name = name
   subjectQuery.value = name
+}
+
+function selectSubdivision(value: unknown) {
+  const subdivisionId = Number(value)
+  if (!Number.isInteger(subdivisionId) || subdivisionId <= 0) return
+
+  const currentIds = form.value.subdivision_ids ?? []
+  if (currentIds.includes(subdivisionId)) return
+
+  form.value.subdivision_ids = [...currentIds, subdivisionId]
+  subdivisionQuery.value = ''
+}
+
+function removeSubdivision(value: string | number) {
+  const subdivisionId = Number(value)
+  form.value.subdivision_ids = (form.value.subdivision_ids ?? []).filter(id => id !== subdivisionId)
 }
 
 function addPosition() {

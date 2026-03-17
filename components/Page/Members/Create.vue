@@ -7,6 +7,7 @@
           :disabled="!canEdit"
           :can-edit-subjects="canEditSubjects"
           :can-manage-users="canManageUsers"
+          :can-manage-subdivisions="canManageSubdivisions"
           :show-account-creation="!isEditMode"
           @submit="submit"
           @cancel="cancel"
@@ -36,6 +37,7 @@ const { hasPermission } = useAuth()
 const canEdit = computed(() => hasPermission('members.edit'))
 const canEditSubjects = computed(() => hasPermission('subjects.edit'))
 const canManageUsers = computed(() => hasPermission('users.manage'))
+const canManageSubdivisions = computed(() => hasPermission('settings.subdivisions.manage'))
 
 const isEditMode = ref(false)
 const memberId = ref<number | null>(null)
@@ -59,7 +61,8 @@ const form = ref<SaveMemberBody>({
   applied_at: '',
   joined_at: '',
   left_at: null,
-  positions: []
+  positions: [],
+  subdivision_ids: [],
 })
 
 onMounted(async () => {
@@ -94,6 +97,7 @@ onMounted(async () => {
     joined_at: res.member.joined_at,
     left_at: res.member.left_at,
     positions: res.member.positions || [],
+    subdivision_ids: res.member.subdivisions?.map(subdivision => subdivision.id) || [],
   }
 })
 

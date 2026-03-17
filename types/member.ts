@@ -31,6 +31,13 @@ export interface NewMemberAccount {
   is_active: boolean
 }
 
+export interface MemberSubdivisionAssignment {
+  id: number
+  code: string
+  name: string
+  is_active: boolean
+}
+
 export interface Member {
   id: number
   account: number | null
@@ -52,6 +59,7 @@ export interface Member {
   joined_at: string
   left_at: string | null
   positions: MemberPositionAssignment[]
+  subdivisions?: MemberSubdivisionAssignment[]
 }
 
 export interface SaveMemberBody {
@@ -74,4 +82,5 @@ export interface SaveMemberBody {
   joined_at: string
   left_at?: string | null
   positions: MemberPositionAssignment[]
+  subdivision_ids?: number[]
 }
