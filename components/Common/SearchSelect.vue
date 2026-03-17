@@ -18,8 +18,9 @@
     <transition name="fade">
       <div
         v-if="open"
-        class="absolute z-30 mt-1 rounded-md border bg-white shadow-lg min-w-full w-max max-h-50 overflow-y-auto"
-        :class="menuWidthClass"
+        class="absolute z-30 rounded-md border bg-white shadow-lg min-w-full w-max overflow-y-auto"
+        :class="[menuWidthClass, menuPlacementClass]"
+        :style="menuStyle"
       >
         <button
           v-if="showCreateOption"
@@ -114,6 +115,8 @@ const emit = defineEmits<{
 
 const rootRef = ref<HTMLElement | null>(null)
 const open = ref(false)
+const menuPlacementClass = ref('top-full mt-1')
+const menuStyle = ref({ maxHeight: '12.5rem' })
 
 const currentQuery = computed(() => props.modelValue || '')
 const normalizedQuery = computed(() => currentQuery.value.trim().toLowerCase())
@@ -127,6 +130,41 @@ const filteredOptions = computed(() => {
 })
 const showCreateOption = computed(() => props.allowCreate && currentQuery.value.trim().length > 0)
 const menuWidthClass = computed(() => props.menuWidth === 'wide' ? 'w-full max-w-[48rem]' : 'max-w-[30vw]')
+
+function findModalBoundary() {
+  let current = rootRef.value?.parentElement ?? null
+
+  while (current) {
+    const parent = current.parentElement
+    if (!parent) return null
+    if (window.getComputedStyle(parent).position === 'fixed') return current
+    current = parent
+  }
+
+  return null
+}
+
+function updateMenuPosition() {
+  if (!open.value || !rootRef.value) return
+
+  const viewportPadding = 16
+  const boundaryPadding = 8
+  const preferredMaxHeight = 200
+  const rootRect = rootRef.value.getBoundingClientRect()
+  const modalBoundary = findModalBoundary()
+  const boundaryRect = modalBoundary?.getBoundingClientRect()
+  const topBoundary = boundaryRect ? boundaryRect.top + boundaryPadding : viewportPadding
+  const bottomBoundary = boundaryRect ? boundaryRect.bottom - boundaryPadding : window.innerHeight - viewportPadding
+  const spaceBelow = bottomBoundary - rootRect.bottom
+  const spaceAbove = rootRect.top - topBoundary
+  const shouldOpenUp = spaceBelow < 160 && spaceAbove > spaceBelow
+  const availableSpace = Math.max(shouldOpenUp ? spaceAbove : spaceBelow, 0)
+
+  menuPlacementClass.value = shouldOpenUp ? 'bottom-full mb-1' : 'top-full mt-1'
+  menuStyle.value = {
+    maxHeight: `${Math.min(preferredMaxHeight, availableSpace)}px`,
+  }
+}
 
 function onInput(event: Event) {
   const value = (event.target as HTMLInputElement).value
@@ -186,12 +224,28 @@ function onDocumentClick(event: MouseEvent) {
   open.value = false
 }
 
+watch(open, async (isOpen) => {
+  if (!isOpen) return
+  await nextTick()
+  updateMenuPosition()
+})
+
+watch(() => filteredOptions.value.length, async () => {
+  if (!open.value) return
+  await nextTick()
+  updateMenuPosition()
+})
+
 onMounted(() => {
   document.addEventListener('mousedown', onDocumentClick)
+  window.addEventListener('resize', updateMenuPosition)
+  document.addEventListener('scroll', updateMenuPosition, true)
 })
 
 onBeforeUnmount(() => {
   document.removeEventListener('mousedown', onDocumentClick)
+  window.removeEventListener('resize', updateMenuPosition)
+  document.removeEventListener('scroll', updateMenuPosition, true)
 })
 </script>
 
@@ -206,4 +260,3 @@ onBeforeUnmount(() => {
   opacity: 0;
 }
 </style>
-

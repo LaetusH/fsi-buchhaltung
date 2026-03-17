@@ -88,19 +88,15 @@
 
         <div class="field">
           <label>{{ t('settings.entities.parentCostCentre') }}</label>
-          <select v-model="parentSelection" class="input">
-            <option value="">
-              {{ t('settings.entities.noParentCostCentre') }}
-            </option>
-
-            <option
-              v-for="option in parentOptions"
-              :key="option.id"
-              :value="String(option.id)"
-            >
-              {{ option.label }}
-            </option>
-          </select>
+          <CommonSearchSelect
+            v-model="parentQuery"
+            :options="parentSearchOptions"
+            :selected-label="selectedParentLabel"
+            :placeholder="t('settings.entities.noParentCostCentre')"
+            :empty-text="t('settings.entities.noCostCentres')"
+            @select="selectParent"
+            @clear-selection="clearParent"
+          />
         </div>
 
         <div class="field">
@@ -127,6 +123,7 @@
 </template>
 
 <script setup lang="ts">
+import type { SearchSelectOption } from '~/components/Common/SearchSelect.vue'
 import { useI18n } from '~/composables/useI18n'
 import { useToast } from '~/composables/useToast'
 import type { CostCentreRow, SaveCostCentreBody } from '~/types/costCentre'
@@ -147,6 +144,7 @@ const items = ref<CostCentreRow[]>([])
 const showModal = ref(false)
 const editingItem = ref<SaveCostCentreBody | null>(null)
 const isNewItem = ref(false)
+const parentQuery = ref('')
 
 const itemsById = computed(() => {
   return new Map(items.value.map(item => [item.id, item]))
@@ -165,16 +163,16 @@ const parentOptions = computed<ParentOption[]>(() => {
       label: `${'-- '.repeat(item.depth)}${item.code} - ${item.name}`,
     }))
 })
-
-const parentSelection = computed({
-  get() {
-    if (!editingItem.value?.parent_id) return ''
-    return String(editingItem.value.parent_id)
-  },
-  set(value: string) {
-    if (!editingItem.value) return
-    editingItem.value.parent_id = value ? Number(value) : null
-  },
+const parentSearchOptions = computed<SearchSelectOption<number>[]>(() => parentOptions.value.map(option => ({
+  key: option.id,
+  label: option.label,
+  value: option.id,
+  searchText: option.label,
+})))
+const selectedParentLabel = computed(() => {
+  if (!editingItem.value?.parent_id) return ''
+  const selected = parentOptions.value.find(option => option.id === editingItem.value?.parent_id)
+  return selected?.label || ''
 })
 
 function sortCostCentres(left: CostCentreRow, right: CostCentreRow) {
@@ -274,6 +272,7 @@ function addItem() {
     description: '',
     parent_id: null,
   }
+  parentQuery.value = ''
   isNewItem.value = true
   showModal.value = true
 }
@@ -287,6 +286,8 @@ function editItem(item: CostCentreRow) {
     is_active: item.is_active,
     parent_id: item.parent_id,
   }
+  parentQuery.value = parentLabel(item.parent_id)
+  if (item.parent_id === null) parentQuery.value = ''
   isNewItem.value = false
   showModal.value = true
 }
@@ -294,6 +295,23 @@ function editItem(item: CostCentreRow) {
 function closeModal() {
   showModal.value = false
   editingItem.value = null
+  parentQuery.value = ''
+}
+
+function selectParent(value: unknown) {
+  if (!editingItem.value) return
+
+  const parentId = value as number
+  const selected = parentOptions.value.find(option => option.id === parentId)
+
+  editingItem.value.parent_id = parentId
+  parentQuery.value = selected?.label || ''
+}
+
+function clearParent() {
+  if (!editingItem.value) return
+  editingItem.value.parent_id = null
+  parentQuery.value = ''
 }
 
 async function saveItem() {
