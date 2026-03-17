@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <div v-if="hasAccess" class="bg-white rounded-b-xl rounded-tl-xl shadow-lg p-6 space-y-6 col-span-12">
     <div class="flex justify-between items-center gap-3 flex-wrap">
       <h2 class="text-lg font-semibold">{{ t('settings.users.title') }}</h2>
@@ -14,7 +14,6 @@
           <tr class="text-left border-b">
             <th class="py-2">{{ t('login.username') }}</th>
             <th class="py-2">{{ t('settings.users.linkedMember') }}</th>
-            <th class="py-2">{{ t('settings.users.active') }}</th>
             <th class="py-2">{{ t('settings.users.createdAt') }}</th>
             <th class="py-2 text-right">{{ t('common.actions') }}</th>
           </tr>
@@ -23,7 +22,6 @@
           <tr v-for="user in users" :key="user.id" class="border-b last:border-b-0">
             <td class="py-2">{{ user.username }}</td>
             <td class="py-2">{{ user.member_name || t('settings.users.noLinkedMember') }}</td>
-            <td class="py-2">{{ user.is_active ? t('common.yes') : t('common.no') }}</td>
             <td class="py-2">{{ formatDate(user.created_at) }}</td>
             <td class="py-2">
               <div class="flex justify-end gap-3">
@@ -86,7 +84,7 @@
           >
         </div>
 
-        <div class="field">
+        <div class="field relative z-20">
           <label>{{ t('settings.users.linkedMember') }}</label>
           <CommonSearchSelect
             v-model="createMemberQuery"
@@ -105,7 +103,7 @@
         {{ t('settings.users.active') }}
       </label>
 
-      <div class="flex justify-end gap-3 pt-2">
+      <div class="relative z-10 flex justify-end gap-3 bg-white pt-2">
         <button class="btn-secondary" @click="closeCreateModal">
           {{ t('actions.cancel') }}
         </button>
@@ -124,7 +122,7 @@
     <div class="bg-white rounded-xl w-full max-w-md p-6 space-y-4">
       <h3 class="text-lg font-semibold">{{ t('settings.users.memberTitle', { username: editingUser.username }) }}</h3>
 
-      <div class="field">
+      <div class="field relative z-20">
         <label>{{ t('settings.users.linkedMember') }}</label>
         <CommonSearchSelect
           v-model="editMemberQuery"
@@ -137,7 +135,7 @@
         />
       </div>
 
-      <div class="flex justify-end gap-3 pt-2">
+      <div class="relative z-10 flex justify-end gap-3 bg-white pt-2">
         <button class="btn-secondary" @click="closeMemberModal">
           {{ t('actions.cancel') }}
         </button>

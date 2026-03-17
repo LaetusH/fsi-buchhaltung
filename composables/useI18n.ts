@@ -105,7 +105,7 @@ const messages = {
         linkedMember: 'Verknüpftes Mitglied',
         assignMember: 'Mitglied zuordnen',
         memberTitle: 'Mitglied für {username}',
-        memberPlaceholder: 'Mitglied waehlen',
+        memberPlaceholder: 'Mitglied wählen',
         noLinkedMember: 'Kein Mitglied zugeordnet',
         noAvailableMembers: 'Keine verfügbaren Mitglieder',
         createdAt: 'Erstellt am',

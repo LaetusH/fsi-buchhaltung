@@ -131,33 +131,17 @@ const filteredOptions = computed(() => {
 const showCreateOption = computed(() => props.allowCreate && currentQuery.value.trim().length > 0)
 const menuWidthClass = computed(() => props.menuWidth === 'wide' ? 'w-full max-w-[48rem]' : 'max-w-[30vw]')
 
-function findModalBoundary() {
-  let current = rootRef.value?.parentElement ?? null
-
-  while (current) {
-    const parent = current.parentElement
-    if (!parent) return null
-    if (window.getComputedStyle(parent).position === 'fixed') return current
-    current = parent
-  }
-
-  return null
-}
-
 function updateMenuPosition() {
   if (!open.value || !rootRef.value) return
 
   const viewportPadding = 16
-  const boundaryPadding = 8
   const preferredMaxHeight = 200
   const rootRect = rootRef.value.getBoundingClientRect()
-  const modalBoundary = findModalBoundary()
-  const boundaryRect = modalBoundary?.getBoundingClientRect()
-  const topBoundary = boundaryRect ? boundaryRect.top + boundaryPadding : viewportPadding
-  const bottomBoundary = boundaryRect ? boundaryRect.bottom - boundaryPadding : window.innerHeight - viewportPadding
+  const topBoundary = viewportPadding
+  const bottomBoundary = window.innerHeight - viewportPadding
   const spaceBelow = bottomBoundary - rootRect.bottom
   const spaceAbove = rootRect.top - topBoundary
-  const shouldOpenUp = spaceBelow < 160 && spaceAbove > spaceBelow
+  const shouldOpenUp = spaceBelow < 200 && spaceAbove > spaceBelow
   const availableSpace = Math.max(shouldOpenUp ? spaceAbove : spaceBelow, 0)
 
   menuPlacementClass.value = shouldOpenUp ? 'bottom-full mb-1' : 'top-full mt-1'
