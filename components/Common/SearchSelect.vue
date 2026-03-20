@@ -15,41 +15,44 @@
       <slot name="after-trigger" />
     </div>
 
-    <transition name="fade">
-      <div
-        v-if="open"
-        class="absolute z-30 rounded-md border bg-white shadow-lg min-w-full w-max overflow-y-auto"
-        :class="[menuWidthClass, menuPlacementClass]"
-        :style="menuStyle"
-      >
-        <button
-          v-if="showCreateOption"
-          type="button"
-          class="flex w-full items-center justify-between px-3 py-2 text-sm hover:bg-gray-100 rounded-md cursor-pointer whitespace-nowrap"
-          @click="onCreate"
+    <Teleport to="body">
+      <transition name="fade">
+        <div
+          v-if="open"
+          ref="menuRef"
+          class="search-select-menu fixed z-70 rounded-md border bg-white shadow-lg w-max overflow-y-auto"
+          :class="menuWidthClass"
+          :style="menuStyle"
         >
-          <span>"{{ currentQuery }}"</span>
-          <span class="text-orange-500 font-semibold">{{ createActionLabel }}</span>
-        </button>
+          <button
+            v-if="showCreateOption"
+            type="button"
+            class="flex w-full items-center justify-between px-3 py-2 text-sm hover:bg-gray-100 rounded-md cursor-pointer whitespace-nowrap"
+            @click="onCreate"
+          >
+            <span>"{{ currentQuery }}"</span>
+            <span class="text-orange-500 font-semibold">{{ createActionLabel }}</span>
+          </button>
 
-        <div v-if="showCreateOption" class="border-t" />
+          <div v-if="showCreateOption" class="border-t" />
 
-        <button
-          v-for="option in filteredOptions"
-          :key="option.key"
-          type="button"
-          class="flex w-full text-left px-3 py-2 text-sm hover:bg-gray-100 rounded-md cursor-pointer whitespace-nowrap"
-          :class="optionClass"
-          @click="selectOption(option)"
-        >
-          <span class="overflow-hidden text-ellipsis">{{ option.label }}</span>
-        </button>
+          <button
+            v-for="option in filteredOptions"
+            :key="option.key"
+            type="button"
+            class="flex w-full text-left px-3 py-2 text-sm hover:bg-gray-100 rounded-md cursor-pointer whitespace-nowrap"
+            :class="optionClass"
+            @click="selectOption(option)"
+          >
+            <span class="overflow-hidden text-ellipsis">{{ option.label }}</span>
+          </button>
 
-        <div v-if="filteredOptions.length === 0" class="px-3 py-2 text-sm text-gray-500">
-          {{ emptyText }}
+          <div v-if="filteredOptions.length === 0" class="px-3 py-2 text-sm text-gray-500">
+            {{ emptyText }}
+          </div>
         </div>
-      </div>
-    </transition>
+      </transition>
+    </Teleport>
   </div>
 </template>
 
@@ -114,9 +117,14 @@ const emit = defineEmits<{
 }>()
 
 const rootRef = ref<HTMLElement | null>(null)
+const menuRef = ref<HTMLElement | null>(null)
 const open = ref(false)
-const menuPlacementClass = ref('top-full mt-1')
-const menuStyle = ref({ maxHeight: '12.5rem' })
+const menuStyle = ref<Record<string, string>>({
+  top: '0px',
+  left: '0px',
+  minWidth: '0px',
+  maxHeight: '12.5rem',
+})
 
 const currentQuery = computed(() => props.modelValue || '')
 const normalizedQuery = computed(() => currentQuery.value.trim().toLowerCase())
@@ -137,16 +145,26 @@ function updateMenuPosition() {
   const viewportPadding = 16
   const preferredMaxHeight = 200
   const rootRect = rootRef.value.getBoundingClientRect()
+  const menuRect = menuRef.value?.getBoundingClientRect()
   const topBoundary = viewportPadding
   const bottomBoundary = window.innerHeight - viewportPadding
   const spaceBelow = bottomBoundary - rootRect.bottom
   const spaceAbove = rootRect.top - topBoundary
   const shouldOpenUp = spaceBelow < 200 && spaceAbove > spaceBelow
   const availableSpace = Math.max(shouldOpenUp ? spaceAbove : spaceBelow, 0)
+  const measuredWidth = menuRect?.width ?? rootRect.width
+  const maxLeft = window.innerWidth - viewportPadding - measuredWidth
+  const left = Math.min(Math.max(rootRect.left, viewportPadding), Math.max(viewportPadding, maxLeft))
+  const top = shouldOpenUp
+    ? Math.max(topBoundary, rootRect.top - Math.min(preferredMaxHeight, availableSpace) - 4)
+    : Math.min(bottomBoundary, rootRect.bottom + 4)
 
-  menuPlacementClass.value = shouldOpenUp ? 'bottom-full mb-1' : 'top-full mt-1'
   menuStyle.value = {
+    top: `${top}px`,
+    left: `${left}px`,
+    minWidth: `${rootRect.width}px`,
     maxHeight: `${Math.min(preferredMaxHeight, availableSpace)}px`,
+    maxWidth: props.menuWidth === 'wide' ? '48rem' : '30vw',
   }
 }
 
@@ -205,6 +223,7 @@ function onDocumentClick(event: MouseEvent) {
   const target = event.target as Node | null
   if (!target || !rootRef.value) return
   if (rootRef.value.contains(target)) return
+  if (menuRef.value?.contains(target)) return
   open.value = false
 }
 
@@ -242,5 +261,13 @@ onBeforeUnmount(() => {
 .fade-enter-from,
 .fade-leave-to {
   opacity: 0;
+}
+
+.search-select-menu {
+  scrollbar-width: none;
+}
+
+.search-select-menu::-webkit-scrollbar {
+  display: none;
 }
 </style>

@@ -5,6 +5,7 @@ import { normalizeBigInt } from '~/server/utils/normalize'
 import { logFieldChanges } from '~/server/utils/api/audit'
 import { requirePermission } from '~/server/utils/api/guards'
 import { toDbBoolean } from '~/server/utils/api/request'
+import { normalizePositionAssignments, syncPositionAssignments, type PositionAssignmentRow } from '~/server/utils/positions'
 
 interface SavePositionSuccess {
   ok: true
@@ -36,20 +37,23 @@ export default defineEventHandler(async (event): Promise<SavePositionResponse> =
   try {
     return await withTransaction(async (conn) => {
       if (updated.id && updated.id > 0) {
+        const positionId = updated.id
+        const normalizedAssignments = normalizePositionAssignments(updated.assignments, { position_id: positionId })
+        if (normalizedAssignments === null) return { ok: false, error: 'Invalid member assignments' }
         const existingRows: PositionRow[] = await query(
           `SELECT * FROM positions WHERE id = ? LIMIT 1`,
-          [updated.id],
+          [positionId],
           conn
         )
 
         if (!existingRows.length) return { ok: false, error: 'No matching positions in database' }
-        const existing = existingRows[0]
+        const existing = existingRows[0]!
 
         const fields = ['code', 'name', 'description'] as (keyof SavePositionBody)[]
 
         await logFieldChanges({
           entityType: 'position',
-          entityId: updated.id,
+          entityId: positionId,
           fields,
           previous: existing,
           next: updated,
@@ -61,11 +65,29 @@ export default defineEventHandler(async (event): Promise<SavePositionResponse> =
           `UPDATE positions
             SET code = ?, name = ?, description = ?
           WHERE id = ?`,
-          [updated.code, updated.name, updated.description, updated.id],
+          [updated.code, updated.name, updated.description, positionId],
           conn
         )
 
-        return { ok: true, id: updated.id }
+        const existingAssignmentRows = await query<PositionAssignmentRow[]>(
+          `SELECT id, member_id, position_id, since, until
+           FROM member_positions
+           WHERE position_id = ?`,
+          [positionId],
+          conn,
+        )
+
+        const syncedAssignments = await syncPositionAssignments({
+          scope: 'position',
+          ownerId: positionId,
+          existingAssignments: existingAssignmentRows,
+          incomingAssignments: normalizedAssignments,
+          userId: current.user.id,
+          conn,
+        })
+        if (!syncedAssignments.ok) return { ok: false, error: syncedAssignments.error }
+
+        return { ok: true, id: positionId }
       }
 
       const res = await query(
@@ -75,7 +97,21 @@ export default defineEventHandler(async (event): Promise<SavePositionResponse> =
         conn
       )
 
-      return { ok: true, id: normalizeBigInt(res.insertId) }
+      const id = normalizeBigInt(res.insertId)
+      const positionId = Number(id)
+      const normalizedAssignments = normalizePositionAssignments(updated.assignments, { position_id: positionId })
+      if (normalizedAssignments === null) return { ok: false, error: 'Invalid member assignments' }
+      const syncedAssignments = await syncPositionAssignments({
+        scope: 'position',
+        ownerId: positionId,
+        existingAssignments: [],
+        incomingAssignments: normalizedAssignments,
+        userId: current.user.id,
+        conn,
+      })
+      if (!syncedAssignments.ok) return { ok: false, error: syncedAssignments.error }
+
+      return { ok: true, id }
     })
   } catch (err: unknown) {
     const error = err as MysqlError

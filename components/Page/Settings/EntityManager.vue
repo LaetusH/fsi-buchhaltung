@@ -86,9 +86,9 @@
 
   <div
     v-if="showModal && editingItem"
-    class="fixed inset-0 bg-black/40 flex items-center justify-center z-50"
+    class="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4"
   >
-    <div class="bg-white rounded-xl w-full max-w-lg p-6 space-y-4">
+    <div :class="['bg-white rounded-xl w-full p-6 space-y-4 max-h-[calc(100vh-2rem)] overflow-hidden', modalWidthClass]">
       <h3 class="text-lg font-semibold">
         {{ isNewItem ? t('settings.entities.newItem', { label: singularLabel }) : t('settings.entities.editItem', { label: singularLabel }) }}
       </h3>
@@ -190,6 +190,7 @@ const props = withDefaults(defineProps<{
   mapEditItem?: (item: SettingsEntityRow) => SaveSettingsEntityBody
   transformItems?: (items: SettingsEntityRow[]) => SettingsEntityRow[]
   onError?: (context: EntityManagerErrorContext) => void
+  modalWidthClass?: string
 }>(), {
   extraColumns: () => [],
   canManage: true,
@@ -202,6 +203,7 @@ const props = withDefaults(defineProps<{
   mapEditItem: (item: SettingsEntityRow) => ({ ...item }),
   transformItems: (items: SettingsEntityRow[]) => items,
   onError: undefined,
+  modalWidthClass: 'max-w-lg',
 })
 
 defineSlots<{

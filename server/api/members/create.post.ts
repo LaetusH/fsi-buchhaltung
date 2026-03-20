@@ -5,6 +5,7 @@ import { requirePermission } from '~/server/utils/api/guards'
 import { createUserAccount, DuplicateUsernameError } from '~/server/utils/userAccounts'
 import { ensureSubjectId, validateMemberPayload } from '~/server/utils/members'
 import { getSubdivisionLabels, normalizeRelationIds, syncSubdivisionAssignments } from '~/server/utils/subdivisions'
+import { normalizePositionAssignments, syncPositionAssignments } from '~/server/utils/positions'
 
 interface CreateMemberSuccess {
   ok: true
@@ -32,6 +33,9 @@ export default defineEventHandler(async (event): Promise<CreateMemberResponse> =
   if (!canManageSubdivisions && subdivisionIds.length > 0) {
     return { ok: false, error: 'Not authorized to manage subdivisions' }
   }
+
+  const positionAssignments = normalizePositionAssignments(body.positions)
+  if (positionAssignments === null) return { ok: false, error: 'Invalid position list' }
 
   try {
     return await withTransaction(async (conn) => {
@@ -75,18 +79,18 @@ export default defineEventHandler(async (event): Promise<CreateMemberResponse> =
 
       const memberId = Number(insertMemberRes.insertId)
 
-      if (Array.isArray(body.positions) && body.positions.length) {
-        for (const position of body.positions) {
-          if (!position.position_id || !position.since) continue
-
-          await query(
-            `INSERT INTO member_positions (member_id, position_id, since, until)
-             VALUES (?, ?, ?, ?)`,
-            [memberId, position.position_id, position.since, position.until || null],
-            conn
-          )
-        }
-      }
+      const syncedPositions = await syncPositionAssignments({
+        scope: 'member',
+        ownerId: memberId,
+        existingAssignments: [],
+        incomingAssignments: (positionAssignments ?? []).map(assignment => ({
+          ...assignment,
+          member_id: memberId,
+        })),
+        userId: current.user.id,
+        conn,
+      })
+      if (!syncedPositions.ok) return { ok: false, error: syncedPositions.error }
 
       if (canManageSubdivisions && subdivisionIds.length) {
         const subdivisionLabels = await getSubdivisionLabels(subdivisionIds, conn)

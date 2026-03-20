@@ -6,6 +6,7 @@ import { requirePermission } from '~/server/utils/api/guards'
 import { getNumericRouteParam } from '~/server/utils/api/request'
 import { ensureSubjectId, validateMemberPayload } from '~/server/utils/members'
 import { getSubdivisionLabels, normalizeRelationIds, syncSubdivisionAssignments } from '~/server/utils/subdivisions'
+import { normalizePositionAssignments, syncPositionAssignments, type PositionAssignmentRow } from '~/server/utils/positions'
 
 interface UpdateMemberSuccess {
   ok: true
@@ -36,6 +37,9 @@ export default defineEventHandler(async (event): Promise<UpdateMemberResponse> =
   if (!canManageSubdivisions && subdivisionIds !== undefined && subdivisionIds.length > 0) {
     return { ok: false, error: 'Not authorized to manage subdivisions' }
   }
+
+  const positionAssignments = normalizePositionAssignments(body.positions, { member_id: memberId })
+  if (positionAssignments === null) return { ok: false, error: 'Invalid position list' }
 
   try {
     return await withTransaction(async (conn) => {
@@ -102,20 +106,23 @@ export default defineEventHandler(async (event): Promise<UpdateMemberResponse> =
         conn
       )
 
-      await query(`DELETE FROM member_positions WHERE member_id = ?`, [memberId], conn)
+      const existingPositionRows = await query<PositionAssignmentRow[]>(
+        `SELECT id, member_id, position_id, since, until
+         FROM member_positions
+         WHERE member_id = ?`,
+        [memberId],
+        conn,
+      )
 
-      if (Array.isArray(body.positions) && body.positions.length) {
-        for (const position of body.positions) {
-          if (!position.position_id || !position.since) continue
-
-          await query(
-            `INSERT INTO member_positions (member_id, position_id, since, until)
-             VALUES (?, ?, ?, ?)`,
-            [memberId, position.position_id, position.since, position.until || null],
-            conn
-          )
-        }
-      }
+      const syncedPositions = await syncPositionAssignments({
+        scope: 'member',
+        ownerId: memberId,
+        existingAssignments: existingPositionRows,
+        incomingAssignments: positionAssignments ?? [],
+        userId: current.user.id,
+        conn,
+      })
+      if (!syncedPositions.ok) return { ok: false, error: syncedPositions.error }
 
       if (canManageSubdivisions && subdivisionIds !== undefined) {
         const existingSubdivisionRows = await query<{ subdivision_id: number }[]>(
