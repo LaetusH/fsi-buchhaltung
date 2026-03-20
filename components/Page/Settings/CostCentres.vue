@@ -1,128 +1,58 @@
 <template>
-  <div class="bg-white rounded-b-xl rounded-tl-xl shadow-lg p-6 space-y-6 col-span-12">
-    <div class="flex justify-between items-center">
-      <h2 class="text-lg font-semibold">{{ t('settings.entities.costCentres') }}</h2>
-
-      <button class="btn-primary" @click="addItem">
-        + {{ t('settings.entities.newCostCentre') }}
-      </button>
-    </div>
-
-    <div class="overflow-x-auto">
-      <table class="w-full text-sm border-collapse">
-        <thead>
-          <tr class="text-left border-b">
-            <th class="py-2">{{ t('common.code') }}</th>
-            <th class="py-2">{{ t('common.name') }}</th>
-            <th class="py-2">{{ t('common.parent') }}</th>
-            <th class="py-2 text-right">{{ t('common.actions') }}</th>
-          </tr>
-        </thead>
-
-        <tbody>
-          <tr
-            v-for="item in displayItems"
-            :key="item.id"
-            class="border-b last:border-b-0"
-          >
-            <td class="py-2 align-top">{{ item.code }}</td>
-
-            <td class="py-2 align-top">
-              <div
-                class="flex items-center gap-2"
-                :style="{ paddingLeft: `${item.depth * 1.25}rem` }"
-              >
-                <span v-if="item.depth > 0" class="text-slate-400">|-</span>
-                <span>{{ item.name }}</span>
-              </div>
-            </td>
-
-            <td class="py-2 align-top text-slate-600">
-              {{ parentLabel(item.parent_id) }}
-            </td>
-
-            <td class="py-2 text-right space-x-2 align-top">
-              <button class="text-blue-600 hover:underline cursor-pointer" @click="editItem(item)">
-                {{ t('actions.edit') }}
-              </button>
-
-              <button
-                class="hover:underline cursor-pointer"
-                :class="item.is_active ? 'text-red-500' : 'text-gray-500'"
-                @click="toggleActive(item)"
-              >
-                {{ item.is_active ? t('actions.deactivate') : t('actions.activate') }}
-              </button>
-            </td>
-          </tr>
-
-          <tr v-if="displayItems.length === 0">
-            <td colspan="4" class="py-6 text-center text-slate-500">
-              {{ t('settings.entities.noCostCentres') }}
-            </td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-  </div>
-
-  <div
-    v-if="showModal"
-    class="fixed inset-0 bg-black/40 flex items-center justify-center z-50"
+  <PageSettingsEntityManager
+    :title="t('settings.entities.costCentres')"
+    :singular-label="t('settings.entities.costCentre')"
+    :add-label="t('settings.entities.newCostCentre')"
+    :empty-label="t('settings.entities.noCostCentres')"
+    list-endpoint="/api/cost_centres"
+    save-endpoint="/api/cost_centres/save"
+    activate-endpoint="/api/cost_centres/activate"
+    response-list-key="costCentres"
+    :extra-columns="tableColumns"
+    :create-item="createItem"
+    :map-edit-item="mapEditItem"
+    :transform-items="flattenCostCentres"
+    :on-error="handleError"
   >
-    <div class="bg-white rounded-xl w-full max-w-md p-6 space-y-4">
-      <h3 class="text-lg font-semibold">
-        {{ isNewItem ? t('settings.entities.newItem', { label: t('settings.entities.costCentre') }) : t('settings.entities.editItem', { label: t('settings.entities.costCentre') }) }}
-      </h3>
-
-      <div class="space-y-3">
-        <div class="field">
-          <label>{{ t('common.code') }}</label>
-          <input v-model="editingItem!.code" class="input" />
-        </div>
-
-        <div class="field">
-          <label>{{ t('common.name') }}</label>
-          <input v-model="editingItem!.name" class="input" />
-        </div>
-
-        <div class="field">
-          <label>{{ t('settings.entities.parentCostCentre') }}</label>
-          <CommonSearchSelect
-            v-model="parentQuery"
-            :options="parentSearchOptions"
-            :selected-label="selectedParentLabel"
-            :placeholder="t('settings.entities.noParentCostCentre')"
-            :empty-text="t('settings.entities.noCostCentres')"
-            @select="selectParent"
-            @clear-selection="clearParent"
-          />
-        </div>
-
-        <div class="field">
-          <label>{{ t('common.description') }}</label>
-          <textarea
-            v-model="editingItem!.description"
-            rows="3"
-            class="input resize-none"
-          />
-        </div>
+    <template #name-cell="{ item }">
+      <div
+        class="flex items-center gap-2"
+        :style="{ paddingLeft: `${itemDepth(item) * 1.25}rem` }"
+      >
+        <span v-if="itemDepth(item) > 0" class="text-slate-400">|-</span>
+        <span>{{ item.name }}</span>
       </div>
+    </template>
 
-      <div class="flex justify-end gap-3 pt-4">
-        <button class="btn-secondary" @click="closeModal">
-          {{ t('actions.cancel') }}
-        </button>
+    <template #row-extra="{ item, items }">
+      <td class="py-2 align-top text-slate-600">
+        {{ parentLabel(itemParentId(item), items) }}
+      </td>
+    </template>
 
-        <button class="btn-primary" @click="saveItem">
-          {{ t('actions.save') }}
-        </button>
+    <template #modal-fields-before-description="{ editingItem, items }">
+      <div class="field">
+        <label>{{ t('settings.entities.parentCostCentre') }}</label>
+        <CommonSearchSelect
+          v-model="parentQuery"
+          :options="parentSearchOptions(editingItem, items)"
+          :selected-label="selectedParentLabel(editingItem, items)"
+          :placeholder="t('settings.entities.noParentCostCentre')"
+          :empty-text="t('settings.entities.noCostCentres')"
+          @select="selectParent($event, editingItem, items)"
+          @clear-selection="clearParent(editingItem)"
+        />
       </div>
-    </div>
-  </div>
+    </template>
+  </PageSettingsEntityManager>
 </template>
 
 <script setup lang="ts">
+import type {
+  EntityManagerColumn,
+  SaveSettingsEntityBody,
+  SettingsEntityRow,
+} from '~/components/Page/Settings/EntityManager.vue'
 import type { SearchSelectOption } from '~/components/Common/SearchSelect.vue'
 import { useI18n } from '~/composables/useI18n'
 import { useToast } from '~/composables/useToast'
@@ -140,50 +70,37 @@ interface ParentOption {
 const { t } = useI18n()
 const toast = useToast()
 
-const items = ref<CostCentreRow[]>([])
-const showModal = ref(false)
-const editingItem = ref<SaveCostCentreBody | null>(null)
-const isNewItem = ref(false)
 const parentQuery = ref('')
 
-const itemsById = computed(() => {
-  return new Map(items.value.map(item => [item.id, item]))
-})
-
-const displayItems = computed<CostCentreDisplayRow[]>(() => flattenCostCentres(items.value))
-
-const parentOptions = computed<ParentOption[]>(() => {
-  const excludedIds = editingItem.value?.id ? collectDescendantIds(editingItem.value.id, items.value) : new Set<number>()
-  if (editingItem.value?.id) excludedIds.add(editingItem.value.id)
-
-  return displayItems.value
-    .filter(item => !excludedIds.has(item.id))
-    .map(item => ({
-      id: item.id,
-      label: `${'-- '.repeat(item.depth)}${item.code} - ${item.name}`,
-    }))
-})
-const parentSearchOptions = computed<SearchSelectOption<number>[]>(() => parentOptions.value.map(option => ({
-  key: option.id,
-  label: option.label,
-  value: option.id,
-  searchText: option.label,
-})))
-const selectedParentLabel = computed(() => {
-  if (!editingItem.value?.parent_id) return ''
-  const selected = parentOptions.value.find(option => option.id === editingItem.value?.parent_id)
-  return selected?.label || ''
-})
+const tableColumns = computed<EntityManagerColumn[]>(() => [
+  {
+    key: 'parent',
+    label: t('common.parent'),
+  },
+])
 
 function sortCostCentres(left: CostCentreRow, right: CostCentreRow) {
   return left.code.localeCompare(right.code, undefined, { numeric: true, sensitivity: 'base' })
     || left.name.localeCompare(right.name, undefined, { sensitivity: 'base' })
 }
 
-function flattenCostCentres(source: CostCentreRow[]): CostCentreDisplayRow[] {
-  const itemMap = new Map(source.map(item => [item.id, item]))
+function itemDepth(item: SettingsEntityRow) {
+  return (item as CostCentreDisplayRow).depth
+}
+
+function itemParentId(item: SettingsEntityRow) {
+  return (item as CostCentreRow).parent_id
+}
+
+function costCentreBody(editingItem: SaveSettingsEntityBody) {
+  return editingItem as SaveCostCentreBody
+}
+
+function flattenCostCentres(source: SettingsEntityRow[]) {
+  const costCentres = source as CostCentreRow[]
+  const itemMap = new Map(costCentres.map(item => [item.id, item]))
   const buckets = new Map<number | null, CostCentreRow[]>()
-  const sorted = [...source].sort(sortCostCentres)
+  const sorted = [...costCentres].sort(sortCostCentres)
 
   for (const item of sorted) {
     const parentId = item.parent_id !== null && item.parent_id !== item.id && itemMap.has(item.parent_id)
@@ -244,116 +161,93 @@ function collectDescendantIds(rootId: number, source: CostCentreRow[]) {
   return descendants
 }
 
-function parentLabel(parentId: number | null) {
-  if (parentId === null) return t('settings.entities.noParentCostCentre')
-  const parent = itemsById.value.get(parentId)
+function parentOptions(editingItem: SaveSettingsEntityBody, items: SettingsEntityRow[]) {
+  const costCentres = items as CostCentreRow[]
+  const currentId = typeof costCentreBody(editingItem).id === 'number' ? costCentreBody(editingItem).id : null
+  const excludedIds = currentId ? collectDescendantIds(currentId, costCentres) : new Set<number>()
+  if (currentId) excludedIds.add(currentId)
+
+  return flattenCostCentres(costCentres)
+    .filter(item => !excludedIds.has(item.id))
+    .map(item => ({
+      id: item.id,
+      label: `${'-- '.repeat(item.depth)}${item.code} - ${item.name}`,
+    }))
+}
+
+function parentSearchOptions(editingItem: SaveSettingsEntityBody, items: SettingsEntityRow[]) {
+  return parentOptions(editingItem, items).map<SearchSelectOption<number>>(option => ({
+    key: option.id,
+    label: option.label,
+    value: option.id,
+    searchText: option.label,
+  }))
+}
+
+function parentLabel(parentId: number | null | undefined, items: SettingsEntityRow[]) {
+  if (parentId === null || parentId === undefined) return t('settings.entities.noParentCostCentre')
+
+  const parent = (items as CostCentreRow[]).find(item => item.id === parentId)
   return parent ? `${parent.code} - ${parent.name}` : t('settings.entities.noParentCostCentre')
 }
 
-async function loadItems() {
-  try {
-    const res = await $fetch<{ ok: boolean, costCentres?: CostCentreRow[], error?: string }>('/api/cost_centres')
-    if (!res.ok) {
-      toast.error(res.error || 'Failed to load cost centres')
-      return
-    }
-
-    items.value = res.costCentres ?? []
-  } catch (error) {
-    console.error(error)
-    toast.error('Failed to load cost centres')
-  }
+function selectedParentLabel(editingItem: SaveSettingsEntityBody, items: SettingsEntityRow[]) {
+  const parentId = costCentreBody(editingItem).parent_id
+  return parentLabel(parentId, items) === t('settings.entities.noParentCostCentre')
+    ? ''
+    : parentLabel(parentId, items)
 }
 
-function addItem() {
-  editingItem.value = {
+function createItem(): SaveCostCentreBody {
+  parentQuery.value = ''
+  return {
     code: '',
     name: '',
     description: '',
     parent_id: null,
   }
-  parentQuery.value = ''
-  isNewItem.value = true
-  showModal.value = true
 }
 
-function editItem(item: CostCentreRow) {
-  editingItem.value = {
-    id: item.id,
-    code: item.code,
-    name: item.name,
-    description: item.description,
-    is_active: item.is_active,
-    parent_id: item.parent_id,
+function mapEditItem(item: SettingsEntityRow): SaveCostCentreBody {
+  parentQuery.value = ''
+  const costCentre = item as CostCentreRow
+  return {
+    id: costCentre.id,
+    code: costCentre.code,
+    name: costCentre.name,
+    description: costCentre.description,
+    is_active: costCentre.is_active,
+    parent_id: costCentre.parent_id,
   }
-  parentQuery.value = parentLabel(item.parent_id)
-  if (item.parent_id === null) parentQuery.value = ''
-  isNewItem.value = false
-  showModal.value = true
 }
 
-function closeModal() {
-  showModal.value = false
-  editingItem.value = null
-  parentQuery.value = ''
-}
+function selectParent(value: unknown, editingItem: SaveSettingsEntityBody, items: SettingsEntityRow[]) {
+  const parentId = Number(value)
+  if (!Number.isInteger(parentId) || parentId <= 0) return
 
-function selectParent(value: unknown) {
-  if (!editingItem.value) return
-
-  const parentId = value as number
-  const selected = parentOptions.value.find(option => option.id === parentId)
-
-  editingItem.value.parent_id = parentId
+  const selected = parentOptions(editingItem, items).find(option => option.id === parentId)
+  costCentreBody(editingItem).parent_id = parentId
   parentQuery.value = selected?.label || ''
 }
 
-function clearParent() {
-  if (!editingItem.value) return
-  editingItem.value.parent_id = null
+function clearParent(editingItem: SaveSettingsEntityBody) {
+  costCentreBody(editingItem).parent_id = null
   parentQuery.value = ''
 }
 
-async function saveItem() {
-  if (!editingItem.value) return
+function handleError({ phase, message, error }: { phase: 'load' | 'save' | 'toggle', message?: string, error?: unknown }) {
+  if (error) console.error(error)
 
-  try {
-    const res = await $fetch<{ ok: boolean, error?: string }>('/api/cost_centres/save', {
-      method: 'POST',
-      body: editingItem.value,
-    })
-
-    if (!res.ok) {
-      toast.error(res.error || 'Failed to save cost centre')
-      return
-    }
-
-    closeModal()
-    await loadItems()
-  } catch (error) {
-    console.error(error)
-    toast.error('Failed to save cost centre')
+  if (phase === 'load') {
+    toast.error(message || 'Failed to load cost centres')
+    return
   }
-}
 
-async function toggleActive(item: CostCentreRow) {
-  try {
-    const res = await $fetch<{ ok: boolean, error?: string }>('/api/cost_centres/activate', {
-      method: 'POST',
-      body: { id: item.id, is_active: !item.is_active },
-    })
-
-    if (!res.ok) {
-      toast.error(res.error || 'Failed to update cost centre')
-      return
-    }
-
-    await loadItems()
-  } catch (error) {
-    console.error(error)
-    toast.error('Failed to update cost centre')
+  if (phase === 'save') {
+    toast.error(message || 'Failed to save cost centre')
+    return
   }
-}
 
-onMounted(loadItems)
+  toast.error(message || 'Failed to update cost centre')
+}
 </script>
