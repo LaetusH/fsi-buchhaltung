@@ -23,6 +23,7 @@
 <script setup lang="ts">
 import { useI18n } from '~/composables/useI18n'
 import { useToast } from '~/composables/useToast'
+import { useReturnTarget } from '~/composables/useReturnTarget'
 import ReimbursementForm from './Form.vue'
 import { usePage } from '~/composables/usePage'
 import type { CreateReimbursementBody } from '~/types/reimbursement'
@@ -33,10 +34,11 @@ const emit = defineEmits<{
   (e: 'openMenu'): void
 }>()
 
-const { setPage, pageMeta } = usePage()
+const { pageMeta } = usePage()
 const { t } = useI18n()
 const toast = useToast()
 const { hasPermission } = useAuth()
+const { goToReturnTarget } = useReturnTarget('ReimbursementList')
 
 const canEdit = computed(() => hasPermission('reimbursements.edit'))
 const canCreateReceipt = computed(() => hasPermission('receipts.edit'))
@@ -238,15 +240,13 @@ async function submit() {
     }
 
     toast.success(isEditMode.value ? t('reimbursement.saved.updated') : t('reimbursement.saved.created'))
-    const returnTo = pageMeta.value?.returnTo || 'ReimbursementList'
-    setPage(returnTo)
+    goToReturnTarget()
   } catch (err: any) {
     toast.error(err?.message || t('reimbursement.saved.failedSave'))
   }
 }
 
 function cancel() {
-  const returnTo = pageMeta.value?.returnTo || 'ReimbursementList'
-  setPage(returnTo)
+  goToReturnTarget()
 }
 </script>

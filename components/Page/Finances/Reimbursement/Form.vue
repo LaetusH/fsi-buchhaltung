@@ -203,6 +203,7 @@ import { useLocaleFormatters } from '~/composables/useLocaleFormatters'
 import type { Receipt, ReceiptRow } from '~/types/receipt'
 import type { CreateReimbursementBody } from '~/types/reimbursement'
 import type { MemberListItem } from '~/types/member'
+import { buildReturnTarget, useReturnTarget } from '~/composables/useReturnTarget'
 import { usePage } from '~/composables/usePage'
 
 type MemberField = 'paid_by' | 'checked_by' | 'disbursed_by'
@@ -220,7 +221,8 @@ const emit = defineEmits<{
   (e: 'cancel'): void
 }>()
 
-const { setPage, pageMeta } = usePage()
+const { pageMeta } = usePage()
+const { returnTarget, setPageWithReturnTarget } = useReturnTarget('ReimbursementList')
 const { t } = useI18n()
 const { formatCurrency, formatDate } = useLocaleFormatters()
 
@@ -473,14 +475,17 @@ function buildDraftMeta() {
 }
 
 function createNewReceipt() {
-  const returnToMeta: Record<string, any> = {
+  const nestedReturnTargetMeta: Record<string, any> = {
     reimbursementDraft: buildDraftMeta(),
   }
-  if (pageMeta.value?.reimbursementId) returnToMeta.reimbursementId = pageMeta.value.reimbursementId
-  setPage('ReceiptCreate', {
-    returnTo: 'ReimbursementCreate',
-    returnToMeta,
-  })
+  if (pageMeta.value?.reimbursementId) nestedReturnTargetMeta.reimbursementId = pageMeta.value.reimbursementId
+  nestedReturnTargetMeta.returnTarget = returnTarget.value
+
+  setPageWithReturnTarget(
+    'ReceiptCreate',
+    undefined,
+    buildReturnTarget('ReimbursementCreate', nestedReturnTargetMeta),
+  )
 }
 
 const receiptsTotal = computed(() => form.value.positions.reduce((sum, _, index) => {

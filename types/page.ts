@@ -24,3 +24,8 @@ interface SubPage {
 }
 
 export type PageName = keyof typeof PAGES
+
+export interface PageTarget {
+  page: PageName
+  meta?: Record<string, any> | null
+}

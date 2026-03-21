@@ -492,6 +492,7 @@ import { useAuth } from '~/composables/useAuth'
 import { useI18n } from '~/composables/useI18n'
 import { useLocaleFormatters } from '~/composables/useLocaleFormatters'
 import { usePage } from '~/composables/usePage'
+import { buildReturnTarget } from '~/composables/useReturnTarget'
 import type { CostCentreRow } from '~/types/costCentre'
 import type { FinanceAnalysisData, FinanceAnalysisReceiptItem } from '~/types/financeAnalysis'
 import { ReceiptStatus } from '~/types/receipt'
@@ -1074,8 +1075,7 @@ function clearSelectedCostCentre() {
 function openReceipt(id: number) {
   setPage('ReceiptCreate', {
     receiptId: id,
-    returnTo: 'FinanceAnalysis',
-    returnToMeta: getAnalysisPageMeta(),
+    returnTarget: buildReturnTarget('FinanceAnalysis', getAnalysisPageMeta()),
     forceReadonly: true,
   })
 }
@@ -1083,8 +1083,7 @@ function openReceipt(id: number) {
 function openCashCount(id: number) {
   setPage('CashCountCreate', {
     cashCountId: id,
-    returnTo: 'FinanceAnalysis',
-    returnToMeta: getAnalysisPageMeta(),
+    returnTarget: buildReturnTarget('FinanceAnalysis', getAnalysisPageMeta()),
     forceReadonly: true,
   })
 }

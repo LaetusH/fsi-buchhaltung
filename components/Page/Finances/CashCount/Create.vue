@@ -22,6 +22,7 @@
 <script setup lang="ts">
 import { useI18n } from '~/composables/useI18n'
 import { useToast } from '~/composables/useToast'
+import { useReturnTarget } from '~/composables/useReturnTarget'
 import CashCountForm from './Form.vue'
 import { usePage } from '~/composables/usePage'
 import { useAuth } from '~/composables/useAuth'
@@ -32,10 +33,11 @@ const emit = defineEmits<{
   (e: 'openMenu'): void
 }>()
 
-const { setPage, pageMeta } = usePage()
+const { pageMeta } = usePage()
 const { t } = useI18n()
 const toast = useToast()
 const { hasPermission } = useAuth()
+const { goToReturnTarget } = useReturnTarget('CashCountList')
 
 const canEdit = computed(() => !pageMeta.value?.forceReadonly && hasPermission('cash_counts.edit'))
 const canViewFiles = computed(() => hasPermission('files.view') && (canEdit.value || existingFile.value !== null))
@@ -193,17 +195,13 @@ async function submit() {
     }
 
     toast.success(isEditMode.value ? t('cashCount.saved.updated') : t('cashCount.saved.created'))
-    const returnTo = pageMeta.value?.returnTo || 'CashCountList'
-    const returnToMeta = pageMeta.value?.returnToMeta ? { ...pageMeta.value.returnToMeta } : undefined
-    setPage(returnTo, returnToMeta)
+    goToReturnTarget()
   } catch (err: any) {
     toast.error(err?.message || t('cashCount.saved.failedSave'))
   }
 }
 
 function cancel() {
-  const returnTo = pageMeta.value?.returnTo || 'CashCountList'
-  const returnToMeta = pageMeta.value?.returnToMeta ? { ...pageMeta.value.returnToMeta } : undefined
-  setPage(returnTo, returnToMeta)
+  goToReturnTarget()
 }
 </script>

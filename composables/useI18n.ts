@@ -20,6 +20,7 @@ const messages = {
     pages: {
       login: 'Login',
       home: 'Startseite',
+      finances: 'Finanzen',
       receipts: 'Belege',
       createReceipt: 'Beleg',
       reimbursements: 'Erstattungen',
@@ -78,6 +79,9 @@ const messages = {
     home: {
       title: 'Startseite',
       body: 'Willkommen.',
+    },
+    finances: {
+      title: 'Finanzen',
     },
     settings: {
       title: 'Einstellungen',
@@ -628,6 +632,7 @@ const messages = {
     pages: {
       login: 'Login',
       home: 'Home',
+      finances: 'Finances',
       receipts: 'Receipts',
       createReceipt: 'Receipt',
       reimbursements: 'Reimbursements',
@@ -686,6 +691,9 @@ const messages = {
     home: {
       title: 'Home',
       body: 'Welcome.',
+    },
+    finances: {
+      title: 'Finances',
     },
     settings: {
       title: 'Settings',
