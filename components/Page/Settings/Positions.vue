@@ -48,7 +48,7 @@
             <div
               ref="assignmentListRef"
               :class="[
-                'position-assignment-scroll max-h-104 overflow-y-auto p-2',
+                'position-assignment-scroll max-h-80 overflow-y-auto p-2',
                 hasAssignmentScrollbar ? 'pr-1' : '',
               ]"
             >
@@ -128,6 +128,13 @@ interface EditablePosition extends SavePositionBody {
 }
 
 type AssignmentState = 'current' | 'upcoming' | 'past' | 'draft'
+interface AssignmentLike {
+  member_id: number
+  since: string
+  until: string | null
+  full_name?: string
+  member_query?: string
+}
 
 const { t } = useI18n()
 const toast = useToast()
@@ -205,19 +212,56 @@ function mapEditItem(item: SettingsEntityRow): EditablePosition {
     is_active: position.is_active,
     assignments: (position.assignments ?? [])
       .slice()
-      .sort(compareExistingAssignments)
+      .sort(compareAssignmentsMeaningfully)
       .map(assignment => createAssignment(assignment)),
   }
 }
 
-function compareExistingAssignments(
-  left: Partial<PositionMemberAssignment>,
-  right: Partial<PositionMemberAssignment>,
-) {
-  const leftSince = left.since || ''
-  const rightSince = right.since || ''
+function compareText(left: string | null | undefined, right: string | null | undefined) {
+  return String(left || '').localeCompare(String(right || ''), undefined, { sensitivity: 'base' })
+}
 
-  return rightSince.localeCompare(leftSince)
+function compareAssignmentsMeaningfully(left: AssignmentLike, right: AssignmentLike) {
+  const stateOrder: Record<AssignmentState, number> = {
+    draft: 0,
+    upcoming: 1,
+    current: 2,
+    past: 3,
+  }
+
+  const leftState = assignmentState(left)
+  const rightState = assignmentState(right)
+  const stateDifference = stateOrder[leftState] - stateOrder[rightState]
+  if (stateDifference !== 0) return stateDifference
+
+  if (leftState === 'current') {
+    const leftUntil = left.until || '9999-12-31'
+    const rightUntil = right.until || '9999-12-31'
+    if (leftUntil !== rightUntil) return leftUntil.localeCompare(rightUntil)
+    if (left.since !== right.since) return right.since.localeCompare(left.since)
+  }
+
+  if (leftState === 'upcoming') {
+    if (left.since !== right.since) return left.since.localeCompare(right.since)
+  }
+
+  if (leftState === 'past') {
+    const leftUntil = left.until || ''
+    const rightUntil = right.until || ''
+    if (leftUntil !== rightUntil) return rightUntil.localeCompare(leftUntil)
+    if (left.since !== right.since) return right.since.localeCompare(left.since)
+  }
+
+  if (leftState === 'draft' && left.since !== right.since) {
+    return compareText(left.since, right.since)
+  }
+
+  const leftLabel = left.full_name || left.member_query
+  const rightLabel = right.full_name || right.member_query
+  const labelDifference = compareText(leftLabel, rightLabel)
+  if (labelDifference !== 0) return labelDifference
+
+  return Number(left.member_id || 0) - Number(right.member_id || 0)
 }
 
 function assignmentLabel(assignment: EditablePositionAssignment) {
@@ -225,7 +269,7 @@ function assignmentLabel(assignment: EditablePositionAssignment) {
   return member?.full_name || assignment.full_name || assignment.member_query || t('common.notAvailable')
 }
 
-function isCurrentAssignment(assignment: EditablePositionAssignment) {
+function isCurrentAssignment(assignment: AssignmentLike) {
   const today = todayValue()
   return Boolean(assignment.member_id)
     && Boolean(assignment.since)
@@ -233,12 +277,12 @@ function isCurrentAssignment(assignment: EditablePositionAssignment) {
     && (!assignment.until || assignment.until >= today)
 }
 
-function isUpcomingAssignment(assignment: EditablePositionAssignment) {
+function isUpcomingAssignment(assignment: AssignmentLike) {
   const today = todayValue()
   return Boolean(assignment.member_id) && Boolean(assignment.since) && assignment.since > today
 }
 
-function isPastAssignment(assignment: EditablePositionAssignment) {
+function isPastAssignment(assignment: AssignmentLike) {
   const today = todayValue()
   const until = assignment.until
   return Boolean(assignment.member_id)
@@ -247,7 +291,7 @@ function isPastAssignment(assignment: EditablePositionAssignment) {
     && until < today
 }
 
-function assignmentState(assignment: EditablePositionAssignment): AssignmentState {
+function assignmentState(assignment: AssignmentLike): AssignmentState {
   if (isCurrentAssignment(assignment)) return 'current'
   if (isUpcomingAssignment(assignment)) return 'upcoming'
   if (isPastAssignment(assignment)) return 'past'
@@ -281,6 +325,7 @@ function currentAssignmentsForItem(item: SettingsEntityRow) {
   return (positionRow(item).assignments ?? [])
     .map(assignment => createAssignment(assignment))
     .filter(isCurrentAssignment)
+    .sort(compareAssignmentsMeaningfully)
 }
 
 function currentMemberSummary(item: SettingsEntityRow) {
