@@ -17,6 +17,7 @@
               <tr class="text-left border-b">
                 <th class="py-2">{{ t('common.code') }}</th>
                 <th class="py-2">{{ t('common.name') }}</th>
+                <th class="py-2">{{ t('settings.permissions.defaultRole') }}</th>
                 <th class="py-2">{{ t('common.description') }}</th>
                 <th class="py-2 text-right">{{ t('common.actions') }}</th>
               </tr>
@@ -25,6 +26,7 @@
               <tr v-for="role in roles" :key="role.id" class="border-b last:border-b-0">
                 <td class="py-2">{{ role.code }}</td>
                 <td class="py-2">{{ role.name }}</td>
+                <td class="py-2">{{ role.is_default ? t('common.yes') : t('common.no') }}</td>
                 <td class="py-2 text-slate-600">{{ role.description || '-' }}</td>
                 <td class="py-2 text-right space-x-2">
                   <button class="text-blue-600 hover:underline cursor-pointer" @click="openRoleEditor(role)">
@@ -36,7 +38,7 @@
                 </td>
               </tr>
               <tr v-if="roles.length === 0">
-                <td colspan="4" class="py-6 text-center text-slate-500">
+                <td colspan="5" class="py-6 text-center text-slate-500">
                   {{ t('settings.permissions.noRoles') }}
                 </td>
               </tr>
@@ -133,10 +135,16 @@
             <label>{{ t('common.description') }}</label>
             <textarea v-model="roleForm.description" rows="3" class="input resize-none" />
           </div>
-          <label class="inline-flex items-center gap-2 text-sm text-slate-700">
-            <input v-model="roleForm.is_active" type="checkbox" class="h-4 w-4" />
-            {{ t('settings.permissions.roleActive') }}
-          </label>
+          <div class="flex gap-4">
+            <label class="inline-flex items-center gap-2 text-sm text-slate-700 cursor-pointer">
+              <input v-model="roleForm.is_active" type="checkbox" class="h-4 w-4 cursor-pointer" />
+              {{ t('settings.permissions.roleActive') }}
+            </label>
+            <label class="inline-flex items-center gap-2 text-sm text-slate-700 cursor-pointer">
+              <input v-model="roleForm.is_default" type="checkbox" class="h-4 w-4 cursor-pointer" />
+              {{ t('settings.permissions.defaultRole') }}
+            </label>
+          </div>
         </div>
 
         <div class="flex justify-end gap-3 pt-4">
@@ -160,10 +168,10 @@
           >
             <h4 class="font-semibold mb-2">{{ group.categoryLabel }}</h4>
             <div class="grid md:grid-cols-2 gap-2">
-              <label v-for="perm in group.permissions" :key="perm.key" class="inline-flex items-center gap-2 text-sm">
+              <label v-for="perm in group.permissions" :key="perm.key" class="inline-flex items-center gap-2 text-sm cursor-pointer">
                 <input
                   type="checkbox"
-                  class="h-4 w-4"
+                  class="h-4 w-4 cursor-pointer"
                   :value="perm.key"
                   v-model="permissionModal.selected"
                 />
@@ -190,8 +198,8 @@
           <div class="border rounded-lg p-4">
             <h4 class="font-semibold mb-2">{{ t('settings.permissions.roles') }}</h4>
             <div class="grid md:grid-cols-2 gap-2">
-              <label v-for="role in roles" :key="role.id" class="inline-flex items-center gap-2 text-sm">
-                <input type="checkbox" class="h-4 w-4" :value="role.id" v-model="userModal.roles" />
+              <label v-for="role in roles" :key="role.id" class="inline-flex items-center gap-2 text-sm cursor-pointer">
+                <input type="checkbox" class="h-4 w-4 cursor-pointer" :value="role.id" v-model="userModal.roles" />
                 <span>{{ role.name }} ({{ role.code }})</span>
               </label>
             </div>
@@ -204,10 +212,10 @@
           >
             <h4 class="font-semibold mb-2">{{ group.categoryLabel }}</h4>
             <div class="grid md:grid-cols-2 gap-2">
-              <label v-for="perm in group.permissions" :key="perm.key" class="inline-flex items-center gap-2 text-sm">
+              <label v-for="perm in group.permissions" :key="perm.key" class="inline-flex items-center gap-2 text-sm cursor-pointer">
                 <input
                   type="checkbox"
-                  class="h-4 w-4"
+                  class="h-4 w-4 cursor-pointer"
                   :value="perm.key"
                   v-model="userModal.permissions"
                 />
@@ -237,6 +245,7 @@ interface RoleRow {
   code: string
   name: string
   is_active: boolean
+  is_default: boolean
   description: string | null
   permissions: string[]
 }
@@ -273,6 +282,7 @@ const roleForm = ref({
   name: '',
   description: '',
   is_active: true,
+  is_default: false,
   isNew: true,
 })
 
@@ -340,6 +350,7 @@ function openRoleEditor(role?: RoleRow) {
       name: role.name,
       description: role.description || '',
       is_active: role.is_active,
+      is_default: role.is_default,
       isNew: false,
     }
   } else {
@@ -349,6 +360,7 @@ function openRoleEditor(role?: RoleRow) {
       name: '',
       description: '',
       is_active: true,
+      is_default: false,
       isNew: true,
     }
   }
@@ -366,6 +378,7 @@ async function saveRole() {
     name: roleForm.value.name,
     description: roleForm.value.description || null,
     is_active: roleForm.value.is_active,
+    is_default: roleForm.value.is_default,
   }
   const res = await $fetch('/api/permissions/roles.save', {
     method: 'POST',

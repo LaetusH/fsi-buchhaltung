@@ -2,6 +2,7 @@ import type mariadb from 'mariadb'
 import { hashPassword } from '~/server/utils/auth'
 import { logChange } from '~/server/utils/changeLogger'
 import { query } from '~/server/utils/db'
+import { assignDefaultRoleToUser } from '~/server/utils/roles'
 
 export interface CreateUserAccountInput {
   username: string
@@ -50,7 +51,10 @@ export async function createUserAccount(input: CreateUserAccountInput, conn?: ma
       conn
     )
 
-    return Number(result.insertId)
+    const userId = Number(result.insertId)
+    await assignDefaultRoleToUser(userId, conn)
+
+    return userId
   } catch (err: unknown) {
     const error = err as MysqlError
     if (error.code === 'ER_DUP_ENTRY') throw new DuplicateUsernameError()

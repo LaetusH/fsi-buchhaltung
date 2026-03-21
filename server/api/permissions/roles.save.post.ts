@@ -10,6 +10,7 @@ interface SaveRoleBody {
   name: string
   description?: string | null
   is_active?: boolean
+  is_default?: boolean
 }
 
 interface SaveRoleSuccess {
@@ -35,14 +36,15 @@ export default defineEventHandler(async (event): Promise<SaveRoleResponse> => {
     code: body.code.trim(),
     name: body.name.trim(),
     description: body.description?.trim() || null,
-    is_active: body.is_active !== false
+    is_active: body.is_active !== false,
+    is_default: body.is_default === true,
   }
 
   try {
     return await withTransaction(async (conn) => {
       if (updated.id && updated.id > 0) {
         const existingRows = await query<any[]>(
-          `SELECT id, code, name, description, is_active FROM roles WHERE id = ? LIMIT 1`,
+          `SELECT id, code, name, description, is_active, is_default FROM roles WHERE id = ? LIMIT 1`,
           [updated.id],
           conn
         )
@@ -50,7 +52,17 @@ export default defineEventHandler(async (event): Promise<SaveRoleResponse> => {
         if (!existingRows.length) return { ok: false, error: 'No matching role in database' }
         const existing = existingRows[0]
 
-        const fields = ['code', 'name', 'description', 'is_active'] as (keyof typeof updated)[]
+        const fields = ['code', 'name', 'description', 'is_active', 'is_default'] as (keyof typeof updated)[]
+
+        if (updated.is_default) {
+          await query(
+            `UPDATE roles
+             SET is_default = 0
+             WHERE id <> ? AND is_default = 1`,
+            [updated.id],
+            conn
+          )
+        }
 
         await logFieldChanges({
           entityType: 'role',
@@ -60,6 +72,7 @@ export default defineEventHandler(async (event): Promise<SaveRoleResponse> => {
           next: {
             ...updated,
             is_active: toDbBoolean(updated.is_active),
+            is_default: toDbBoolean(updated.is_default),
           },
           userId: current.user.id,
           conn,
@@ -67,25 +80,35 @@ export default defineEventHandler(async (event): Promise<SaveRoleResponse> => {
 
         await query(
           `UPDATE roles
-          SET code = ?, name = ?, description = ?, is_active = ?
+          SET code = ?, name = ?, description = ?, is_active = ?, is_default = ?
           WHERE id = ?`,
-          [updated.code, updated.name, updated.description, toDbBoolean(updated.is_active), updated.id],
+          [updated.code, updated.name, updated.description, toDbBoolean(updated.is_active), toDbBoolean(updated.is_default), updated.id],
           conn
         )
 
         return { ok: true }
       }
 
-      await query(
-        `INSERT INTO roles (code, name, is_active, description, created_by)
-        VALUES (?, ?, ?, ?, ?)`,
-        [updated.code, updated.name, toDbBoolean(updated.is_active), updated.description, current.user.id],
+      const insertResult = await query<any>(
+        `INSERT INTO roles (code, name, is_active, is_default, description, created_by)
+        VALUES (?, ?, ?, ?, ?, ?)`,
+        [updated.code, updated.name, toDbBoolean(updated.is_active), toDbBoolean(updated.is_default), updated.description, current.user.id],
         conn
       )
+
+      if (updated.is_default) {
+        await query(
+          `UPDATE roles
+           SET is_default = 0
+           WHERE id <> ? AND is_default = 1`,
+          [Number(insertResult.insertId)],
+          conn
+        )
+      }
 
       return { ok: true }
     })
   } catch (err: any) {
-    return { ok: false, error: `An error occured while saving the cost centre: ${err.code ?? 'DB_ERROR'}` }
+    return { ok: false, error: `An error occured while saving the role: ${err.code ?? 'DB_ERROR'}` }
   }
 })

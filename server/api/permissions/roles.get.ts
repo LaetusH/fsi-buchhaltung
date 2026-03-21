@@ -8,6 +8,7 @@ interface RoleRow {
   code: string
   name: string
   is_active: number
+  is_default: number
   description: string | null
 }
 
@@ -23,6 +24,7 @@ interface GetRolesSuccess {
     code: string
     name: string
     is_active: boolean
+    is_default: boolean
     description: string | null
     permissions: string[]
   }>
@@ -40,9 +42,9 @@ export default defineEventHandler(async (event): Promise<GetRolesResponse> => {
   if (!current.ok) return current
 
   const roles = await query<RoleRow[]>(
-    `SELECT id, code, name, is_active, description
+    `SELECT id, code, name, is_active, is_default, description
      FROM roles
-     ORDER BY code ASC`
+     ORDER BY is_default DESC, code ASC`
   )
 
   const rolePermissions = await query<RolePermissionRow[]>(
@@ -64,6 +66,7 @@ export default defineEventHandler(async (event): Promise<GetRolesResponse> => {
       code: role.code,
       name: role.name,
       is_active: role.is_active === 1,
+      is_default: role.is_default === 1,
       description: role.description ?? null,
       permissions: permissionsByRole.get(role.id) ?? []
     }))

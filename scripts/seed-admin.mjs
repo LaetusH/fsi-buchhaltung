@@ -67,9 +67,9 @@ async function main() {
     await withTransaction(async (conn) => {
       for (const [code, permissions] of Object.entries(DEFAULT_ROLE_PERMISSIONS)) {
         const res = await query(
-          `INSERT INTO roles (code, name, is_active, description, created_by)
-           VALUES (?, ?, ?, ?, ?)`,
-          [code, code.toUpperCase(), 1, null, userId],
+          `INSERT INTO roles (code, name, is_active, is_default, description, created_by)
+           VALUES (?, ?, ?, ?, ?, ?)`,
+          [code, code.toUpperCase(), 1, code === 'user' ? 1 : 0, null, userId],
           conn
         )
         default_roles.push(res.insertId)
