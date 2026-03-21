@@ -16,6 +16,7 @@ export interface MemberListItem {
   joined_at: string
   left_at: string | null
   has_account?: boolean | null
+  account_is_active?: boolean | null
 }
 
 export interface MemberPositionAssignment {

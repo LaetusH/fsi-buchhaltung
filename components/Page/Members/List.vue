@@ -102,7 +102,19 @@
                     @reset-filter="resetFilter('left_at')"
                   />
                 </th>
-                <th v-if="canViewUsers" class="py-2">{{ t('member.hasAccount') }}</th>
+                <th v-if="canViewUsers" class="py-2">
+                  <CommonTableColumnControl
+                    :label="t('member.hasAccount')"
+                    filter-type="text"
+                    :sort-direction="columnSortDirection('has_account')"
+                    :is-filter-active="isFilterActive('has_account')"
+                    :filter="getFilter('has_account')"
+                    :text-options="textOptionsByColumn.has_account"
+                    @toggle-sort="toggleSort('has_account')"
+                    @apply-text-filter="setTextFilter('has_account', $event)"
+                    @reset-filter="resetFilter('has_account')"
+                  />
+                </th>
                 <th class="py-2 text-right">{{ t('common.actions') }}</th>
               </tr>
             </thead>
@@ -120,7 +132,7 @@
                 <td class="py-2">{{ statusLabel(member.status) || t('common.notAvailable') }}</td>
                 <td class="py-2">{{ formatDate(member.joined_at) }}</td>
                 <td class="py-2">{{ member.left_at ? formatDate(member.left_at) : t('common.notAvailable') }}</td>
-                <td v-if="canViewUsers" class="py-2">{{ member.has_account ? t('common.yes') : t('common.no') }}</td>
+                <td v-if="canViewUsers" class="py-2">{{ accountLabel(member) }}</td>
                 <td class="py-2 text-right space-x-2">
                   <button
                     class="text-blue-600 hover:underline cursor-pointer"
@@ -165,7 +177,7 @@ const canEdit = computed(() => hasPermission('members.edit'))
 const canViewUsers = computed(() => hasPermission(['users.view', 'users.manage']))
 
 const members = ref<MemberListItem[]>([])
-type MemberColumnKey = 'first_name' | 'last_name' | 'birthdate' | 'subject_name' | 'status' | 'joined_at' | 'left_at'
+type MemberColumnKey = 'first_name' | 'last_name' | 'birthdate' | 'subject_name' | 'status' | 'joined_at' | 'left_at' | 'has_account'
 
 const {
   sortKey,
@@ -187,6 +199,7 @@ const {
   { key: 'status', filterType: 'text', globalSearchable: true, getValue: row => statusLabel(row.status) },
   { key: 'joined_at', filterType: 'date', globalSearchable: true, getValue: row => row.joined_at },
   { key: 'left_at', filterType: 'date', globalSearchable: true, getValue: row => row.left_at },
+  { key: 'has_account', filterType: 'text', globalSearchable: false, getValue: row => accountLabel(row) },
 ])
 
 onMounted(async () => {
@@ -203,6 +216,11 @@ function statusLabel(status: MemberStatus) {
   if (status === MemberStatus.Passive) return t('member.states.passive')
   if (status === MemberStatus.Hold) return t('member.states.hold')
   return t('member.states.left')
+}
+
+function accountLabel(member: MemberListItem) {
+  if (!member.has_account) return t('common.no')
+  return `${t('common.yes')}${member.account_is_active ? '' : ` (${t('member.accountInactive')})`}`
 }
 
 function openMember(id: number) {

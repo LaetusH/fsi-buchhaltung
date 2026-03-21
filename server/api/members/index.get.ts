@@ -35,9 +35,11 @@ export default defineEventHandler(async (event): Promise<GetMembersResponse> => 
         m.joined_at,
         m.left_at,
         s.name AS subject_name,
-        ${canViewUsers ? 'CASE WHEN m.account IS NULL THEN 0 ELSE 1 END' : 'NULL'} AS has_account
+        ${canViewUsers ? 'CASE WHEN m.account IS NULL THEN 0 ELSE 1 END' : 'NULL'} AS has_account,
+        ${canViewUsers ? 'u.is_active' : 'NULL'} AS account_is_active
       FROM members m
       LEFT JOIN subjects s ON s.id = m.subject
+      LEFT JOIN users u ON u.id = m.account
       ORDER BY m.last_name ASC, m.first_name ASC
       `
     )
@@ -55,6 +57,7 @@ export default defineEventHandler(async (event): Promise<GetMembersResponse> => 
         joined_at: String(row.joined_at),
         left_at: row.left_at ? String(row.left_at) : null,
         has_account: row.has_account === null || row.has_account === undefined ? null : Boolean(row.has_account),
+        account_is_active: row.account_is_active === null || row.account_is_active === undefined ? null : Boolean(row.account_is_active),
       }))
     }
   } catch (err: any) {
