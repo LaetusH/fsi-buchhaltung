@@ -1,5 +1,5 @@
 import { defineEventHandler, getCookie, setCookie } from 'h3'
-import { deleteSessionByToken } from '~/server/utils/auth'
+import { deleteSessionByToken, cleanupExpiredSessions } from '~/server/utils/auth'
 
 interface LogoutResponse {
   ok: boolean
@@ -17,6 +17,7 @@ export default defineEventHandler(async (event): Promise<LogoutResponse> => {
       path: '/',
       maxAge: 0
     })
+    await cleanupExpiredSessions() 
     return { ok: true }
   }
 
