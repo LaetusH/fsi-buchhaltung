@@ -9,6 +9,8 @@ import ReimbursementCreatePage from '~/components/Page/Finances/Reimbursement/Cr
 import CashCountListPage from '~/components/Page/Finances/CashCount/List.vue'
 import CashCountCreatePage from '~/components/Page/Finances/CashCount/Create.vue'
 import FinanceAnalysisPage from '~/components/Page/Finances/Analysis.vue'
+import EventListPage from '~/components/Page/Events/List.vue'
+import EventCreatePage from '~/components/Page/Events/Create.vue'
 import MemberListPage from '~/components/Page/Members/List.vue'
 import MemberCreatePage from '~/components/Page/Members/Create.vue'
 import SettingsPage from '~/components/Page/Settings/Overview.vue'
@@ -25,6 +27,8 @@ export const PAGES: Record<string, AppPage> = {
   CashCountList: { main: false, labelKey: 'pages.cashCounts', component: CashCountListPage, permissions: ['cash_counts.view'] },
   CashCountCreate: { main: false, labelKey: 'pages.createCashCount', component: CashCountCreatePage, permissions: ['cash_counts.view'] },
   FinanceAnalysis: { main: true, labelKey: 'pages.financeAnalysis', component: FinanceAnalysisPage, icon: '', permissions: ['receipts.view', 'cash_counts.view'], requireAllPermissions: true },
+  Events: { main: true, labelKey: 'pages.events', component: EventListPage, icon: '', permissions: ['events.view'] },
+  EventCreate: { main: false, labelKey: 'pages.createEvent', component: EventCreatePage, permissions: ['events.view'] },
   MemberList: { main: true, labelKey: 'pages.members', component: MemberListPage, icon: '', permissions: ['members.view'] },
   MemberCreate: { main: false, labelKey: 'pages.createMember', component: MemberCreatePage, permissions: ['members.view'] },
   Settings: { main: true, labelKey: 'pages.settings', component: SettingsPage, icon: '', permissions: ['settings.access'] },

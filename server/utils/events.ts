@@ -1,0 +1,566 @@
+import type mariadb from 'mariadb'
+import { logFieldChanges, syncScalarCollection } from '~/server/utils/api/audit'
+import { logChange } from '~/server/utils/changeLogger'
+import { query } from '~/server/utils/db'
+import { getSubdivisionLabels, getMemberLabels, normalizeRelationIds } from '~/server/utils/subdivisions'
+import type {
+  EventCostCentreOption,
+  EventCostCentreSplit,
+  EventMemberOption,
+  EventMemberOrganizer,
+  EventSubdivisionOption,
+  EventSubdivisionOrganizer,
+  SaveEventBody,
+  SaveEventCostCentreSplit,
+} from '~/types/event'
+
+interface EventMemberOrganizerRow {
+  event_id: number
+  id: number
+  full_name: string
+}
+
+interface EventSubdivisionOrganizerRow {
+  event_id: number
+  id: number
+  code: string
+  name: string
+}
+
+interface EventCostCentreSplitRow {
+  id: number
+  event_id: number
+  cost_centre_id: number
+  code: string
+  name: string
+  allocation_percentage: number
+}
+
+interface EventCostCentreSplitLogRow {
+  id: number
+  cost_centre_id: number
+  allocation_percentage: number
+}
+
+interface EventRelationMaps {
+  memberOrganizers: Map<number, EventMemberOrganizer[]>
+  subdivisionOrganizers: Map<number, EventSubdivisionOrganizer[]>
+  costCentreSplits: Map<number, EventCostCentreSplit[]>
+}
+
+function parsePositiveInteger(value: unknown) {
+  const parsed = Number(value)
+  if (!Number.isInteger(parsed) || parsed < 0) return null
+  return parsed
+}
+
+function normalizeDateTime(value: unknown) {
+  const trimmed = String(value ?? '').trim()
+  if (!trimmed) return ''
+
+  const normalized = trimmed.replace('T', ' ')
+  const match = normalized.match(/^(\d{4}-\d{2}-\d{2}) (\d{2}):(\d{2})(?::(\d{2}))?$/)
+  if (!match) return null
+
+  const [, date, hours, minutes, seconds] = match
+  return `${date} ${hours}:${minutes}:${seconds ?? '00'}`
+}
+
+export function normalizeEventCostCentreSplits(value: unknown): SaveEventCostCentreSplit[] | null {
+  if (!Array.isArray(value)) return null
+
+  const normalized: SaveEventCostCentreSplit[] = []
+  const seen = new Set<number>()
+
+  for (const entry of value) {
+    if (!entry || typeof entry !== 'object') return null
+
+    const raw = entry as Record<string, unknown>
+    const costCentreId = Number(raw.cost_centre_id)
+    const allocationPercentage = Number(raw.allocation_percentage)
+
+    if (!Number.isInteger(costCentreId) || costCentreId <= 0) return null
+    if (!Number.isFinite(allocationPercentage) || allocationPercentage <= 0) return null
+    if (seen.has(costCentreId)) return null
+
+    seen.add(costCentreId)
+    normalized.push({
+      cost_centre_id: costCentreId,
+      allocation_percentage: Number(allocationPercentage.toFixed(2)),
+    })
+  }
+
+  return normalized
+}
+
+export function normalizeEventPayload(value: unknown): SaveEventBody | null {
+  if (!value || typeof value !== 'object') return null
+
+  const input = value as Record<string, unknown>
+  const memberOrganizerIds = normalizeRelationIds(input.member_organizer_ids)
+  const subdivisionOrganizerIds = normalizeRelationIds(input.subdivision_organizer_ids)
+  const costCentreSplits = normalizeEventCostCentreSplits(input.cost_centre_splits)
+  const expectedGuests = parsePositiveInteger(input.expected_guests)
+  const startsAt = normalizeDateTime(input.starts_at)
+  const endsAt = normalizeDateTime(input.ends_at)
+
+  if (memberOrganizerIds === null || subdivisionOrganizerIds === null || costCentreSplits === null || expectedGuests === null || startsAt === null || endsAt === null) {
+    return null
+  }
+
+  return {
+    name: String(input.name ?? '').trim(),
+    starts_at: startsAt,
+    ends_at: endsAt,
+    location: String(input.location ?? '').trim(),
+    expected_guests: expectedGuests,
+    member_organizer_ids: memberOrganizerIds,
+    subdivision_organizer_ids: subdivisionOrganizerIds,
+    cost_centre_splits: costCentreSplits,
+  }
+}
+
+export function validateEventPayload(body: SaveEventBody) {
+  if (!body.name || !body.starts_at || !body.ends_at || !body.location) return 'Missing fields'
+  if (body.starts_at > body.ends_at) return 'The start time must be on or before the end time'
+  if (body.expected_guests < 0) return 'Expected guests must be zero or greater'
+  if (body.member_organizer_ids.length + body.subdivision_organizer_ids.length === 0) return 'At least one organizer is required'
+  if (!body.cost_centre_splits.length) return 'At least one cost centre split is required'
+
+  const totalAllocation = body.cost_centre_splits.reduce((sum, split) => sum + Number(split.allocation_percentage || 0), 0)
+  if (Math.abs(totalAllocation - 100) > 0.01) return 'Cost centre splits must add up to 100%'
+
+  return null
+}
+
+export async function validateEventRelations(body: SaveEventBody, conn: mariadb.PoolConnection) {
+  if (body.member_organizer_ids.length) {
+    const rows = await query<{ id: number }[]>(
+      `SELECT id
+       FROM members
+       WHERE id IN (${body.member_organizer_ids.map(() => '?').join(',')})`,
+      body.member_organizer_ids,
+      conn,
+    )
+    if (rows.length !== body.member_organizer_ids.length) return 'At least one selected member organizer does not exist'
+  }
+
+  if (body.subdivision_organizer_ids.length) {
+    const rows = await query<{ id: number }[]>(
+      `SELECT id
+       FROM subdivisions
+       WHERE id IN (${body.subdivision_organizer_ids.map(() => '?').join(',')})`,
+      body.subdivision_organizer_ids,
+      conn,
+    )
+    if (rows.length !== body.subdivision_organizer_ids.length) return 'At least one selected subdivision organizer does not exist'
+  }
+
+  const costCentreIds = body.cost_centre_splits.map(split => split.cost_centre_id)
+  const rows = await query<{ id: number }[]>(
+    `SELECT id
+     FROM cost_centres
+     WHERE id IN (${costCentreIds.map(() => '?').join(',')})`,
+    costCentreIds,
+    conn,
+  )
+
+  return rows.length === costCentreIds.length
+    ? null
+    : 'At least one selected cost centre does not exist'
+}
+
+export async function getCostCentreLabels(
+  costCentreIds: number[],
+  conn: mariadb.PoolConnection,
+) {
+  if (!costCentreIds.length) return new Map<number, string>()
+
+  const rows = await query<{ id: number, label: string }[]>(
+    `SELECT id, TRIM(CONCAT(code, ' - ', name)) AS label
+     FROM cost_centres
+     WHERE id IN (${costCentreIds.map(() => '?').join(',')})`,
+    costCentreIds,
+    conn,
+  )
+
+  return new Map(rows.map(row => [Number(row.id), String(row.label)]))
+}
+
+function formatCostCentreSplitLog(label: string, allocationPercentage: number) {
+  return `${label} (${Number(allocationPercentage).toFixed(2)}%)`
+}
+
+export async function syncEventMemberOrganizers({
+  eventId,
+  existingIds,
+  nextIds,
+  userId,
+  conn,
+  logChanges = true,
+}: {
+  eventId: number
+  existingIds: number[]
+  nextIds: number[]
+  userId: number
+  conn: mariadb.PoolConnection
+  logChanges?: boolean
+}) {
+  const memberLabels = await getMemberLabels([...new Set([...existingIds, ...nextIds])], conn)
+
+  await syncScalarCollection({
+    existing: existingIds,
+    incoming: nextIds,
+    onRemove: async (memberId) => {
+      if (logChanges) {
+        await logChange({
+          entityType: 'event',
+          entityId: eventId,
+          subEntityType: 'member',
+          subEntityId: memberId,
+          field: 'organizer_removed',
+          oldValue: memberLabels.get(memberId) ?? String(memberId),
+          newValue: null,
+          userId,
+        }, conn)
+      }
+
+      await query(
+        `DELETE FROM event_member_organizers
+         WHERE event_id = ? AND member_id = ?`,
+        [eventId, memberId],
+        conn,
+      )
+    },
+    onAdd: async (memberId) => {
+      await query(
+        `INSERT INTO event_member_organizers (event_id, member_id, created_by)
+         VALUES (?, ?, ?)`,
+        [eventId, memberId, userId],
+        conn,
+      )
+
+      if (logChanges) {
+        await logChange({
+          entityType: 'event',
+          entityId: eventId,
+          subEntityType: 'member',
+          subEntityId: memberId,
+          field: 'organizer_added',
+          oldValue: null,
+          newValue: memberLabels.get(memberId) ?? String(memberId),
+          userId,
+        }, conn)
+      }
+    },
+  })
+}
+
+export async function syncEventSubdivisionOrganizers({
+  eventId,
+  existingIds,
+  nextIds,
+  userId,
+  conn,
+  logChanges = true,
+}: {
+  eventId: number
+  existingIds: number[]
+  nextIds: number[]
+  userId: number
+  conn: mariadb.PoolConnection
+  logChanges?: boolean
+}) {
+  const subdivisionLabels = await getSubdivisionLabels([...new Set([...existingIds, ...nextIds])], conn)
+
+  await syncScalarCollection({
+    existing: existingIds,
+    incoming: nextIds,
+    onRemove: async (subdivisionId) => {
+      if (logChanges) {
+        await logChange({
+          entityType: 'event',
+          entityId: eventId,
+          subEntityType: 'subdivision',
+          subEntityId: subdivisionId,
+          field: 'organizer_removed',
+          oldValue: subdivisionLabels.get(subdivisionId) ?? String(subdivisionId),
+          newValue: null,
+          userId,
+        }, conn)
+      }
+
+      await query(
+        `DELETE FROM event_subdivision_organizers
+         WHERE event_id = ? AND subdivision_id = ?`,
+        [eventId, subdivisionId],
+        conn,
+      )
+    },
+    onAdd: async (subdivisionId) => {
+      await query(
+        `INSERT INTO event_subdivision_organizers (event_id, subdivision_id, created_by)
+         VALUES (?, ?, ?)`,
+        [eventId, subdivisionId, userId],
+        conn,
+      )
+
+      if (logChanges) {
+        await logChange({
+          entityType: 'event',
+          entityId: eventId,
+          subEntityType: 'subdivision',
+          subEntityId: subdivisionId,
+          field: 'organizer_added',
+          oldValue: null,
+          newValue: subdivisionLabels.get(subdivisionId) ?? String(subdivisionId),
+          userId,
+        }, conn)
+      }
+    },
+  })
+}
+
+export async function syncEventCostCentreSplits({
+  eventId,
+  existingRows,
+  nextRows,
+  userId,
+  conn,
+  logChanges = true,
+}: {
+  eventId: number
+  existingRows: EventCostCentreSplitLogRow[]
+  nextRows: SaveEventCostCentreSplit[]
+  userId: number
+  conn: mariadb.PoolConnection
+  logChanges?: boolean
+}) {
+  const existingByCostCentreId = new Map(existingRows.map(row => [Number(row.cost_centre_id), row]))
+  const nextByCostCentreId = new Map(nextRows.map(row => [Number(row.cost_centre_id), row]))
+  const costCentreLabels = await getCostCentreLabels(
+    [...new Set([...existingByCostCentreId.keys(), ...nextByCostCentreId.keys()])],
+    conn,
+  )
+
+  for (const row of existingRows) {
+    if (nextByCostCentreId.has(Number(row.cost_centre_id))) continue
+
+    const label = costCentreLabels.get(Number(row.cost_centre_id)) ?? String(row.cost_centre_id)
+    if (logChanges) {
+      await logChange({
+        entityType: 'event',
+        entityId: eventId,
+        subEntityType: 'cost_centre_split',
+        subEntityId: Number(row.id),
+        field: 'cost_centre_split_removed',
+        oldValue: formatCostCentreSplitLog(label, Number(row.allocation_percentage)),
+        newValue: null,
+        userId,
+      }, conn)
+    }
+
+    await query(
+      `DELETE FROM event_cost_centre_splits
+       WHERE id = ?`,
+      [row.id],
+      conn,
+    )
+  }
+
+  for (const split of nextRows) {
+    const existing = existingByCostCentreId.get(Number(split.cost_centre_id))
+    const label = costCentreLabels.get(Number(split.cost_centre_id)) ?? String(split.cost_centre_id)
+
+    if (!existing) {
+      const insertResult: any = await query(
+        `INSERT INTO event_cost_centre_splits (event_id, cost_centre_id, allocation_percentage, created_by)
+         VALUES (?, ?, ?, ?)`,
+        [eventId, split.cost_centre_id, split.allocation_percentage, userId],
+        conn,
+      )
+
+      if (logChanges) {
+        await logChange({
+          entityType: 'event',
+          entityId: eventId,
+          subEntityType: 'cost_centre_split',
+          subEntityId: Number(insertResult.insertId),
+          field: 'cost_centre_split_added',
+          oldValue: null,
+          newValue: formatCostCentreSplitLog(label, split.allocation_percentage),
+          userId,
+        }, conn)
+      }
+      continue
+    }
+
+    await logFieldChanges({
+      entityType: 'event',
+      entityId: eventId,
+      subEntityType: 'cost_centre_split',
+      subEntityId: Number(existing.id),
+      fields: ['allocation_percentage'] as const,
+      previous: existing,
+      next: split,
+      userId,
+      conn,
+      equals: {
+        allocation_percentage: (left, right) => Number(left).toFixed(2) === Number(right ?? 0).toFixed(2),
+      },
+      transformOldValue: {
+        allocation_percentage: (value) => formatCostCentreSplitLog(label, Number(value)),
+      },
+      transformNewValue: {
+        allocation_percentage: (value) => formatCostCentreSplitLog(label, Number(value ?? 0)),
+      },
+    })
+
+    await query(
+      `UPDATE event_cost_centre_splits
+       SET allocation_percentage = ?
+       WHERE id = ?`,
+      [split.allocation_percentage, existing.id],
+      conn,
+    )
+  }
+}
+
+function groupByEventId<T extends { event_id: number }, U>(
+  rows: T[],
+  mapRow: (row: T) => U,
+) {
+  const grouped = new Map<number, U[]>()
+
+  for (const row of rows) {
+    const eventId = Number(row.event_id)
+    const bucket = grouped.get(eventId) ?? []
+    bucket.push(mapRow(row))
+    grouped.set(eventId, bucket)
+  }
+
+  return grouped
+}
+
+export async function loadEventRelations(
+  eventIds: number[],
+  conn?: mariadb.PoolConnection,
+): Promise<EventRelationMaps> {
+  if (!eventIds.length) {
+    return {
+      memberOrganizers: new Map(),
+      subdivisionOrganizers: new Map(),
+      costCentreSplits: new Map(),
+    }
+  }
+
+  const placeholders = eventIds.map(() => '?').join(',')
+
+  const memberRows = await query<EventMemberOrganizerRow[]>(
+    `SELECT
+       emo.event_id,
+       m.id,
+       TRIM(CONCAT(m.first_name, ' ', m.last_name)) AS full_name
+     FROM event_member_organizers emo
+     JOIN members m ON m.id = emo.member_id
+     WHERE emo.event_id IN (${placeholders})
+     ORDER BY m.last_name ASC, m.first_name ASC`,
+    eventIds,
+    conn,
+  )
+
+  const subdivisionRows = await query<EventSubdivisionOrganizerRow[]>(
+    `SELECT
+       eso.event_id,
+       s.id,
+       s.code,
+       s.name
+     FROM event_subdivision_organizers eso
+     JOIN subdivisions s ON s.id = eso.subdivision_id
+     WHERE eso.event_id IN (${placeholders})
+     ORDER BY s.code ASC, s.name ASC`,
+    eventIds,
+    conn,
+  )
+
+  const splitRows = await query<EventCostCentreSplitRow[]>(
+    `SELECT
+       eccs.id,
+       eccs.event_id,
+       eccs.cost_centre_id,
+       cc.code,
+       cc.name,
+       eccs.allocation_percentage
+     FROM event_cost_centre_splits eccs
+     JOIN cost_centres cc ON cc.id = eccs.cost_centre_id
+     WHERE eccs.event_id IN (${placeholders})
+     ORDER BY cc.code ASC, cc.name ASC`,
+    eventIds,
+    conn,
+  )
+
+  return {
+    memberOrganizers: groupByEventId(memberRows, row => ({
+      id: Number(row.id),
+      full_name: String(row.full_name),
+    })),
+    subdivisionOrganizers: groupByEventId(subdivisionRows, row => ({
+      id: Number(row.id),
+      code: String(row.code),
+      name: String(row.name),
+    })),
+    costCentreSplits: groupByEventId(splitRows, row => ({
+      cost_centre_id: Number(row.cost_centre_id),
+      code: String(row.code),
+      name: String(row.name),
+      allocation_percentage: Number(row.allocation_percentage),
+    })),
+  }
+}
+
+export async function loadEventOptions(conn?: mariadb.PoolConnection) {
+  const [members, subdivisions, costCentres] = await Promise.all([
+    query<EventMemberOption[]>(
+      `SELECT
+         id,
+         TRIM(CONCAT(first_name, ' ', last_name)) AS full_name
+       FROM members
+       ORDER BY last_name ASC, first_name ASC`,
+      undefined,
+      conn,
+    ),
+    query<EventSubdivisionOption[]>(
+      `SELECT id, code, name, is_active
+       FROM subdivisions
+       ORDER BY is_active DESC, code ASC, name ASC`,
+      undefined,
+      conn,
+    ),
+    query<EventCostCentreOption[]>(
+      `SELECT id, code, name, is_active
+       FROM cost_centres
+       ORDER BY is_active DESC, code ASC, name ASC`,
+      undefined,
+      conn,
+    ),
+  ])
+
+  return {
+    members: members.map(member => ({
+      id: Number(member.id),
+      full_name: String(member.full_name),
+    })),
+    subdivisions: subdivisions.map(subdivision => ({
+      id: Number(subdivision.id),
+      code: String(subdivision.code),
+      name: String(subdivision.name),
+      is_active: Boolean(subdivision.is_active),
+    })),
+    costCentres: costCentres.map(costCentre => ({
+      id: Number(costCentre.id),
+      code: String(costCentre.code),
+      name: String(costCentre.name),
+      is_active: Boolean(costCentre.is_active),
+    })),
+  }
+}
