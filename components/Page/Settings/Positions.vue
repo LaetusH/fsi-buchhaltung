@@ -23,78 +23,78 @@
 
     <template #modal-fields-after-description="{ editingItem }">
       <div class="space-y-4 pt-1">
-        <div class="rounded-lg border border-slate-200 p-4 space-y-3 relative z-20">
-          <div class="flex items-center justify-between gap-3">
+        <div class="rounded-lg overflow-hidden border border-slate-200 p-4 space-y-3 relative z-20">
+          <div class="space-y-3">
             <h4 class="font-medium text-slate-900">{{ t('settings.positions.manageAssignments') }}</h4>
 
-            <button
-              type="button"
-              class="btn-primary flex items-center gap-2"
-              @click="addAssignment(editingItem)"
-            >
-              + {{ t('settings.positions.addMember') }}
-            </button>
+            <CommonSearchSelect
+              v-model="memberQuery"
+              :options="memberSearchOptions(editingItem)"
+              :placeholder="t('settings.positions.memberPlaceholder')"
+              :empty-text="t('settings.positions.noMembersAvailable')"
+              @select="selectMember($event, editingItem)"
+              @clear-selection="memberQuery = ''"
+            />
           </div>
 
-          <p v-if="visibleAssignments(editingItem).length === 0" class="text-sm text-slate-500">
-            {{ t('settings.positions.noMembersAssigned') }}
-          </p>
-
           <div
-            v-else
-            ref="assignmentListRef"
-            :class="[
-              'position-assignment-scroll max-h-104 overflow-y-auto',
-              hasAssignmentScrollbar ? 'pr-1' : '',
-            ]"
+            v-if="visibleAssignments(editingItem).length === 0"
+            class="rounded-lg border border-dashed border-slate-300 px-3 py-4 text-sm text-slate-500"
           >
-            <div
-              v-for="{ assignment, index, state } in visibleAssignments(editingItem)"
-              :key="assignmentRowKey(assignment, index)"
-              class="relative z-0 rounded-lg border border-slate-200 p-3 space-y-3 not-last:mb-3 focus-within:z-20"
-            >
-              <div class="flex items-start justify-between gap-3">
-                <div class="min-w-0 space-y-1">
-                  <div class="flex flex-wrap items-center gap-2">
-                    <div class="font-medium text-slate-800">{{ assignmentLabel(assignment) }}</div>
+            {{ t('settings.positions.noMembersAssigned') }}
+          </div>
 
-                    <span
-                      v-if="state !== 'draft'"
-                      :class="['inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium', assignmentStateClass(state)]"
-                    >
-                      {{ assignmentStateLabel(state) }}
-                    </span>
+          <div v-else class="min-h-0 overflow-hidden rounded-lg border border-slate-200 bg-slate-50">
+            <div
+              ref="assignmentListRef"
+              :class="[
+                'position-assignment-scroll max-h-104 overflow-y-auto p-2',
+                hasAssignmentScrollbar ? 'pr-1' : '',
+              ]"
+            >
+              <div
+                v-for="{ assignment, index, state } in visibleAssignments(editingItem)"
+                :key="assignmentRowKey(assignment, index)"
+                class="relative z-0 mb-2 rounded-lg border border-slate-200 bg-white px-3 py-2 space-y-2 last:mb-0 focus-within:z-20"
+              >
+                <div class="flex items-start justify-between gap-3">
+                  <div class="min-w-0 space-y-1">
+                    <div class="flex flex-wrap items-center gap-2">
+                      <div class="truncate text-sm font-medium text-slate-800">{{ assignmentLabel(assignment) }}</div>
+
+                      <span
+                        :class="['inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium', assignmentStateClass(state)]"
+                      >
+                        {{ assignmentStateLabel(state) }}
+                      </span>
+                    </div>
                   </div>
+
+                  <button
+                    type="button"
+                    class="shrink-0 text-sm text-red-500 hover:underline cursor-pointer"
+                    @click="removeAssignment(index, editingItem)"
+                  >
+                    {{ t('actions.remove') }}
+                  </button>
                 </div>
 
-                <button
-                  type="button"
-                  class="text-red-500 cursor-pointer p-2 w-6 h-6 rounded-md hover:bg-slate-100 flex items-center justify-center"
-                  @click="removeAssignment(index, editingItem)"
-                >
-                  ✕
-                </button>
-              </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
+                  <label class="flex items-center gap-2 text-sm text-slate-700">
+                    <span class="shrink-0">{{ t('common.from') }}</span>
+                    <input v-model="assignment.since" type="date" class="input min-w-0">
+                  </label>
 
-              <div class="grid grid-cols-1 md:grid-cols-[3fr_2fr_2fr] gap-2 items-center">
-                <CommonSearchSelect
-                  class="relative z-10"
-                  v-model="assignment.member_query"
-                  :options="memberSearchOptions"
-                  :selected-label="selectedMemberLabel(assignment)"
-                  :placeholder="t('settings.positions.memberPlaceholder')"
-                  :empty-text="t('settings.positions.noMembersAvailable')"
-                  @select="selectMember(index, $event, editingItem)"
-                  @clear-selection="clearMemberSelection(index, editingItem)"
-                />
-
-                <input v-model="assignment.since" type="date" class="input">
-                <input
-                  :value="assignment.until || ''"
-                  type="date"
-                  class="input"
-                  @input="updateUntil(index, $event, editingItem)"
-                >
+                  <label class="flex items-center gap-2 text-sm text-slate-700">
+                    <span class="shrink-0">{{ t('common.to') }}</span>
+                    <input
+                      :value="assignment.until || ''"
+                      type="date"
+                      class="input min-w-0"
+                      @input="updateUntil(index, $event, editingItem)"
+                    >
+                  </label>
+                </div>
               </div>
             </div>
           </div>
@@ -110,7 +110,6 @@ import type { EntityManagerColumn, SaveSettingsEntityBody, SettingsEntityRow } f
 import { useAuth } from '~/composables/useAuth'
 import { useI18n } from '~/composables/useI18n'
 import { useToast } from '~/composables/useToast'
-import { MemberStatus } from '~/types/member'
 import type {
   PositionMemberAssignment,
   PositionMemberOption,
@@ -122,8 +121,6 @@ import type {
 interface EditablePositionAssignment extends SavePositionAssignmentBody {
   member_query: string
   full_name?: string
-  subject_name?: string | null
-  status?: MemberStatus
 }
 
 interface EditablePosition extends SavePositionBody {
@@ -138,6 +135,7 @@ const { hasPermission } = useAuth()
 
 const hasAccess = computed(() => hasPermission('settings.positions.manage'))
 const memberOptions = ref<PositionMemberOption[]>([])
+const memberQuery = ref('')
 const assignmentListRef = ref<HTMLElement | null>(null)
 const hasAssignmentScrollbar = ref(false)
 
@@ -155,26 +153,12 @@ const memberOptionsById = computed(() => {
   return new Map(memberOptions.value.map(member => [member.id, member]))
 })
 
-const memberSearchOptions = computed<SearchSelectOption<PositionMemberOption>[]>(() => memberOptions.value.map(member => ({
-  key: member.id,
-  label: member.full_name,
-  value: member,
-  searchText: `${member.full_name}`.trim(),
-})))
-
 function todayValue() {
   const now = new Date()
   const year = now.getFullYear()
   const month = String(now.getMonth() + 1).padStart(2, '0')
   const day = String(now.getDate()).padStart(2, '0')
   return `${year}-${month}-${day}`
-}
-
-function statusLabel(status: MemberStatus) {
-  if (status === MemberStatus.Active) return t('member.states.active')
-  if (status === MemberStatus.Passive) return t('member.states.passive')
-  if (status === MemberStatus.Hold) return t('member.states.hold')
-  return t('member.states.left')
 }
 
 function positionRow(item: SettingsEntityRow) {
@@ -201,6 +185,7 @@ function createAssignment(assignment?: Partial<PositionMemberAssignment>): Edita
 }
 
 function createItem(): EditablePosition {
+  memberQuery.value = ''
   return {
     code: '',
     name: '',
@@ -210,6 +195,7 @@ function createItem(): EditablePosition {
 }
 
 function mapEditItem(item: SettingsEntityRow): EditablePosition {
+  memberQuery.value = ''
   const position = positionRow(item)
   return {
     id: position.id,
@@ -272,7 +258,7 @@ function assignmentStateLabel(state: AssignmentState) {
   if (state === 'current') return t('settings.positions.currentBadge')
   if (state === 'upcoming') return t('settings.positions.upcomingBadge')
   if (state === 'past') return t('settings.positions.pastBadge')
-  return ''
+  return t('settings.positions.draftBadge')
 }
 
 function assignmentStateClass(state: AssignmentState) {
@@ -306,35 +292,35 @@ function currentMemberSummary(item: SettingsEntityRow) {
   return `${labels.slice(0, 3).join(', ')} +${labels.length - 3}`
 }
 
-function selectedMemberLabel(assignment: EditablePositionAssignment) {
-  if (!assignment.member_id) return ''
-  return assignmentLabel(assignment)
-}
+function memberSearchOptions(editingItem: SaveSettingsEntityBody) {
+  const selectedIds = new Set(positionBody(editingItem).assignments.map(assignment => assignment.member_id).filter(Boolean))
 
-function addAssignment(editingItem: SaveSettingsEntityBody) {
-  positionBody(editingItem).assignments.unshift(createAssignment())
+  return memberOptions.value
+    .filter(member => !selectedIds.has(member.id))
+    .map<SearchSelectOption<PositionMemberOption>>(member => ({
+      key: member.id,
+      label: member.full_name,
+      value: member,
+      searchText: member.full_name.trim(),
+    }))
 }
 
 function removeAssignment(index: number, editingItem: SaveSettingsEntityBody) {
   positionBody(editingItem).assignments.splice(index, 1)
 }
 
-function selectMember(index: number, value: unknown, editingItem: SaveSettingsEntityBody) {
-  const assignment = positionBody(editingItem).assignments[index]
-  if (!assignment) return
-
+function selectMember(value: unknown, editingItem: SaveSettingsEntityBody) {
   const member = value as PositionMemberOption
-  assignment.member_id = member.id
-  assignment.member_query = member.full_name
-  assignment.full_name = member.full_name
-}
+  if (!member?.id) return
 
-function clearMemberSelection(index: number, editingItem: SaveSettingsEntityBody) {
-  const assignment = positionBody(editingItem).assignments[index]
-  if (!assignment) return
+  const assignments = positionBody(editingItem).assignments
+  if (assignments.some(assignment => assignment.member_id === member.id)) return
 
-  assignment.member_id = 0
-  assignment.full_name = undefined
+  assignments.unshift(createAssignment({
+    member_id: member.id,
+    full_name: member.full_name,
+  }))
+  memberQuery.value = ''
 }
 
 function updateUntil(index: number, event: Event, editingItem: SaveSettingsEntityBody) {
@@ -433,7 +419,7 @@ onBeforeUnmount(() => {
 <style scoped>
 .position-assignment-scroll {
   scrollbar-width: auto;
-  scrollbar-color: #bbc8da #ffffff;
+  scrollbar-color: #94a3b8 #e2e8f0;
 }
 
 .position-assignment-scroll::-webkit-scrollbar {
