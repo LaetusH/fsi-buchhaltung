@@ -26,6 +26,39 @@ export interface MemberPositionAssignment {
   until: string | null
 }
 
+export interface MemberStatusActionAccountChange {
+  id: number
+  username: string
+}
+
+export interface MemberStatusActionSubdivisionChange {
+  id: number
+  label: string
+}
+
+export interface MemberStatusActionPositionClose {
+  id: number
+  label: string
+  since: string
+  previous_until: string | null
+  until: string
+}
+
+export interface MemberStatusActionPositionRemoval {
+  id: number
+  label: string
+  since: string
+  until: string | null
+}
+
+export interface MemberStatusActionSummary {
+  left_at: string
+  account_deactivated: MemberStatusActionAccountChange | null
+  removed_subdivisions: MemberStatusActionSubdivisionChange[]
+  closed_positions: MemberStatusActionPositionClose[]
+  removed_positions: MemberStatusActionPositionRemoval[]
+}
+
 export interface NewMemberAccount {
   username: string
   password: string

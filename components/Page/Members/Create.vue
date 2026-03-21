@@ -4,7 +4,7 @@
       <div class="col-span-12 lg:col-span-8 lg:col-start-3">
         <MembersForm
           v-model="form"
-          :disabled="!canEdit"
+          :disabled="!canEdit || isSaving"
           :can-edit-subjects="canEditSubjects"
           :can-manage-users="canManageUsers"
           :can-manage-subdivisions="canManageSubdivisions"
@@ -15,15 +15,221 @@
       </div>
     </template>
   </Page>
+
+  <Teleport to="body">
+    <div
+      v-if="showLeftStatusConfirmModal"
+      class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+    >
+      <div class="w-full max-w-2xl rounded-xl bg-white p-6 shadow-xl">
+          <h3 class="text-lg font-semibold text-slate-900">
+            {{ t('member.leftStatusConfirm.title') }}
+          </h3>
+          <p class="mt-3 text-sm text-slate-700">
+            {{ t('member.leftStatusConfirm.introUpdate') }}
+          </p>
+          <p class="mt-2 text-sm text-slate-600">
+            {{ t('member.leftStatusConfirm.reviewHint') }}
+          </p>
+
+          <div class="mt-4 max-h-[60vh] space-y-4 overflow-y-auto pr-1">
+            <section
+              v-if="leftStatusPreview.accountWillBeDeactivated"
+              class="rounded-lg border border-slate-200 bg-slate-50 p-4"
+            >
+              <p class="text-sm font-medium text-slate-900">
+                {{ t('member.leftStatusConfirm.accountDeactivate') }}
+              </p>
+            </section>
+
+            <section
+              v-if="leftStatusPreview.showSubdivisionSection"
+              class="rounded-lg border border-slate-200 bg-slate-50 p-4"
+            >
+              <p class="text-sm font-medium text-slate-900">
+                {{ t('member.leftStatusConfirm.subdivisionsTitle') }}
+              </p>
+              <ul
+                v-if="leftStatusPreview.removedSubdivisionLabels.length"
+                class="mt-2 list-disc space-y-1 pl-5 text-sm text-slate-700"
+              >
+                <li
+                  v-for="label in leftStatusPreview.removedSubdivisionLabels"
+                  :key="label"
+                >
+                  {{ label }}
+                </li>
+              </ul>
+              <p v-else class="mt-2 text-sm text-slate-700">
+                {{ t('member.leftStatusConfirm.subdivisionsFallback') }}
+              </p>
+            </section>
+
+            <section
+              v-if="leftStatusPreview.closedPositions.length"
+              class="rounded-lg border border-slate-200 bg-slate-50 p-4"
+            >
+              <p class="text-sm font-medium text-slate-900">
+                {{ t('member.leftStatusConfirm.positionsClosedTitle') }}
+              </p>
+              <ul class="mt-2 list-disc space-y-1 pl-5 text-sm text-slate-700">
+                <li
+                  v-for="position in leftStatusPreview.closedPositions"
+                  :key="position.key"
+                >
+                  <span class="font-medium text-slate-900">{{ position.label }}</span>
+                  <span class="text-slate-600"> {{ position.detail }}</span>
+                </li>
+              </ul>
+            </section>
+
+            <section
+              v-if="leftStatusPreview.removedPositions.length"
+              class="rounded-lg border border-slate-200 bg-slate-50 p-4"
+            >
+              <p class="text-sm font-medium text-slate-900">
+                {{ t('member.leftStatusConfirm.positionsRemovedTitle') }}
+              </p>
+              <ul class="mt-2 list-disc space-y-1 pl-5 text-sm text-slate-700">
+                <li
+                  v-for="position in leftStatusPreview.removedPositions"
+                  :key="position.key"
+                >
+                  <span class="font-medium text-slate-900">{{ position.label }}</span>
+                  <span class="text-slate-600"> {{ position.detail }}</span>
+                </li>
+              </ul>
+            </section>
+
+            <p
+              v-if="!leftStatusPreview.hasConsequences"
+              class="rounded-lg border border-slate-200 bg-slate-50 p-4 text-sm text-slate-700"
+            >
+              {{ t('member.leftStatusConfirm.none') }}
+            </p>
+          </div>
+
+          <div class="mt-6 flex justify-end gap-3">
+            <button class="btn-secondary" type="button" @click="showLeftStatusConfirmModal = false">
+              {{ t('actions.cancel') }}
+            </button>
+            <button class="btn-primary" :disabled="isSaving" type="button" @click="confirmLeftStatusSave">
+              {{ t('member.leftStatusConfirm.continue') }}
+            </button>
+          </div>
+      </div>
+    </div>
+
+    <div
+      v-if="showLeftStatusResultModal && leftStatusResult"
+      class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+    >
+      <div class="w-full max-w-2xl rounded-xl bg-white p-6 shadow-xl">
+          <h3 class="text-lg font-semibold text-slate-900">
+            {{ t('member.leftStatusResult.title') }}
+          </h3>
+          <p class="mt-3 text-sm text-slate-700">
+            {{ t('member.leftStatusResult.intro') }}
+          </p>
+          <p class="mt-2 text-sm text-slate-600">
+            {{ t('member.leftStatusResult.closeHint') }}
+          </p>
+
+          <div class="mt-4 max-h-[60vh] space-y-4 overflow-y-auto pr-1">
+            <section
+              v-if="leftStatusResult.account_deactivated"
+              class="rounded-lg border border-slate-200 bg-slate-50 p-4"
+            >
+              <p class="text-sm font-medium text-slate-900">
+                {{ t('member.leftStatusResult.accountTitle') }}
+              </p>
+              <p class="mt-2 text-sm text-slate-700">
+                {{ leftStatusResult.account_deactivated.username }}
+              </p>
+            </section>
+
+            <section
+              v-if="leftStatusResult.removed_subdivisions.length"
+              class="rounded-lg border border-slate-200 bg-slate-50 p-4"
+            >
+              <p class="text-sm font-medium text-slate-900">
+                {{ t('member.leftStatusResult.subdivisionsTitle') }}
+              </p>
+              <ul class="mt-2 list-disc space-y-1 pl-5 text-sm text-slate-700">
+                <li
+                  v-for="subdivision in leftStatusResult.removed_subdivisions"
+                  :key="subdivision.id"
+                >
+                  {{ subdivision.label }}
+                </li>
+              </ul>
+            </section>
+
+            <section
+              v-if="leftStatusResult.closed_positions.length"
+              class="rounded-lg border border-slate-200 bg-slate-50 p-4"
+            >
+              <p class="text-sm font-medium text-slate-900">
+                {{ t('member.leftStatusResult.positionsClosedTitle') }}
+              </p>
+              <ul class="mt-2 list-disc space-y-1 pl-5 text-sm text-slate-700">
+                <li
+                  v-for="position in leftStatusResult.closed_positions"
+                  :key="position.id"
+                >
+                  <span class="font-medium text-slate-900">{{ position.label }}</span>
+                  <span class="text-slate-600">
+                    {{ formatClosedPositionResult(position) }}
+                  </span>
+                </li>
+              </ul>
+            </section>
+
+            <section
+              v-if="leftStatusResult.removed_positions.length"
+              class="rounded-lg border border-slate-200 bg-slate-50 p-4"
+            >
+              <p class="text-sm font-medium text-slate-900">
+                {{ t('member.leftStatusResult.positionsRemovedTitle') }}
+              </p>
+              <ul class="mt-2 list-disc space-y-1 pl-5 text-sm text-slate-700">
+                <li
+                  v-for="position in leftStatusResult.removed_positions"
+                  :key="position.id"
+                >
+                  <span class="font-medium text-slate-900">{{ position.label }}</span>
+                  <span class="text-slate-600"> {{ formatRemovedPositionResult(position) }}</span>
+                </li>
+              </ul>
+            </section>
+
+            <p
+              v-if="!leftStatusResultHasChanges"
+              class="rounded-lg border border-slate-200 bg-slate-50 p-4 text-sm text-slate-700"
+            >
+              {{ t('member.leftStatusResult.none') }}
+            </p>
+          </div>
+
+          <div class="mt-6 flex justify-end">
+            <button class="btn-primary" type="button" @click="closeLeftStatusResultModal">
+              {{ t('actions.close') }}
+            </button>
+          </div>
+      </div>
+    </div>
+  </Teleport>
 </template>
 
 <script setup lang="ts">
 import { useI18n } from '~/composables/useI18n'
 import { useToast } from '~/composables/useToast'
-import { MemberStatus, type Member, type SaveMemberBody } from '~/types/member'
+import { MemberStatus, type Member, type MemberStatusActionPositionClose, type MemberStatusActionPositionRemoval, type MemberStatusActionSummary, type SaveMemberBody } from '~/types/member'
 import { usePage } from '~/composables/usePage'
 import MembersForm from './Form.vue'
 import { useAuth } from '~/composables/useAuth'
+import type { PositionRow } from '~/types/position'
+import type { SubdivisionOption } from '~/types/subdivision'
 
 const emit = defineEmits<{
   (e: 'openMenu'): void
@@ -41,6 +247,13 @@ const canManageSubdivisions = computed(() => hasPermission('settings.subdivision
 
 const isEditMode = ref(false)
 const memberId = ref<number | null>(null)
+const originalStatus = ref<MemberStatus | null>(null)
+const positionCatalog = ref<PositionRow[]>([])
+const subdivisionCatalog = ref<SubdivisionOption[]>([])
+const showLeftStatusConfirmModal = ref(false)
+const showLeftStatusResultModal = ref(false)
+const leftStatusResult = ref<MemberStatusActionSummary | null>(null)
+const isSaving = ref(false)
 
 const form = ref<SaveMemberBody>({
   account: null,
@@ -66,6 +279,11 @@ const form = ref<SaveMemberBody>({
 })
 
 onMounted(async () => {
+  await Promise.all([
+    loadPositionCatalog(),
+    canManageSubdivisions.value ? loadSubdivisionCatalog() : Promise.resolve(),
+  ])
+
   memberId.value = pageMeta.value?.memberId || null
   if (!memberId.value) return
 
@@ -77,6 +295,7 @@ onMounted(async () => {
     return
   }
 
+  originalStatus.value = res.member.status
   form.value = {
     account: res.member.account,
     new_account: null,
@@ -101,34 +320,171 @@ onMounted(async () => {
   }
 })
 
+const isLeftStatusTransition = computed(() => {
+  if (form.value.status !== MemberStatus.Left) return false
+  if (!isEditMode.value) return false
+  return originalStatus.value !== MemberStatus.Left
+})
+
+const positionLabelById = computed(() => {
+  return new Map(positionCatalog.value.map(position => [position.id, `${position.code} - ${position.name}`]))
+})
+
+const subdivisionLabelById = computed(() => {
+  return new Map(subdivisionCatalog.value.map(subdivision => [subdivision.id, `${subdivision.code} - ${subdivision.name}`]))
+})
+
+const leftStatusPreview = computed(() => {
+  const leftAt = form.value.left_at || ''
+  const hasLeftAt = Boolean(leftAt)
+  const positions = hasLeftAt ? form.value.positions : []
+  const closedPositions = positions
+    .filter(position => position.position_id && position.since && position.since <= leftAt && (!position.until || position.until > leftAt))
+    .map((position, index) => ({
+      key: `${position.id ?? 'new'}-${position.position_id}-${index}`,
+      label: positionLabelById.value.get(position.position_id) ?? `#${position.position_id}`,
+      detail: `(${position.since} - ${leftAt})`,
+    }))
+  const removedPositions = positions
+    .filter(position => position.position_id && position.since && position.since > leftAt)
+    .map((position, index) => ({
+      key: `${position.id ?? 'new'}-${position.position_id}-${index}`,
+      label: positionLabelById.value.get(position.position_id) ?? `#${position.position_id}`,
+      detail: `(${position.since} - ${position.until || t('member.leftStatusResult.openEnded')})`,
+    }))
+  const removedSubdivisionLabels = (form.value.subdivision_ids ?? [])
+    .map(subdivisionId => subdivisionLabelById.value.get(subdivisionId) ?? `#${subdivisionId}`)
+  const showSubdivisionSection = removedSubdivisionLabels.length > 0
+    || (isEditMode.value && !canManageSubdivisions.value)
+  const accountWillBeDeactivated = Boolean(form.value.account)
+    || Boolean(form.value.new_account && form.value.new_account.is_active !== false)
+  const hasConsequences = accountWillBeDeactivated
+    || showSubdivisionSection
+    || closedPositions.length > 0
+    || removedPositions.length > 0
+
+  return {
+    accountWillBeDeactivated,
+    removedSubdivisionLabels,
+    showSubdivisionSection,
+    closedPositions,
+    removedPositions,
+    hasConsequences,
+  }
+})
+
+const leftStatusResultHasChanges = computed(() => {
+  const result = leftStatusResult.value
+  if (!result) return false
+
+  return Boolean(result.account_deactivated)
+    || result.removed_subdivisions.length > 0
+    || result.closed_positions.length > 0
+    || result.removed_positions.length > 0
+})
+
+async function loadPositionCatalog() {
+  try {
+    const res = await $fetch<{ ok: boolean, positions?: PositionRow[] }>('/api/positions')
+    if (res.ok && res.positions) positionCatalog.value = res.positions
+  } catch {
+    positionCatalog.value = []
+  }
+}
+
+async function loadSubdivisionCatalog() {
+  if (!canManageSubdivisions.value) return
+
+  try {
+    const res = await $fetch<{ ok: boolean, subdivisions?: SubdivisionOption[] }>('/api/subdivisions/options')
+    if (res.ok && res.subdivisions) subdivisionCatalog.value = res.subdivisions
+  } catch {
+    subdivisionCatalog.value = []
+  }
+}
+
 async function submit() {
   if (!canEdit.value) {
     toast.error(t('common.notAuthorized'))
     return
   }
+
+  if (isLeftStatusTransition.value) {
+    showLeftStatusConfirmModal.value = true
+    return
+  }
+
+  await persistMember(false)
+}
+
+async function confirmLeftStatusSave() {
+  showLeftStatusConfirmModal.value = false
+  await persistMember(true)
+}
+
+async function persistMember(showStatusActionsModal: boolean) {
+  isSaving.value = true
+
   try {
+    let response: { ok: boolean, error?: string, status_actions?: MemberStatusActionSummary | null }
+
     if (isEditMode.value && memberId.value) {
-      const updateRes = await $fetch<{ ok: boolean, error?: string }>(`/api/members/${memberId.value}`, {
+      response = await $fetch(`/api/members/${memberId.value}`, {
         method: 'PUT',
         body: form.value,
       })
 
-      if (!updateRes.ok) throw new Error(updateRes.error || t('member.saved.failedUpdate'))
+      if (!response.ok) throw new Error(response.error || t('member.saved.failedUpdate'))
     } else {
-      const createRes = await $fetch<{ ok: boolean, error?: string }>('/api/members/create', {
+      response = await $fetch('/api/members/create', {
         method: 'POST',
         body: form.value,
       })
 
-      if (!createRes.ok) throw new Error(createRes.error || t('member.saved.failedCreate'))
+      if (!response.ok) throw new Error(response.error || t('member.saved.failedCreate'))
+    }
+
+    if (showStatusActionsModal) {
+      leftStatusResult.value = response.status_actions ?? createEmptyStatusActionSummary(form.value.left_at || '')
+      showLeftStatusResultModal.value = true
+      return
     }
 
     toast.success(isEditMode.value ? t('member.saved.updated') : t('member.saved.created'))
-    const returnTo = pageMeta.value?.returnTo || 'MemberList'
-    setPage(returnTo)
+    setPage(pageMeta.value?.returnTo || 'MemberList')
   } catch (err: any) {
     toast.error(err?.message || t('member.saved.failedSave'))
+  } finally {
+    isSaving.value = false
   }
+}
+
+function createEmptyStatusActionSummary(leftAt: string): MemberStatusActionSummary {
+  return {
+    left_at: leftAt,
+    account_deactivated: null,
+    removed_subdivisions: [],
+    closed_positions: [],
+    removed_positions: [],
+  }
+}
+
+function formatClosedPositionResult(position: MemberStatusActionPositionClose) {
+  const previousUntil = position.previous_until
+    ? `, ${t('member.leftStatusResult.untilChangedFrom', { date: position.previous_until })}`
+    : ''
+
+  return `(${position.since} - ${position.until}${previousUntil})`
+}
+
+function formatRemovedPositionResult(position: MemberStatusActionPositionRemoval) {
+  return `(${position.since} - ${position.until || t('member.leftStatusResult.openEnded')})`
+}
+
+function closeLeftStatusResultModal() {
+  showLeftStatusResultModal.value = false
+  leftStatusResult.value = null
+  setPage(pageMeta.value?.returnTo || 'MemberList')
 }
 
 function cancel() {

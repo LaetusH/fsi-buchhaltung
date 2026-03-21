@@ -1,16 +1,17 @@
 import { defineEventHandler, readBody } from 'h3'
-import type { SaveMemberBody } from '~/types/member'
+import type { MemberStatusActionSummary, SaveMemberBody } from '~/types/member'
 import { query, withTransaction } from '~/server/utils/db'
 import { logFieldChanges } from '~/server/utils/api/audit'
 import { requirePermission } from '~/server/utils/api/guards'
 import { getNumericRouteParam } from '~/server/utils/api/request'
-import { ensureSubjectId, validateMemberPayload } from '~/server/utils/members'
+import { ensureSubjectId, validateMemberPayload, applyMemberStatusActions } from '~/server/utils/members'
 import { getSubdivisionLabels, normalizeRelationIds, syncSubdivisionAssignments } from '~/server/utils/subdivisions'
 import { normalizePositionAssignments, syncPositionAssignments, type PositionAssignmentRow } from '~/server/utils/positions'
 
 interface UpdateMemberSuccess {
   ok: true
   id: number
+  status_actions: MemberStatusActionSummary | null
 }
 
 interface UpdateMemberError {
@@ -153,7 +154,22 @@ export default defineEventHandler(async (event): Promise<UpdateMemberResponse> =
         })
       }
 
-      return { ok: true, id: memberId }
+      const memberAccountId = body.account ?? (existing.account === null || existing.account === undefined
+        ? null
+        : Number(existing.account))
+
+      const statusActions = await applyMemberStatusActions({
+        memberId,
+        accountId: memberAccountId,
+        previousStatus: existing.status,
+        nextStatus: body.status,
+        leftAt: body.left_at || null,
+        memberLabel: `${body.first_name} ${body.last_name}`.trim(),
+        userId: current.user.id,
+        conn,
+      })
+
+      return { ok: true, id: memberId, status_actions: statusActions }
     })
   } catch (err: any) {
     return { ok: false, error: `Failed to update member: ${err?.code || err}` }
