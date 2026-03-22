@@ -34,7 +34,7 @@
           <Icon :name="page.icon" class="w-10 h-10" aria-hidden="true" />
         </div>
 
-        <span v-if="!collapsed" class="mt-2 text-sm text-gray-300 font-medium">
+        <span v-if="!collapsed" class="mt-2 text-sm text-gray-300 font-medium text-center">
           {{ t(page.labelKey) }}
         </span>
       </li>
