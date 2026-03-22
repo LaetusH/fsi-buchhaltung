@@ -22,6 +22,7 @@ export interface FinanceAnalysisReceiptBreakdownItem {
 
 export interface FinanceAnalysisCashCountItem {
   id: number
+  event_id: number
   event_name: string
   counted_before_at: string
   counted_after_at: string

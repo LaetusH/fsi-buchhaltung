@@ -1,4 +1,6 @@
+import type mariadb from 'mariadb'
 import type { CreateCashCountBody, CreateCashCountPositionBody } from '~/types/cashCount'
+import { query } from '~/server/utils/db'
 
 export function normalizeCashCountAmount(value: unknown) {
   const amount = Number(value)
@@ -17,7 +19,7 @@ export function normalizeCashCountPosition(position: CreateCashCountPositionBody
 
 export function normalizeCashCountBody(body: CreateCashCountBody) {
   return {
-    event_name: body.event_name.trim(),
+    event_id: Number(body.event_id || 0),
     counted_by_first: Number(body.counted_by_first || 0),
     counted_by_second: Number(body.counted_by_second || 0),
     checked_by: Number(body.checked_by || 0),
@@ -28,7 +30,7 @@ export function normalizeCashCountBody(body: CreateCashCountBody) {
 }
 
 export function validateCashCountBody(body: ReturnType<typeof normalizeCashCountBody>) {
-  if (!body.event_name) return 'event_name is required'
+  if (!body.event_id) return 'event_id is required'
   if (!body.counted_by_first || !body.counted_by_second || !body.checked_by) return 'All member references are required'
   if (!body.counted_before_at || !body.counted_after_at) return 'Both timestamps are required'
   if (new Set([body.counted_by_first, body.counted_by_second, body.checked_by]).size !== 3) {
@@ -45,6 +47,34 @@ export function validateCashCountBody(body: ReturnType<typeof normalizeCashCount
   if (afterTs <= beforeTs) return 'counted_after_at must be later than counted_before_at'
 
   return null
+}
+
+export async function validateCashCountRelations(
+  body: ReturnType<typeof normalizeCashCountBody>,
+  conn: mariadb.PoolConnection,
+) {
+  const eventRows = await query<{ id: number }[]>(
+    `SELECT id
+     FROM events
+     WHERE id = ?
+     LIMIT 1`,
+    [body.event_id],
+    conn,
+  )
+  if (!eventRows.length) return 'The selected event does not exist'
+
+  const memberIds = [body.counted_by_first, body.counted_by_second, body.checked_by]
+  const memberRows = await query<{ id: number }[]>(
+    `SELECT id
+     FROM members
+     WHERE id IN (${memberIds.map(() => '?').join(',')})`,
+    memberIds,
+    conn,
+  )
+
+  return memberRows.length === memberIds.length
+    ? null
+    : 'At least one selected member does not exist'
 }
 
 export function sameDecimal(left: unknown, right: unknown) {

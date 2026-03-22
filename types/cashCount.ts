@@ -13,6 +13,7 @@ export interface CashCountPosition extends CashCountPositionRow {
 
 export interface CashCountRow {
   id: number
+  event_id: number
   event_name: string
   counted_by_first: number
   counted_by_second: number
@@ -27,6 +28,7 @@ export interface CashCount extends CashCountRow {
 
 export interface CashCountOverview {
   id: number
+  event_id: number
   event_name: string
   counted_before_at: string
   counted_after_at: string
@@ -48,7 +50,7 @@ export interface CreateCashCountPositionBody {
 }
 
 export interface CreateCashCountBody {
-  event_name: string
+  event_id: number
   counted_by_first: number
   counted_by_second: number
   checked_by: number

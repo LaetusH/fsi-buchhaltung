@@ -14,6 +14,7 @@ import {
   normalizeCashCountBody,
   sameDecimal,
   validateCashCountBody,
+  validateCashCountRelations,
 } from '~/server/utils/cashCounts'
 import type { CashCountPositionRow, CashCountRow } from '~/types/cashCount'
 
@@ -29,7 +30,7 @@ interface UpdateCashCountError {
 type UpdateCashCountResponse = UpdateCashCountSuccess | UpdateCashCountError
 
 type CashCountLogField =
-  | 'event_name'
+  | 'event_id'
   | 'counted_by_first'
   | 'counted_by_second'
   | 'checked_by'
@@ -66,8 +67,11 @@ export default defineEventHandler(async (event): Promise<UpdateCashCountResponse
       if (!existingRows.length) return { ok: false, error: 'Cash count not found' }
       const existing = existingRows[0]
 
+      const relationError = await validateCashCountRelations(updated, conn)
+      if (relationError) return { ok: false, error: relationError }
+
       const fields: CashCountLogField[] = [
-        'event_name',
+        'event_id',
         'counted_by_first',
         'counted_by_second',
         'checked_by',
@@ -87,7 +91,7 @@ export default defineEventHandler(async (event): Promise<UpdateCashCountResponse
 
       await query(
         `UPDATE cash_counts SET
-          event_name = ?,
+          event_id = ?,
           counted_by_first = ?,
           counted_by_second = ?,
           checked_by = ?,
@@ -95,7 +99,7 @@ export default defineEventHandler(async (event): Promise<UpdateCashCountResponse
           counted_after_at = ?
         WHERE id = ?`,
         [
-          updated.event_name,
+          updated.event_id,
           updated.counted_by_first,
           updated.counted_by_second,
           updated.checked_by,

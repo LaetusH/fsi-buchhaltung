@@ -150,7 +150,8 @@ export default defineEventHandler(async (event): Promise<FinanceAnalysisResponse
           `
           SELECT
             cc.id,
-            cc.event_name,
+            cc.event_id,
+            e.name AS event_name,
             cc.counted_before_at,
             cc.counted_after_at,
             CONCAT(m1.first_name, ' ', m1.last_name) AS counted_by_first_name,
@@ -161,6 +162,7 @@ export default defineEventHandler(async (event): Promise<FinanceAnalysisResponse
             IFNULL(SUM(ccp.amount_after), 0) AS total_after_amount,
             IFNULL(SUM(ccp.amount_after - ccp.amount_before), 0) AS total_difference
           FROM cash_counts cc
+          INNER JOIN events e ON e.id = cc.event_id
           LEFT JOIN members m1 ON m1.id = cc.counted_by_first
           LEFT JOIN members m2 ON m2.id = cc.counted_by_second
           LEFT JOIN members m3 ON m3.id = cc.checked_by
@@ -194,6 +196,7 @@ export default defineEventHandler(async (event): Promise<FinanceAnalysisResponse
 
     const cashCounts: FinanceAnalysisCashCountItem[] = cashCountRows.map(row => ({
       id: Number(row.id),
+      event_id: Number(row.event_id),
       event_name: String(row.event_name || ''),
       counted_before_at: String(row.counted_before_at),
       counted_after_at: String(row.counted_after_at),

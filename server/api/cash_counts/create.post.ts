@@ -2,7 +2,7 @@ import { defineEventHandler } from 'h3'
 import { query, withTransaction } from '~/server/utils/db'
 import { requirePermission } from '~/server/utils/api/guards'
 import { readMultipart } from '~/server/utils/api/request'
-import { normalizeCashCountBody, validateCashCountBody } from '~/server/utils/cashCounts'
+import { normalizeCashCountBody, validateCashCountBody, validateCashCountRelations } from '~/server/utils/cashCounts'
 import { storeAndAttachUploadedFile, validateUploadedFile } from '~/server/utils/files'
 
 interface CreateCashCountSuccess {
@@ -36,12 +36,15 @@ export default defineEventHandler(async (event): Promise<CreateCashCountResponse
 
   try {
     return await withTransaction(async (conn) => {
+      const relationError = await validateCashCountRelations(cashCount, conn)
+      if (relationError) return { ok: false, error: relationError }
+
       const result: any = await query(
         `INSERT INTO cash_counts
-          (event_name, counted_by_first, counted_by_second, checked_by, counted_before_at, counted_after_at, created_by)
+          (event_id, counted_by_first, counted_by_second, checked_by, counted_before_at, counted_after_at, created_by)
          VALUES (?, ?, ?, ?, ?, ?, ?)`,
         [
-          cashCount.event_name,
+          cashCount.event_id,
           cashCount.counted_by_first,
           cashCount.counted_by_second,
           cashCount.checked_by,

@@ -49,7 +49,7 @@ const existingFile = ref<{ id: number, url: string, name: string, mime_type: str
 const removeExistingFile = ref(false)
 
 const form = ref<CreateCashCountBody>({
-  event_name: '',
+  event_id: 0,
   counted_by_first: 0,
   counted_by_second: 0,
   checked_by: 0,
@@ -71,7 +71,7 @@ onMounted(async () => {
   }
 
   form.value = {
-    event_name: res.cashCount.event_name,
+    event_id: res.cashCount.event_id,
     counted_by_first: res.cashCount.counted_by_first,
     counted_by_second: res.cashCount.counted_by_second,
     checked_by: res.cashCount.checked_by,
@@ -129,7 +129,7 @@ async function submit() {
     toast.error(t('common.notAuthorized'))
     return
   }
-  if (!form.value.event_name.trim()) {
+  if (!form.value.event_id) {
     toast.error(t('cashCount.required.event'))
     return
   }

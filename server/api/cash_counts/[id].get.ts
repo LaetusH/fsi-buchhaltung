@@ -31,15 +31,17 @@ export default defineEventHandler(async (event): Promise<GetCashCountResponse> =
     const cashCountRows: CashCountRow[] = await query(
       `
       SELECT
-        id,
-        event_name,
-        counted_by_first,
-        counted_by_second,
-        checked_by,
-        counted_before_at,
-        counted_after_at
-      FROM cash_counts
-      WHERE id = ?
+        cc.id,
+        cc.event_id,
+        e.name AS event_name,
+        cc.counted_by_first,
+        cc.counted_by_second,
+        cc.checked_by,
+        cc.counted_before_at,
+        cc.counted_after_at
+      FROM cash_counts cc
+      INNER JOIN events e ON e.id = cc.event_id
+      WHERE cc.id = ?
       LIMIT 1
       `,
       [id]
@@ -75,6 +77,7 @@ export default defineEventHandler(async (event): Promise<GetCashCountResponse> =
       ok: true,
       cashCount: {
         id: Number(cashCount.id),
+        event_id: Number(cashCount.event_id),
         event_name: String(cashCount.event_name),
         counted_by_first: Number(cashCount.counted_by_first),
         counted_by_second: Number(cashCount.counted_by_second),

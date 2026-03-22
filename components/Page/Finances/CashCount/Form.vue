@@ -5,13 +5,16 @@
 
       <div>
         <label class="text-sm font-medium text-slate-600">{{ t('cashCount.event') }}</label>
-        <input
-          v-model="form.event_name"
-          class="input"
-          :class="disabled ? 'opacity-70' : ''"
+        <CommonSearchSelect
+          v-model="eventQuery"
+          :options="eventOptions"
+          :selected-label="selectedEventLabel(form.event_id)"
           :placeholder="t('cashCount.eventPlaceholder')"
+          :empty-text="t('cashCount.noMatchingEvents')"
           :disabled="disabled"
-        >
+          @select="onEventSelect"
+          @clear-selection="form.event_id = 0"
+        />
       </div>
 
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -219,6 +222,7 @@ import { focusAndSelectInput, sanitizeCurrencyInput } from '~/composables/useCur
 import { useLocaleFormatters } from '~/composables/useLocaleFormatters'
 import type { MemberListItem } from '~/types/member'
 import type { CreateCashCountBody, CreateCashCountPositionBody } from '~/types/cashCount'
+import type { EventRow } from '~/types/event'
 
 type MemberField = 'counted_by_first' | 'counted_by_second' | 'checked_by'
 type AmountField = 'amount_before' | 'amount_after'
@@ -236,7 +240,7 @@ const emit = defineEmits<{
 }>()
 
 const { t } = useI18n()
-const { formatCurrency } = useLocaleFormatters()
+const { formatCurrency, formatDateTime } = useLocaleFormatters()
 
 const form = computed({
   get: () => props.modelValue,
@@ -245,10 +249,19 @@ const form = computed({
 
 const disabled = computed(() => Boolean(props.disabled))
 const members = ref<MemberListItem[]>([])
+const events = ref<EventRow[]>([])
+const eventQuery = ref('')
 const countedByFirstQuery = ref('')
 const countedBySecondQuery = ref('')
 const checkedByQuery = ref('')
 const focusedAmountField = ref<{ index: number, field: AmountField } | null>(null)
+
+const eventOptions = computed<SearchSelectOption<EventRow>[]>(() => events.value.map(event => ({
+  key: event.id,
+  label: eventLabel(event),
+  searchText: [event.name, event.location].filter(Boolean).join(' '),
+  value: event,
+})))
 
 const memberOptions = computed<SearchSelectOption<MemberListItem>[]>(() => members.value.map(member => ({
   key: member.id,
@@ -259,7 +272,7 @@ const memberOptions = computed<SearchSelectOption<MemberListItem>[]>(() => membe
 const validationErrors = computed(() => {
   const errors: string[] = []
 
-  if (!form.value.event_name.trim()) errors.push(t('cashCount.required.event'))
+  if (!form.value.event_id) errors.push(t('cashCount.required.event'))
   if (!form.value.counted_by_first) errors.push(t('cashCount.required.countedByFirst'))
   if (!form.value.counted_by_second) errors.push(t('cashCount.required.countedBySecond'))
   if (!form.value.checked_by) errors.push(t('cashCount.required.checkedBy'))
@@ -327,9 +340,25 @@ function memberLabel(member: MemberListItem) {
   return `${member.first_name} ${member.last_name}`
 }
 
+function eventLabel(event: EventRow) {
+  const startsAt = formatDateTime(event.starts_at)
+  return [event.name, startsAt, event.location].filter(Boolean).join(' | ')
+}
+
+function selectedEventLabel(eventId: number) {
+  const event = events.value.find(entry => entry.id === eventId)
+  return event ? eventLabel(event) : ''
+}
+
 function selectedMemberLabel(memberId: number) {
   const member = members.value.find(entry => entry.id === memberId)
   return member ? memberLabel(member) : ''
+}
+
+function onEventSelect(value: unknown) {
+  const event = value as EventRow
+  form.value.event_id = event.id
+  eventQuery.value = eventLabel(event)
 }
 
 function selectMember(field: MemberField, member: MemberListItem) {
@@ -364,6 +393,11 @@ function onCheckedBySelect(value: unknown) {
 async function loadMembers() {
   const res = await $fetch('/api/members', { method: 'GET' })
   if (res.ok) members.value = res.members
+}
+
+async function loadEvents() {
+  const res = await $fetch('/api/cash_counts/event-options', { method: 'GET' })
+  if (res.ok) events.value = res.events
 }
 
 function addPosition() {
@@ -433,8 +467,13 @@ watch([members, () => form.value.counted_by_first, () => form.value.counted_by_s
   checkedByQuery.value = selectedMemberLabel(Number(form.value.checked_by || 0))
 }, { immediate: true })
 
+watch([events, () => form.value.event_id], () => {
+  eventQuery.value = selectedEventLabel(Number(form.value.event_id || 0))
+}, { immediate: true })
+
 onMounted(() => {
   if (!form.value.positions.length) addPosition()
+  loadEvents()
   loadMembers()
 })
 </script>
