@@ -26,6 +26,7 @@
 import { computed, ref } from 'vue'
 import { useI18n } from '~/composables/useI18n'
 import SettingsGeneral from './General.vue'
+import SettingsAssociation from './Association.vue'
 import SettingsSpheres from './Spheres.vue'
 import SettingsCostCentres from './CostCentres.vue'
 import SettingsSubdivisions from './Subdivisions.vue'
@@ -38,7 +39,7 @@ const emit = defineEmits<{
   (e: 'openMenu'): void
 }>()
 
-type SettingsTab = 'general' | 'spheres' | 'costCentres' | 'subdivisions' | 'positions' | 'users' | 'permissions'
+type SettingsTab = 'general' | 'association' | 'spheres' | 'costCentres' | 'subdivisions' | 'positions' | 'users' | 'permissions'
 
 const currentTab = ref<SettingsTab>('general')
 const { t } = useI18n()
@@ -47,6 +48,7 @@ const { hasPermission } = useAuth()
 const tabs = computed(() => {
   const list = [
     { key: 'general', label: t('settings.tabs.general'), show: true },
+    { key: 'association', label: t('settings.tabs.association'), show: hasPermission('settings.association.manage') },
     { key: 'spheres', label: t('settings.tabs.spheres'), show: hasPermission('settings.spheres.manage') },
     { key: 'costCentres', label: t('settings.tabs.costCentres'), show: hasPermission('settings.cost_centres.manage') },
     { key: 'subdivisions', label: t('settings.tabs.subdivisions'), show: hasPermission('settings.subdivisions.manage') },
@@ -63,6 +65,8 @@ const activeComponent = computed(() => {
       return SettingsGeneral
     case 'spheres':
       return SettingsSpheres
+    case 'association':
+      return SettingsAssociation
     case 'costCentres':
       return SettingsCostCentres
     case 'subdivisions':

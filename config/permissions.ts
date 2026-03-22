@@ -20,6 +20,7 @@ export type PermissionKey =
   | 'subdivisions.view'
   | 'settings.access'
   | 'settings.spheres.manage'
+  | 'settings.association.manage'
   | 'settings.cost_centres.manage'
   | 'settings.subdivisions.manage'
   | 'settings.positions.manage'
@@ -56,6 +57,7 @@ export const PERMISSIONS: PermissionDefinition[] = [
   { key: 'cost_centres.view', labelKey: 'permissions.items.costCentresView', categoryKey: 'permissions.categories.settings' },
   { key: 'subdivisions.view', labelKey: 'permissions.items.subdivisionsView', categoryKey: 'permissions.categories.settings' },
   { key: 'settings.access', labelKey: 'permissions.items.settingsAccess', categoryKey: 'permissions.categories.settings' },
+  { key: 'settings.association.manage', labelKey: 'permissions.items.settingsAssociationManage', categoryKey: 'permissions.categories.settings' },
   { key: 'settings.spheres.manage', labelKey: 'permissions.items.settingsSpheresManage', categoryKey: 'permissions.categories.settings' },
   { key: 'settings.cost_centres.manage', labelKey: 'permissions.items.settingsCostCentresManage', categoryKey: 'permissions.categories.settings' },
   { key: 'settings.subdivisions.manage', labelKey: 'permissions.items.settingsSubdivisionsManage', categoryKey: 'permissions.categories.settings' },
@@ -73,6 +75,7 @@ export const implied: Partial<Record<PermissionKey, PermissionKey[]>> = {
   'cash_counts.edit': ['cash_counts.view'],
   'events.edit': ['events.view'],
   'companies.edit': ['companies.view'],
+  'settings.association.manage': ['settings.access'],
   'subjects.edit': ['subjects.view'],
   'settings.spheres.manage': ['spheres.view', 'settings.access'],
   'settings.cost_centres.manage': ['cost_centres.view', 'settings.access'],

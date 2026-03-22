@@ -150,6 +150,51 @@ CREATE TABLE IF NOT EXISTS companies (
   FOREIGN KEY (created_by) REFERENCES users(id)
 );
 
+CREATE TABLE IF NOT EXISTS association_profiles (
+  id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  singleton_key TINYINT UNSIGNED NOT NULL DEFAULT 1 UNIQUE,
+  name VARCHAR(255) NOT NULL,
+  short_name VARCHAR(127),
+  street VARCHAR(255) NOT NULL,
+  street_number VARCHAR(20) NOT NULL,
+  postal_code VARCHAR(20) NOT NULL,
+  city VARCHAR(127) NOT NULL,
+  email VARCHAR(255) NOT NULL,
+  phone VARCHAR(63),
+  website VARCHAR(255),
+  vat_id VARCHAR(63),
+  iban VARCHAR(34),
+  bic VARCHAR(11),
+  bankname VARCHAR(127),
+  register_number VARCHAR(127),
+  register_court VARCHAR(255),
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  created_by BIGINT UNSIGNED NOT NULL,
+  FOREIGN KEY (created_by) REFERENCES users(id)
+);
+
+CREATE TABLE IF NOT EXISTS association_responsible_members (
+  association_profile_id BIGINT UNSIGNED NOT NULL,
+  member_id BIGINT UNSIGNED NOT NULL,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  created_by BIGINT UNSIGNED NOT NULL,
+  PRIMARY KEY (association_profile_id, member_id),
+  FOREIGN KEY (association_profile_id) REFERENCES association_profiles(id) ON DELETE CASCADE,
+  FOREIGN KEY (member_id) REFERENCES members(id) ON DELETE CASCADE,
+  FOREIGN KEY (created_by) REFERENCES users(id)
+);
+
+CREATE TABLE IF NOT EXISTS association_responsible_positions (
+  association_profile_id BIGINT UNSIGNED NOT NULL,
+  position_id BIGINT UNSIGNED NOT NULL,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  created_by BIGINT UNSIGNED NOT NULL,
+  PRIMARY KEY (association_profile_id, position_id),
+  FOREIGN KEY (association_profile_id) REFERENCES association_profiles(id) ON DELETE CASCADE,
+  FOREIGN KEY (position_id) REFERENCES positions(id) ON DELETE CASCADE,
+  FOREIGN KEY (created_by) REFERENCES users(id)
+);
+
 CREATE TABLE IF NOT EXISTS files (
   id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
   file_path VARCHAR(511) NOT NULL,
