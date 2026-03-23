@@ -1,19 +1,12 @@
 <template>
-  <Page :headline1="t('settings.title')" @open-menu="$emit('openMenu')">
-    <template #header>
-      <div class="flex">
-        <button
-          v-for="tab in tabs"
-          :key="tab.key"
-          @click="currentTab = tab.key"
-          class="px-4 py-2 rounded-t-xl text-sm cursor-pointer font-medium transition-colors"
-          :class="currentTab === tab.key
-            ? 'bg-orange-500 text-white'
-            : 'bg-gray-300 text-gray-700 hover:bg-gray-400'"
-        >
-          {{ tab.label }}
-        </button>
-      </div>
+  <Page :headline1="t('settings.title')" flush-header-with-cards @open-menu="$emit('openMenu')">
+    <template #header="{ headerContainerRef, headlineGroupRef }">
+      <CommonTabOverview
+        v-model="currentTab"
+        :tabs="tabs"
+        :header-container-ref="headerContainerRef"
+        :headline-group-ref="headlineGroupRef"
+      />
     </template>
 
     <template #cards>
@@ -35,7 +28,7 @@ import SettingsPermissions from './Permissions.vue'
 import SettingsUsers from './Users.vue'
 import { useAuth } from '~/composables/useAuth'
 
-const emit = defineEmits<{
+defineEmits<{
   (e: 'openMenu'): void
 }>()
 

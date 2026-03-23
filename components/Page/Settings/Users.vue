@@ -1,5 +1,5 @@
 <template>
-  <div v-if="hasAccess" class="bg-white rounded-b-xl rounded-tl-xl shadow-lg p-6 space-y-6 col-span-12">
+  <div v-if="hasAccess" class="bg-white rounded-xl shadow-lg p-6 space-y-6 col-span-12">
     <div class="flex justify-between items-center gap-3 flex-wrap">
       <h2 class="text-lg font-semibold">{{ t('settings.users.title') }}</h2>
 

@@ -1,5 +1,5 @@
 <template>
-  <div v-if="hasAccess" class="bg-white rounded-b-xl rounded-tl-xl shadow-lg p-6 space-y-6 col-span-12">
+  <div v-if="hasAccess" class="bg-white rounded-xl shadow-lg p-6 space-y-6 col-span-12">
     <div class="space-y-1">
       <h2 class="text-lg font-semibold">{{ t('settings.association.title') }}</h2>
       <p class="text-sm text-slate-600">{{ t('settings.association.intro') }}</p>

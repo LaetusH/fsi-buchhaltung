@@ -1,7 +1,13 @@
 <template>
-  <div id="page-root" class="xl:p-6">
-    <div class="flex flex-wrap gap-3 justify-between">
-      <div class="flex flex-row gap-3">
+  <div
+    id="page-root"
+    :class="[
+      'xl:p-6',
+      flushHeaderWithCards ? 'space-y-0' : 'space-y-4 xl:space-y-6',
+    ]"
+  >
+    <div ref="headerContainerRef" class="flex flex-wrap items-start gap-x-7 gap-y-4">
+      <div ref="headlineGroupRef" class="flex min-w-0 items-center gap-3">
         <button
           class="bg-gray-900 text-white rounded-md md:hidden w-8 h-8 flex items-center justify-center cursor-pointer"
           @click="$emit('openMenu')"
@@ -12,9 +18,10 @@
             aria-hidden="true"
           />
         </button>
-        <h1 class="text-2xl font-bold mb-4">{{ headline1 }}</h1>
+        <h1 class="text-2xl font-bold">{{ headline1 }}</h1>
       </div>
-      <slot name="header"></slot>
+
+      <slot name="header" v-bind="{ headerContainerRef, headlineGroupRef }"></slot>
     </div>
 
     <div
@@ -27,11 +34,20 @@
 </template>
 
 <script setup lang="ts">
-const emit = defineEmits<{
+import { ref } from 'vue'
+
+defineEmits<{
   (e: 'openMenu'): void
 }>()
 
-const props = defineProps({
+defineProps({
   headline1: String,
+  flushHeaderWithCards: {
+    type: Boolean,
+    default: false,
+  },
 })
+
+const headerContainerRef = ref<HTMLElement | null>(null)
+const headlineGroupRef = ref<HTMLElement | null>(null)
 </script>

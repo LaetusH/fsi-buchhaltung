@@ -1,5 +1,5 @@
 <template>
-  <div class="bg-white rounded-b-xl rounded-tl-xl shadow-lg p-6 space-y-6 col-span-12">
+  <div class="bg-white rounded-xl shadow-lg p-6 space-y-6 col-span-12">
     <h2 class="text-lg font-semibold">{{ t('settings.general.title') }}</h2>
 
     <section class="rounded-xl border border-slate-200 p-4 space-y-3">

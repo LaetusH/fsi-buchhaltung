@@ -1,5 +1,5 @@
 <template>
-  <div v-if="canManage" class="bg-white rounded-b-xl rounded-tl-xl shadow-lg p-6 space-y-6 col-span-12">
+  <div v-if="canManage" class="bg-white rounded-xl shadow-lg p-6 space-y-6 col-span-12">
     <div class="flex justify-between items-center">
       <h2 class="text-lg font-semibold">{{ title }}</h2>
 
