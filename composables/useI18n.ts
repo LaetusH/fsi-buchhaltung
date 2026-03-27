@@ -237,6 +237,7 @@ const messages = {
     },
     permissions: {
       categories: {
+        apps: 'Anwendungen',
         pages: 'Seiten',
         members: 'Mitglieder',
         receipts: 'Belege',
@@ -249,6 +250,8 @@ const messages = {
         users: 'Benutzer',
       },
       items: {
+        cashRegisterUse: 'Kassensystem verwenden',
+        cashRegisterManage: 'Kassensystem verwalten',
         pagesHomeView: 'Startseite anzeigen',
         membersView: 'Mitglieder ansehen',
         membersEdit: 'Mitglieder bearbeiten',
@@ -945,6 +948,7 @@ const messages = {
     },
     permissions: {
       categories: {
+        apps: 'Applications',
         pages: 'Pages',
         members: 'Members',
         receipts: 'Receipts',
@@ -957,6 +961,8 @@ const messages = {
         users: 'Users',
       },
       items: {
+        cashRegisterUse: 'Use cash register',
+        cashRegisterManage: 'Manage cash register',
         pagesHomeView: 'View home page',
         membersView: 'View members',
         membersEdit: 'Edit members',

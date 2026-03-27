@@ -1,4 +1,6 @@
 export type PermissionKey = 
+  | 'cash_register.use'
+  | 'cash_register.manage'
   | 'pages.home.view'
   | 'members.view'
   | 'members.edit'
@@ -37,6 +39,8 @@ export interface PermissionDefinition {
 }
 
 export const PERMISSIONS: PermissionDefinition[] = [
+  { key: 'cash_register.use', labelKey: 'permissions.items.cashRegisterUse', categoryKey: 'permissions.categories.apps' },
+  { key: 'cash_register.manage', labelKey: 'permissions.items.cashRegisterManage', categoryKey: 'permissions.categories.apps' },
   { key: 'pages.home.view', labelKey: 'permissions.items.pagesHomeView', categoryKey: 'permissions.categories.pages' },
   { key: 'members.view', labelKey: 'permissions.items.membersView', categoryKey: 'permissions.categories.members' },
   { key: 'members.edit', labelKey: 'permissions.items.membersEdit', categoryKey: 'permissions.categories.members' },
@@ -69,6 +73,7 @@ export const PERMISSIONS: PermissionDefinition[] = [
 ]
 
 export const implied: Partial<Record<PermissionKey, PermissionKey[]>> = {
+  'cash_register.manage': ['cash_register.use'],
   'members.edit': ['members.view'],
   'receipts.edit': ['receipts.view'],
   'reimbursements.edit': ['reimbursements.view'],
