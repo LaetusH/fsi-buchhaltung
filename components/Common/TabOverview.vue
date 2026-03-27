@@ -21,7 +21,7 @@
             :aria-pressed="modelValue === tab.key"
             class="min-w-0 rounded-lg px-4 py-2 text-center text-sm font-medium whitespace-nowrap transition-colors duration-150 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-400 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-200"
             :class="modelValue === tab.key
-              ? 'bg-orange-500 text-white shadow-sm'
+              ? 'bg-orange-500 text-white'
               : 'bg-slate-100 text-slate-700 hover:bg-white'"
             :style="tabStyle()"
             @click="emit('update:modelValue', tab.key)"
