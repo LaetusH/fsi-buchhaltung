@@ -145,25 +145,28 @@ function updateMenuPosition() {
   const viewportPadding = 16
   const preferredMaxHeight = 200
   const rootRect = rootRef.value.getBoundingClientRect()
-  const menuRect = menuRef.value?.getBoundingClientRect()
+  const menuElement = menuRef.value
+  const menuRect = menuElement?.getBoundingClientRect()
   const topBoundary = viewportPadding
   const bottomBoundary = window.innerHeight - viewportPadding
   const spaceBelow = bottomBoundary - rootRect.bottom
   const spaceAbove = rootRect.top - topBoundary
   const shouldOpenUp = spaceBelow < 200 && spaceAbove > spaceBelow
   const availableSpace = Math.max(shouldOpenUp ? spaceAbove : spaceBelow, 0)
+  const menuMaxHeight = Math.min(preferredMaxHeight, availableSpace)
+  const actualMenuHeight = Math.min(menuElement?.scrollHeight ?? preferredMaxHeight, menuMaxHeight)
   const measuredWidth = menuRect?.width ?? rootRect.width
   const maxLeft = window.innerWidth - viewportPadding - measuredWidth
   const left = Math.min(Math.max(rootRect.left, viewportPadding), Math.max(viewportPadding, maxLeft))
   const top = shouldOpenUp
-    ? Math.max(topBoundary, rootRect.top - Math.min(preferredMaxHeight, availableSpace) - 4)
+    ? Math.max(topBoundary, rootRect.top - actualMenuHeight - 4)
     : Math.min(bottomBoundary, rootRect.bottom + 4)
 
   menuStyle.value = {
     top: `${top}px`,
     left: `${left}px`,
     minWidth: `${rootRect.width}px`,
-    maxHeight: `${Math.min(preferredMaxHeight, availableSpace)}px`,
+    maxHeight: `${menuMaxHeight}px`,
     maxWidth: props.menuWidth === 'wide' ? '48rem' : '30vw',
   }
 }
