@@ -72,6 +72,7 @@ const DEFAULT_ROLE_PERMISSIONS = {
     'positions.view',
     'spheres.view',
     'cost_centres.view',
+    'settings.access',
   ],
 }
 
