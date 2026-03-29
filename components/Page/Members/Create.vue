@@ -223,6 +223,7 @@
 
 <script setup lang="ts">
 import { useI18n } from '~/composables/useI18n'
+import { useLocaleFormatters } from '~/composables/useLocaleFormatters'
 import { useToast } from '~/composables/useToast'
 import { MemberStatus, type Member, type MemberStatusActionPositionClose, type MemberStatusActionPositionRemoval, type MemberStatusActionSummary, type SaveMemberBody } from '~/types/member'
 import { usePage } from '~/composables/usePage'
@@ -237,6 +238,7 @@ const emit = defineEmits<{
 
 const { setPage, pageMeta } = usePage()
 const { t } = useI18n()
+const { formatDate } = useLocaleFormatters()
 const toast = useToast()
 const { hasPermission } = useAuth()
 
@@ -254,6 +256,38 @@ const showLeftStatusConfirmModal = ref(false)
 const showLeftStatusResultModal = ref(false)
 const leftStatusResult = ref<MemberStatusActionSummary | null>(null)
 const isSaving = ref(false)
+
+function translatePositionAssignmentToast(message?: string) {
+  if (!message) return message
+
+  const invalidRangeMatch = message.match(/^(.*): end date cannot be before start date$/)
+  if (invalidRangeMatch) {
+    return t('common.positionAssignmentInvalidRange', {
+      label: invalidRangeMatch[1]!.trim(),
+    })
+  }
+
+  const overlapMatch = message.match(/^(.*): assignment periods must not overlap \((.*) and (.*)\)$/)
+  if (overlapMatch) {
+    return t('common.positionAssignmentOverlap', {
+      label: overlapMatch[1]!.trim(),
+      firstRange: formatPositionAssignmentRange(overlapMatch[2]!.trim()),
+      secondRange: formatPositionAssignmentRange(overlapMatch[3]!.trim()),
+    })
+  }
+
+  return message
+}
+
+function formatPositionAssignmentRange(range: string) {
+  const [rawSince, rawUntil] = range.split(' - ')
+  const since = formatDate(rawSince?.trim())
+  const normalizedUntil = rawUntil?.trim() === 'open-ended'
+    ? t('common.openEnded')
+    : formatDate(rawUntil?.trim())
+
+  return `${since} - ${normalizedUntil}`
+}
 
 const form = ref<SaveMemberBody>({
   account: null,
@@ -453,7 +487,7 @@ async function persistMember(showStatusActionsModal: boolean) {
     toast.success(isEditMode.value ? t('member.saved.updated') : t('member.saved.created'))
     setPage(pageMeta.value?.returnTo || 'MemberList')
   } catch (err: any) {
-    toast.error(err?.message || t('member.saved.failedSave'))
+    toast.error(translatePositionAssignmentToast(err?.message) || t('member.saved.failedSave'))
   } finally {
     isSaving.value = false
   }

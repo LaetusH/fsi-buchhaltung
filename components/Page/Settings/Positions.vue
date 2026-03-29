@@ -109,6 +109,7 @@ import type { SearchSelectOption } from '~/components/Common/SearchSelect.vue'
 import type { EntityManagerColumn, SaveSettingsEntityBody, SettingsEntityRow } from '~/components/Page/Settings/EntityManager.vue'
 import { useAuth } from '~/composables/useAuth'
 import { useI18n } from '~/composables/useI18n'
+import { useLocaleFormatters } from '~/composables/useLocaleFormatters'
 import { useToast } from '~/composables/useToast'
 import type {
   PositionMemberAssignment,
@@ -137,6 +138,7 @@ interface AssignmentLike {
 }
 
 const { t } = useI18n()
+const { formatDate } = useLocaleFormatters()
 const toast = useToast()
 const { hasPermission } = useAuth()
 
@@ -148,6 +150,38 @@ const hasAssignmentScrollbar = ref(false)
 
 let assignmentListResizeObserver: ResizeObserver | null = null
 let assignmentListMutationObserver: MutationObserver | null = null
+
+function translatePositionAssignmentToast(message?: string) {
+  if (!message) return message
+
+  const invalidRangeMatch = message.match(/^(.*): end date cannot be before start date$/)
+  if (invalidRangeMatch) {
+    return t('common.positionAssignmentInvalidRange', {
+      label: invalidRangeMatch[1]!.trim(),
+    })
+  }
+
+  const overlapMatch = message.match(/^(.*): assignment periods must not overlap \((.*) and (.*)\)$/)
+  if (overlapMatch) {
+    return t('common.positionAssignmentOverlap', {
+      label: overlapMatch[1]!.trim(),
+      firstRange: formatPositionAssignmentRange(overlapMatch[2]!.trim()),
+      secondRange: formatPositionAssignmentRange(overlapMatch[3]!.trim()),
+    })
+  }
+
+  return message
+}
+
+function formatPositionAssignmentRange(range: string) {
+  const [rawSince, rawUntil] = range.split(' - ')
+  const since = formatDate(rawSince?.trim())
+  const normalizedUntil = rawUntil?.trim() === 'open-ended'
+    ? t('common.openEnded')
+    : formatDate(rawUntil?.trim())
+
+  return `${since} - ${normalizedUntil}`
+}
 
 const tableColumns = computed<EntityManagerColumn[]>(() => [
   {
@@ -338,10 +372,7 @@ function currentMemberSummary(item: SettingsEntityRow) {
 }
 
 function memberSearchOptions(editingItem: SaveSettingsEntityBody) {
-  const selectedIds = new Set(positionBody(editingItem).assignments.map(assignment => assignment.member_id).filter(Boolean))
-
   return memberOptions.value
-    .filter(member => !selectedIds.has(member.id))
     .map<SearchSelectOption<PositionMemberOption>>(member => ({
       key: member.id,
       label: member.full_name,
@@ -359,8 +390,6 @@ function selectMember(value: unknown, editingItem: SaveSettingsEntityBody) {
   if (!member?.id) return
 
   const assignments = positionBody(editingItem).assignments
-  if (assignments.some(assignment => assignment.member_id === member.id)) return
-
   assignments.unshift(createAssignment({
     member_id: member.id,
     full_name: member.full_name,
@@ -393,18 +422,19 @@ async function loadMemberOptions() {
 
 function handleError({ phase, message, error }: { phase: 'load' | 'save' | 'toggle', message?: string, error?: unknown }) {
   if (error) console.error(error)
+  const translatedMessage = translatePositionAssignmentToast(message)
 
   if (phase === 'load') {
-    toast.error(message || t('settings.positions.loadFailed'))
+    toast.error(translatedMessage || t('settings.positions.loadFailed'))
     return
   }
 
   if (phase === 'save') {
-    toast.error(message || t('settings.positions.saveFailed'))
+    toast.error(translatedMessage || t('settings.positions.saveFailed'))
     return
   }
 
-  toast.error(message || t('settings.positions.updateFailed'))
+  toast.error(translatedMessage || t('settings.positions.updateFailed'))
 }
 
 function updateAssignmentListOverflow() {

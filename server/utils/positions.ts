@@ -68,6 +68,71 @@ export function normalizePositionAssignments(
   return normalized
 }
 
+function formatAssignmentDateRange(assignment: Pick<PositionAssignmentInput, 'since' | 'until'>) {
+  return `${assignment.since} - ${assignment.until || 'open-ended'}`
+}
+
+function assignmentOverlapScopeLabel(
+  scope: SyncPositionAssignmentsOptions['scope'],
+  assignment: PositionAssignmentInput,
+  memberLabels: Map<number, string>,
+  positionLabels: Map<number, string>,
+) {
+  if (scope === 'member') {
+    return positionLabels.get(assignment.position_id) ?? `#${assignment.position_id}`
+  }
+
+  return memberLabels.get(assignment.member_id) ?? `#${assignment.member_id}`
+}
+
+function rangesOverlap(left: PositionAssignmentInput, right: PositionAssignmentInput) {
+  const leftUntil = left.until || '9999-12-31'
+  const rightUntil = right.until || '9999-12-31'
+
+  return left.since <= rightUntil && right.since <= leftUntil
+}
+
+function validatePositionAssignmentRanges(
+  assignments: PositionAssignmentInput[],
+  scope: SyncPositionAssignmentsOptions['scope'],
+  memberLabels: Map<number, string>,
+  positionLabels: Map<number, string>,
+) {
+  const groupedAssignments = new Map<string, PositionAssignmentInput[]>()
+
+  for (const assignment of assignments) {
+    if (assignment.until && assignment.until < assignment.since) {
+      const label = assignmentOverlapScopeLabel(scope, assignment, memberLabels, positionLabels)
+      return `${label}: end date cannot be before start date`
+    }
+
+    const key = `${assignment.member_id}:${assignment.position_id}`
+    const bucket = groupedAssignments.get(key) ?? []
+    bucket.push(assignment)
+    groupedAssignments.set(key, bucket)
+  }
+
+  for (const bucket of groupedAssignments.values()) {
+    const sortedAssignments = bucket
+      .slice()
+      .sort((left, right) => {
+        if (left.since !== right.since) return left.since.localeCompare(right.since)
+        return (left.until || '9999-12-31').localeCompare(right.until || '9999-12-31')
+      })
+
+    for (let index = 1; index < sortedAssignments.length; index += 1) {
+      const previous = sortedAssignments[index - 1]!
+      const current = sortedAssignments[index]!
+      if (!rangesOverlap(previous, current)) continue
+
+      const label = assignmentOverlapScopeLabel(scope, current, memberLabels, positionLabels)
+      return `${label}: assignment periods must not overlap (${formatAssignmentDateRange(previous)} and ${formatAssignmentDateRange(current)})`
+    }
+  }
+
+  return null
+}
+
 export async function getPositionLabels(
   positionIds: number[],
   conn: mariadb.PoolConnection,
@@ -127,6 +192,16 @@ export async function syncPositionAssignments({
 
   if (positionLabels.size !== positionIds.length) {
     return { ok: false as const, error: 'One or more selected positions do not exist' }
+  }
+
+  const rangeValidationError = validatePositionAssignmentRanges(
+    incomingAssignments,
+    scope,
+    memberLabels,
+    positionLabels,
+  )
+  if (rangeValidationError) {
+    return { ok: false as const, error: rangeValidationError }
   }
 
   const entityType = scope

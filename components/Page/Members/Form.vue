@@ -372,7 +372,42 @@ const validationErrors = computed(() => {
     if (!position.position_id || !position.since) {
       errors.push(t('member.required.positionRow', { index: index + 1 }))
     }
+
+    if (position.since && position.until && position.until < position.since) {
+      errors.push(t('member.required.positionInvalidRange', { index: index + 1 }))
+    }
   })
+
+  const groupedPositions = new Map<number, Array<{ since: string, until: string | null }>>()
+  for (const position of form.value.positions) {
+    if (!position.position_id || !position.since) continue
+    const bucket = groupedPositions.get(position.position_id) ?? []
+    bucket.push({ since: position.since, until: position.until || null })
+    groupedPositions.set(position.position_id, bucket)
+  }
+
+  for (const [positionId, assignments] of groupedPositions.entries()) {
+    const sortedAssignments = assignments
+      .slice()
+      .sort((left, right) => {
+        if (left.since !== right.since) return left.since.localeCompare(right.since)
+        return (left.until || '9999-12-31').localeCompare(right.until || '9999-12-31')
+      })
+
+    for (let index = 1; index < sortedAssignments.length; index += 1) {
+      const previous = sortedAssignments[index - 1]!
+      const current = sortedAssignments[index]!
+      const previousUntil = previous.until || '9999-12-31'
+      const currentUntil = current.until || '9999-12-31'
+      if (!(previous.since <= currentUntil && current.since <= previousUntil)) continue
+
+      const label = positions.value.find(position => position.id === positionId)
+      errors.push(t('member.required.positionOverlap', {
+        position: label ? `${label.code} - ${label.name}` : `#${positionId}`,
+      }))
+      break
+    }
+  }
 
   return errors
 })

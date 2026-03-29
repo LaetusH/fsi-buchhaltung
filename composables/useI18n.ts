@@ -68,9 +68,12 @@ const messages = {
       no: 'Nein',
       from: 'Von',
       to: 'Bis',
+      openEnded: 'offen',
       notAvailable: '-',
       validationBlocked: 'Speichern derzeit nicht möglich:',
       notAuthorized: 'Nicht berechtigt.',
+      positionAssignmentInvalidRange: '{label}: Enddatum darf nicht vor dem Beginndatum liegen.',
+      positionAssignmentOverlap: '{label}: Zeiträume dürfen sich nicht überschneiden ({firstRange} und {secondRange}).',
     },
     login: {
       title: 'Anmelden',
@@ -346,6 +349,8 @@ const messages = {
         leftDateNeeded: 'Status AUSGETRETEN erfordert ein Austrittsdatum.',
         leftDateOnlyWhenLeft: 'Ein Austrittsdatum ist nur mit Status AUSGETRETEN erlaubt.',
         positionRow: 'Position {index} benötigt Position und Beginn.',
+        positionInvalidRange: 'Position {index} hat ein Enddatum vor dem Beginndatum.',
+        positionOverlap: 'Die Zeiträume für {position} dürfen sich nicht überschneiden.',
       },
       saved: {
         created: 'Mitglied erfolgreich erstellt.',
@@ -779,9 +784,12 @@ const messages = {
       no: 'No',
       from: 'From',
       to: 'To',
+      openEnded: 'open-ended',
       notAvailable: '-',
       validationBlocked: 'Saving is currently not possible:',
       notAuthorized: 'Not authorized.',
+      positionAssignmentInvalidRange: '{label}: end date cannot be before start date.',
+      positionAssignmentOverlap: '{label}: assignment periods must not overlap ({firstRange} and {secondRange}).',
     },
     login: {
       title: 'Sign in',
@@ -1057,6 +1065,8 @@ const messages = {
         leftDateNeeded: 'Status LEFT requires a leaving date.',
         leftDateOnlyWhenLeft: 'A leaving date is only allowed with status LEFT.',
         positionRow: 'Position {index} requires a position and a start date.',
+        positionInvalidRange: 'Position {index} has an end date before its start date.',
+        positionOverlap: 'The assignment periods for {position} must not overlap.',
       },
       saved: {
         created: 'Member created successfully.',
