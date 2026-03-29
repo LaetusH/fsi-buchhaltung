@@ -5,6 +5,7 @@ const {
   ADMIN_USERNAME,
   ADMIN_PASSWORD,
   DB_HOST = 'db',
+  DB_PORT = '3306',
   DB_USER = 'fsi',
   DB_PASSWORD = 'fsi_password',
   DB_NAME = 'fsi_buchhaltung',
@@ -18,6 +19,7 @@ if (!ADMIN_USERNAME || !ADMIN_PASSWORD) {
 
 const pool = mariadb.createPool({
   host: DB_HOST,
+  port: Number(DB_PORT),
   user: DB_USER,
   password: DB_PASSWORD,
   database: DB_NAME,
