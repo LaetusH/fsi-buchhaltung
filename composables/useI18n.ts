@@ -128,6 +128,7 @@ const messages = {
         saveSuccess: 'Vereinsdaten gespeichert.',
         loadFailed: 'Vereinsdaten konnten nicht geladen werden.',
         saveFailed: 'Vereinsdaten konnten nicht gespeichert werden.',
+        logoHelp: 'Logo als PNG oder JPG hochladen. Es wird auf erzeugten Dokumenten verwendet.',
         required: {
           name: 'Name ist ein Pflichtfeld.',
           street: 'Straße ist ein Pflichtfeld.',
@@ -137,6 +138,7 @@ const messages = {
           email: 'E-Mail ist ein Pflichtfeld.',
         },
         fields: {
+          logo: 'Logo',
           shortName: 'Kurzname',
           website: 'Webseite',
           registerNumber: 'Registernummer',
@@ -844,6 +846,7 @@ const messages = {
         saveSuccess: 'Association details saved.',
         loadFailed: 'Failed to load association details.',
         saveFailed: 'Failed to save association details.',
+        logoHelp: 'Upload a PNG or JPG logo. It is used on generated documents.',
         required: {
           name: 'Name is required.',
           street: 'Street is required.',
@@ -853,6 +856,7 @@ const messages = {
           email: 'Email is required.',
         },
         fields: {
+          logo: 'Logo',
           shortName: 'Short name',
           website: 'Website',
           registerNumber: 'Register number',

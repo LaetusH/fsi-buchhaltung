@@ -2,6 +2,8 @@ import { defineEventHandler } from 'h3'
 import { query } from '~/server/utils/db'
 import { normalizeBigInt } from '~/server/utils/normalize'
 import { requirePermission } from '~/server/utils/api/guards'
+import { getAttachedFile } from '~/server/utils/files'
+import type { FileRow } from '~/types/file'
 import type {
   AssociationProfileRow,
   AssociationResponsibleMemberOption,
@@ -25,6 +27,7 @@ interface AssociationProfileBaseRow {
   bankname: string | null
   register_number: string | null
   register_court: string | null
+  logo_file_id: number | null
   created_at: string
 }
 
@@ -48,6 +51,7 @@ interface GetAssociationProfileSuccess {
   profile: AssociationProfileRow | null
   members: AssociationResponsibleMemberOption[]
   positions: AssociationResponsiblePositionOption[]
+  logo: FileRow | null
 }
 
 interface GetAssociationProfileError {
@@ -65,7 +69,7 @@ export default defineEventHandler(async (event): Promise<GetAssociationProfileRe
     query<AssociationProfileBaseRow[]>(`
       SELECT
         id, name, short_name, street, street_number, postal_code, city, email, phone, website,
-        vat_id, iban, bic, bankname, register_number, register_court, created_at
+        vat_id, iban, bic, bankname, register_number, register_court, NULL AS logo_file_id, created_at
       FROM association_profiles
       ORDER BY id ASC
       LIMIT 1
@@ -129,12 +133,15 @@ export default defineEventHandler(async (event): Promise<GetAssociationProfileRe
   }
 
   const profile = (normalizeBigInt(profileRows) as AssociationProfileBaseRow[])[0]
+  const logo = profile ? await getAttachedFile('association_profile_logo', Number(profile.id)) : null
+
   return {
     ok: true,
     profile: profile
       ? {
           ...profile,
           id: Number(profile.id),
+          logo_file_id: logo ? Number(logo.id) : null,
           responsible_member_ids: (normalizeBigInt(responsibleMemberRows) as { member_id: number }[]).map(row => Number(row.member_id)),
           responsible_position_ids: (normalizeBigInt(responsiblePositionRows) as { position_id: number }[]).map(row => Number(row.position_id)),
         }
@@ -145,5 +152,6 @@ export default defineEventHandler(async (event): Promise<GetAssociationProfileRe
       subject_name: row.subject_name ? String(row.subject_name) : null,
     })),
     positions: Array.from(groupedPositions.values()),
+    logo: logo ? normalizeBigInt(logo) as FileRow : null,
   }
 })

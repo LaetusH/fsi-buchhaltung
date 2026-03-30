@@ -9,6 +9,22 @@
       <h3 class="font-semibold">{{ t('settings.association.legalTitle') }}</h3>
 
       <div class="field">
+        <label>{{ t('settings.association.fields.logo') }}</label>
+        <p class="mb-2 text-sm text-slate-500">{{ t('settings.association.logoHelp') }}</p>
+        <ClientOnly>
+          <div class="max-w-xl">
+            <PageFinancesFileDrop
+              :model-value="logoFile"
+              :existing-file="existingLogo"
+              :can-edit="!isSaving"
+              @update:model-value="logoFile = $event"
+              @remove-existing="removeExistingLogo"
+            />
+          </div>
+        </ClientOnly>
+      </div>
+
+      <div class="field">
         <label>{{ t('common.name') }}</label>
         <input v-model="form.name" class="input" />
       </div>
@@ -178,6 +194,7 @@ import type { SelectionListItem } from '~/components/Common/SelectionListField.v
 import { useAuth } from '~/composables/useAuth'
 import { useI18n } from '~/composables/useI18n'
 import { useToast } from '~/composables/useToast'
+import PageFinancesFileDrop from '~/components/Page/Finances/FileDrop.vue'
 import type {
   AssociationProfileRow,
   AssociationResponsibleMemberOption,
@@ -195,6 +212,9 @@ const memberQuery = ref('')
 const positionQuery = ref('')
 const memberOptions = ref<AssociationResponsibleMemberOption[]>([])
 const positionOptions = ref<AssociationResponsiblePositionOption[]>([])
+const logoFile = ref<File | null>(null)
+const existingLogo = ref<{ id: number, url: string, name: string, mime_type: string, size: number } | null>(null)
+const removeExistingLogoFlag = ref(false)
 const form = reactive<SaveAssociationProfileBody>({
   name: '',
   short_name: null,
@@ -343,6 +363,11 @@ function applyProfile(profile: AssociationProfileRow | null) {
   })
 }
 
+function removeExistingLogo() {
+  existingLogo.value = null
+  removeExistingLogoFlag.value = true
+}
+
 function normalizeOptionalString(value: string | null) {
   const normalized = String(value || '').trim()
   return normalized || null
@@ -379,6 +404,7 @@ async function load() {
       profile?: AssociationProfileRow | null
       members?: AssociationResponsibleMemberOption[]
       positions?: AssociationResponsiblePositionOption[]
+      logo?: { id: number, original_name: string, mime_type: string, file_size: number } | null
       error?: string
     }>('/api/settings/association')
 
@@ -390,6 +416,17 @@ async function load() {
     memberOptions.value = res.members ?? []
     positionOptions.value = res.positions ?? []
     applyProfile(res.profile ?? null)
+    existingLogo.value = res.logo
+      ? {
+          id: Number(res.logo.id),
+          url: '/api/settings/association/logo',
+          name: String(res.logo.original_name),
+          mime_type: String(res.logo.mime_type),
+          size: Number(res.logo.file_size),
+        }
+      : null
+    logoFile.value = null
+    removeExistingLogoFlag.value = false
   } catch (error) {
     console.error(error)
     toast.error(t('settings.association.loadFailed'))
@@ -401,20 +438,25 @@ async function save() {
 
   isSaving.value = true
   try {
+    const body = new FormData()
+    if (logoFile.value) body.append('file', logoFile.value)
+    body.append('removeExistingLogo', String(removeExistingLogoFlag.value))
+    body.append('profile', JSON.stringify({
+      ...form,
+      short_name: normalizeOptionalString(form.short_name),
+      phone: normalizeOptionalString(form.phone),
+      website: normalizeOptionalString(form.website),
+      vat_id: normalizeOptionalString(form.vat_id),
+      iban: normalizeOptionalString(form.iban),
+      bic: normalizeOptionalString(form.bic),
+      bankname: normalizeOptionalString(form.bankname),
+      register_number: normalizeOptionalString(form.register_number),
+      register_court: normalizeOptionalString(form.register_court),
+    } satisfies SaveAssociationProfileBody))
+
     const res = await $fetch('/api/settings/association.save', {
       method: 'POST',
-      body: {
-        ...form,
-        short_name: normalizeOptionalString(form.short_name),
-        phone: normalizeOptionalString(form.phone),
-        website: normalizeOptionalString(form.website),
-        vat_id: normalizeOptionalString(form.vat_id),
-        iban: normalizeOptionalString(form.iban),
-        bic: normalizeOptionalString(form.bic),
-        bankname: normalizeOptionalString(form.bankname),
-        register_number: normalizeOptionalString(form.register_number),
-        register_court: normalizeOptionalString(form.register_court),
-      } satisfies SaveAssociationProfileBody,
+      body,
     })
 
     if (!res.ok) {
