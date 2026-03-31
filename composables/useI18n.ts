@@ -805,6 +805,7 @@ const messages = {
     files: {
       clickUpload: 'Zum Hochladen klicken',
       dragDrop: 'oder Datei hier ablegen',
+      download: 'Herunterladen',
       remove: 'Entfernen',
       uploadError: 'Bitte eine PDF- oder Bilddatei hochladen.',
     },
@@ -1607,6 +1608,7 @@ const messages = {
     files: {
       clickUpload: 'Click to upload',
       dragDrop: 'or drag and drop',
+      download: 'Download',
       remove: 'Remove',
       uploadError: 'Please upload a PDF or image file.',
     },

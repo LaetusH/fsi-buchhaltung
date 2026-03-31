@@ -16,13 +16,13 @@
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
         </svg>
         <p class="mb-2 text-sm text-slate-500"><span class="font-semibold">{{ t('files.clickUpload') }}</span> {{ t('files.dragDrop') }}</p>
-        <p class="text-xs text-slate-500">PDF, PNG, JPG or JPEG</p>
+        <p class="text-xs text-slate-500">{{ allowedTypeLabel }}</p>
       </div>
       <input
         ref="fileInput"
         type="file"
         class="hidden"
-        accept="application/pdf,image/*"
+        :accept="acceptAttribute"
         @change="handleFileSelect"
       />
     </div>
@@ -64,10 +64,21 @@
           </template>
         </div>
 
-        <div>
+        <div class="flex items-center gap-2">
+          <button
+            @click="downloadFile"
+            class="flex h-9 items-center gap-1.5 rounded-lg bg-slate-700/50 px-3 text-xs font-medium text-white transition hover:bg-slate-600 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+            :disabled="!previewUrl"
+            :aria-label="t('files.download')"
+            :title="t('files.download')"
+          >
+            <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 16V4m0 12l-4-4m4 4l4-4M4 20h16"/></svg>
+            <span>{{ t('files.download') }}</span>
+          </button>
+
           <button
             @click="removeFile"
-            class="flex h-9 items-center gap-1.5 rounded-lg bg-red-500/80 px-3 text-xs font-medium text-white transition backdrop-blur-sm hover:bg-red-600 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+            class="flex h-9 items-center gap-1.5 rounded-lg bg-red-600/80 px-3 text-xs font-medium text-white transition hover:bg-red-600 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
             :disabled="!canEdit"
             :aria-label="t('files.remove')"
             :title="t('files.remove')"
@@ -113,9 +124,26 @@ import type { PDFDocumentProxy } from 'pdfjs-dist'
 
 const VuePdfEmbed = defineAsyncComponent(() => import('vue-pdf-embed'))
 
-const props = defineProps<{
+type SupportedFileType = 'pdf' | 'png' | 'jpg' | 'jpeg'
+
+const FILE_TYPE_MIME_MAP: Record<SupportedFileType, string[]> = {
+  pdf: ['application/pdf'],
+  png: ['image/png'],
+  jpg: ['image/jpg', 'image/jpeg'],
+  jpeg: ['image/jpeg'],
+}
+
+const FILE_TYPE_LABEL_MAP: Record<SupportedFileType, string> = {
+  pdf: 'PDF',
+  png: 'PNG',
+  jpg: 'JPG',
+  jpeg: 'JPEG',
+}
+
+const props = withDefaults(defineProps<{
   modelValue: File | null
   canEdit?: boolean
+  allowedFileTypes?: SupportedFileType[]
   existingFile?: {
     id: number
     url: string
@@ -123,7 +151,9 @@ const props = defineProps<{
     mime_type: string
     size: number
   } | null
-}>()
+}>(), {
+  allowedFileTypes: () => ['pdf', 'png', 'jpg', 'jpeg'],
+})
 
 const emit = defineEmits<{
   (e: 'update:modelValue', value: File | null): void
@@ -154,6 +184,10 @@ const ZOOM_STEP = 0.25
 const computedWidth = computed<number>(() => {
   return containerWidth.value * zoomLevel.value
 })
+
+const allowedMimeTypes = computed(() => [...new Set(props.allowedFileTypes.flatMap((type) => FILE_TYPE_MIME_MAP[type]))])
+const acceptAttribute = computed(() => allowedMimeTypes.value.join(','))
+const allowedTypeLabel = computed(() => props.allowedFileTypes.map((type) => FILE_TYPE_LABEL_MAP[type]).join(', '))
 
 const activeFileType = computed(() => {
   if (props.modelValue) return props.modelValue.type
@@ -342,7 +376,7 @@ function onImageLoaded() {
 }
 
 function processFile(file: File) {
-  if (file.type === 'application/pdf' || file.type === 'image/png' || file.type === 'image/jpg' || file.type === 'image/jpeg') {
+  if (allowedMimeTypes.value.includes(file.type)) {
     emit('update:modelValue', file)
   } else {
     toast.error(t('files.uploadError'))
@@ -374,6 +408,19 @@ function handleFileSelect(e: Event) {
 function removeFile() {
   if (props.modelValue) emit('update:modelValue', null)
   if (props.existingFile) emit('remove-existing')
+}
+
+function downloadFile() {
+  if (!previewUrl.value) return
+
+  const anchor = document.createElement('a')
+  anchor.href = previewUrl.value
+  anchor.download = displayName.value || 'download'
+  anchor.target = '_blank'
+  anchor.rel = 'noopener'
+  document.body.append(anchor)
+  anchor.click()
+  anchor.remove()
 }
 
 function zoomIn() {
