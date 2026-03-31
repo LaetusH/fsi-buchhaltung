@@ -20,14 +20,14 @@
 
         <div>
           <label class="text-sm font-medium text-slate-600">{{ t('reimbursement.submittedAt') }}</label>
-          <input v-model="submittedAtDate" type="date" class="input" :class="disabled ? 'opacity-70' : ''" :disabled="disabled">
+          <input v-model="submittedAtDate" type="date" class="input" :disabled="disabled">
         </div>
       </div>
 
       <div class="flex items-center justify-between">
         <h3 class="font-medium">{{ t('reimbursement.bankDetails') }}</h3>
-        <label class="inline-flex items-center gap-2 text-sm text-slate-700">
-          <input v-model="form.cash" type="checkbox" :disabled="disabled">
+        <label class="inline-flex items-center gap-2 text-sm text-slate-700 cursor-pointer">
+          <input v-model="form.cash" type="checkbox" class="checkbox" :disabled="disabled">
           {{ t('reimbursement.cash') }}
         </label>
       </div>
@@ -35,22 +35,22 @@
       <div class="grid grid-cols-2 gap-4 transition-opacity" :class="form.cash ? 'opacity-50' : 'opacity-100'">
         <div>
           <label class="text-sm font-medium text-slate-600">{{ t('reimbursement.bankname') }}</label>
-          <input v-model="form.bankname" class="input" :class="disabled ? 'opacity-70' : ''" :disabled="disabled || form.cash">
+          <input v-model="form.bankname" class="input" :disabled="disabled || form.cash">
         </div>
 
         <div>
           <label class="text-sm font-medium text-slate-600">{{ t('reimbursement.accountHolder') }}</label>
-          <input v-model="form.account_holder" class="input" :class="disabled ? 'opacity-70' : ''" :disabled="disabled || form.cash">
+          <input v-model="form.account_holder" class="input" :disabled="disabled || form.cash">
         </div>
 
         <div>
           <label class="text-sm font-medium text-slate-600">{{ t('reimbursement.iban') }}</label>
-          <input v-model="form.iban" class="input" :class="disabled ? 'opacity-70' : ''" :disabled="disabled || form.cash">
+          <input v-model="form.iban" class="input" :disabled="disabled || form.cash">
         </div>
 
         <div>
           <label class="text-sm font-medium text-slate-600">{{ t('reimbursement.bic') }}</label>
-          <input v-model="form.bic" class="input" :class="disabled ? 'opacity-70' : ''" :disabled="disabled || form.cash">
+          <input v-model="form.bic" class="input" :disabled="disabled || form.cash">
         </div>
       </div>
     </section>
@@ -112,7 +112,6 @@
             <input
               type="text"
               class="input text-right w-42"
-              :class="disabled ? 'opacity-70' : ''"
               :value="displayAdvance"
               inputmode="decimal"
               :disabled="disabled"
@@ -157,7 +156,7 @@
 
         <div>
           <label class="text-sm font-medium text-slate-600">{{ t('reimbursement.checkedAt') }}</label>
-          <input v-model="checkedAtDate" type="date" class="input" :class="disabled ? 'opacity-70' : ''" :disabled="disabled">
+          <input v-model="checkedAtDate" type="date" class="input" :disabled="disabled">
         </div>
 
         <div>
@@ -176,7 +175,7 @@
 
         <div>
           <label class="text-sm font-medium text-slate-600">{{ t('reimbursement.disbursedAt') }}</label>
-          <input v-model="disbursedAtDate" type="date" class="input" :class="disabled ? 'opacity-70' : ''" :disabled="disabled">
+          <input v-model="disbursedAtDate" type="date" class="input" :disabled="disabled">
         </div>
       </div>
     </section>

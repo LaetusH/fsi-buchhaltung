@@ -77,27 +77,27 @@
     <section class="bg-white rounded-xl shadow-lg p-4 grid grid-cols-1 md:grid-cols-2 gap-4">
       <div class="field">
         <label>{{ t('invoice.invoiceNumber') }}</label>
-        <input v-model="form.invoice_number" class="input" :class="disabled ? 'opacity-70' : ''" :disabled="disabled">
+        <input v-model="form.invoice_number" class="input" :disabled="disabled">
       </div>
       <div class="field">
         <label>{{ t('invoice.subject') }}</label>
-        <input v-model="form.subject" class="input" :class="disabled ? 'opacity-70' : ''" :placeholder="subjectPlaceholder" :disabled="disabled">
+        <input v-model="form.subject" class="input" :placeholder="subjectPlaceholder" :disabled="disabled">
       </div>
       <div class="field">
         <label>{{ t('invoice.invoiceDate') }}</label>
-        <input v-model="form.invoice_date" type="date" class="input" :class="disabled ? 'opacity-70' : ''" :disabled="disabled">
+        <input v-model="form.invoice_date" type="date" class="input" :disabled="disabled">
       </div>
       <div class="field">
         <label>{{ t('invoice.serviceDate') }}</label>
-        <input v-model="form.service_date" type="date" class="input" :class="disabled ? 'opacity-70' : ''" :disabled="disabled">
+        <input v-model="form.service_date" type="date" class="input" :disabled="disabled">
       </div>
       <div class="field">
         <label>{{ t('invoice.dueDate') }}</label>
-        <input v-model="form.due_date" type="date" class="input" :class="disabled ? 'opacity-70' : ''" :disabled="disabled">
+        <input v-model="form.due_date" type="date" class="input" :disabled="disabled">
       </div>
       <div class="field">
         <label>{{ t('invoice.contactPerson') }}</label>
-        <input v-model="form.contact_person" class="input" :class="disabled ? 'opacity-70' : ''" :disabled="disabled">
+        <input v-model="form.contact_person" class="input" :disabled="disabled">
       </div>
     </section>
 
@@ -108,7 +108,6 @@
           v-model="form.intro_text"
           rows="3"
           class="input resize-y"
-          :class="disabled ? 'opacity-70' : ''"
           :placeholder="introTextPlaceholder"
           :disabled="disabled"
         />
@@ -120,7 +119,6 @@
           v-model="form.notes"
           rows="4"
           class="input resize-y"
-          :class="disabled ? 'opacity-70' : ''"
           :placeholder="notesPlaceholder"
           :disabled="disabled"
         />
@@ -143,7 +141,7 @@
         <div class="grid grid-cols-1 md:grid-cols-[1.1fr_2fr] gap-3">
           <div class="field">
             <label>{{ t('invoice.positionName') }}</label>
-            <input v-model="position.name" class="input" :class="disabled ? 'opacity-70' : ''" :disabled="disabled">
+            <input v-model="position.name" class="input" :disabled="disabled">
           </div>
           <div class="field">
             <label>{{ t('invoice.positionDescription') }}</label>
@@ -152,7 +150,6 @@
               :ref="element => setDescriptionRef(element, index)"
               rows="1"
               class="input min-h-9 overflow-hidden resize-none"
-              :class="disabled ? 'opacity-70' : ''"
               maxlength="255"
               :disabled="disabled"
               @input="autoResizeDescription($event)"
@@ -211,7 +208,6 @@
             <input
               type="text"
               class="input text-right"
-              :class="disabled ? 'opacity-70' : ''"
               :value="displayDecimal(index, 'quantity')"
               inputmode="decimal"
               :disabled="disabled"
@@ -222,14 +218,13 @@
           </div>
           <div class="field">
             <label>{{ t('invoice.unit') }}</label>
-            <input v-model="position.unit" class="input" :class="disabled ? 'opacity-70' : ''" :disabled="disabled">
+            <input v-model="position.unit" class="input" :disabled="disabled">
           </div>
           <div class="field">
             <label>{{ t('invoice.unitPrice') }}</label>
             <input
               type="text"
               class="input text-right"
-              :class="disabled ? 'opacity-70' : ''"
               :value="displayDecimal(index, 'unit_price', true)"
               inputmode="decimal"
               :disabled="disabled"
@@ -243,7 +238,6 @@
             <input
               type="text"
               class="input text-right"
-              :class="disabled ? 'opacity-70' : ''"
               :value="displayTax(index)"
               inputmode="decimal"
               :disabled="disabled"
@@ -268,8 +262,7 @@
           <input
             v-model="form.is_kleinunternehmer"
             type="checkbox"
-            class="h-4 w-4 rounded border-slate-300 text-orange-500 focus:ring-orange-500 cursor-pointer"
-            :class="disabled ? 'opacity-70' : ''"
+            class="checkbox"
             :disabled="disabled"
           >
           <span>{{ t('invoice.kleinunternehmerregelung') }}</span>

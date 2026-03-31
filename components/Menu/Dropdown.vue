@@ -42,7 +42,6 @@ const open = computed({
 const disabled = computed(() => Boolean(props.disabled))
 const triggerStyling = computed(() => [
   'input w-full flex justify-between text-left',
-  disabled.value ? 'opacity-70' : '',
 ].filter(Boolean).join(' '))
 
 function toggleDropdown() {

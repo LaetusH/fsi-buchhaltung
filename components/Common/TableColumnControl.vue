@@ -53,7 +53,7 @@
             >
               <input
                 type="checkbox"
-                class="cursor-pointer"
+                class="checkbox"
                 :checked="selectedValues.has(option)"
                 @change="toggleTextOption(option)"
               >

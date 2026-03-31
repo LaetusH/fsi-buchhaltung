@@ -6,7 +6,6 @@
         :placeholder="placeholder"
         :disabled="disabled"
         class="input w-full"
-        :class="disabled ? 'opacity-70' : ''"
         @focus="open = true"
         @input="onInput"
         @keydown="onKeydown"

@@ -6,17 +6,17 @@
       <div class="grid md:grid-cols-2 gap-4">
         <div>
           <label class="text-sm font-medium text-slate-600">{{ t('member.firstName') }}</label>
-          <input v-model="form.first_name" class="input" :class="disabled ? 'opacity-70' : ''" :disabled="disabled">
+          <input v-model="form.first_name" class="input" :disabled="disabled">
         </div>
 
         <div>
           <label class="text-sm font-medium text-slate-600">{{ t('member.lastName') }}</label>
-          <input v-model="form.last_name" class="input" :class="disabled ? 'opacity-70' : ''" :disabled="disabled">
+          <input v-model="form.last_name" class="input" :disabled="disabled">
         </div>
 
         <div>
           <label class="text-sm font-medium text-slate-600">{{ t('member.birthdate') }}</label>
-          <input v-model="form.birthdate" type="date" class="input" :class="disabled ? 'opacity-70' : ''" :disabled="disabled">
+          <input v-model="form.birthdate" type="date" class="input" :disabled="disabled">
         </div>
 
         <div>
@@ -40,7 +40,7 @@
       </div>
 
       <label class="inline-flex items-center gap-2 text-sm text-slate-700 cursor-pointer">
-        <input v-model="form.honorary" type="checkbox" class="h-4 w-4" :class="disabled ? 'opacity-70' : ''" :disabled="disabled">
+        <input v-model="form.honorary" type="checkbox" class="checkbox" :disabled="disabled">
         {{ t('member.honorary') }}
       </label>
     </section>
@@ -51,32 +51,32 @@
       <div class="grid md:grid-cols-4 gap-4">
         <div class="md:col-span-3">
           <label class="text-sm font-medium text-slate-600">{{ t('member.street') }}</label>
-          <input v-model="form.street" class="input" :class="disabled ? 'opacity-70' : ''" :disabled="disabled">
+          <input v-model="form.street" class="input" :disabled="disabled">
         </div>
 
         <div>
           <label class="text-sm font-medium text-slate-600">{{ t('member.streetNumber') }}</label>
-          <input v-model="form.street_number" class="input" :class="disabled ? 'opacity-70' : ''" :disabled="disabled">
+          <input v-model="form.street_number" class="input" :disabled="disabled">
         </div>
 
         <div>
           <label class="text-sm font-medium text-slate-600">{{ t('member.postalCode') }}</label>
-          <input v-model="form.postal_code" class="input" :class="disabled ? 'opacity-70' : ''" :disabled="disabled">
+          <input v-model="form.postal_code" class="input" :disabled="disabled">
         </div>
 
         <div class="md:col-span-3">
           <label class="text-sm font-medium text-slate-600">{{ t('member.city') }}</label>
-          <input v-model="form.city" class="input" :class="disabled ? 'opacity-70' : ''" :disabled="disabled">
+          <input v-model="form.city" class="input" :disabled="disabled">
         </div>
 
         <div class="md:col-span-2">
           <label class="text-sm font-medium text-slate-600">{{ t('member.phone') }}</label>
-          <input v-model="form.phone" class="input" :class="disabled ? 'opacity-70' : ''" :disabled="disabled">
+          <input v-model="form.phone" class="input" :disabled="disabled">
         </div>
 
         <div class="md:col-span-2">
           <label class="text-sm font-medium text-slate-600">{{ t('member.email') }}</label>
-          <input v-model="form.email" type="email" class="input" :class="disabled ? 'opacity-70' : ''" :disabled="disabled">
+          <input v-model="form.email" type="email" class="input" :disabled="disabled">
         </div>
       </div>
     </section>
@@ -104,23 +104,23 @@
 
         <div>
           <label class="text-sm font-medium text-slate-600">{{ t('member.appliedAt') }}</label>
-          <input v-model="form.applied_at" type="date" class="input" :class="disabled ? 'opacity-70' : ''" :disabled="disabled">
+          <input v-model="form.applied_at" type="date" class="input" :disabled="disabled">
         </div>
 
         <div>
           <label class="text-sm font-medium text-slate-600">{{ t('member.joinedAt') }}</label>
-          <input v-model="form.joined_at" type="date" class="input" :class="disabled ? 'opacity-70' : ''" :disabled="disabled">
+          <input v-model="form.joined_at" type="date" class="input" :disabled="disabled">
         </div>
 
         <div>
           <label class="text-sm font-medium text-slate-600">{{ t('member.leftAt') }}</label>
-          <input v-model="form.left_at" type="date" class="input" :class="disabled ? 'opacity-70' : ''" :disabled="disabled">
+          <input v-model="form.left_at" type="date" class="input" :disabled="disabled">
         </div>
       </div>
 
       <div>
         <label class="text-sm font-medium text-slate-600">{{ t('member.notes') }}</label>
-        <textarea v-model="form.notes" rows="3" class="input resize-none" :class="disabled ? 'opacity-70' : ''" :disabled="disabled" />
+        <textarea v-model="form.notes" rows="3" class="input resize-none" :disabled="disabled" />
       </div>
     </section>
 
@@ -163,8 +163,8 @@
           @clear-selection="clearPosition(i)"
         />
 
-        <input v-model="assignment.since" type="date" class="input" :class="disabled ? 'opacity-70' : ''" :disabled="disabled">
-        <input v-model="assignment.until" type="date" class="input" :class="disabled ? 'opacity-70' : ''" :disabled="disabled">
+        <input v-model="assignment.since" type="date" class="input" :disabled="disabled">
+        <input v-model="assignment.until" type="date" class="input" :disabled="disabled">
 
         <button
           v-if="!disabled"
@@ -190,7 +190,7 @@
       <h3 class="font-semibold">{{ t('member.accountTitle') }}</h3>
 
       <label class="inline-flex items-center gap-2 text-sm text-slate-700 cursor-pointer">
-        <input v-model="accountCreationEnabled" type="checkbox" class="h-4 w-4" :disabled="disabled">
+        <input v-model="accountCreationEnabled" type="checkbox" class="checkbox" :disabled="disabled">
         {{ t('member.createAccount') }}
       </label>
 
@@ -200,7 +200,6 @@
           <input
             v-model="form.new_account!.username"
             class="input"
-            :class="disabled ? 'opacity-70' : ''"
             :disabled="disabled"
             name="new-account-username"
             autocomplete="off"
@@ -217,7 +216,6 @@
             v-model="form.new_account!.password"
             type="password"
             class="input"
-            :class="disabled ? 'opacity-70' : ''"
             :disabled="disabled"
             name="new-account-password"
             autocomplete="new-password"
@@ -229,7 +227,7 @@
       </div>
 
       <label v-if="accountCreationEnabled" class="inline-flex items-center gap-2 text-sm text-slate-700 cursor-pointer">
-        <input v-model="form.new_account!.is_active" type="checkbox" class="h-4 w-4" :disabled="disabled">
+        <input v-model="form.new_account!.is_active" type="checkbox" class="checkbox" :disabled="disabled">
         {{ t('member.accountActive') }}
       </label>
     </section>

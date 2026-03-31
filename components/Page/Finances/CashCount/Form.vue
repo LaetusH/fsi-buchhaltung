@@ -66,7 +66,6 @@
             v-model="countedBeforeAtInput"
             type="datetime-local"
             class="input"
-            :class="disabled ? 'opacity-70' : ''"
             :disabled="disabled"
           >
         </div>
@@ -77,7 +76,6 @@
             v-model="countedAfterAtInput"
             type="datetime-local"
             class="input"
-            :class="disabled ? 'opacity-70' : ''"
             :disabled="disabled"
           >
         </div>
@@ -122,7 +120,6 @@
             <input
               type="text"
               class="input text-right"
-              :class="disabled ? 'opacity-70' : ''"
               :value="displayAmount(index, 'amount_before')"
               inputmode="decimal"
               :disabled="disabled"
@@ -137,7 +134,6 @@
             <input
               type="text"
               class="input text-right"
-              :class="disabled ? 'opacity-70' : ''"
               :value="displayAmount(index, 'amount_after')"
               inputmode="decimal"
               :disabled="disabled"
@@ -159,7 +155,6 @@
             <input
               v-model="position.notes"
               class="input"
-              :class="disabled ? 'opacity-70' : ''"
               :disabled="disabled"
             >
           </div>

@@ -35,12 +35,12 @@
     <section class="bg-white rounded-xl shadow-lg p-4 grid grid-cols-2 gap-4">
       <div>
         <label class="text-sm font-medium text-slate-600">{{ t('receipt.receiptNumber') }}</label>
-        <input v-model="form.receipt_number" class="input" :class="disabled ? 'opacity-70' : ''" :disabled="disabled">
+        <input v-model="form.receipt_number" class="input" :disabled="disabled">
       </div>
 
       <div>
         <label class="text-sm font-medium text-slate-600">{{ t('receipt.receiptDate') }}</label>
-        <input v-model="form.receipt_date" type="date" class="input" :class="disabled ? 'opacity-70' : ''" :disabled="disabled">
+        <input v-model="form.receipt_date" type="date" class="input" :disabled="disabled">
       </div>
     </section>
 
@@ -107,7 +107,6 @@
         <input
           type="text"
           class="input text-right"
-          :class="disabled ? 'opacity-70' : ''"
           :value="displayAmount(i)"
           inputmode="decimal"
           :disabled="disabled"

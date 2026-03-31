@@ -13,8 +13,20 @@ html {
         @apply w-full border rounded-md border-slate-300 border-solid p-2 text-sm bg-white;
     }
 
+    .input:disabled {
+        @apply opacity-70;
+    }
+
     .input:focus {
         @apply outline-0 border-slate-700 shadow-sm;
+    }
+
+    .checkbox {
+        @apply cursor-pointer;
+    }
+
+    .checkbox:disabled {
+        @apply opacity-70 cursor-default;
     }
     
     .btn-primary {

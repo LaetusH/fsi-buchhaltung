@@ -137,11 +137,11 @@
           </div>
           <div class="flex gap-4">
             <label class="inline-flex items-center gap-2 text-sm text-slate-700 cursor-pointer">
-              <input v-model="roleForm.is_active" type="checkbox" class="h-4 w-4 cursor-pointer" />
+              <input v-model="roleForm.is_active" type="checkbox" class="checkbox" />
               {{ t('settings.permissions.roleActive') }}
             </label>
             <label class="inline-flex items-center gap-2 text-sm text-slate-700 cursor-pointer">
-              <input v-model="roleForm.is_default" type="checkbox" class="h-4 w-4 cursor-pointer" />
+              <input v-model="roleForm.is_default" type="checkbox" class="checkbox" />
               {{ t('settings.permissions.defaultRole') }}
             </label>
           </div>
@@ -171,7 +171,7 @@
               <label v-for="perm in group.permissions" :key="perm.key" class="inline-flex items-center gap-2 text-sm cursor-pointer">
                 <input
                   type="checkbox"
-                  class="h-4 w-4 cursor-pointer"
+                  class="checkbox"
                   :value="perm.key"
                   v-model="permissionModal.selected"
                 />
@@ -199,7 +199,7 @@
             <h4 class="font-semibold mb-2">{{ t('settings.permissions.roles') }}</h4>
             <div class="grid md:grid-cols-2 gap-2">
               <label v-for="role in roles" :key="role.id" class="inline-flex items-center gap-2 text-sm cursor-pointer">
-                <input type="checkbox" class="h-4 w-4 cursor-pointer" :value="role.id" v-model="userModal.roles" />
+                <input type="checkbox" class="checkbox" :value="role.id" v-model="userModal.roles" />
                 <span>{{ role.name }} ({{ role.code }})</span>
               </label>
             </div>
@@ -215,7 +215,7 @@
               <label v-for="perm in group.permissions" :key="perm.key" class="inline-flex items-center gap-2 text-sm cursor-pointer">
                 <input
                   type="checkbox"
-                  class="h-4 w-4 cursor-pointer"
+                  class="checkbox"
                   :value="perm.key"
                   v-model="userModal.permissions"
                 />
