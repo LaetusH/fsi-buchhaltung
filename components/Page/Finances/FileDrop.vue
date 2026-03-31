@@ -183,10 +183,6 @@ const getFormColumn = (): HTMLElement | null => {
 const getFormContentHeight = (): number => {
   const formColumn = getFormColumn()
   if (!formColumn) return 0
-
-  const formContent = formColumn.firstElementChild
-  if (formContent instanceof HTMLElement) return formContent.getBoundingClientRect().height
-
   return formColumn.getBoundingClientRect().height
 }
 
