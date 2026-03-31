@@ -3,7 +3,7 @@
     id="page-root"
     :class="[
       'xl:p-6',
-      flushHeaderWithCards ? 'space-y-0' : 'space-y-4 xl:space-y-6',
+      flushHeaderWithCards ? 'space-y-0' : 'space-y-5',
     ]"
   >
     <div ref="headerContainerRef" class="flex flex-wrap items-start gap-x-7 gap-y-4">
