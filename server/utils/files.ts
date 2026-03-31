@@ -107,7 +107,9 @@ export async function getActiveFileAttachment(
   const rows = await query<FileAttachment[]>(
     `SELECT id, file_id
      FROM file_attachments
-     WHERE entity_type = ? AND entity_id = ? AND detached_at IS NULL`,
+     WHERE entity_type = ? AND entity_id = ? AND detached_at IS NULL
+     ORDER BY id DESC
+     LIMIT 1`,
     [entityType, entityId],
     conn,
   )
@@ -142,6 +144,7 @@ export async function getAttachedFile(
     WHERE fa.entity_type = ?
       AND fa.entity_id = ?
       AND fa.detached_at IS NULL
+    ORDER BY fa.id DESC
     LIMIT 1
     `,
     [entityType, entityId],

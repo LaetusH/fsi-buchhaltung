@@ -25,10 +25,11 @@ import { useI18n } from '~/composables/useI18n'
 import { usePage } from '~/composables/usePage'
 import { buildReturnTarget } from '~/composables/useReturnTarget'
 import ReceiptListPanel from './Receipt/ListPanel.vue'
+import InvoiceListPanel from './Invoice/ListPanel.vue'
 import ReimbursementListPanel from './Reimbursement/ListPanel.vue'
 import CashCountListPanel from './CashCount/ListPanel.vue'
 
-type FinancesTab = 'receipts' | 'reimbursements' | 'cashCounts'
+type FinancesTab = 'receipts' | 'invoices' | 'reimbursements' | 'cashCounts'
 
 defineEmits<{
   (e: 'openMenu'): void
@@ -43,6 +44,7 @@ const currentTab = ref<FinancesTab>('receipts')
 const tabs = computed(() => {
   const list = [
     { key: 'receipts', label: t('pages.receipts'), show: hasPermission('receipts.view') },
+    { key: 'invoices', label: t('pages.invoices'), show: hasPermission('invoices.view') },
     { key: 'reimbursements', label: t('pages.reimbursements'), show: hasPermission('reimbursements.view') },
     { key: 'cashCounts', label: t('pages.cashCounts'), show: hasPermission('cash_counts.view') },
   ] as const
@@ -54,6 +56,8 @@ const activeComponent = computed(() => {
   switch (currentTab.value) {
     case 'receipts':
       return ReceiptListPanel
+    case 'invoices':
+      return InvoiceListPanel
     case 'reimbursements':
       return ReimbursementListPanel
     case 'cashCounts':

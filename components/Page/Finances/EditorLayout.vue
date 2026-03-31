@@ -2,7 +2,7 @@
   <Page :headline1="headline1" @open-menu="$emit('openMenu')">
     <template #cards>
       <div class="col-span-6 self-start">
-        <ClientOnly v-if="canViewFiles">
+        <ClientOnly v-if="canViewFiles && sidebarMode === 'file'">
           <FileDrop
             :model-value="modelValue"
             :existing-file="existingFile"
@@ -11,11 +11,15 @@
             @remove-existing="$emit('removeExisting')"
           />
         </ClientOnly>
+
+        <div v-else-if="sidebarMode === 'custom'" class="rounded-xl bg-white p-4 shadow-lg">
+          <slot name="sidebar" />
+        </div>
       </div>
 
       <div
         data-finance-form-column
-        :class="[canViewFiles ? 'col-span-6 self-start' : 'col-span-12 lg:col-span-8 lg:col-start-3 self-start']"
+        :class="[(canViewFiles || sidebarMode === 'custom') ? 'col-span-6 self-start' : 'col-span-12 lg:col-span-8 lg:col-start-3 self-start']"
       >
         <slot />
       </div>
@@ -27,13 +31,16 @@
 import Page from '~/components/Page.vue'
 import FileDrop from './FileDrop.vue'
 
-defineProps<{
+withDefaults(defineProps<{
   headline1: string
   canViewFiles: boolean
   modelValue: File | null
   existingFile: { id: number, url: string, name: string, mime_type: string, size: number } | null
   canEdit: boolean
-}>()
+  sidebarMode?: 'file' | 'custom' | 'hidden'
+}>(), {
+  sidebarMode: 'file',
+})
 
 defineEmits<{
   (e: 'openMenu'): void

@@ -4,6 +4,8 @@ import HomePage from '~/components/Page/Home.vue'
 import FinancesPage from '~/components/Page/Finances/Overview.vue'
 import ReceiptListPage from '~/components/Page/Finances/Receipt/List.vue'
 import ReceiptCreatePage from '~/components/Page/Finances/Receipt/Create.vue'
+import InvoiceListPage from '~/components/Page/Finances/Invoice/List.vue'
+import InvoiceCreatePage from '~/components/Page/Finances/Invoice/Create.vue'
 import ReimbursementListPage from '~/components/Page/Finances/Reimbursement/List.vue'
 import ReimbursementCreatePage from '~/components/Page/Finances/Reimbursement/Create.vue'
 import CashCountListPage from '~/components/Page/Finances/CashCount/List.vue'
@@ -19,9 +21,11 @@ import SettingsPage from '~/components/Page/Settings/Overview.vue'
 export const PAGES: Record<string, AppPage> = {
   Login: { main: true, labelKey: 'pages.login', component: LoginPage, icon: '', permissions: [], allowGuest: true },
   Home: { main: true, labelKey: 'pages.home', component: HomePage, icon: '', permissions: ['pages.home.view'] },
-  Finances: { main: true, labelKey: 'pages.finances', component: FinancesPage, icon: '', permissions: ['receipts.view', 'reimbursements.view', 'cash_counts.view'] },
+  Finances: { main: true, labelKey: 'pages.finances', component: FinancesPage, icon: '', permissions: ['receipts.view', 'invoices.view', 'reimbursements.view', 'cash_counts.view'] },
   ReceiptList: { main: false, labelKey: 'pages.receipts', component: ReceiptListPage, permissions: ['receipts.view'] },
   ReceiptCreate: { main: false, labelKey: 'pages.createReceipt', component: ReceiptCreatePage, permissions: ['receipts.view'] },
+  InvoiceList: { main: false, labelKey: 'pages.invoices', component: InvoiceListPage, permissions: ['invoices.view'] },
+  InvoiceCreate: { main: false, labelKey: 'pages.createInvoice', component: InvoiceCreatePage, permissions: ['invoices.view'] },
   ReimbursementList: { main: false, labelKey: 'pages.reimbursements', component: ReimbursementListPage, permissions: ['reimbursements.view'] },
   ReimbursementCreate: { main: false, labelKey: 'pages.createReimbursement', component: ReimbursementCreatePage, permissions: ['reimbursements.view'] },
   CashCountList: { main: false, labelKey: 'pages.cashCounts', component: CashCountListPage, permissions: ['cash_counts.view'] },

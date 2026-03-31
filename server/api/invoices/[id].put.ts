@@ -1,0 +1,516 @@
+import { defineEventHandler } from 'h3'
+import { query, withTransaction } from '~/server/utils/db'
+import { logChange } from '~/server/utils/changeLogger'
+import { getNumericRouteParam, readMultipart } from '~/server/utils/api/request'
+import { requirePermission } from '~/server/utils/api/guards'
+import { buildInvoicePdf } from '~/server/utils/invoicePdf'
+import { detachFileAttachment, getActiveFileAttachment, storeAndAttachUploadedFile, validateUploadedFile } from '~/server/utils/files'
+import { getAssociationBoardLineForInvoice, getAssociationLogoForInvoice, getAssociationProfileForInvoice, getInvoiceCompany, invoiceNeedsUploadedFile, invoiceNumberExists, normalizeInvoicePayload, validateInvoicePayload } from '~/server/utils/invoices'
+import { InvoiceSourceType, InvoiceStatus, type InvoicePosition } from '~/types/invoice'
+
+interface UpdateInvoiceSuccess {
+  ok: true
+}
+
+interface UpdateInvoiceError {
+  ok: false
+  error: string
+}
+
+type UpdateInvoiceResponse = UpdateInvoiceSuccess | UpdateInvoiceError
+
+interface MysqlError extends Error {
+  code?: string
+}
+
+async function ensureLogChange(logPromise: Promise<{ ok: boolean, error?: string }>) {
+  const result = await logPromise
+  if (!result.ok) throw new Error(result.error || 'Failed to write invoice change log')
+}
+
+async function ensureLogFieldChanges(options: {
+  entityType: string
+  entityId: number
+  fields: readonly string[]
+  previous: Record<string, any>
+  next: Record<string, any>
+  userId: number
+  conn?: any
+  subEntityType?: string | null
+  subEntityId?: number | null
+  equals?: Record<string, ((left: any, right: any) => boolean) | undefined>
+  transformOldValue?: Record<string, ((value: any) => any) | undefined>
+  transformNewValue?: Record<string, ((value: any) => any) | undefined>
+}) {
+  for (const field of options.fields) {
+    const oldValue = options.previous[field]
+    const newValue = options.next[field]
+    const comparator = options.equals?.[field] ?? ((left: any, right: any) => String(left) === String(right))
+
+    if (comparator(oldValue, newValue as any)) continue
+
+    await ensureLogChange(logChange({
+      entityType: options.entityType,
+      entityId: options.entityId,
+      subEntityType: options.subEntityType ?? null,
+      subEntityId: options.subEntityId ?? null,
+      field: String(field),
+      oldValue: options.transformOldValue?.[field]?.(oldValue) ?? oldValue,
+      newValue: options.transformNewValue?.[field]?.(newValue as any) ?? newValue,
+      userId: options.userId,
+    }, options.conn))
+  }
+}
+
+function normalizeInvoiceLogRow(invoice: any) {
+  return {
+    company_id: invoice.company_id ? Number(invoice.company_id) : null,
+    source_type: invoice.source_type as InvoiceSourceType,
+    is_kleinunternehmer: Boolean(invoice.is_kleinunternehmer),
+    invoice_date: String(invoice.invoice_date || ''),
+    due_date: String(invoice.due_date || ''),
+    contact_person: invoice.contact_person ? String(invoice.contact_person).trim() : null,
+    service_date: invoice.service_date ? String(invoice.service_date) : null,
+    invoice_number: String(invoice.invoice_number || '').trim(),
+    subject: invoice.subject ? String(invoice.subject).trim() : null,
+    intro_text: invoice.intro_text ? String(invoice.intro_text).trim() : null,
+    notes: invoice.notes ? String(invoice.notes).trim() : null,
+    status: invoice.status as InvoiceStatus,
+  }
+}
+
+function normalizeComparablePosition(position: any) {
+  return {
+    id: position.id ? Number(position.id) : undefined,
+    name: String(position.name || '').trim(),
+    description: String(position.description || '').trim(),
+    sphere: Number(position.sphere),
+    cost_centre: Number(position.cost_centre),
+    quantity: Number(position.quantity),
+    unit: position.unit ? String(position.unit).trim() : null,
+    unit_price: Number(position.unit_price),
+    tax: Number(position.tax),
+  }
+}
+
+function normalizeDisplayedInvoicePosition(position: any) {
+  return {
+    name: String(position.name || '').trim(),
+    description: String(position.description || '').trim(),
+    quantity: Number(position.quantity),
+    unit: position.unit ? String(position.unit).trim() : null,
+    unit_price: Number(position.unit_price),
+    tax: Number(position.tax),
+  }
+}
+
+function buildGeneratedInvoiceComparable(invoice: Record<string, any>, positions: any[]) {
+  return {
+    company_id: invoice.company_id ? Number(invoice.company_id) : null,
+    source_type: invoice.source_type,
+    is_kleinunternehmer: Boolean(invoice.is_kleinunternehmer),
+    invoice_date: String(invoice.invoice_date || ''),
+    due_date: String(invoice.due_date || ''),
+    contact_person: invoice.contact_person ? String(invoice.contact_person).trim() : null,
+    service_date: invoice.service_date ? String(invoice.service_date) : null,
+    invoice_number: String(invoice.invoice_number || '').trim(),
+    subject: invoice.subject ? String(invoice.subject).trim() : null,
+    intro_text: invoice.intro_text ? String(invoice.intro_text).trim() : null,
+    notes: invoice.notes ? String(invoice.notes).trim() : null,
+    status: invoice.status,
+    positions: positions.map(normalizeDisplayedInvoicePosition),
+  }
+}
+
+function sameNumericValue(left: any, right: any) {
+  return Number(left ?? 0) === Number(right ?? 0)
+}
+
+function formatNumericLogValue(value: any, digits = 2) {
+  return Number(value ?? 0).toFixed(digits)
+}
+
+export default defineEventHandler(async (event): Promise<UpdateInvoiceResponse> => {
+  const current = await requirePermission(event, 'invoices.edit')
+  if (!current.ok) return current
+
+  const invoiceId = getNumericRouteParam(event)
+  if (!invoiceId) return { ok: false, error: 'Invalid invoice id' }
+
+  const multipart = await readMultipart(event)
+  if (!multipart) return { ok: false, error: 'Missing form data' }
+
+  const invoiceJson = multipart.getField('invoice')
+  const removeExistingFile = multipart.getField('removeExistingFile') === 'true'
+  if (!invoiceJson) return { ok: false, error: 'Missing invoice data' }
+
+  const parsed = normalizeInvoicePayload(JSON.parse(invoiceJson))
+  const validationError = validateInvoicePayload(parsed)
+  if (validationError) return { ok: false, error: validationError }
+
+  const fileError = validateUploadedFile(multipart.file)
+  if (fileError && multipart.file) return { ok: false, error: fileError }
+
+  try {
+    return await withTransaction(async (conn) => {
+      const existingRows = await query<any[]>(
+        `SELECT
+          id,
+          company_id,
+          source_type,
+          is_kleinunternehmer,
+          invoice_date,
+          due_date,
+          contact_person,
+          service_date,
+          invoice_number,
+          subject,
+          intro_text,
+          notes,
+          status
+         FROM invoices
+         WHERE id = ?
+         LIMIT 1`,
+        [invoiceId],
+        conn,
+      )
+      if (!existingRows.length) return { ok: false, error: 'Invoice not found' }
+      const existing = normalizeInvoiceLogRow(existingRows[0])
+
+      const existingPositions = await query<InvoicePosition[]>(
+        `SELECT id, name, description, sphere, cost_centre, quantity, unit, unit_price, tax
+         FROM invoice_positions
+         WHERE invoice_id = ?
+         ORDER BY id ASC`,
+        [invoiceId],
+        conn,
+      )
+
+      if (existing.status !== InvoiceStatus.Draft) {
+        const existingComparable = {
+          company_id: existing.company_id,
+          source_type: existing.source_type,
+          is_kleinunternehmer: existing.is_kleinunternehmer,
+          invoice_date: existing.invoice_date,
+          due_date: existing.due_date,
+          contact_person: existing.contact_person,
+          service_date: existing.service_date,
+          invoice_number: existing.invoice_number,
+          subject: existing.subject,
+          intro_text: existing.intro_text,
+          notes: existing.notes,
+          positions: existingPositions.map(normalizeComparablePosition),
+        }
+        const nextComparable = {
+          company_id: Number(parsed.company_id),
+          source_type: parsed.source_type,
+          is_kleinunternehmer: Boolean(parsed.is_kleinunternehmer),
+          invoice_date: String(parsed.invoice_date),
+          due_date: String(parsed.due_date),
+          contact_person: parsed.contact_person,
+          service_date: parsed.service_date,
+          invoice_number: parsed.invoice_number,
+          subject: parsed.subject,
+          intro_text: parsed.intro_text,
+          notes: parsed.notes,
+          positions: parsed.positions.map(normalizeComparablePosition),
+        }
+
+        if (parsed.status === InvoiceStatus.Draft) {
+          return { ok: false, error: 'Finalized invoices cannot be changed back to draft' }
+        }
+
+        if (multipart.file || removeExistingFile || JSON.stringify(existingComparable) !== JSON.stringify(nextComparable)) {
+          return { ok: false, error: 'Only the status of finalized invoices can be changed' }
+        }
+
+        await ensureLogFieldChanges({
+          entityType: 'invoice',
+          entityId: invoiceId,
+          fields: ['status'],
+          previous: existing,
+          next: parsed,
+          userId: current.user.id,
+          conn,
+        })
+
+        if (existing.status !== parsed.status) {
+          await query(
+            `UPDATE invoices
+             SET status = ?
+             WHERE id = ?`,
+            [parsed.status, invoiceId],
+            conn,
+          )
+        }
+
+        return { ok: true }
+      }
+
+      if (await invoiceNumberExists(parsed.invoice_number, invoiceId, conn)) {
+        return { ok: false, error: 'Invoice number already exists' }
+      }
+
+      const existingSourceType = existing.source_type as InvoiceSourceType
+      const existingAttachment = await getActiveFileAttachment('invoice', invoiceId, conn)
+      const mustUploadFile = invoiceNeedsUploadedFile(parsed.source_type)
+      const hasExistingFile = Boolean(existingAttachment)
+      const canReuseExistingUpload = hasExistingFile && !removeExistingFile && existingSourceType === InvoiceSourceType.Upload
+      const hasFileAfterSave = Boolean(multipart.file) || canReuseExistingUpload || parsed.source_type === InvoiceSourceType.Generated
+      if (mustUploadFile && !hasFileAfterSave) return { ok: false, error: 'A file is required for uploaded invoices' }
+
+      const generatedComparableChanged = JSON.stringify(
+        buildGeneratedInvoiceComparable(existing, existingPositions),
+      ) !== JSON.stringify(
+        buildGeneratedInvoiceComparable(parsed, parsed.positions),
+      )
+      const shouldRegenerateGeneratedPdf = parsed.source_type === InvoiceSourceType.Generated && (
+        !existingAttachment
+        || (
+          generatedComparableChanged
+          && (existing.status === InvoiceStatus.Draft || parsed.status === InvoiceStatus.Draft)
+        )
+      )
+
+      const invoiceFields = [
+        'company_id',
+        'source_type',
+        'is_kleinunternehmer',
+        'invoice_date',
+        'due_date',
+        'contact_person',
+        'service_date',
+        'invoice_number',
+        'subject',
+        'intro_text',
+        'notes',
+        'status',
+      ] as const
+
+      await ensureLogFieldChanges({
+        entityType: 'invoice',
+        entityId: invoiceId,
+        fields: invoiceFields,
+        previous: existing,
+        next: parsed,
+        userId: current.user.id,
+        conn,
+        transformOldValue: {
+          is_kleinunternehmer: value => String(Boolean(value)),
+        },
+        transformNewValue: {
+          is_kleinunternehmer: value => String(Boolean(value)),
+        },
+      })
+
+      await query(
+        `UPDATE invoices
+         SET company_id = ?, source_type = ?, is_kleinunternehmer = ?, invoice_date = ?, due_date = ?, contact_person = ?, service_date = ?, invoice_number = ?, subject = ?, intro_text = ?, notes = ?, status = ?
+         WHERE id = ?`,
+        [
+          parsed.company_id,
+          parsed.source_type,
+          parsed.is_kleinunternehmer,
+          parsed.invoice_date,
+          parsed.due_date,
+          parsed.contact_person,
+          parsed.service_date,
+          parsed.invoice_number,
+          parsed.subject,
+          parsed.intro_text,
+          parsed.notes,
+          parsed.status,
+          invoiceId,
+        ],
+        conn,
+      )
+
+      const incomingIds = new Set(parsed.positions.filter(position => position.id).map(position => Number(position.id)))
+
+      for (const existingPosition of existingPositions) {
+        if (!incomingIds.has(Number(existingPosition.id))) {
+          await ensureLogChange(logChange({
+            entityType: 'invoice',
+            entityId: invoiceId,
+            subEntityType: 'invoice_position',
+            subEntityId: Number(existingPosition.id),
+            field: 'position_removed',
+            oldValue: JSON.stringify(existingPosition),
+            newValue: null,
+            userId: current.user.id,
+          }, conn))
+
+          await query(`DELETE FROM invoice_positions WHERE id = ?`, [existingPosition.id], conn)
+        }
+      }
+
+      const positionFields = ['name', 'description', 'sphere', 'cost_centre', 'quantity', 'unit', 'unit_price', 'tax'] as const
+      const existingPositionMap = new Map(existingPositions.map(position => [Number(position.id), position]))
+
+      for (const position of parsed.positions) {
+        if (position.id) {
+          const existingPosition = existingPositionMap.get(Number(position.id))
+          if (existingPosition) {
+            await ensureLogFieldChanges({
+              entityType: 'invoice',
+              entityId: invoiceId,
+              subEntityType: 'invoice_position',
+              subEntityId: Number(position.id),
+              fields: positionFields,
+              previous: existingPosition,
+              next: position,
+              userId: current.user.id,
+              conn,
+              equals: {
+                sphere: sameNumericValue,
+                cost_centre: sameNumericValue,
+                quantity: sameNumericValue,
+                unit_price: sameNumericValue,
+                tax: sameNumericValue,
+              },
+              transformOldValue: {
+                quantity: value => formatNumericLogValue(value),
+                unit_price: value => formatNumericLogValue(value),
+                tax: value => formatNumericLogValue(value),
+              },
+              transformNewValue: {
+                quantity: value => formatNumericLogValue(value),
+                unit_price: value => formatNumericLogValue(value),
+                tax: value => formatNumericLogValue(value),
+              },
+            })
+          }
+
+          await query(
+            `UPDATE invoice_positions
+             SET name = ?, description = ?, sphere = ?, cost_centre = ?, quantity = ?, unit = ?, unit_price = ?, tax = ?
+             WHERE id = ? AND invoice_id = ?`,
+            [
+              position.name,
+              position.description,
+              position.sphere,
+              position.cost_centre,
+              position.quantity,
+              position.unit,
+              position.unit_price,
+              position.tax,
+              position.id,
+              invoiceId,
+            ],
+            conn,
+          )
+          continue
+        }
+
+        const result: any = await query(
+          `INSERT INTO invoice_positions
+            (invoice_id, name, description, sphere, cost_centre, quantity, unit, unit_price, tax, created_by)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          [
+            invoiceId,
+            position.name,
+            position.description,
+            position.sphere,
+            position.cost_centre,
+            position.quantity,
+            position.unit,
+            position.unit_price,
+            position.tax,
+            current.user.id,
+          ],
+          conn,
+        )
+
+        await ensureLogChange(logChange({
+          entityType: 'invoice',
+          entityId: invoiceId,
+          subEntityType: 'invoice_position',
+          subEntityId: Number(result.insertId),
+          field: 'position_added',
+          oldValue: null,
+          newValue: JSON.stringify(position),
+          userId: current.user.id,
+        }, conn))
+      }
+
+      const shouldReplaceAttachment = Boolean(existingAttachment) && (
+        removeExistingFile
+        || Boolean(multipart.file)
+        || shouldRegenerateGeneratedPdf
+      )
+
+      if (shouldReplaceAttachment && existingAttachment) {
+        await detachFileAttachment(existingAttachment.id, current.user.id, conn)
+
+        await ensureLogChange(logChange({
+          entityType: 'invoice',
+          entityId: invoiceId,
+          subEntityType: 'file_attachment',
+          subEntityId: existingAttachment.id,
+          field: 'file_detached',
+          oldValue: existingAttachment.file_id,
+          newValue: null,
+          userId: current.user.id,
+        }, conn))
+      }
+
+      if (parsed.source_type === InvoiceSourceType.Upload) {
+        if (!multipart.file && !canReuseExistingUpload) {
+          return { ok: false, error: 'A file is required for uploaded invoices' }
+        }
+
+        if (multipart.file) {
+          const { fileId, attachmentId } = await storeAndAttachUploadedFile(multipart.file, 'invoices', 'invoice', invoiceId, current.user.id, conn)
+
+          await ensureLogChange(logChange({
+            entityType: 'invoice',
+            entityId: invoiceId,
+            subEntityType: 'file_attachment',
+            subEntityId: attachmentId,
+            field: 'file_attached',
+            oldValue: null,
+            newValue: fileId,
+            userId: current.user.id,
+          }, conn))
+        }
+      }
+
+      if (shouldRegenerateGeneratedPdf) {
+        const association = await getAssociationProfileForInvoice(conn)
+        if (!association) return { ok: false, error: 'Association details are required to generate invoices' }
+
+        const company = await getInvoiceCompany(Number(parsed.company_id), conn)
+        if (!company) return { ok: false, error: 'Company not found' }
+
+        const logo = await getAssociationLogoForInvoice(conn)
+        const boardLine = await getAssociationBoardLineForInvoice(conn)
+        const pdfBuffer = buildInvoicePdf({ association, company, invoice: parsed, logo: logo ? {
+          mimeType: logo.file.mime_type,
+          data: logo.data,
+        } : null, boardLine })
+        const { fileId, attachmentId } = await storeAndAttachUploadedFile({
+          filename: `${parsed.invoice_number}.pdf`,
+          type: 'application/pdf',
+          data: pdfBuffer,
+        }, 'invoices', 'invoice', invoiceId, current.user.id, conn)
+
+        await ensureLogChange(logChange({
+          entityType: 'invoice',
+          entityId: invoiceId,
+          subEntityType: 'file_attachment',
+          subEntityId: attachmentId,
+          field: 'file_attached',
+          oldValue: null,
+          newValue: fileId,
+          userId: current.user.id,
+        }, conn))
+      }
+
+      return { ok: true }
+    })
+  } catch (err: any) {
+    const error = err as MysqlError
+    if (error.code === 'ER_DUP_ENTRY') return { ok: false, error: 'Invoice number already exists' }
+    return { ok: false, error: `Failed to update invoice: ${err}` }
+  }
+})

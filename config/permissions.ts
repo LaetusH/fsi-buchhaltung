@@ -9,6 +9,8 @@ export type PermissionKey =
   | 'positions.view'
   | 'receipts.view'
   | 'receipts.edit'
+  | 'invoices.view'
+  | 'invoices.edit'
   | 'reimbursements.view'
   | 'reimbursements.edit'
   | 'cash_counts.view'
@@ -49,6 +51,8 @@ export const PERMISSIONS: PermissionDefinition[] = [
   { key: 'positions.view', labelKey: 'permissions.items.positionsView', categoryKey: 'permissions.categories.members' },
   { key: 'receipts.view', labelKey: 'permissions.items.receiptsView', categoryKey: 'permissions.categories.receipts' },
   { key: 'receipts.edit', labelKey: 'permissions.items.receiptsEdit', categoryKey: 'permissions.categories.receipts' },
+  { key: 'invoices.view', labelKey: 'permissions.items.invoicesView', categoryKey: 'permissions.categories.invoices' },
+  { key: 'invoices.edit', labelKey: 'permissions.items.invoicesEdit', categoryKey: 'permissions.categories.invoices' },
   { key: 'reimbursements.view', labelKey: 'permissions.items.reimbursementsView', categoryKey: 'permissions.categories.reimbursements' },
   { key: 'reimbursements.edit', labelKey: 'permissions.items.reimbursementsEdit', categoryKey: 'permissions.categories.reimbursements' },
   { key: 'cash_counts.view', labelKey: 'permissions.items.cashCountsView', categoryKey: 'permissions.categories.cashCounts' },
@@ -76,6 +80,7 @@ export const implied: Partial<Record<PermissionKey, PermissionKey[]>> = {
   'cash_register.manage': ['cash_register.use'],
   'members.edit': ['members.view'],
   'receipts.edit': ['receipts.view'],
+  'invoices.edit': ['invoices.view'],
   'reimbursements.edit': ['reimbursements.view'],
   'cash_counts.edit': ['cash_counts.view'],
   'events.edit': ['events.view'],

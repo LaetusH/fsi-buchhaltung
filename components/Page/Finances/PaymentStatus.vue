@@ -2,7 +2,7 @@
   <div class="flex items-center gap-3">
     <MenuDropdown v-model="open" :id="0">
       <template #trigger="{ styling }">
-        <button :class="[styling, disabled ? 'opacity-70' : 'cursor-pointer', statusClasses[modelValue]]" class="border-0 px-3 shadow-none" :disabled="disabled">
+        <button :class="[styling, disabled ? 'opacity-70' : 'cursor-pointer', statusClasses[modelValue]]" class="h-9.5 px-3" :disabled="disabled">
           {{ statusLabels[modelValue] }}
         </button>
       </template>
@@ -26,34 +26,39 @@
 import { computed } from 'vue'
 import { useI18n } from '~/composables/useI18n'
 import { ReceiptStatus } from '~/types/receipt'
+import { InvoiceStatus } from '~/types/invoice'
+
+type PaymentStatusValue = ReceiptStatus | InvoiceStatus
 
 const props = defineProps<{
-  modelValue: ReceiptStatus
+  modelValue: PaymentStatusValue
   disabled?: boolean
+  i18nKeyPrefix?: 'receipt' | 'invoice'
 }>()
 
 const emit = defineEmits<{
-  (e: 'update:modelValue', v: ReceiptStatus): void
+  (e: 'update:modelValue', v: PaymentStatusValue): void
 }>()
 
 const open = ref<number | null>(null)
 const { t } = useI18n()
+const i18nKeyPrefix = computed(() => props.i18nKeyPrefix ?? 'receipt')
 
-const statusLabels = computed<Record<ReceiptStatus, string>>(() => ({
-  draft: t('receipt.states.draft'),
-  open: t('receipt.states.open'),
-  paid: t('receipt.states.paid'),
-  cancelled: t('receipt.states.cancelled'),
+const statusLabels = computed<Record<PaymentStatusValue, string>>(() => ({
+  draft: t(`${i18nKeyPrefix.value}.states.draft`),
+  open: t(`${i18nKeyPrefix.value}.states.open`),
+  paid: t(`${i18nKeyPrefix.value}.states.paid`),
+  cancelled: t(`${i18nKeyPrefix.value}.states.cancelled`),
 }))
 
-const statusClasses: Record<ReceiptStatus, string> = {
+const statusClasses: Record<PaymentStatusValue, string> = {
   draft: 'bg-slate-300 text-slate-900',
   open: 'bg-yellow-300 text-yellow-900',
   paid: 'bg-green-300 text-green-900',
   cancelled: 'bg-red-300 text-red-900 line-through',
 }
 
-const transitions: Record<ReceiptStatus, ReceiptStatus[]> = {
+const transitions: Record<PaymentStatusValue, PaymentStatusValue[]> = {
   draft: [ReceiptStatus.Open, ReceiptStatus.Cancelled],
   open: [ReceiptStatus.Paid, ReceiptStatus.Cancelled, ReceiptStatus.Draft],
   paid: [ReceiptStatus.Open],
@@ -64,7 +69,7 @@ const allowedTargets = computed(() =>
   transitions[props.modelValue] ?? []
 )
 
-function select(status: ReceiptStatus) {
+function select(status: PaymentStatusValue) {
   emit('update:modelValue', status)
   open.value = null
 }
