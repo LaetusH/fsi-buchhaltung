@@ -39,26 +39,26 @@
         </div>
 
         <div class="flex items-center space-x-2 bg-slate-700/50 rounded-lg p-1">
-          <button @click="zoomOut" class="p-1.5 hover:bg-slate-600 rounded text-white transition disabled:opacity-50" title="Zoom Out">
+          <button @click="zoomOut" class="p-1.5 hover:bg-slate-600 rounded text-white transition disabled:opacity-50 cursor-pointer" title="Zoom Out">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 12H4"/></svg>
           </button>
 
           <span class="text-xs font-mono text-white w-12 text-center">{{ Math.round(zoomLevel * 100) }}%</span>
 
-          <button @click="zoomIn" class="p-1.5 hover:bg-slate-600 rounded text-white transition disabled:opacity-50" title="Zoom In">
+          <button @click="zoomIn" class="p-1.5 hover:bg-slate-600 rounded text-white transition disabled:opacity-50 cursor-pointer" title="Zoom In">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
           </button>
 
           <div v-if="isPdf" class="w-px h-4 bg-slate-500 mx-1"></div>
 
           <template v-if="isPdf">
-            <button @click="prevPage" :disabled="currentPage <= 1" class="p-1.5 hover:bg-slate-600 rounded text-white transition disabled:opacity-50 disabled:cursor-not-allowed">
+            <button @click="prevPage" :disabled="currentPage <= 1" class="p-1.5 hover:bg-slate-600 rounded text-white transition cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed">
               <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
             </button>
             <span class="text-xs text-white whitespace-nowrap px-1">
               {{ currentPage }} / {{ pdfPageCount }}
             </span>
-            <button @click="nextPage" :disabled="currentPage >= pdfPageCount" class="p-1.5 hover:bg-slate-600 rounded text-white transition disabled:opacity-50 disabled:cursor-not-allowed">
+            <button @click="nextPage" :disabled="currentPage >= pdfPageCount" class="p-1.5 hover:bg-slate-600 rounded text-white transition cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed">
               <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
             </button>
           </template>
@@ -67,7 +67,7 @@
         <div>
           <button
             @click="removeFile"
-            class="flex h-9 items-center gap-1.5 rounded-lg bg-red-500/80 px-3 text-xs font-medium text-white transition backdrop-blur-sm hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed"
+            class="flex h-9 items-center gap-1.5 rounded-lg bg-red-500/80 px-3 text-xs font-medium text-white transition backdrop-blur-sm hover:bg-red-600 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
             :disabled="!canEdit"
             :aria-label="t('files.remove')"
             :title="t('files.remove')"
