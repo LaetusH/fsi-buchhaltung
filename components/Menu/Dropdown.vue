@@ -1,7 +1,12 @@
 <template>
   <div ref="wrapper" class="relative w-full">
     <div @click="toggleDropdown" class="w-full">
-      <slot name="trigger" :open="open" styling="input w-full flex justify-between text-left" />
+      <slot
+        name="trigger"
+        :open="open"
+        :styling="triggerStyling"
+        :disabled="disabled"
+      />
     </div>
 
     <transition name="fade">
@@ -20,6 +25,7 @@
 const props = defineProps<{
   modelValue: number | null
   id: number
+  disabled?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -33,7 +39,14 @@ const open = computed({
   set: v => emit('update:modelValue', v ? props.id : null)
 })
 
+const disabled = computed(() => Boolean(props.disabled))
+const triggerStyling = computed(() => [
+  'input w-full flex justify-between text-left',
+  disabled.value ? 'opacity-70' : '',
+].filter(Boolean).join(' '))
+
 function toggleDropdown() {
+  if (disabled.value) return
   emit('update:modelValue', open.value ? null : props.id)
 }
 

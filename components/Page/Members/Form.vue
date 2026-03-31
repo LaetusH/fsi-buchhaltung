@@ -21,9 +21,9 @@
 
         <div>
           <label class="text-sm font-medium text-slate-600">{{ t('member.status') }}</label>
-          <MenuDropdown v-model="openStatus" :id="0">
+          <MenuDropdown v-model="openStatus" :id="0" :disabled="disabled">
             <template #trigger="{ styling }">
-              <button :class="[styling, disabled ? 'opacity-70' : 'cursor-pointer']" :disabled="disabled">
+              <button :class="[styling, !disabled ? 'cursor-pointer' : '']" :disabled="disabled">
                 <span>{{ statusLabel(form.status) }}</span>
                 <Icon v-if="!disabled" name="material-symbols:keyboard-arrow-down-rounded" class="text-lg" />
               </button>

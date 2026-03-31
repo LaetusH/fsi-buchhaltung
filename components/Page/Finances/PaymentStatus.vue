@@ -1,8 +1,8 @@
 <template>
   <div class="flex items-center gap-3">
-    <MenuDropdown v-model="open" :id="0">
+    <MenuDropdown v-model="open" :id="0" :disabled="disabled">
       <template #trigger="{ styling }">
-        <button :class="[styling, disabled ? 'opacity-70' : 'cursor-pointer', statusClasses[modelValue]]" class="h-9.5 px-3" :disabled="disabled">
+        <button :class="[styling, !disabled ? 'cursor-pointer' : '', statusClasses[modelValue]]" class="h-9.5 px-3" :disabled="disabled">
           {{ statusLabels[modelValue] }}
         </button>
       </template>
@@ -34,6 +34,7 @@ const props = defineProps<{
   modelValue: PaymentStatusValue
   disabled?: boolean
   i18nKeyPrefix?: 'receipt' | 'invoice'
+  allowedTargets?: PaymentStatusValue[]
 }>()
 
 const emit = defineEmits<{
@@ -66,7 +67,7 @@ const transitions: Record<PaymentStatusValue, PaymentStatusValue[]> = {
 }
 
 const allowedTargets = computed(() =>
-  transitions[props.modelValue] ?? []
+  props.allowedTargets ?? transitions[props.modelValue] ?? []
 )
 
 function select(status: PaymentStatusValue) {
