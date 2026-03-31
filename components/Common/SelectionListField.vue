@@ -1,11 +1,11 @@
 <template>
   <div class="flex min-h-0 flex-col space-y-3">
     <CommonSearchSelect
+      v-if="!disabled"
       :model-value="query"
       :options="options"
       :placeholder="placeholder"
       :empty-text="emptyText"
-      :disabled="disabled"
       @update:model-value="emit('update:query', $event)"
       @select="emit('select', $event)"
       @clear-selection="emit('clear-selection')"
@@ -28,9 +28,9 @@
           </div>
 
           <button
+            v-if="!disabled"
             type="button"
             class="shrink-0 text-sm text-red-500 hover:underline cursor-pointer"
-            :disabled="disabled"
             @click="emit('remove', item.id)"
           >
             {{ removeLabel }}
