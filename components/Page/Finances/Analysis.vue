@@ -531,9 +531,6 @@ interface PersistedFinanceAnalysisExportState {
   exportSplitByPaymentStatus?: boolean
 }
 
-const ANALYSIS_STATE_STORAGE_KEY = 'fsi.finance-analysis.state'
-const ANALYSIS_EXPORT_STORAGE_KEY = 'fsi.finance-analysis.export'
-
 const emit = defineEmits<{
   (e: 'openMenu'): void
 }>()
@@ -568,6 +565,8 @@ const exportGrouping = ref<FinanceAnalysisExportGrouping>('none')
 const exportSplitByMonth = ref(false)
 const exportSplitByPaymentStatus = ref(false)
 const hasCostCentreAccess = computed(() => hasPermission('cost_centres.view'))
+const sessionAnalysisState = useState<PersistedFinanceAnalysisState | null>('finance-analysis-session-state', () => null)
+const sessionExportState = useState<PersistedFinanceAnalysisExportState | null>('finance-analysis-export-session-state', () => null)
 
 const yearOptions = computed(() => {
   return Array.from({ length: 11 }, (_, index) => currentYear + 1 - index)
@@ -694,27 +693,6 @@ const comparisonCards = computed(() => {
   ]
 })
 
-function readStoredJson<T>(key: string): T | null {
-  if (!import.meta.client) return null
-
-  try {
-    const rawValue = window.localStorage.getItem(key)
-    return rawValue ? JSON.parse(rawValue) as T : null
-  } catch {
-    return null
-  }
-}
-
-function writeStoredJson(key: string, value: unknown) {
-  if (!import.meta.client) return
-
-  try {
-    window.localStorage.setItem(key, JSON.stringify(value))
-  } catch {
-    // Ignore storage errors and keep the current in-memory state.
-  }
-}
-
 function restoreSelectedCostCentre(costCentreId: number | null | undefined) {
   if (typeof costCentreId !== 'number') {
     selectedCostCentre.value = null
@@ -747,11 +725,11 @@ function applyAnalysisState(state?: PersistedFinanceAnalysisState | null) {
 }
 
 function restoreStoredAnalysisState() {
-  applyAnalysisState(readStoredJson<PersistedFinanceAnalysisState>(ANALYSIS_STATE_STORAGE_KEY))
+  applyAnalysisState(sessionAnalysisState.value)
 }
 
 function restoreStoredExportState() {
-  const state = readStoredJson<PersistedFinanceAnalysisExportState>(ANALYSIS_EXPORT_STORAGE_KEY)
+  const state = sessionExportState.value
   if (!state) return
 
   if (state.exportGrouping === 'none' || state.exportGrouping === 'costCentres' || state.exportGrouping === 'spheres') {
@@ -762,7 +740,7 @@ function restoreStoredExportState() {
 }
 
 function persistAnalysisState() {
-  writeStoredJson(ANALYSIS_STATE_STORAGE_KEY, {
+  sessionAnalysisState.value = {
     startDate: startDate.value,
     endDate: endDate.value,
     quickYear: quickYear.value,
@@ -773,15 +751,15 @@ function persistAnalysisState() {
     receiptsExpanded: receiptsExpanded.value,
     cashCountsExpanded: cashCountsExpanded.value,
     selectedCostCentreId: selectedCostCentre.value?.id ?? null,
-  } satisfies PersistedFinanceAnalysisState)
+  } satisfies PersistedFinanceAnalysisState
 }
 
 function persistExportState() {
-  writeStoredJson(ANALYSIS_EXPORT_STORAGE_KEY, {
+  sessionExportState.value = {
     exportGrouping: exportGrouping.value,
     exportSplitByMonth: exportSplitByMonth.value,
     exportSplitByPaymentStatus: exportSplitByPaymentStatus.value,
-  } satisfies PersistedFinanceAnalysisExportState)
+  } satisfies PersistedFinanceAnalysisExportState
 }
 
 function pad(value: number) {
