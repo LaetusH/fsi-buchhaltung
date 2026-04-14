@@ -23,6 +23,7 @@
         type="file"
         class="hidden"
         :accept="acceptAttribute"
+        :multiple="allowMultiImageUpload"
         @change="handleFileSelect"
       />
     </div>
@@ -118,6 +119,7 @@
 
 <script setup lang="ts">
 import { defineAsyncComponent } from 'vue'
+import { PDFDocument } from 'pdf-lib'
 import { useI18n } from '~/composables/useI18n'
 import { useToast } from '~/composables/useToast'
 import type { PDFDocumentProxy } from 'pdfjs-dist'
@@ -174,6 +176,7 @@ const intrinsicContentHeight = ref<number>(800)
 const pdfDocument = shallowRef<PDFDocumentProxy | null>(null)
 const zoomLevel = ref<number>(1.0)
 const pdfLoading = ref<boolean>(false)
+const ownedPreviewUrl = ref<string | null>(null)
 const { t } = useI18n()
 const toast = useToast()
 
@@ -196,6 +199,11 @@ const activeFileType = computed(() => {
 
 const isPdf = computed(() => activeFileType.value === 'application/pdf')
 const isImage = computed(() => activeFileType.value?.startsWith('image/'))
+const allowMultiImageUpload = computed(() => {
+  const allowsPdf = props.allowedFileTypes.includes('pdf')
+  const allowsImages = props.allowedFileTypes.some(type => type !== 'pdf')
+  return allowsPdf && allowsImages
+})
 
 let resizeObserver: ResizeObserver | null = null
 
@@ -315,8 +323,14 @@ onMounted(() => {
   window.addEventListener('resize', updateLayout)
 })
 
+function revokeOwnedPreviewUrl() {
+  if (!ownedPreviewUrl.value) return
+  URL.revokeObjectURL(ownedPreviewUrl.value)
+  ownedPreviewUrl.value = null
+}
+
 onUnmounted(() => {
-  if (previewUrl.value) URL.revokeObjectURL(previewUrl.value)
+  revokeOwnedPreviewUrl()
   window.removeEventListener('resize', updateLayout)
   resizeObserver?.disconnect()
 })
@@ -324,10 +338,11 @@ onUnmounted(() => {
 watch(
   () => [props.modelValue, props.existingFile],
   async () => {
-    if (previewUrl.value && props.modelValue) URL.revokeObjectURL(previewUrl.value)
+    revokeOwnedPreviewUrl()
 
     if (props.modelValue) {
-      previewUrl.value = URL.createObjectURL(props.modelValue)
+      ownedPreviewUrl.value = URL.createObjectURL(props.modelValue)
+      previewUrl.value = ownedPreviewUrl.value
     } else if (props.existingFile) {
       previewUrl.value = props.existingFile.url
     } else {
@@ -375,34 +390,102 @@ function onImageLoaded() {
   nextTick(() => void updateIntrinsicHeight())
 }
 
-function processFile(file: File) {
-  if (allowedMimeTypes.value.includes(file.type)) {
-    emit('update:modelValue', file)
-  } else {
+function fileHasAllowedMimeType(file: File) {
+  return allowedMimeTypes.value.includes(file.type)
+}
+
+function isImageFile(file: File) {
+  return file.type.startsWith('image/')
+}
+
+function sanitizeFileNamePart(name: string) {
+  return name.replace(/\.[^/.]+$/, '').replace(/[^a-zA-Z0-9-_]+/g, '-').replace(/^-+|-+$/g, '') || 'upload'
+}
+
+function readFileAsDataUrl(file: File) {
+  return new Promise<string>((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = () => resolve(String(reader.result || ''))
+    reader.onerror = () => reject(new Error('Failed to read file'))
+    reader.readAsDataURL(file)
+  })
+}
+
+function loadImageDimensions(dataUrl: string) {
+  return new Promise<{ width: number, height: number }>((resolve, reject) => {
+    const image = new Image()
+    image.onload = () => resolve({ width: image.naturalWidth, height: image.naturalHeight })
+    image.onerror = () => reject(new Error('Failed to load image'))
+    image.src = dataUrl
+  })
+}
+
+async function createPdfFromImages(files: File[]) {
+  const pdf = await PDFDocument.create()
+
+  for (const file of files) {
+    const dataUrl = await readFileAsDataUrl(file)
+    const dimensions = await loadImageDimensions(dataUrl)
+    const embeddedImage = file.type === 'image/png'
+      ? await pdf.embedPng(dataUrl)
+      : await pdf.embedJpg(dataUrl)
+
+    const page = pdf.addPage([dimensions.width, dimensions.height])
+    page.drawImage(embeddedImage, {
+      x: 0,
+      y: 0,
+      width: dimensions.width,
+      height: dimensions.height,
+    })
+  }
+
+  const pdfBytes = await pdf.save()
+  const baseName = sanitizeFileNamePart(files[0]?.name || 'upload')
+  const pdfBlob = new Blob([new Uint8Array(pdfBytes)], { type: 'application/pdf' })
+  return new File([pdfBlob], `${baseName}.pdf`, { type: 'application/pdf' })
+}
+
+async function processFiles(files: File[]) {
+  if (files.length === 0) return
+
+  if (!files.every(fileHasAllowedMimeType)) {
+    toast.error(t('files.uploadError'))
+    return
+  }
+
+  if (files.length === 1) {
+    emit('update:modelValue', files[0] || null)
+    return
+  }
+
+  if (!allowMultiImageUpload.value || !files.every(isImageFile)) {
+    toast.error(t('files.uploadError'))
+    return
+  }
+
+  try {
+    const mergedPdf = await createPdfFromImages(files)
+    emit('update:modelValue', mergedPdf)
+  } catch {
     toast.error(t('files.uploadError'))
   }
 }
 
-function handleDrop(e: DragEvent) {
+async function handleDrop(e: DragEvent) {
   isDragging.value = false
   const files = e.dataTransfer?.files
   if (!files || files.length === 0) return
 
-  const file = files.item(0)
-  if (!file) return
-
-  processFile(file)
+  await processFiles(Array.from(files))
 }
 
-function handleFileSelect(e: Event) {
+async function handleFileSelect(e: Event) {
   const input = e.target as HTMLInputElement | null
   const files = input?.files
-  if (!files || files.length === 0) return
+  const selectedFiles = files ? Array.from(files) : []
 
-  const file = files.item(0)
-  if (!file) return
-
-  processFile(file)
+  if (selectedFiles.length > 0) await processFiles(selectedFiles)
+  if (input) input.value = ''
 }
 
 function removeFile() {
@@ -486,13 +569,19 @@ function prevPage() {
   }
 }
 
-:deep(.vue-pdf-embed__page > canvas) {
+:deep(.vue-pdf-embed__page > canvas:not(.hiddenCanvasElement)) {
   position: absolute;
   display: block;
   width: 100%;
   height: auto;
   z-index: 1;
   pointer-events: none;
+}
+
+:deep(.vue-pdf-embed__page > canvas.hiddenCanvasElement) {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
 }
 
 :deep(.textLayer) {
