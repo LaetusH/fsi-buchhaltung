@@ -272,6 +272,32 @@ CREATE TABLE IF NOT EXISTS cost_centres (
   FOREIGN KEY (parent_id) REFERENCES cost_centres(id) ON DELETE SET NULL
 );
 
+CREATE TABLE IF NOT EXISTS budgets (
+  id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  start_date DATE NOT NULL,
+  end_date DATE NOT NULL,
+  notes TEXT NULL,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  created_by BIGINT UNSIGNED NOT NULL,
+  UNIQUE KEY uq_budget_period (start_date, end_date),
+  FOREIGN KEY (created_by) REFERENCES users(id)
+);
+
+CREATE TABLE IF NOT EXISTS budget_cost_centre_lines (
+  id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  budget_id BIGINT UNSIGNED NOT NULL,
+  cost_centre_id MEDIUMINT UNSIGNED NOT NULL,
+  expense_amount DECIMAL(12,2) NOT NULL DEFAULT 0,
+  income_amount DECIMAL(12,2) NOT NULL DEFAULT 0,
+  notes TEXT NULL,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  created_by BIGINT UNSIGNED NOT NULL,
+  UNIQUE KEY uq_budget_cost_centre_line (budget_id, cost_centre_id),
+  FOREIGN KEY (budget_id) REFERENCES budgets(id) ON DELETE CASCADE,
+  FOREIGN KEY (cost_centre_id) REFERENCES cost_centres(id),
+  FOREIGN KEY (created_by) REFERENCES users(id)
+);
+
 CREATE TABLE IF NOT EXISTS subdivisions (
   id MEDIUMINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
   code VARCHAR(32) NOT NULL UNIQUE,

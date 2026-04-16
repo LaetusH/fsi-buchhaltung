@@ -10,6 +10,8 @@ import ReimbursementListPage from '~/components/Page/Finances/Reimbursement/List
 import ReimbursementCreatePage from '~/components/Page/Finances/Reimbursement/Create.vue'
 import CashCountListPage from '~/components/Page/Finances/CashCount/List.vue'
 import CashCountCreatePage from '~/components/Page/Finances/CashCount/Create.vue'
+import BudgetListPage from '~/components/Page/Finances/Budget/List.vue'
+import BudgetCreatePage from '~/components/Page/Finances/Budget/Create.vue'
 import FinanceAnalysisPage from '~/components/Page/Finances/Analysis.vue'
 import EventListPage from '~/components/Page/Events/List.vue'
 import EventCreatePage from '~/components/Page/Events/Create.vue'
@@ -21,7 +23,7 @@ import SettingsPage from '~/components/Page/Settings/Overview.vue'
 export const PAGES: Record<string, AppPage> = {
   Login: { main: true, labelKey: 'pages.login', component: LoginPage, icon: '', permissions: [], allowGuest: true },
   Home: { main: true, labelKey: 'pages.home', component: HomePage, icon: '', permissions: ['pages.home.view'] },
-  Finances: { main: true, labelKey: 'pages.finances', component: FinancesPage, icon: '', permissions: ['receipts.view', 'invoices.view', 'reimbursements.view', 'cash_counts.view'] },
+  Finances: { main: true, labelKey: 'pages.finances', component: FinancesPage, icon: '', permissions: ['receipts.view', 'invoices.view', 'reimbursements.view', 'cash_counts.view', 'budgets.view'] },
   ReceiptList: { main: false, labelKey: 'pages.receipts', component: ReceiptListPage, permissions: ['receipts.view'] },
   ReceiptCreate: { main: false, labelKey: 'pages.createReceipt', component: ReceiptCreatePage, permissions: ['receipts.view'] },
   InvoiceList: { main: false, labelKey: 'pages.invoices', component: InvoiceListPage, permissions: ['invoices.view'] },
@@ -30,6 +32,8 @@ export const PAGES: Record<string, AppPage> = {
   ReimbursementCreate: { main: false, labelKey: 'pages.createReimbursement', component: ReimbursementCreatePage, permissions: ['reimbursements.view'] },
   CashCountList: { main: false, labelKey: 'pages.cashCounts', component: CashCountListPage, permissions: ['cash_counts.view'] },
   CashCountCreate: { main: false, labelKey: 'pages.createCashCount', component: CashCountCreatePage, permissions: ['cash_counts.view'] },
+  BudgetList: { main: false, labelKey: 'pages.budgets', component: BudgetListPage, permissions: ['budgets.view'] },
+  BudgetCreate: { main: false, labelKey: 'pages.createBudget', component: BudgetCreatePage, permissions: ['budgets.view'] },
   FinanceAnalysis: { main: true, labelKey: 'pages.financeAnalysis', component: FinanceAnalysisPage, icon: '', permissions: ['receipts.view', 'cash_counts.view', 'invoices.view'], requireAllPermissions: true },
   Events: { main: true, labelKey: 'pages.events', component: EventListPage, icon: '', permissions: ['events.view'] },
   EventCreate: { main: false, labelKey: 'pages.createEvent', component: EventCreatePage, permissions: ['events.view'] },

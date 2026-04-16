@@ -28,8 +28,9 @@ import ReceiptListPanel from './Receipt/ListPanel.vue'
 import InvoiceListPanel from './Invoice/ListPanel.vue'
 import ReimbursementListPanel from './Reimbursement/ListPanel.vue'
 import CashCountListPanel from './CashCount/ListPanel.vue'
+import BudgetListPanel from './Budget/ListPanel.vue'
 
-type FinancesTab = 'receipts' | 'invoices' | 'reimbursements' | 'cashCounts'
+type FinancesTab = 'receipts' | 'invoices' | 'reimbursements' | 'cashCounts' | 'budgets'
 
 defineEmits<{
   (e: 'openMenu'): void
@@ -47,6 +48,7 @@ const tabs = computed(() => {
     { key: 'invoices', label: t('pages.invoices'), show: hasPermission('invoices.view') },
     { key: 'reimbursements', label: t('pages.reimbursements'), show: hasPermission('reimbursements.view') },
     { key: 'cashCounts', label: t('pages.cashCounts'), show: hasPermission('cash_counts.view') },
+    { key: 'budgets', label: t('pages.budgets'), show: hasPermission('budgets.view') },
   ] as const
 
   return list.filter(tab => tab.show).map(({ show, ...rest }) => rest)
@@ -62,6 +64,8 @@ const activeComponent = computed(() => {
       return ReimbursementListPanel
     case 'cashCounts':
       return CashCountListPanel
+    case 'budgets':
+      return BudgetListPanel
     default:
       return ReceiptListPanel
   }
