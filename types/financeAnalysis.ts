@@ -1,4 +1,5 @@
-﻿import type { ReceiptStatus } from '~/types/receipt'
+﻿import type { InvoiceStatus } from '~/types/invoice'
+import type { ReceiptStatus } from '~/types/receipt'
 
 export interface FinanceAnalysisReceiptItem {
   id: number
@@ -20,6 +21,17 @@ export interface FinanceAnalysisReceiptBreakdownItem {
   total_amount: number
 }
 
+export interface FinanceAnalysisInvoiceBreakdownItem {
+  group_type: 'costCentre' | 'sphere'
+  group_id: number | null
+  group_code: string
+  group_name: string
+  month_key: string
+  status: InvoiceStatus
+  invoice_count: number
+  total_amount: number
+}
+
 export interface FinanceAnalysisCashCountItem {
   id: number
   event_id: number
@@ -33,6 +45,17 @@ export interface FinanceAnalysisCashCountItem {
   total_before_amount: number
   total_after_amount: number
   total_difference: number
+}
+
+export interface FinanceAnalysisInvoiceItem {
+  id: number
+  invoice_date: string
+  due_date: string | null
+  service_date: string | null
+  invoice_number: string
+  company_name: string | null
+  status: InvoiceStatus
+  total_amount: number
 }
 
 export interface FinanceAnalysisSummary {
@@ -53,6 +76,8 @@ export interface FinanceAnalysisSummary {
   cash_count_total_before: number
   cash_count_total_after: number
   cash_count_total_difference: number
+  invoice_count: number
+  invoice_total: number
   net_result: number
 }
 
@@ -60,5 +85,7 @@ export interface FinanceAnalysisData {
   summary: FinanceAnalysisSummary
   receipts: FinanceAnalysisReceiptItem[]
   receiptBreakdown: FinanceAnalysisReceiptBreakdownItem[]
+  invoiceBreakdown: FinanceAnalysisInvoiceBreakdownItem[]
   cashCounts: FinanceAnalysisCashCountItem[]
+  invoices: FinanceAnalysisInvoiceItem[]
 }

@@ -69,7 +69,8 @@ function crc32(bytes: Uint8Array) {
   let value = 0xFFFFFFFF
 
   for (const byte of bytes) {
-    value = CRC_TABLE[(value ^ byte) & 0xFF] ^ (value >>> 8)
+    const tableValue = CRC_TABLE[(value ^ byte) & 0xFF] ?? 0
+    value = tableValue ^ (value >>> 8)
   }
 
   return (value ^ 0xFFFFFFFF) >>> 0
@@ -467,7 +468,3 @@ export function downloadExcelWorkbook(content: Blob, fileName: string) {
   document.body.removeChild(link)
   window.setTimeout(() => URL.revokeObjectURL(objectUrl), 0)
 }
-
-
-
-

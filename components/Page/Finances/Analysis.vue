@@ -4,81 +4,110 @@
       <section class="bg-white rounded-xl shadow-lg p-4 space-y-4 col-span-12 lg:col-span-4 xl:col-span-3">
         <div class="space-y-1">
           <h2 class="text-lg font-semibold">{{ t('financeAnalysis.menuTitle') }}</h2>
-          <p class="text-sm text-slate-500">{{ t('financeAnalysis.menuDescription') }}</p>
         </div>
 
-        <div class="grid grid-cols-2 gap-4">
-          <div class="field">
-            <label>{{ t('financeAnalysis.startDate') }}</label>
-            <input
-              :value="startDate"
-              type="date"
-              class="input"
-              @input="handleManualDateInput('start', $event)"
-            >
-          </div>
+        <div class="space-y-3 rounded-xl border border-slate-200 p-4">
+          <button
+            type="button"
+            class="flex w-full items-start justify-between gap-3 text-left cursor-pointer"
+            @click="periodFiltersExpanded = !periodFiltersExpanded"
+          >
+            <div>
+              <h3 class="font-semibold text-slate-900">{{ t('financeAnalysis.periodFilters') }}</h3>
+              <p class="text-xs text-slate-500">{{ t('financeAnalysis.periodFiltersHint') }}</p>
+            </div>
+            <Icon :name="periodFiltersExpanded ? 'material-symbols:keyboard-arrow-up-rounded' : 'material-symbols:keyboard-arrow-down-rounded'" class="mt-0.5 h-5 w-5 shrink-0 text-slate-500" />
+          </button>
 
-          <div class="field">
-            <label>{{ t('financeAnalysis.endDate') }}</label>
-            <input
-              :value="endDate"
-              type="date"
-              class="input"
-              @input="handleManualDateInput('end', $event)"
-            >
+          <div v-if="periodFiltersExpanded" class="space-y-4">
+            <div class="grid grid-cols-2 gap-4">
+              <div class="field">
+                <label>{{ t('financeAnalysis.startDate') }}</label>
+                <input
+                  :value="startDate"
+                  type="date"
+                  class="input"
+                  @input="handleManualDateInput('start', $event)"
+                >
+              </div>
+
+              <div class="field">
+                <label>{{ t('financeAnalysis.endDate') }}</label>
+                <input
+                  :value="endDate"
+                  type="date"
+                  class="input"
+                  @input="handleManualDateInput('end', $event)"
+                >
+              </div>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-4">
+              <div class="field">
+                <label>{{ t('financeAnalysis.quickYear') }}</label>
+                <select v-model="quickYear" class="input" @change="applyYearShortcut">
+                  <option value="">{{ t('financeAnalysis.customRange') }}</option>
+                  <option v-for="year in yearOptions" :key="year" :value="String(year)">
+                    {{ year }}
+                  </option>
+                </select>
+              </div>
+
+              <div class="field">
+                <label>{{ t('financeAnalysis.quickSemester') }}</label>
+                <div class="grid grid-cols-2 xl:grid-cols-1 2xl:grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    :class="semesterButtonClass('summer')"
+                    @click="toggleSemesterShortcut('summer')"
+                  >
+                    {{ t('financeAnalysis.semesters.summer') }}
+                  </button>
+                  <button
+                    type="button"
+                    :class="semesterButtonClass('winter')"
+                    @click="toggleSemesterShortcut('winter')"
+                  >
+                    {{ t('financeAnalysis.semesters.winter') }}
+                  </button>
+                </div>
+              </div>
+
+              <div class="field sm:col-span-2 lg:col-span-1">
+                <label>{{ t('financeAnalysis.quickMonth') }}</label>
+                <div class="grid grid-cols-4 gap-2">
+                  <button
+                    v-for="month in monthOptions"
+                    :key="month.value"
+                    type="button"
+                    :class="monthButtonClass(month.value)"
+                    :title="month.label"
+                    @click="toggleMonthShortcut(month.value)"
+                  >
+                    {{ month.shortLabel }}
+                  </button>
+                </div>
+              </div>
+
+              <p class="text-xs text-slate-500">{{ t('financeAnalysis.quickHint') }}</p>
+            </div>
           </div>
         </div>
 
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-4">
-          <div class="field">
-            <label>{{ t('financeAnalysis.quickYear') }}</label>
-            <select v-model="quickYear" class="input" @change="applyYearShortcut">
-              <option value="">{{ t('financeAnalysis.customRange') }}</option>
-              <option v-for="year in yearOptions" :key="year" :value="String(year)">
-                {{ year }}
-              </option>
-            </select>
-          </div>
-
-          <div class="field">
-            <label>{{ t('financeAnalysis.quickSemester') }}</label>
-            <div class="grid grid-cols-2 xl:grid-cols-1 2xl:grid-cols-2 gap-2">
-              <button
-                type="button"
-                :class="semesterButtonClass('summer')"
-                @click="toggleSemesterShortcut('summer')"
-              >
-                {{ t('financeAnalysis.semesters.summer') }}
-              </button>
-              <button
-                type="button"
-                :class="semesterButtonClass('winter')"
-                @click="toggleSemesterShortcut('winter')"
-              >
-                {{ t('financeAnalysis.semesters.winter') }}
-              </button>
+        <div v-if="hasCostCentreAccess" class="space-y-3 rounded-xl border border-slate-200 p-4">
+          <button
+            type="button"
+            class="flex w-full items-start justify-between gap-3 text-left cursor-pointer"
+            @click="costCentreFiltersExpanded = !costCentreFiltersExpanded"
+          >
+            <div>
+              <h3 class="font-semibold text-slate-900">{{ t('financeAnalysis.costCentre') }}</h3>
+              <p class="text-xs text-slate-500">{{ t('financeAnalysis.costCentreHint') }}</p>
             </div>
-          </div>
+            <Icon :name="costCentreFiltersExpanded ? 'material-symbols:keyboard-arrow-up-rounded' : 'material-symbols:keyboard-arrow-down-rounded'" class="mt-0.5 h-5 w-5 shrink-0 text-slate-500" />
+          </button>
 
-          <div class="field sm:col-span-2 lg:col-span-1">
-            <label>{{ t('financeAnalysis.quickMonth') }}</label>
-            <div class="grid grid-cols-4 gap-2">
-              <button
-                v-for="month in monthOptions"
-                :key="month.value"
-                type="button"
-                :class="monthButtonClass(month.value)"
-                :title="month.label"
-                @click="toggleMonthShortcut(month.value)"
-              >
-                {{ month.shortLabel }}
-              </button>
-            </div>
-          </div>
-
-          <p class="text-xs text-slate-500">{{ t('financeAnalysis.quickHint') }}</p>
-
-          <div v-if="hasCostCentreAccess" class="field sm:col-span-2 lg:col-span-1">
+          <div v-if="costCentreFiltersExpanded" class="field">
             <label>{{ t('financeAnalysis.costCentre') }}</label>
             <CommonSearchSelect
               v-model="costCentreQuery"
@@ -95,26 +124,91 @@
         </div>
 
         <div class="space-y-3 rounded-xl border border-slate-200 p-4">
-          <div>
-            <h3 class="font-semibold text-slate-900">{{ t('financeAnalysis.receiptStateFilters') }}</h3>
-            <p class="text-xs text-slate-500">{{ t('financeAnalysis.receiptStateHint') }}</p>
-          </div>
+          <button
+            type="button"
+            class="flex w-full items-start justify-between gap-3 text-left cursor-pointer"
+            @click="receiptFiltersExpanded = !receiptFiltersExpanded"
+          >
+            <div>
+              <h3 class="font-semibold text-slate-900">{{ t('financeAnalysis.receiptStateFilters') }}</h3>
+              <p class="text-xs text-slate-500">{{ t('financeAnalysis.receiptStateHint') }}</p>
+            </div>
+            <Icon :name="receiptFiltersExpanded ? 'material-symbols:keyboard-arrow-up-rounded' : 'material-symbols:keyboard-arrow-down-rounded'" class="mt-0.5 h-5 w-5 shrink-0 text-slate-500" />
+          </button>
 
-          <div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-2 gap-2">
-            <button
-              v-for="option in receiptStatusOptions"
-              :key="option.value"
-              type="button"
-              :class="statusButtonClass(option.value)"
-              @click="toggleReceiptStatus(option.value)"
-            >
-              {{ option.label }}
-            </button>
-          </div>
+          <div v-if="receiptFiltersExpanded" class="space-y-3">
+            <div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-2 gap-2">
+              <button
+                v-for="option in receiptStatusOptions"
+                :key="option.value"
+                type="button"
+                :class="statusButtonClass(option.value, selectedStatuses)"
+                @click="toggleReceiptStatus(option.value)"
+              >
+                {{ option.label }}
+              </button>
+            </div>
 
-          <p v-if="selectedStatuses.length === 0" class="text-xs text-red-700">
-            {{ t('financeAnalysis.noReceiptStatesSelected') }}
-          </p>
+            <p v-if="selectedStatuses.length === 0" class="text-xs text-red-700">
+              {{ t('financeAnalysis.noReceiptStatesSelected') }}
+            </p>
+          </div>
+        </div>
+
+        <div class="space-y-3 rounded-xl border border-slate-200 p-4">
+          <button
+            type="button"
+            class="flex w-full items-start justify-between gap-3 text-left cursor-pointer"
+            @click="invoiceFiltersExpanded = !invoiceFiltersExpanded"
+          >
+            <div>
+              <h3 class="font-semibold text-slate-900">{{ t('financeAnalysis.invoiceStateFilters') }}</h3>
+              <p class="text-xs text-slate-500">{{ t('financeAnalysis.invoiceStateHint') }}</p>
+            </div>
+            <Icon :name="invoiceFiltersExpanded ? 'material-symbols:keyboard-arrow-up-rounded' : 'material-symbols:keyboard-arrow-down-rounded'" class="mt-0.5 h-5 w-5 shrink-0 text-slate-500" />
+          </button>
+
+          <div v-if="invoiceFiltersExpanded" class="space-y-3">
+            <div class="field">
+              <label>{{ t('financeAnalysis.invoiceDateField') }}</label>
+              <MenuDropdown v-model="openFilterDropdown" :id="1">
+                <template #trigger="{ styling }">
+                  <button :class="[styling, 'cursor-pointer']" type="button">
+                    <span class="truncate">{{ selectedInvoiceDateFieldLabel }}</span>
+                    <Icon name="material-symbols:keyboard-arrow-down-rounded" class="mt-0.5 h-5 w-5 shrink-0 text-slate-500" />
+                  </button>
+                </template>
+
+                <template #default="{ styling }">
+                  <button
+                    v-for="option in invoiceDateFieldOptions"
+                    :key="option.value"
+                    :class="styling"
+                    type="button"
+                    @click="selectInvoiceDateField(option.value)"
+                  >
+                    {{ option.label }}
+                  </button>
+                </template>
+              </MenuDropdown>
+            </div>
+
+            <div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-2 gap-2">
+              <button
+                v-for="option in invoiceStatusOptions"
+                :key="option.value"
+                type="button"
+                :class="statusButtonClass(option.value, selectedInvoiceStatuses)"
+                @click="toggleInvoiceStatus(option.value)"
+              >
+                {{ option.label }}
+              </button>
+            </div>
+
+            <p v-if="selectedInvoiceStatuses.length === 0" class="text-xs text-red-700">
+              {{ t('financeAnalysis.noInvoiceStatesSelected') }}
+            </p>
+          </div>
         </div>
 
         <div class="grid grid-cols-2 gap-3">
@@ -246,7 +340,7 @@
         </div>
 
         <template v-else-if="summary">
-          <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-3">
+          <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-5 gap-3">
             <div class="rounded-xl bg-orange-50 px-4 py-4">
               <div class="text-sm text-orange-700">{{ t('financeAnalysis.cards.receiptTotal') }}</div>
               <div class="mt-2 text-2xl font-semibold text-orange-950">{{ formatCurrency(summary.receipt_total) }}</div>
@@ -257,6 +351,12 @@
               <div class="text-sm text-emerald-700">{{ t('financeAnalysis.cards.cashCountRevenue') }}</div>
               <div class="mt-2 text-2xl font-semibold text-emerald-950">{{ formatCurrency(summary.cash_count_total_difference) }}</div>
               <div class="mt-1 text-xs text-emerald-700">{{ t('financeAnalysis.cards.cashCountCount', { count: summary.cash_count_count }) }}</div>
+            </div>
+
+            <div class="rounded-xl bg-sky-50 px-4 py-4">
+              <div class="text-sm text-sky-700">{{ t('financeAnalysis.cards.invoiceRevenue') }}</div>
+              <div class="mt-2 text-2xl font-semibold text-sky-950">{{ formatCurrency(summary.invoice_total) }}</div>
+              <div class="mt-1 text-xs text-sky-700">{{ t('financeAnalysis.cards.invoiceCountCount', { count: summary.invoice_count }) }}</div>
             </div>
 
             <div :class="['rounded-xl px-4 py-4', summary.net_result >= 0 ? 'bg-cyan-50' : 'bg-red-50']">
@@ -271,7 +371,7 @@
 
             <div class="rounded-xl bg-slate-100 px-4 py-4">
               <div class="text-sm text-slate-600">{{ t('financeAnalysis.cards.entriesReviewed') }}</div>
-              <div class="mt-2 text-2xl font-semibold text-slate-900">{{ summary.receipt_count + summary.cash_count_count }}</div>
+              <div class="mt-2 text-2xl font-semibold text-slate-900">{{ summary.receipt_count + summary.cash_count_count + summary.invoice_count }}</div>
               <div class="mt-1 text-xs text-slate-600">{{ t('financeAnalysis.cards.registerCount', { count: summary.cash_count_register_total }) }}</div>
             </div>
           </div>
@@ -282,7 +382,7 @@
               <p class="text-sm text-slate-500">{{ t('financeAnalysis.previousYearRange', { start: formatDate(comparisonSummary.start_date), end: formatDate(comparisonSummary.end_date) }) }}</p>
             </div>
 
-            <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-3">
+            <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-5 gap-3">
               <div v-for="card in comparisonCards" :key="card.key" class="rounded-xl bg-slate-50 px-4 py-4">
                 <div class="text-sm text-slate-700">{{ card.label }}</div>
                 <div class="mt-3 space-y-1 text-sm text-slate-600">
@@ -296,8 +396,8 @@
             </div>
           </section>
 
-          <div class="grid grid-cols-1 xl:grid-cols-2 gap-4">
-            <section class="w-full rounded-xl border border-slate-200 p-4 space-y-4">
+          <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+            <section class="w-full sm:col-span-2 rounded-xl border border-slate-200 p-4 space-y-4">
               <div>
                 <h3 class="font-semibold">{{ t('financeAnalysis.receiptsSectionTitle') }}</h3>
                 <p class="text-sm text-slate-500">{{ t('financeAnalysis.receiptsSectionDescription') }}</p>
@@ -318,7 +418,7 @@
                 <p class="text-sm text-slate-500">{{ t('financeAnalysis.cashCountsSectionDescription') }}</p>
               </div>
 
-              <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-1 2xl:grid-cols-2 gap-3">
                 <div class="rounded-xl bg-slate-100 px-4 py-3">
                   <div class="text-xs text-slate-500">{{ t('financeAnalysis.cashCards.totalBefore') }}</div>
                   <div class="mt-1 font-semibold">{{ formatCurrency(summary.cash_count_total_before) }}</div>
@@ -328,10 +428,24 @@
                   <div class="text-xs text-slate-500">{{ t('financeAnalysis.cashCards.totalAfter') }}</div>
                   <div class="mt-1 font-semibold">{{ formatCurrency(summary.cash_count_total_after) }}</div>
                 </div>
+              </div>
+            </section>
+
+            <section class="w-full rounded-xl border border-slate-200 p-4 space-y-4">
+              <div>
+                <h3 class="font-semibold">{{ t('financeAnalysis.invoicesSectionTitle') }}</h3>
+                <p class="text-sm text-slate-500">{{ t('financeAnalysis.invoicesSectionDescription') }}</p>
+              </div>
+
+              <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-1 2xl:grid-cols-2 gap-3">
+                <div class="rounded-xl bg-slate-100 px-4 py-3">
+                  <div class="text-xs text-slate-500">{{ t('financeAnalysis.cards.invoiceRevenue') }}</div>
+                  <div class="mt-1 font-semibold">{{ formatCurrency(summary.invoice_total) }}</div>
+                </div>
 
                 <div class="rounded-xl bg-slate-100 px-4 py-3">
-                  <div class="text-xs text-slate-500">{{ t('financeAnalysis.cashCards.registers') }}</div>
-                  <div class="mt-1 font-semibold">{{ summary.cash_count_register_total }}</div>
+                  <div class="text-xs text-slate-500">{{ t('financeAnalysis.cards.invoiceCount') }}</div>
+                  <div class="mt-1 font-semibold">{{ summary.invoice_count }}</div>
                 </div>
               </div>
             </section>
@@ -418,66 +532,142 @@
               </div>
             </section>
 
-            <section class="self-start w-full rounded-xl border border-slate-200 p-4 space-y-4">
-              <div class="flex items-center justify-between gap-3">
-                <div>
-                  <h3 class="font-semibold">{{ t('financeAnalysis.cashCountsTableTitle') }}</h3>
-                  <span class="text-xs text-slate-500">{{ t('financeAnalysis.countLabel', { count: cashCounts.length }) }}</span>
+            <div class="space-y-4">
+              <section class="self-start w-full rounded-xl border border-slate-200 p-4 space-y-4">
+                <div class="flex items-center justify-between gap-3">
+                  <div>
+                    <h3 class="font-semibold">{{ t('financeAnalysis.cashCountsTableTitle') }}</h3>
+                    <span class="text-xs text-slate-500">{{ t('financeAnalysis.countLabel', { count: cashCounts.length }) }}</span>
+                  </div>
+
+                  <button
+                    type="button"
+                    class="inline-flex items-center gap-2 rounded-md bg-slate-100 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-200 cursor-pointer"
+                    :title="cashCountsExpanded ? t('financeAnalysis.collapseSection', { section: t('financeAnalysis.cashCountListSection') }) : t('financeAnalysis.expandSection', { section: t('financeAnalysis.cashCountListSection') })"
+                    @click="cashCountsExpanded = !cashCountsExpanded"
+                  >
+                    <span>{{ cashCountsExpanded ? t('financeAnalysis.collapse') : t('financeAnalysis.expand') }}</span>
+                    <Icon :name="cashCountsExpanded ? 'material-symbols:keyboard-arrow-up-rounded' : 'material-symbols:keyboard-arrow-down-rounded'" class="h-5 w-5" />
+                  </button>
                 </div>
 
-                <button
-                  type="button"
-                  class="inline-flex items-center gap-2 rounded-md bg-slate-100 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-200 cursor-pointer"
-                  :title="cashCountsExpanded ? t('financeAnalysis.collapseSection', { section: t('financeAnalysis.cashCountListSection') }) : t('financeAnalysis.expandSection', { section: t('financeAnalysis.cashCountListSection') })"
-                  @click="cashCountsExpanded = !cashCountsExpanded"
-                >
-                  <span>{{ cashCountsExpanded ? t('financeAnalysis.collapse') : t('financeAnalysis.expand') }}</span>
-                  <Icon :name="cashCountsExpanded ? 'material-symbols:keyboard-arrow-up-rounded' : 'material-symbols:keyboard-arrow-down-rounded'" class="h-5 w-5" />
-                </button>
-              </div>
+                <div v-if="cashCountsExpanded" class="overflow-x-auto">
+                  <table class="w-full table-fixed text-sm border-collapse">
+                    <thead>
+                      <tr class="text-left border-b">
+                        <th class="w-[28%] py-2 pr-3">{{ t('cashCount.countedAfterAt') }}</th>
+                        <th class="w-[30%] py-2 pr-3">{{ t('cashCount.event') }}</th>
+                        <th class="w-[12%] py-2 pr-3 text-right">{{ t('cashCount.registerCount') }}</th>
+                        <th class="w-[12%] py-2 pr-3 text-right">{{ t('cashCount.totalAfter') }}</th>
+                        <th class="w-[12%] py-2 text-right">{{ t('cashCount.totalDifference') }}</th>
+                        <th class="w-[6%]" />
+                      </tr>
+                    </thead>
 
-              <div v-if="cashCountsExpanded" class="overflow-x-auto">
-                <table class="w-full table-fixed text-sm border-collapse">
-                  <thead>
-                    <tr class="text-left border-b">
-                      <th class="w-[28%] py-2 pr-3">{{ t('cashCount.countedAfterAt') }}</th>
-                      <th class="w-[30%] py-2 pr-3">{{ t('cashCount.event') }}</th>
-                      <th class="w-[12%] py-2 pr-3 text-right">{{ t('cashCount.registerCount') }}</th>
-                      <th class="w-[12%] py-2 pr-3 text-right">{{ t('cashCount.totalAfter') }}</th>
-                      <th class="w-[12%] py-2 text-right">{{ t('cashCount.totalDifference') }}</th>
-                      <th class="w-[6%]" />
-                    </tr>
-                  </thead>
+                    <tbody>
+                      <tr v-for="cashCount in cashCounts" :key="cashCount.id" class="border-b last:border-b-0">
+                        <td class="py-2 pr-3 align-middle whitespace-nowrap">{{ formatDateTime(cashCount.counted_after_at) }}</td>
+                        <td class="py-2 pr-3 align-middle whitespace-normal break-words">{{ cashCount.event_name }}</td>
+                        <td class="py-2 pr-3 align-middle text-right">{{ cashCount.register_count }}</td>
+                        <td class="py-2 pr-3 align-middle text-right whitespace-nowrap">{{ formatCurrency(cashCount.total_after_amount) }}</td>
+                        <td class="py-2 align-middle text-right font-medium whitespace-nowrap">{{ formatCurrency(cashCount.total_difference) }}</td>
+                        <td class="py-2 pl-3 align-middle">
+                          <div class="flex items-center justify-end">
+                            <button
+                              type="button"
+                              class="inline-flex items-center justify-center rounded-md p-1 text-slate-600 transition hover:bg-slate-200 hover:text-slate-900 cursor-pointer"
+                              :title="t('actions.open')"
+                              @click="openCashCount(cashCount.id)"
+                            >
+                              <Icon name="material-symbols:visibility-outline-rounded" class="h-5 w-5" />
+                              <span class="sr-only">{{ t('actions.open') }}</span>
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+
+                      <tr v-if="cashCounts.length === 0">
+                        <td colspan="6" class="py-6 text-center text-slate-500">
+                          {{ t('financeAnalysis.noCashCounts') }}
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </section>
+
+              <section class="self-start w-full rounded-xl border border-slate-200 p-4 space-y-4">
+                <div class="flex items-center justify-between gap-3">
+                  <div>
+                    <h3 class="font-semibold">{{ t('financeAnalysis.invoicesTableTitle') }}</h3>
+                    <span class="text-xs text-slate-500">{{ t('financeAnalysis.countLabel', { count: invoices.length }) }}</span>
+                  </div>
+
+                  <button
+                    type="button"
+                    class="inline-flex items-center gap-2 rounded-md bg-slate-100 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-200 cursor-pointer"
+                    :title="invoicesExpanded ? t('financeAnalysis.collapseSection', { section: t('financeAnalysis.invoiceListSection') }) : t('financeAnalysis.expandSection', { section: t('financeAnalysis.invoiceListSection') })"
+                    @click="invoicesExpanded = !invoicesExpanded"
+                  >
+                    <span>{{ invoicesExpanded ? t('financeAnalysis.collapse') : t('financeAnalysis.expand') }}</span>
+                    <Icon :name="invoicesExpanded ? 'material-symbols:keyboard-arrow-up-rounded' : 'material-symbols:keyboard-arrow-down-rounded'" class="h-5 w-5" />
+                  </button>
+                </div>
+
+                <div v-if="invoicesExpanded" class="overflow-x-auto">
+                  <table class="w-full table-fixed text-sm border-collapse">
+                    <thead>
+                      <tr class="text-left border-b">
+                        <th class="w-[20%] py-2 pr-3">{{ selectedInvoiceDateFieldLabel }}</th>
+                        <th class="w-[24%] py-2 pr-3">{{ t('invoice.invoiceNumber') }}</th>
+                        <th class="w-[24%] py-2 pr-3">{{ t('invoice.company') }}</th>
+                        <th class="w-[12%] py-2 text-right">{{ t('receipt.grossAmount') }}</th>
+                        <th class="w-[6%]" />
+                        <th class="w-[6%]" />
+                      </tr>
+                    </thead>
 
                   <tbody>
-                    <tr v-for="cashCount in cashCounts" :key="cashCount.id" class="border-b last:border-b-0">
-                      <td class="py-2 pr-3 align-middle whitespace-nowrap">{{ formatDateTime(cashCount.counted_after_at) }}</td>
-                      <td class="py-2 pr-3 align-middle whitespace-normal break-words">{{ cashCount.event_name }}</td>
-                      <td class="py-2 pr-3 align-middle text-right">{{ cashCount.register_count }}</td>
-                      <td class="py-2 pr-3 align-middle text-right whitespace-nowrap">{{ formatCurrency(cashCount.total_after_amount) }}</td>
-                      <td class="py-2 align-middle text-right font-medium whitespace-nowrap">{{ formatCurrency(cashCount.total_difference) }}</td>
-                      <td class="py-2 pl-3 align-middle text-right">
-                        <button
-                          type="button"
-                          class="inline-flex items-center justify-center rounded-md p-1 text-slate-600 transition hover:bg-slate-200 hover:text-slate-900 cursor-pointer"
-                          :title="t('actions.open')"
-                          @click="openCashCount(cashCount.id)"
-                        >
-                          <Icon name="material-symbols:visibility-outline-rounded" class="h-5 w-5" />
-                          <span class="sr-only">{{ t('actions.open') }}</span>
-                        </button>
+                    <tr v-for="invoice in invoices" :key="invoice.id" class="border-b last:border-b-0">
+                      <td class="py-2 pr-3 align-middle whitespace-nowrap">{{ formatInvoiceDateByBasis(invoice) }}</td>
+                      <td class="py-2 pr-3 align-middle whitespace-normal break-words">{{ invoice.invoice_number }}</td>
+                      <td class="py-2 pr-3 align-middle whitespace-normal break-words">{{ invoice.company_name || t('invoice.noCompany') }}</td>
+                      <td class="py-2 align-middle text-right font-medium whitespace-nowrap">{{ formatCurrency(invoice.total_amount) }}</td>
+                      <td class="py-2 pl-3 align-middle">
+                        <div class="flex items-center justify-end">
+                          <span
+                            class="inline-block h-4 w-4 rounded-full"
+                            :class="receiptStatusDotClass(invoice.status)"
+                            :title="invoiceStatusLabels[invoice.status]"
+                            :aria-label="invoiceStatusLabels[invoice.status]"
+                          />
+                        </div>
                       </td>
-                    </tr>
+                      <td class="py-2 pl-3 align-middle">
+                        <div class="flex items-center justify-end">
+                          <button
+                            type="button"
+                            class="inline-flex items-center justify-center rounded-md p-1 text-slate-600 transition hover:bg-slate-200 hover:text-slate-900 cursor-pointer"
+                            :title="t('actions.open')"
+                            @click="openInvoice(invoice.id)"
+                          >
+                            <Icon name="material-symbols:visibility-outline-rounded" class="h-5 w-5" />
+                            <span class="sr-only">{{ t('actions.open') }}</span>
+                          </button>
+                        </div>
+                      </td>
+                      </tr>
 
-                    <tr v-if="cashCounts.length === 0">
-                      <td colspan="6" class="py-6 text-center text-slate-500">
-                        {{ t('financeAnalysis.noCashCounts') }}
-                      </td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-            </section>
+                      <tr v-if="invoices.length === 0">
+                        <td colspan="6" class="py-6 text-center text-slate-500">
+                          {{ t('financeAnalysis.noInvoices') }}
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </section>
+            </div>
           </div>
         </template>
       </section>
@@ -495,12 +685,14 @@ import { usePage } from '~/composables/usePage'
 import { buildReturnTarget } from '~/composables/useReturnTarget'
 import type { CostCentreRow } from '~/types/costCentre'
 import type { FinanceAnalysisData, FinanceAnalysisReceiptItem } from '~/types/financeAnalysis'
+import { InvoiceStatus } from '~/types/invoice'
 import { ReceiptStatus } from '~/types/receipt'
 import { downloadFinanceAnalysisReport, type FinanceAnalysisExportGrouping } from '~/utils/excel/financeAnalysisReport'
 
 type QuickSemester = '' | 'summer' | 'winter'
 type ManualDateField = 'start' | 'end'
 type ComparisonValueType = 'currency' | 'count'
+type InvoiceDateField = 'invoice_date' | 'due_date' | 'service_date'
 
 interface FinanceAnalysisResponse {
   ok: true
@@ -520,8 +712,15 @@ interface PersistedFinanceAnalysisState {
   quickMonth?: string
   compareWithPreviousYear?: boolean
   selectedStatuses?: ReceiptStatus[]
+  selectedInvoiceStatuses?: InvoiceStatus[]
+  invoiceDateField?: InvoiceDateField
+  periodFiltersExpanded?: boolean
+  costCentreFiltersExpanded?: boolean
+  receiptFiltersExpanded?: boolean
+  invoiceFiltersExpanded?: boolean
   receiptsExpanded?: boolean
   cashCountsExpanded?: boolean
+  invoicesExpanded?: boolean
   selectedCostCentreId?: number | null
 }
 
@@ -543,6 +742,8 @@ const { formatCurrency, formatDate, formatDateTime } = useLocaleFormatters()
 const currentYear = new Date().getFullYear()
 const defaultStatuses: ReceiptStatus[] = [ReceiptStatus.Draft, ReceiptStatus.Open, ReceiptStatus.Paid]
 const statusOrder: ReceiptStatus[] = [ReceiptStatus.Draft, ReceiptStatus.Open, ReceiptStatus.Paid, ReceiptStatus.Cancelled]
+const defaultInvoiceStatuses: InvoiceStatus[] = [InvoiceStatus.Open, InvoiceStatus.Paid]
+const invoiceStatusOrder: InvoiceStatus[] = [InvoiceStatus.Draft, InvoiceStatus.Open, InvoiceStatus.Paid, InvoiceStatus.Cancelled]
 const analysis = ref<FinanceAnalysisData | null>(null)
 const comparisonAnalysis = ref<FinanceAnalysisData | null>(null)
 const isLoading = ref(false)
@@ -555,8 +756,15 @@ const quickSemester = ref<QuickSemester>('')
 const quickMonth = ref('')
 const compareWithPreviousYear = ref(false)
 const selectedStatuses = ref<ReceiptStatus[]>([...defaultStatuses])
+const selectedInvoiceStatuses = ref<InvoiceStatus[]>([...defaultInvoiceStatuses])
+const invoiceDateField = ref<InvoiceDateField>('invoice_date')
+const periodFiltersExpanded = ref(true)
+const costCentreFiltersExpanded = ref(false)
+const receiptFiltersExpanded = ref(false)
+const invoiceFiltersExpanded = ref(false)
 const receiptsExpanded = ref(false)
 const cashCountsExpanded = ref(false)
+const invoicesExpanded = ref(false)
 const costCentres = ref<CostCentreRow[]>([])
 const costCentreQuery = ref('')
 const selectedCostCentre = ref<CostCentreRow | null>(null)
@@ -564,6 +772,7 @@ const isExportMenuOpen = ref(false)
 const exportGrouping = ref<FinanceAnalysisExportGrouping>('none')
 const exportSplitByMonth = ref(false)
 const exportSplitByPaymentStatus = ref(false)
+const openFilterDropdown = ref<number | null>(null)
 const hasCostCentreAccess = computed(() => hasPermission('cost_centres.view'))
 const sessionAnalysisState = useState<PersistedFinanceAnalysisState | null>('finance-analysis-session-state', () => null)
 const sessionExportState = useState<PersistedFinanceAnalysisExportState | null>('finance-analysis-export-session-state', () => null)
@@ -609,11 +818,37 @@ const receiptStatusOptions = computed(() => {
     { value: ReceiptStatus.Cancelled, label: receiptStatusLabels.value[ReceiptStatus.Cancelled] },
   ]
 })
+const invoiceStatusLabels = computed<Record<InvoiceStatus, string>>(() => ({
+  draft: t('invoice.states.draft'),
+  open: t('invoice.states.open'),
+  paid: t('invoice.states.paid'),
+  cancelled: t('invoice.states.cancelled'),
+}))
+
+const invoiceStatusOptions = computed(() => {
+  return [
+    { value: InvoiceStatus.Draft, label: invoiceStatusLabels.value[InvoiceStatus.Draft] },
+    { value: InvoiceStatus.Open, label: invoiceStatusLabels.value[InvoiceStatus.Open] },
+    { value: InvoiceStatus.Paid, label: invoiceStatusLabels.value[InvoiceStatus.Paid] },
+    { value: InvoiceStatus.Cancelled, label: invoiceStatusLabels.value[InvoiceStatus.Cancelled] },
+  ]
+})
+
+const invoiceDateFieldOptions = computed<Array<{ value: InvoiceDateField, label: string }>>(() => [
+  { value: 'invoice_date', label: t('financeAnalysis.invoiceDateFieldOptions.invoiceDate') },
+  { value: 'due_date', label: t('financeAnalysis.invoiceDateFieldOptions.dueDate') },
+  { value: 'service_date', label: t('financeAnalysis.invoiceDateFieldOptions.serviceDate') },
+])
+
+const selectedInvoiceDateFieldLabel = computed(() => {
+  return invoiceDateFieldOptions.value.find(option => option.value === invoiceDateField.value)?.label || t('financeAnalysis.invoiceDateFieldOptions.invoiceDate')
+})
 
 const summary = computed(() => analysis.value?.summary ?? null)
 const comparisonSummary = computed(() => comparisonAnalysis.value?.summary ?? null)
 const receipts = computed(() => analysis.value?.receipts ?? [])
 const cashCounts = computed(() => analysis.value?.cashCounts ?? [])
+const invoices = computed(() => analysis.value?.invoices ?? [])
 const hasValidDateRange = computed(() => Boolean(startDate.value && endDate.value && startDate.value <= endDate.value))
 const canExportAnalysis = computed(() => Boolean(summary.value) && !isLoading.value && !isExporting.value)
 const activePeriodLabel = computed(() => {
@@ -657,7 +892,14 @@ const receiptStateCards = computed(() => {
 const comparisonCards = computed(() => {
   if (!summary.value || !comparisonSummary.value) return []
 
-  return [
+  const cards: Array<{
+    key: string
+    label: string
+    current: number
+    previous: number
+    difference: number
+    type: ComparisonValueType
+  }> = [
     {
       key: 'receiptTotal',
       label: t('financeAnalysis.cards.receiptTotal'),
@@ -685,12 +927,23 @@ const comparisonCards = computed(() => {
     {
       key: 'entriesReviewed',
       label: t('financeAnalysis.cards.entriesReviewed'),
-      current: summary.value.receipt_count + summary.value.cash_count_count,
-      previous: comparisonSummary.value.receipt_count + comparisonSummary.value.cash_count_count,
-      difference: (summary.value.receipt_count + summary.value.cash_count_count) - (comparisonSummary.value.receipt_count + comparisonSummary.value.cash_count_count),
+      current: summary.value.receipt_count + summary.value.cash_count_count + summary.value.invoice_count,
+      previous: comparisonSummary.value.receipt_count + comparisonSummary.value.cash_count_count + comparisonSummary.value.invoice_count,
+      difference: (summary.value.receipt_count + summary.value.cash_count_count + summary.value.invoice_count) - (comparisonSummary.value.receipt_count + comparisonSummary.value.cash_count_count + comparisonSummary.value.invoice_count),
       type: 'count' as ComparisonValueType,
     },
   ]
+
+  cards.splice(2, 0, {
+    key: 'invoiceRevenue',
+    label: t('financeAnalysis.cards.invoiceRevenue'),
+    current: summary.value.invoice_total,
+    previous: comparisonSummary.value.invoice_total,
+    difference: Number((summary.value.invoice_total - comparisonSummary.value.invoice_total).toFixed(2)),
+    type: 'currency' as ComparisonValueType,
+  })
+
+  return cards
 })
 
 function restoreSelectedCostCentre(costCentreId: number | null | undefined) {
@@ -719,8 +972,19 @@ function applyAnalysisState(state?: PersistedFinanceAnalysisState | null) {
   if (Array.isArray(state.selectedStatuses)) {
     selectedStatuses.value = state.selectedStatuses.filter((status): status is ReceiptStatus => statusOrder.includes(status as ReceiptStatus))
   }
+  if (Array.isArray(state.selectedInvoiceStatuses)) {
+    selectedInvoiceStatuses.value = state.selectedInvoiceStatuses.filter((status): status is InvoiceStatus => invoiceStatusOrder.includes(status as InvoiceStatus))
+  }
+  if (state.invoiceDateField === 'invoice_date' || state.invoiceDateField === 'due_date' || state.invoiceDateField === 'service_date') {
+    invoiceDateField.value = state.invoiceDateField
+  }
+  if (typeof state.periodFiltersExpanded === 'boolean') periodFiltersExpanded.value = state.periodFiltersExpanded
+  if (typeof state.costCentreFiltersExpanded === 'boolean') costCentreFiltersExpanded.value = state.costCentreFiltersExpanded
+  if (typeof state.receiptFiltersExpanded === 'boolean') receiptFiltersExpanded.value = state.receiptFiltersExpanded
+  if (typeof state.invoiceFiltersExpanded === 'boolean') invoiceFiltersExpanded.value = state.invoiceFiltersExpanded
   if (typeof state.receiptsExpanded === 'boolean') receiptsExpanded.value = state.receiptsExpanded
   if (typeof state.cashCountsExpanded === 'boolean') cashCountsExpanded.value = state.cashCountsExpanded
+  if (typeof state.invoicesExpanded === 'boolean') invoicesExpanded.value = state.invoicesExpanded
   restoreSelectedCostCentre(state.selectedCostCentreId)
 }
 
@@ -748,8 +1012,15 @@ function persistAnalysisState() {
     quickMonth: quickMonth.value,
     compareWithPreviousYear: compareWithPreviousYear.value,
     selectedStatuses: [...selectedStatuses.value],
+    selectedInvoiceStatuses: [...selectedInvoiceStatuses.value],
+    invoiceDateField: invoiceDateField.value,
+    periodFiltersExpanded: periodFiltersExpanded.value,
+    costCentreFiltersExpanded: costCentreFiltersExpanded.value,
+    receiptFiltersExpanded: receiptFiltersExpanded.value,
+    invoiceFiltersExpanded: invoiceFiltersExpanded.value,
     receiptsExpanded: receiptsExpanded.value,
     cashCountsExpanded: cashCountsExpanded.value,
+    invoicesExpanded: invoicesExpanded.value,
     selectedCostCentreId: selectedCostCentre.value?.id ?? null,
   } satisfies PersistedFinanceAnalysisState
 }
@@ -854,6 +1125,8 @@ function resetToCurrentYear() {
   quickMonth.value = ''
   compareWithPreviousYear.value = false
   selectedStatuses.value = [...defaultStatuses]
+  selectedInvoiceStatuses.value = [...defaultInvoiceStatuses]
+  invoiceDateField.value = 'invoice_date'
   selectedCostCentre.value = null
   costCentreQuery.value = ''
   applyFullYearRange(currentYear)
@@ -871,8 +1144,24 @@ function toggleReceiptStatus(status: ReceiptStatus) {
   })
 }
 
-function statusButtonClass(status: ReceiptStatus) {
-  const selected = selectedStatuses.value.includes(status)
+function toggleInvoiceStatus(status: InvoiceStatus) {
+  if (selectedInvoiceStatuses.value.includes(status)) {
+    selectedInvoiceStatuses.value = selectedInvoiceStatuses.value.filter(value => value !== status)
+    return
+  }
+
+  selectedInvoiceStatuses.value = [...selectedInvoiceStatuses.value, status].sort((left, right) => {
+    return invoiceStatusOrder.indexOf(left) - invoiceStatusOrder.indexOf(right)
+  })
+}
+
+function selectInvoiceDateField(value: InvoiceDateField) {
+  invoiceDateField.value = value
+  openFilterDropdown.value = null
+}
+
+function statusButtonClass(status: ReceiptStatus | InvoiceStatus, selectedValues: Array<ReceiptStatus | InvoiceStatus>) {
+  const selected = selectedValues.includes(status)
   return [
     'w-full rounded-lg border px-3 py-2 text-sm font-medium transition cursor-pointer',
     selected
@@ -943,6 +1232,18 @@ function formatSignedComparisonValue(value: number, type: ComparisonValueType) {
   return `${sign}${formatComparisonValue(Math.abs(value), type)}`
 }
 
+function formatInvoiceDateByBasis(invoice: FinanceAnalysisData['invoices'][number]) {
+  if (invoiceDateField.value === 'due_date') {
+    return invoice.due_date ? formatDate(invoice.due_date) : t('common.notAvailable')
+  }
+
+  if (invoiceDateField.value === 'service_date') {
+    return invoice.service_date ? formatDate(invoice.service_date) : t('common.notAvailable')
+  }
+
+  return formatDate(invoice.invoice_date)
+}
+
 function comparisonDifferenceClass(value: number) {
   if (value > 0) return 'text-emerald-700'
   if (value < 0) return 'text-red-700'
@@ -964,7 +1265,9 @@ async function exportAnalysisReport() {
       endDate: endDate.value,
       includeComparison: compareWithPreviousYear.value,
       selectedStatuses: selectedStatuses.value,
+      selectedInvoiceStatuses: selectedInvoiceStatuses.value,
       receiptStatusLabels: receiptStatusLabels.value,
+      invoiceDateField: invoiceDateField.value,
       selectedCostCentre: selectedCostCentre.value,
       exportGrouping: exportGrouping.value,
       exportSplitByMonth: exportSplitByMonth.value,
@@ -992,6 +1295,8 @@ async function fetchAnalysisRange(periodStartDate: string, periodEndDate: string
       startDate: periodStartDate,
       endDate: periodEndDate,
       statuses: selectedStatuses.value,
+      invoiceStatuses: selectedInvoiceStatuses.value,
+      invoiceDateField: invoiceDateField.value,
       costCentreId: selectedCostCentre.value?.id || undefined,
     },
   })
@@ -1010,8 +1315,15 @@ function getAnalysisPageMeta() {
       quickMonth: quickMonth.value,
       compareWithPreviousYear: compareWithPreviousYear.value,
       selectedStatuses: [...selectedStatuses.value],
+      selectedInvoiceStatuses: [...selectedInvoiceStatuses.value],
+      invoiceDateField: invoiceDateField.value,
+      periodFiltersExpanded: periodFiltersExpanded.value,
+      costCentreFiltersExpanded: costCentreFiltersExpanded.value,
+      receiptFiltersExpanded: receiptFiltersExpanded.value,
+      invoiceFiltersExpanded: invoiceFiltersExpanded.value,
       receiptsExpanded: receiptsExpanded.value,
       cashCountsExpanded: cashCountsExpanded.value,
+      invoicesExpanded: invoicesExpanded.value,
       selectedCostCentreId: selectedCostCentre.value?.id ?? null,
     },
   }
@@ -1066,6 +1378,14 @@ function openCashCount(id: number) {
   })
 }
 
+function openInvoice(id: number) {
+  setPage('InvoiceCreate', {
+    invoiceId: id,
+    returnTarget: buildReturnTarget('FinanceAnalysis', getAnalysisPageMeta()),
+    forceReadonly: true,
+  })
+}
+
 async function loadAnalysis() {
   if (!hasValidDateRange.value) return
 
@@ -1095,7 +1415,7 @@ async function loadAnalysis() {
   }
 }
 
-function receiptStatusTone(status: FinanceAnalysisReceiptItem['status']) {
+function receiptStatusTone(status: ReceiptStatus | InvoiceStatus) {
   switch (status) {
     case ReceiptStatus.Draft:
       return 'slate'
@@ -1110,7 +1430,7 @@ function receiptStatusTone(status: FinanceAnalysisReceiptItem['status']) {
   }
 }
 
-function receiptStatusDotClass(status: FinanceAnalysisReceiptItem['status']) {
+function receiptStatusDotClass(status: ReceiptStatus | InvoiceStatus) {
   switch (receiptStatusTone(status)) {
     case 'green':
       return 'bg-emerald-500'
@@ -1133,8 +1453,15 @@ watch(() => ({
   quickMonth: quickMonth.value,
   compareWithPreviousYear: compareWithPreviousYear.value,
   selectedStatuses: [...selectedStatuses.value],
+  selectedInvoiceStatuses: [...selectedInvoiceStatuses.value],
+  invoiceDateField: invoiceDateField.value,
+  periodFiltersExpanded: periodFiltersExpanded.value,
+  costCentreFiltersExpanded: costCentreFiltersExpanded.value,
+  receiptFiltersExpanded: receiptFiltersExpanded.value,
+  invoiceFiltersExpanded: invoiceFiltersExpanded.value,
   receiptsExpanded: receiptsExpanded.value,
   cashCountsExpanded: cashCountsExpanded.value,
+  invoicesExpanded: invoicesExpanded.value,
   selectedCostCentreId: selectedCostCentre.value?.id ?? null,
 }), () => {
   persistAnalysisState()

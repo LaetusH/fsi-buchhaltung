@@ -4,9 +4,12 @@ import { requirePermission } from '~/server/utils/api/guards'
 import type {
   FinanceAnalysisCashCountItem,
   FinanceAnalysisData,
+  FinanceAnalysisInvoiceBreakdownItem,
+  FinanceAnalysisInvoiceItem,
   FinanceAnalysisReceiptBreakdownItem,
   FinanceAnalysisReceiptItem,
 } from '~/types/financeAnalysis'
+import { InvoiceStatus } from '~/types/invoice'
 import { ReceiptStatus } from '~/types/receipt'
 
 interface FinanceAnalysisSuccess {
@@ -44,6 +47,22 @@ function getRequestedStatuses(value: unknown) {
   return []
 }
 
+function isInvoiceStatus(value: unknown): value is InvoiceStatus {
+  return Object.values(InvoiceStatus).includes(value as InvoiceStatus)
+}
+
+function getRequestedInvoiceStatuses(value: unknown) {
+  if (Array.isArray(value)) return value.filter(isInvoiceStatus)
+  if (typeof value === 'string') return [value].filter(isInvoiceStatus)
+  return []
+}
+
+function getInvoiceDateColumn(value: unknown) {
+  if (value === 'due_date') return 'i.due_date'
+  if (value === 'service_date') return 'i.service_date'
+  return 'i.invoice_date'
+}
+
 function parsePositiveInteger(value: unknown) {
   if (typeof value === 'number' && Number.isInteger(value) && value > 0) return value
   if (typeof value !== 'string' || !/^\d+$/.test(value)) return null
@@ -53,7 +72,7 @@ function parsePositiveInteger(value: unknown) {
 }
 
 export default defineEventHandler(async (event): Promise<FinanceAnalysisResponse> => {
-  const current = await requirePermission(event, ['receipts.view', 'cash_counts.view'], { requireAll: true })
+  const current = await requirePermission(event, ['receipts.view', 'cash_counts.view', 'invoices.view'], { requireAll: true })
   if (!current.ok) return current
 
   const queryParams = getQuery(event)
@@ -61,6 +80,8 @@ export default defineEventHandler(async (event): Promise<FinanceAnalysisResponse
   const startDate = isDateOnly(queryParams.startDate) ? queryParams.startDate : fallback.start
   const endDate = isDateOnly(queryParams.endDate) ? queryParams.endDate : fallback.end
   const selectedStatuses = getRequestedStatuses(queryParams.statuses)
+  const selectedInvoiceStatuses = getRequestedInvoiceStatuses(queryParams.invoiceStatuses)
+  const invoiceDateColumn = getInvoiceDateColumn(queryParams.invoiceDateField)
   const costCentreId = parsePositiveInteger(queryParams.costCentreId)
 
   if (startDate > endDate) {
@@ -174,6 +195,83 @@ export default defineEventHandler(async (event): Promise<FinanceAnalysisResponse
           [startDate, endDate],
         )
 
+    const invoiceStatusPlaceholders = selectedInvoiceStatuses.map(() => '?').join(', ')
+    const invoiceFilterParams = costCentreId
+      ? [startDate, endDate, ...selectedInvoiceStatuses, costCentreId]
+      : [startDate, endDate, ...selectedInvoiceStatuses]
+
+    const invoiceRows: any[] = selectedInvoiceStatuses.length === 0
+      ? []
+      : await query(
+          `
+          SELECT
+            i.id,
+            i.invoice_date,
+            i.due_date,
+            i.service_date,
+            i.invoice_number,
+            i.status,
+            c.name AS company_name,
+            IFNULL(SUM(ip.quantity * ip.unit_price * (1 + (ip.tax / 100))), 0) AS total_amount
+          FROM invoices i
+          LEFT JOIN companies c ON c.id = i.company_id
+          LEFT JOIN invoice_positions ip ON ip.invoice_id = i.id
+          WHERE ${invoiceDateColumn} BETWEEN ? AND ?
+            AND i.status IN (${invoiceStatusPlaceholders})
+            ${costCentreId ? 'AND ip.cost_centre = ?' : ''}
+          GROUP BY i.id
+          ORDER BY ${invoiceDateColumn} DESC, i.id DESC
+          `,
+          invoiceFilterParams,
+        )
+
+    const invoiceBreakdownRows: any[] = selectedInvoiceStatuses.length === 0
+      ? []
+      : await query(
+          `
+          SELECT *
+          FROM (
+            SELECT
+              'costCentre' AS group_type,
+              cc.id AS group_id,
+              cc.code AS group_code,
+              cc.name AS group_name,
+              DATE_FORMAT(${invoiceDateColumn}, '%Y-%m') AS month_key,
+              i.status,
+              COUNT(DISTINCT i.id) AS invoice_count,
+              IFNULL(SUM(ip.quantity * ip.unit_price * (1 + (ip.tax / 100))), 0) AS total_amount
+            FROM invoices i
+            INNER JOIN invoice_positions ip ON ip.invoice_id = i.id
+            INNER JOIN cost_centres cc ON cc.id = ip.cost_centre
+            WHERE ${invoiceDateColumn} BETWEEN ? AND ?
+              AND i.status IN (${invoiceStatusPlaceholders})
+              ${costCentreId ? 'AND ip.cost_centre = ?' : ''}
+            GROUP BY cc.id, cc.code, cc.name, month_key, i.status
+
+            UNION ALL
+
+            SELECT
+              'sphere' AS group_type,
+              s.id AS group_id,
+              s.code AS group_code,
+              s.name AS group_name,
+              DATE_FORMAT(${invoiceDateColumn}, '%Y-%m') AS month_key,
+              i.status,
+              COUNT(DISTINCT i.id) AS invoice_count,
+              IFNULL(SUM(ip.quantity * ip.unit_price * (1 + (ip.tax / 100))), 0) AS total_amount
+            FROM invoices i
+            INNER JOIN invoice_positions ip ON ip.invoice_id = i.id
+            INNER JOIN spheres s ON s.id = ip.sphere
+            WHERE ${invoiceDateColumn} BETWEEN ? AND ?
+              AND i.status IN (${invoiceStatusPlaceholders})
+              ${costCentreId ? 'AND ip.cost_centre = ?' : ''}
+            GROUP BY s.id, s.code, s.name, month_key, i.status
+          ) breakdown
+          ORDER BY breakdown.group_type, breakdown.group_code, breakdown.group_name, breakdown.month_key, breakdown.status
+          `,
+          [...invoiceFilterParams, ...invoiceFilterParams],
+        )
+
     const receipts: FinanceAnalysisReceiptItem[] = receiptRows.map(row => ({
       id: Number(row.id),
       receipt_date: String(row.receipt_date),
@@ -207,6 +305,28 @@ export default defineEventHandler(async (event): Promise<FinanceAnalysisResponse
       total_before_amount: Number(row.total_before_amount || 0),
       total_after_amount: Number(row.total_after_amount || 0),
       total_difference: Number(row.total_difference || 0),
+    }))
+
+    const invoices: FinanceAnalysisInvoiceItem[] = invoiceRows.map(row => ({
+      id: Number(row.id),
+      invoice_date: String(row.invoice_date),
+      due_date: row.due_date ? String(row.due_date) : null,
+      service_date: row.service_date ? String(row.service_date) : null,
+      invoice_number: String(row.invoice_number || ''),
+      company_name: row.company_name ? String(row.company_name) : null,
+      status: row.status as InvoiceStatus,
+      total_amount: Number(row.total_amount || 0),
+    }))
+
+    const invoiceBreakdown: FinanceAnalysisInvoiceBreakdownItem[] = invoiceBreakdownRows.map(row => ({
+      group_type: row.group_type === 'sphere' ? 'sphere' : 'costCentre',
+      group_id: row.group_id === null || row.group_id === undefined ? null : Number(row.group_id),
+      group_code: String(row.group_code || ''),
+      group_name: String(row.group_name || ''),
+      month_key: String(row.month_key || ''),
+      status: row.status as InvoiceStatus,
+      invoice_count: Number(row.invoice_count || 0),
+      total_amount: Number(row.total_amount || 0),
     }))
 
     const receiptSummary = receipts.reduce((summary, receipt) => {
@@ -258,6 +378,13 @@ export default defineEventHandler(async (event): Promise<FinanceAnalysisResponse
       cash_count_total_difference: 0,
     })
 
+    const invoiceSummary = invoices.reduce((summary, invoice) => {
+      summary.invoice_total += invoice.total_amount
+      return summary
+    }, {
+      invoice_total: 0,
+    })
+
     return {
       ok: true,
       analysis: {
@@ -279,11 +406,15 @@ export default defineEventHandler(async (event): Promise<FinanceAnalysisResponse
           cash_count_total_before: Number(cashCountSummary.cash_count_total_before.toFixed(2)),
           cash_count_total_after: Number(cashCountSummary.cash_count_total_after.toFixed(2)),
           cash_count_total_difference: Number(cashCountSummary.cash_count_total_difference.toFixed(2)),
-          net_result: Number((cashCountSummary.cash_count_total_difference - receiptSummary.receipt_total).toFixed(2)),
+          invoice_count: invoices.length,
+          invoice_total: Number(invoiceSummary.invoice_total.toFixed(2)),
+          net_result: Number((cashCountSummary.cash_count_total_difference + invoiceSummary.invoice_total - receiptSummary.receipt_total).toFixed(2)),
         },
         receipts,
         receiptBreakdown,
+        invoiceBreakdown,
         cashCounts,
+        invoices,
       },
     }
   } catch (err: any) {

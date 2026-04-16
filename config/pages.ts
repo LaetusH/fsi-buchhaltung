@@ -30,7 +30,7 @@ export const PAGES: Record<string, AppPage> = {
   ReimbursementCreate: { main: false, labelKey: 'pages.createReimbursement', component: ReimbursementCreatePage, permissions: ['reimbursements.view'] },
   CashCountList: { main: false, labelKey: 'pages.cashCounts', component: CashCountListPage, permissions: ['cash_counts.view'] },
   CashCountCreate: { main: false, labelKey: 'pages.createCashCount', component: CashCountCreatePage, permissions: ['cash_counts.view'] },
-  FinanceAnalysis: { main: true, labelKey: 'pages.financeAnalysis', component: FinanceAnalysisPage, icon: '', permissions: ['receipts.view', 'cash_counts.view'], requireAllPermissions: true },
+  FinanceAnalysis: { main: true, labelKey: 'pages.financeAnalysis', component: FinanceAnalysisPage, icon: '', permissions: ['receipts.view', 'cash_counts.view', 'invoices.view'], requireAllPermissions: true },
   Events: { main: true, labelKey: 'pages.events', component: EventListPage, icon: '', permissions: ['events.view'] },
   EventCreate: { main: false, labelKey: 'pages.createEvent', component: EventCreatePage, permissions: ['events.view'] },
   MemberList: { main: true, labelKey: 'pages.members', component: MemberListPage, icon: '', permissions: ['members.view'] },
