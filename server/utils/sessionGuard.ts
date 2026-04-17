@@ -25,6 +25,12 @@ export async function getCurrentUserFromEvent(event: any, touch: boolean): Promi
   const session = normalizeBigInt(await getSessionByToken(token))
   if (!session) return { ok: false, error: "error on getting session" }
 
+  const isActive = session.is_active === 1 || session.is_active === '1'
+  if (!isActive) {
+    await deleteSessionByToken(token)
+    return { ok: false, error: "user inactive" }
+  }
+
   const now = new Date()
   if (session.expires_at && new Date(session.expires_at + 'Z') < now) {
     return { ok: false, error: "session expired" }
@@ -51,7 +57,7 @@ export async function getCurrentUserFromEvent(event: any, touch: boolean): Promi
       username: session.username,
       roles,
       permissions,
-      is_active: session.is_active === 1 || session.is_active === '1'
+      is_active: isActive
     }
   }
 }
