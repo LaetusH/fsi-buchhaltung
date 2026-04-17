@@ -21,7 +21,9 @@ export async function getUserRoleIds(userId: number): Promise<number[]> {
   const rows = await query<RoleRow[]>(
     `SELECT ur.role_id
      FROM user_roles ur
-     WHERE ur.user_id = ?`,
+     JOIN roles r ON r.id = ur.role_id
+     WHERE ur.user_id = ?
+       AND r.is_active = 1`,
     [userId]
   )
   const roles = rows.map(r => r.role_id).filter(Boolean)
@@ -47,7 +49,10 @@ export async function getUserPermissions(userId: number, roles: number[], positi
 
   if (roles.length) {
     const roleRows = await query<{ id: number }[]>(
-      `SELECT id FROM roles WHERE id IN (${roles.map(() => '?').join(',')})`,
+      `SELECT id
+       FROM roles
+       WHERE is_active = 1
+         AND id IN (${roles.map(() => '?').join(',')})`,
       roles
     )
     const roleIds = roleRows.map(r => r.id).filter(id => Number.isFinite(id))

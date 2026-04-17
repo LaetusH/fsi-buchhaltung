@@ -10,6 +10,7 @@ export async function getDefaultRoleId(conn?: mariadb.PoolConnection) {
     `SELECT id
      FROM roles
      WHERE is_default = 1
+       AND is_active = 1
      ORDER BY id ASC
      LIMIT 1`,
     [],

@@ -43,13 +43,16 @@ export default defineEventHandler(async (event): Promise<UpdateUserAccessRespons
 
   if (newRoles.length) {
     const validRoles = await query<{ id: number }[]>(
-      `SELECT id FROM roles WHERE id IN (${newRoles.map(() => '?').join(',')})`,
+      `SELECT id
+       FROM roles
+       WHERE is_active = 1
+         AND id IN (${newRoles.map(() => '?').join(',')})`,
       newRoles
     )
     const validRoleSet = new Set(validRoles.map(role => role.id))
-    const filtered = newRoles.filter(role => validRoleSet.has(role))
-    newRoles.length = 0
-    newRoles.push(...filtered)
+    if (newRoles.some(role => !validRoleSet.has(role))) {
+      return { ok: false, error: 'Inactive or unknown roles cannot be assigned' }
+    }
   }
 
   try {

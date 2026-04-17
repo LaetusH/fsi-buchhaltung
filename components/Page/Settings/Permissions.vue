@@ -17,6 +17,7 @@
               <tr class="text-left border-b">
                 <th class="py-2">{{ t('common.code') }}</th>
                 <th class="py-2">{{ t('common.name') }}</th>
+                <th class="py-2">{{ t('settings.permissions.roleStatus') }}</th>
                 <th class="py-2">{{ t('settings.permissions.defaultRole') }}</th>
                 <th class="py-2">{{ t('common.description') }}</th>
                 <th class="py-2 text-right">{{ t('common.actions') }}</th>
@@ -26,6 +27,7 @@
               <tr v-for="role in roles" :key="role.id" class="border-b last:border-b-0">
                 <td class="py-2">{{ role.code }}</td>
                 <td class="py-2">{{ role.name }}</td>
+                <td class="py-2">{{ role.is_active ? t('common.active') : t('common.inactive') }}</td>
                 <td class="py-2">{{ role.is_default ? t('common.yes') : t('common.no') }}</td>
                 <td class="py-2 text-slate-600">{{ role.description || '-' }}</td>
                 <td class="py-2 text-right space-x-2">
@@ -38,7 +40,7 @@
                 </td>
               </tr>
               <tr v-if="roles.length === 0">
-                <td colspan="5" class="py-6 text-center text-slate-500">
+                <td colspan="6" class="py-6 text-center text-slate-500">
                   {{ t('settings.permissions.noRoles') }}
                 </td>
               </tr>
@@ -199,8 +201,14 @@
             <h4 class="font-semibold mb-2">{{ t('settings.permissions.roles') }}</h4>
             <div class="grid md:grid-cols-2 gap-2">
               <label v-for="role in roles" :key="role.id" class="inline-flex items-center gap-2 text-sm cursor-pointer">
-                <input type="checkbox" class="checkbox" :value="role.id" v-model="userModal.roles" />
-                <span>{{ role.name }} ({{ role.code }})</span>
+                <input
+                  type="checkbox"
+                  class="checkbox"
+                  :value="role.id"
+                  :disabled="!role.is_active && !userModal.roles.includes(role.id)"
+                  v-model="userModal.roles"
+                />
+                <span>{{ formatRoleOptionLabel(role) }}</span>
               </label>
             </div>
           </div>
@@ -313,6 +321,17 @@ const permissionGroups = computed(() => {
     permissions: perms,
   }))
 })
+
+const activeRoleIds = computed(() => new Set(
+  roles.value
+    .filter(role => role.is_active)
+    .map(role => role.id)
+))
+
+function formatRoleOptionLabel(role: RoleRow) {
+  const status = role.is_active ? t('common.active') : t('common.inactive')
+  return `${role.name} (${role.code}) - ${status}`
+}
 
 async function loadDefinitions() {
   const res = await $fetch('/api/permissions/definitions')
@@ -438,7 +457,7 @@ function openUserAccess(user: UserRow) {
   userModal.value = {
     id: user.id,
     username: user.username,
-    roles: [...user.roles],
+    roles: user.roles.filter(roleId => activeRoleIds.value.has(roleId)),
     permissions: [...user.permissions],
   }
 }

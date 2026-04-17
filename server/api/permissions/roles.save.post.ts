@@ -39,6 +39,7 @@ export default defineEventHandler(async (event): Promise<SaveRoleResponse> => {
     is_active: body.is_active !== false,
     is_default: body.is_default === true,
   }
+  const nextIsDefault = updated.is_active ? updated.is_default : false
 
   try {
     return await withTransaction(async (conn) => {
@@ -54,7 +55,7 @@ export default defineEventHandler(async (event): Promise<SaveRoleResponse> => {
 
         const fields = ['code', 'name', 'description', 'is_active', 'is_default'] as (keyof typeof updated)[]
 
-        if (updated.is_default) {
+        if (nextIsDefault) {
           await query(
             `UPDATE roles
              SET is_default = 0
@@ -72,7 +73,7 @@ export default defineEventHandler(async (event): Promise<SaveRoleResponse> => {
           next: {
             ...updated,
             is_active: toDbBoolean(updated.is_active),
-            is_default: toDbBoolean(updated.is_default),
+            is_default: toDbBoolean(nextIsDefault),
           },
           userId: current.user.id,
           conn,
@@ -82,7 +83,7 @@ export default defineEventHandler(async (event): Promise<SaveRoleResponse> => {
           `UPDATE roles
           SET code = ?, name = ?, description = ?, is_active = ?, is_default = ?
           WHERE id = ?`,
-          [updated.code, updated.name, updated.description, toDbBoolean(updated.is_active), toDbBoolean(updated.is_default), updated.id],
+          [updated.code, updated.name, updated.description, toDbBoolean(updated.is_active), toDbBoolean(nextIsDefault), updated.id],
           conn
         )
 
@@ -92,11 +93,11 @@ export default defineEventHandler(async (event): Promise<SaveRoleResponse> => {
       const insertResult = await query<any>(
         `INSERT INTO roles (code, name, is_active, is_default, description, created_by)
         VALUES (?, ?, ?, ?, ?, ?)`,
-        [updated.code, updated.name, toDbBoolean(updated.is_active), toDbBoolean(updated.is_default), updated.description, current.user.id],
+        [updated.code, updated.name, toDbBoolean(updated.is_active), toDbBoolean(nextIsDefault), updated.description, current.user.id],
         conn
       )
 
-      if (updated.is_default) {
+      if (nextIsDefault) {
         await query(
           `UPDATE roles
            SET is_default = 0
