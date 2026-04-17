@@ -46,12 +46,21 @@ export async function validateCostCentreSelection(
       .filter(selection => Number.isInteger(selection.itemId) && selection.itemId > 0 && Number.isInteger(selection.costCentreId) && selection.costCentreId > 0)
       .map(selection => [selection.itemId, selection.costCentreId] as const),
   )
+  const allowedExistingCostCentreIds = new Set(
+    Array.from(existingSelections)
+      .map(selection => Number(selection.costCentreId))
+      .filter(value => Number.isInteger(value) && value > 0),
+  )
 
   const rowsById = new Map(rows.map(row => [Number(row.id), row]))
 
   const disallowedCostCentre = selections.find((selection) => {
     const row = rowsById.get(Number(selection.costCentreId))
     if (!row || Boolean(row.is_active)) return false
+
+    if (!selection.itemId) {
+      return !allowedExistingCostCentreIds.has(Number(row.id))
+    }
 
     const existingCostCentreId = selection.itemId
       ? existingCostCentreIdsByItemId.get(Number(selection.itemId))
