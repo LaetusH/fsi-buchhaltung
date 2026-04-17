@@ -53,7 +53,19 @@ export default defineEventHandler(async (event): Promise<UpdateEventResponse> =>
       const existing = existingRows[0]
       if (!existing) return { ok: false, error: 'Event not found' }
 
-      const relationError = await validateEventRelations(body, conn)
+      const existingSplitRows = await query<{ id: number, cost_centre_id: number, allocation_percentage: number }[]>(
+        `SELECT id, cost_centre_id, allocation_percentage
+         FROM event_cost_centre_splits
+         WHERE event_id = ?`,
+        [eventId],
+        conn,
+      )
+
+      const relationError = await validateEventRelations(
+        body,
+        conn,
+        existingSplitRows.map(row => Number(row.cost_centre_id)),
+      )
       if (relationError) return { ok: false, error: relationError }
 
       const fields: EventLogField[] = ['name', 'starts_at', 'ends_at', 'location', 'expected_guests']
@@ -82,7 +94,7 @@ export default defineEventHandler(async (event): Promise<UpdateEventResponse> =>
         conn,
       )
 
-      const [memberRows, subdivisionRows, splitRows] = await Promise.all([
+      const [memberRows, subdivisionRows] = await Promise.all([
         query<{ member_id: number }[]>(
           `SELECT member_id
            FROM event_member_organizers
@@ -93,13 +105,6 @@ export default defineEventHandler(async (event): Promise<UpdateEventResponse> =>
         query<{ subdivision_id: number }[]>(
           `SELECT subdivision_id
            FROM event_subdivision_organizers
-           WHERE event_id = ?`,
-          [eventId],
-          conn,
-        ),
-        query<{ id: number, cost_centre_id: number, allocation_percentage: number }[]>(
-          `SELECT id, cost_centre_id, allocation_percentage
-           FROM event_cost_centre_splits
            WHERE event_id = ?`,
           [eventId],
           conn,
@@ -122,7 +127,7 @@ export default defineEventHandler(async (event): Promise<UpdateEventResponse> =>
       })
       await syncEventCostCentreSplits({
         eventId,
-        existingRows: splitRows.map(row => ({
+        existingRows: existingSplitRows.map(row => ({
           id: Number(row.id),
           cost_centre_id: Number(row.cost_centre_id),
           allocation_percentage: Number(row.allocation_percentage),

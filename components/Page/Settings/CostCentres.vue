@@ -14,6 +14,20 @@
     :transform-items="flattenCostCentres"
     :on-error="handleError"
   >
+    <template #actions="{ item, items, edit, reload }">
+      <button class="text-blue-600 hover:underline cursor-pointer" @click="edit()">
+        {{ t('actions.edit') }}
+      </button>
+
+      <button
+        class="hover:underline cursor-pointer"
+        :class="item.is_active ? 'text-red-500' : 'text-gray-500'"
+        @click="item.is_active ? openDeactivateModal(item, items, reload) : toggleCostCentre(item, true, false, reload)"
+      >
+        {{ item.is_active ? t('actions.deactivate') : t('actions.activate') }}
+      </button>
+    </template>
+
     <template #name-cell="{ item }">
       <div
         class="flex items-center gap-2"
@@ -45,6 +59,61 @@
       </div>
     </template>
   </PageSettingsEntityManager>
+
+  <teleport to="body">
+    <div
+      v-if="deactivateModalOpen && deactivateTarget"
+      class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+    >
+      <div class="w-full max-w-xl rounded-xl bg-white p-6 shadow-xl space-y-4">
+        <div class="space-y-1">
+          <h3 class="text-lg font-semibold">{{ t('settings.costCentres.deactivateConfirm.title') }}</h3>
+          <p class="text-sm text-slate-600">
+            {{ t('settings.costCentres.deactivateConfirm.intro', { costCentre: `${deactivateTarget.code} - ${deactivateTarget.name}` }) }}
+          </p>
+        </div>
+
+        <label class="flex items-start gap-3 rounded-lg border border-slate-200 p-3">
+          <input
+            v-model="removeAsParent"
+            type="checkbox"
+            class="checkbox mt-0.5"
+          >
+          <span class="text-sm text-slate-700 cursor-pointer">
+            {{ t('settings.costCentres.deactivateConfirm.removeParentAssignments') }}
+          </span>
+        </label>
+
+        <div v-if="deactivateChildCostCentres.length" class="space-y-2">
+          <div class="text-sm font-medium text-slate-700">
+            {{ t('settings.costCentres.deactivateConfirm.childCostCentresTitle') }}
+          </div>
+          <div class="max-h-48 overflow-y-auto rounded-lg border border-slate-200 bg-slate-50 p-3">
+            <div
+              v-for="child in deactivateChildCostCentres"
+              :key="child.id"
+              class="text-sm text-slate-700"
+            >
+              {{ child.code }} - {{ child.name }}
+            </div>
+          </div>
+        </div>
+
+        <p v-else class="text-sm text-slate-500">
+          {{ t('settings.costCentres.deactivateConfirm.noChildCostCentres') }}
+        </p>
+
+        <div class="flex justify-end gap-3 pt-2">
+          <button class="btn-secondary" @click="closeDeactivateModal">
+            {{ t('actions.cancel') }}
+          </button>
+          <button class="btn-primary" @click="confirmDeactivate">
+            {{ t('actions.deactivate') }}
+          </button>
+        </div>
+      </div>
+    </div>
+  </teleport>
 </template>
 
 <script setup lang="ts">
@@ -71,6 +140,11 @@ const { t } = useI18n()
 const toast = useToast()
 
 const parentQuery = ref('')
+const deactivateModalOpen = ref(false)
+const deactivateTarget = ref<CostCentreRow | null>(null)
+const deactivateChildCostCentres = ref<CostCentreRow[]>([])
+const removeAsParent = ref(false)
+const reloadAfterToggle = ref<null | (() => Promise<void>)>(null)
 
 const tableColumns = computed<EntityManagerColumn[]>(() => [
   {
@@ -233,6 +307,59 @@ function selectParent(value: unknown, editingItem: SaveSettingsEntityBody, items
 function clearParent(editingItem: SaveSettingsEntityBody) {
   costCentreBody(editingItem).parent_id = null
   parentQuery.value = ''
+}
+
+function openDeactivateModal(item: SettingsEntityRow, items: SettingsEntityRow[], reload: () => Promise<void>) {
+  const costCentre = item as CostCentreRow
+  deactivateTarget.value = costCentre
+  deactivateChildCostCentres.value = (items as CostCentreRow[]).filter(entry => entry.parent_id === costCentre.id)
+  removeAsParent.value = deactivateChildCostCentres.value.length > 0
+  reloadAfterToggle.value = reload
+  deactivateModalOpen.value = true
+}
+
+function closeDeactivateModal() {
+  deactivateModalOpen.value = false
+  deactivateTarget.value = null
+  deactivateChildCostCentres.value = []
+  removeAsParent.value = false
+  reloadAfterToggle.value = null
+}
+
+async function toggleCostCentre(
+  item: SettingsEntityRow,
+  isActive: boolean,
+  clearChildParents: boolean,
+  reload: () => Promise<void>,
+) {
+  const res = await $fetch<{ ok: boolean, error?: string }>('/api/cost_centres/activate', {
+    method: 'POST',
+    body: {
+      id: item.id,
+      is_active: isActive,
+      clear_child_parent_links: clearChildParents,
+    },
+  })
+
+  if (!res.ok) {
+    handleError({ phase: 'toggle', message: res.error })
+    return false
+  }
+
+  await reload()
+  return true
+}
+
+async function confirmDeactivate() {
+  if (!deactivateTarget.value || !reloadAfterToggle.value) return
+
+  const ok = await toggleCostCentre(
+    deactivateTarget.value,
+    false,
+    removeAsParent.value,
+    reloadAfterToggle.value,
+  )
+  if (ok) closeDeactivateModal()
 }
 
 function handleError({ phase, message, error }: { phase: 'load' | 'save' | 'toggle', message?: string, error?: unknown }) {

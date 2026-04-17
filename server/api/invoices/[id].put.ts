@@ -3,6 +3,7 @@ import { query, withTransaction } from '~/server/utils/db'
 import { logChange } from '~/server/utils/changeLogger'
 import { getNumericRouteParam, readMultipart } from '~/server/utils/api/request'
 import { requirePermission } from '~/server/utils/api/guards'
+import { validateCostCentreSelection } from '~/server/utils/costCentres'
 import { buildInvoicePdf } from '~/server/utils/invoicePdf'
 import { detachFileAttachment, getActiveFileAttachment, storeAndAttachUploadedFile, validateUploadedFile } from '~/server/utils/files'
 import { getAssociationBoardLineForInvoice, getAssociationLogoForInvoice, getAssociationProfileForInvoice, getInvoiceCompany, invoiceNeedsUploadedFile, invoiceNumberExists, normalizeInvoicePayload, validateInvoicePayload } from '~/server/utils/invoices'
@@ -199,6 +200,19 @@ export default defineEventHandler(async (event): Promise<UpdateInvoiceResponse> 
         conn,
       )
       if (sphereValidationError) return { ok: false, error: sphereValidationError }
+
+      const costCentreValidationError = await validateCostCentreSelection(
+        parsed.positions.map(position => ({
+          itemId: position.id ? Number(position.id) : null,
+          costCentreId: Number(position.cost_centre),
+        })),
+        existingPositions.map(position => ({
+          itemId: Number(position.id),
+          costCentreId: Number(position.cost_centre),
+        })),
+        conn,
+      )
+      if (costCentreValidationError) return { ok: false, error: costCentreValidationError }
 
       if (existing.status !== InvoiceStatus.Draft) {
         const existingComparable = {

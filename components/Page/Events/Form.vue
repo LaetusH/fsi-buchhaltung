@@ -202,7 +202,7 @@ const subdivisionOrganizerOptions = computed<SearchSelectOption<EventSubdivision
   })))
 
 const costCentreOptions = computed<SearchSelectOption<EventCostCentreOption>[]>(() => props.costCentres
-  .filter(costCentre => !form.value.cost_centre_splits.some(split => split.cost_centre_id === costCentre.id))
+  .filter(costCentre => Boolean(costCentre.is_active) && !form.value.cost_centre_splits.some(split => split.cost_centre_id === costCentre.id))
   .map(costCentre => ({
     key: costCentre.id,
     label: `${costCentre.code} - ${costCentre.name}`,

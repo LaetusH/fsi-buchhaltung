@@ -2,6 +2,7 @@ import { defineEventHandler } from 'h3'
 import { query, withTransaction } from '~/server/utils/db'
 import { readMultipart } from '~/server/utils/api/request'
 import { requirePermission } from '~/server/utils/api/guards'
+import { validateCostCentreSelection } from '~/server/utils/costCentres'
 import { buildInvoicePdf } from '~/server/utils/invoicePdf'
 import { getAssociationBoardLineForInvoice, getAssociationLogoForInvoice, getAssociationProfileForInvoice, getInvoiceCompany, invoiceNeedsUploadedFile, invoiceNumberExists, normalizeInvoicePayload, validateInvoicePayload } from '~/server/utils/invoices'
 import { storeAndAttachUploadedFile, validateUploadedFile } from '~/server/utils/files'
@@ -60,6 +61,15 @@ export default defineEventHandler(async (event): Promise<CreateInvoiceResponse> 
         conn,
       )
       if (sphereValidationError) return { ok: false, error: sphereValidationError }
+
+      const costCentreValidationError = await validateCostCentreSelection(
+        parsed.positions.map(position => ({
+          costCentreId: Number(position.cost_centre),
+        })),
+        [],
+        conn,
+      )
+      if (costCentreValidationError) return { ok: false, error: costCentreValidationError }
 
       const result: any = await query(
         `INSERT INTO invoices

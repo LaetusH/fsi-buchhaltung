@@ -1,6 +1,7 @@
 import type mariadb from 'mariadb'
 import { logFieldChanges, syncScalarCollection } from '~/server/utils/api/audit'
 import { logChange } from '~/server/utils/changeLogger'
+import { validateSimpleCostCentreSelection } from '~/server/utils/costCentres'
 import { query } from '~/server/utils/db'
 import { getSubdivisionLabels, getMemberLabels, normalizeRelationIds } from '~/server/utils/subdivisions'
 import type {
@@ -133,7 +134,11 @@ export function validateEventPayload(body: SaveEventBody) {
   return null
 }
 
-export async function validateEventRelations(body: SaveEventBody, conn: mariadb.PoolConnection) {
+export async function validateEventRelations(
+  body: SaveEventBody,
+  conn: mariadb.PoolConnection,
+  existingCostCentreIds: number[] = [],
+) {
   if (body.member_organizer_ids.length) {
     const rows = await query<{ id: number }[]>(
       `SELECT id
@@ -165,9 +170,11 @@ export async function validateEventRelations(body: SaveEventBody, conn: mariadb.
     conn,
   )
 
-  return rows.length === costCentreIds.length
-    ? null
-    : 'At least one selected cost centre does not exist'
+  if (rows.length !== costCentreIds.length) {
+    return 'At least one selected cost centre does not exist'
+  }
+
+  return validateSimpleCostCentreSelection(costCentreIds, existingCostCentreIds, conn)
 }
 
 export async function getCostCentreLabels(

@@ -78,7 +78,7 @@
 
         <CommonSearchSelect
           v-model="costCentreQueries[i]"
-          :options="costCentreOptions"
+          :options="costCentreOptionsFor(i)"
           :selected-label="selectedCostCentreLabel(i)"
           :placeholder="t('receipt.costCentrePlaceholder')"
           :empty-text="t('receipt.noCostCentres')"
@@ -269,12 +269,6 @@ const companyOptions = computed<SearchSelectOption<CompanyRow>[]>(() => companie
 const spheres = ref<SphereRow[]>([])
 const openSphereIndex = ref<number | null>(null)
 const costCentres = ref<CostCentreRow[]>([])
-const costCentreOptions = computed<SearchSelectOption<CostCentreRow>[]>(() => costCentres.value.map(costCentre => ({
-  key: costCentre.id,
-  label: `${costCentre.code} - ${costCentre.name}`,
-  value: costCentre,
-  searchText: `${costCentre.code} ${costCentre.name}`,
-})))
 const costCentreQueries = ref<Record<number, string>>({})
 const focusedIndex = ref<number | null>(null)
 const openTaxIndex = ref<number | null>(null)
@@ -287,7 +281,7 @@ async function loadSpheres() {
 
 async function loadCostCentres() {
   const res = await $fetch('/api/cost_centres', { method: 'GET' })
-  if (res.ok) costCentres.value = res.costCentres.filter(c => c.is_active)
+  if (res.ok) costCentres.value = res.costCentres
 }
 
 async function loadCompanies() {
@@ -336,7 +330,7 @@ watch([costCentres, () => form.value.positions], () => {
   form.value.positions.forEach((p, index) => {
     if (!p.cost_centre) return
     const cc = costCentres.value.find(c => c.id === p.cost_centre)
-    if (cc) costCentreQueries.value[index] = `${cc.code} - ${cc.name}`
+    if (cc) costCentreQueries.value[index] = costCentreOptionLabel(cc)
   })
 }, { immediate: true, deep: true })
 
@@ -357,7 +351,7 @@ function selectSphere(index: number, sphere: SphereRow) {
 
 function selectCostCentre(index: number, costCentre: CostCentreRow) {
   form.value.positions[index]!.cost_centre = costCentre.id
-  costCentreQueries.value[index] = `${costCentre.code} - ${costCentre.name}`
+  costCentreQueries.value[index] = costCentreOptionLabel(costCentre)
 }
 
 function selectCostCentreFromOption(index: number, value: unknown) {
@@ -374,7 +368,26 @@ function selectedCostCentreLabel(index: number) {
   const costCentreId = form.value.positions[index]?.cost_centre
   if (!costCentreId) return ''
   const costCentre = costCentres.value.find(c => c.id === costCentreId)
-  return costCentre ? `${costCentre.code} - ${costCentre.name}` : ''
+  return costCentre ? costCentreOptionLabel(costCentre) : ''
+}
+
+function availableCostCentres(index: number) {
+  const selectedCostCentreId = Number(form.value.positions[index]?.cost_centre || 0)
+  return costCentres.value.filter((costCentre) => Boolean(costCentre.is_active) || Number(costCentre.id) === selectedCostCentreId)
+}
+
+function costCentreOptionLabel(costCentre: CostCentreRow) {
+  const baseLabel = `${costCentre.code} - ${costCentre.name}`
+  return Boolean(costCentre.is_active) ? baseLabel : `${baseLabel} (${t('common.inactive')})`
+}
+
+function costCentreOptionsFor(index: number): SearchSelectOption<CostCentreRow>[] {
+  return availableCostCentres(index).map(costCentre => ({
+    key: costCentre.id,
+    label: costCentreOptionLabel(costCentre),
+    value: costCentre,
+    searchText: `${costCentre.code} ${costCentre.name}`,
+  }))
 }
 
 function selectTax(index: number, tax: number) {

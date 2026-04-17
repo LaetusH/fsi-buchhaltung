@@ -130,7 +130,10 @@
                 v-for="costCentre in orderedCostCentres"
                 :key="costCentre.id"
                 class="border-b last:border-b-0"
-                :class="costCentre.hasChildren ? 'bg-slate-50/70' : 'bg-white'"
+                :class="[
+                  costCentre.hasChildren ? 'bg-slate-50/70' : 'bg-white',
+                  !costCentre.is_active ? 'bg-amber-50/70' : '',
+                ]"
               >
                 <div class="grid grid-cols-1 gap-4 p-4 sm:grid-cols-2 lg:grid-cols-3">
                   <div class="space-y-3">
@@ -142,6 +145,9 @@
                         <span v-if="costCentre.depth > 0" class="mt-0.5 text-slate-400">|-</span>
                         <div>
                           <div class="font-medium text-slate-900">{{ costCentre.code }} - {{ costCentre.name }}</div>
+                          <div v-if="!costCentre.is_active" class="text-xs text-amber-700">
+                            {{ t('budget.inactiveCostCentreNotice') }}
+                          </div>
                           <div v-if="costCentre.hasChildren" class="text-xs text-slate-500">{{ t('budget.includesChildBudgets') }}</div>
                         </div>
                       </div>
@@ -384,7 +390,7 @@ const orderedCostCentres = computed<DisplayCostCentre[]>(() => {
     visit(item.id, 1)
   }
 
-  return ordered
+  return ordered.filter(costCentre => shouldDisplayBudgetCostCentre(costCentre.id))
 })
 
 const childrenByParent = computed(() => {
@@ -401,6 +407,25 @@ const childrenByParent = computed(() => {
 })
 
 const lineMap = computed(() => new Map(form.value.lines.map(line => [line.cost_centre_id, line])))
+
+function costCentreLineHasContent(costCentreId: number) {
+  const line = lineMap.value.get(costCentreId)
+  if (!line) return false
+
+  return Number(line.expense_amount || 0) !== 0
+    || Number(line.income_amount || 0) !== 0
+    || Boolean(String(line.notes || '').trim())
+}
+
+function shouldDisplayBudgetCostCentre(costCentreId: number): boolean {
+  const costCentre = costCentres.value.find(entry => entry.id === costCentreId)
+  if (!costCentre) return false
+  if (Boolean(costCentre.is_active)) return true
+  if (costCentreLineHasContent(costCentreId)) return true
+
+  const childIds = childrenByParent.value.get(costCentreId) ?? []
+  return childIds.some(childId => shouldDisplayBudgetCostCentre(childId))
+}
 
 const summaryByCostCentre = computed<Record<number, CostCentreSummary>>(() => {
   const cache = new Map<number, CostCentreSummary>()
@@ -506,7 +531,7 @@ function createEmptyBudgetForm(): BudgetEditorForm {
 function createEditorLines(detailLines?: BudgetCostCentreLine[]) {
   const lineByCostCentre = new Map((detailLines ?? []).map(line => [line.cost_centre_id, line]))
 
-  return orderedCostCentres.value.map(costCentre => {
+  return costCentres.value.map(costCentre => {
     const existing = lineByCostCentre.get(costCentre.id)
     return {
       cost_centre_id: costCentre.id,

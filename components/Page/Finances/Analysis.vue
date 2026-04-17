@@ -784,7 +784,7 @@ const yearOptions = computed(() => {
 const costCentreOptions = computed<SearchSelectOption<CostCentreRow>[]>(() => {
   return costCentres.value.map(costCentre => ({
     key: costCentre.id,
-    label: `${costCentre.code} - ${costCentre.name}`,
+    label: costCentreOptionLabel(costCentre),
     value: costCentre,
     searchText: `${costCentre.code} ${costCentre.name}`,
   }))
@@ -792,7 +792,7 @@ const costCentreOptions = computed<SearchSelectOption<CostCentreRow>[]>(() => {
 
 const selectedCostCentreLabel = computed(() => {
   if (!selectedCostCentre.value) return ''
-  return `${selectedCostCentre.value.code} - ${selectedCostCentre.value.name}`
+  return costCentreOptionLabel(selectedCostCentre.value)
 })
 
 const monthOptions = computed(() => {
@@ -955,7 +955,7 @@ function restoreSelectedCostCentre(costCentreId: number | null | undefined) {
 
   const restoredCostCentre = costCentres.value.find(costCentre => costCentre.id === costCentreId) || null
   selectedCostCentre.value = restoredCostCentre
-  costCentreQuery.value = restoredCostCentre ? `${restoredCostCentre.code} - ${restoredCostCentre.name}` : ''
+  costCentreQuery.value = restoredCostCentre ? costCentreOptionLabel(restoredCostCentre) : ''
 }
 
 function applyAnalysisState(state?: PersistedFinanceAnalysisState | null) {
@@ -1342,7 +1342,7 @@ async function loadCostCentres() {
     })
 
     if (!response.ok) return
-    costCentres.value = response.costCentres.filter(costCentre => costCentre.is_active)
+    costCentres.value = response.costCentres
   } catch {
     costCentres.value = []
   }
@@ -1350,7 +1350,12 @@ async function loadCostCentres() {
 
 function selectCostCentre(costCentre: CostCentreRow) {
   selectedCostCentre.value = costCentre
-  costCentreQuery.value = `${costCentre.code} - ${costCentre.name}`
+  costCentreQuery.value = costCentreOptionLabel(costCentre)
+}
+
+function costCentreOptionLabel(costCentre: CostCentreRow) {
+  const baseLabel = `${costCentre.code} - ${costCentre.name}`
+  return Boolean(costCentre.is_active) ? baseLabel : `${baseLabel} (${t('common.inactive')})`
 }
 
 function selectCostCentreFromOption(value: unknown) {

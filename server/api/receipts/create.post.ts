@@ -2,6 +2,7 @@ import { defineEventHandler } from 'h3'
 import { query, withTransaction } from '~/server/utils/db'
 import { requirePermission } from '~/server/utils/api/guards'
 import { readMultipart } from '~/server/utils/api/request'
+import { validateCostCentreSelection } from '~/server/utils/costCentres'
 import { receiptRequiresFile, validateReceiptPayload } from '~/server/utils/receipts'
 import { storeAndAttachUploadedFile, validateUploadedFile } from '~/server/utils/files'
 import { validateSphereSelection } from '~/server/utils/spheres'
@@ -50,6 +51,15 @@ export default defineEventHandler(async (event): Promise<CreateReceiptResponse> 
         conn,
       )
       if (sphereValidationError) return { ok: false, error: sphereValidationError }
+
+      const costCentreValidationError = await validateCostCentreSelection(
+        receipt.positions.map((position: any) => ({
+          costCentreId: Number(position.cost_centre),
+        })),
+        [],
+        conn,
+      )
+      if (costCentreValidationError) return { ok: false, error: costCentreValidationError }
 
       const receiptResult: any = await query(
         `INSERT INTO receipts

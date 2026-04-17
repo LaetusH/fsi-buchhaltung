@@ -10,6 +10,7 @@ import {
   storeAndAttachUploadedFile,
   validateUploadedFile,
 } from '~/server/utils/files'
+import { validateCostCentreSelection } from '~/server/utils/costCentres'
 import { receiptRequiresFile, validateReceiptPayload } from '~/server/utils/receipts'
 import { validateSphereSelection } from '~/server/utils/spheres'
 import { ReceiptPosition, ReceiptRow } from '~/types/receipt'
@@ -114,6 +115,19 @@ export default defineEventHandler(async (event): Promise<UpdateReceiptResponse> 
         conn,
       )
       if (sphereValidationError) return { ok: false, error: sphereValidationError }
+
+      const costCentreValidationError = await validateCostCentreSelection(
+        updated.positions.map((position: any) => ({
+          itemId: position.id ? Number(position.id) : null,
+          costCentreId: Number(position.cost_centre),
+        })),
+        existingPositions.map(position => ({
+          itemId: Number(position.id),
+          costCentreId: Number(position.cost_centre),
+        })),
+        conn,
+      )
+      if (costCentreValidationError) return { ok: false, error: costCentreValidationError }
 
       const existingMap = new Map(existingPositions.map(position => [position.id, position]))
       const incomingMap = new Map(

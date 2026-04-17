@@ -205,6 +205,15 @@ const messages = {
         saveFailed: 'Abteilung konnte nicht gespeichert werden.',
         updateFailed: 'Abteilung konnte nicht aktualisiert werden.',
       },
+      costCentres: {
+        deactivateConfirm: {
+          title: 'Kostenstelle deaktivieren?',
+          intro: 'Die Kostenstelle {costCentre} wird auf inaktiv gesetzt.',
+          removeParentAssignments: 'Diese Kostenstelle bei allen untergeordneten Kostenstellen als übergeordnete Kostenstelle entfernen.',
+          childCostCentresTitle: 'Betroffene untergeordnete Kostenstellen:',
+          noChildCostCentres: 'Keine untergeordneten Kostenstellen vorhanden.',
+        },
+      },
       positions: {
         members: 'Mitglieder',
         currentMembers: 'Aktuelle Mitglieder',
@@ -876,6 +885,7 @@ const messages = {
       totalBudget: 'Gesamtansatz',
       includesChildBudgets: 'Enthält untergeordnete Kostenstellen',
       structureHint: 'Bei übergeordneten Kostenstellen werden eigene Ansätze und Summen der untergeordneten Kostenstellen getrennt dargestellt.',
+      inactiveCostCentreNotice: 'Diese Kostenstelle ist inaktiv und bleibt nur sichtbar, weil bereits Budgetwerte hinterlegt sind.',
       required: {
         period: 'Bitte wähle ein gültiges Jahr und Semester.',
       },
@@ -1100,6 +1110,15 @@ const messages = {
         loadFailed: 'Failed to load subdivisions.',
         saveFailed: 'Failed to save subdivision.',
         updateFailed: 'Failed to update subdivision.',
+      },
+      costCentres: {
+        deactivateConfirm: {
+          title: 'Deactivate cost centre?',
+          intro: 'The cost centre {costCentre} will be set to inactive.',
+          removeParentAssignments: 'Remove this cost centre as the parent from all child cost centres.',
+          childCostCentresTitle: 'Affected child cost centres:',
+          noChildCostCentres: 'There are no child cost centres.',
+        },
       },
       positions: {
         members: 'Members',
@@ -1774,6 +1793,7 @@ const messages = {
       totalBudget: 'Total budget',
       includesChildBudgets: 'Includes subordinate cost centres',
       structureHint: 'For parent cost centres, own values and sums from child cost centres are shown separately.',
+      inactiveCostCentreNotice: 'This cost centre is inactive and remains visible only because it already has budget values.',
       required: {
         period: 'Please choose a valid year and semester.',
       },

@@ -192,7 +192,7 @@
             <label>{{ t('invoice.costCentre') }}</label>
             <CommonSearchSelect
               v-model="costCentreQueries[index]"
-              :options="costCentreOptions"
+              :options="costCentreOptionsFor(index)"
               :selected-label="selectedCostCentreLabel(index)"
               :placeholder="t('invoice.costCentrePlaceholder')"
               :empty-text="t('invoice.noCostCentres')"
@@ -389,13 +389,6 @@ const companyOptions = computed<SearchSelectOption<number>[]>(() => {
     }))
 })
 
-const costCentreOptions = computed<SearchSelectOption<number>[]>(() => costCentres.value.map(costCentre => ({
-  key: costCentre.id,
-  value: costCentre.id,
-  label: `${costCentre.code} - ${costCentre.name}`,
-  searchText: `${costCentre.code} ${costCentre.name} ${costCentre.description || ''}`.trim(),
-})))
-
 const validationErrors = computed(() => {
   const errors: string[] = []
   if (!form.value.company_id) errors.push(t('invoice.required.company'))
@@ -451,7 +444,7 @@ watch([costCentres, () => form.value.positions], () => {
   form.value.positions.forEach((position, index) => {
     if (!position.cost_centre) return
     const costCentre = costCentres.value.find(entry => entry.id === position.cost_centre)
-    if (costCentre) costCentreQueries.value[index] = `${costCentre.code} - ${costCentre.name}`
+    if (costCentre) costCentreQueries.value[index] = costCentreOptionLabel(costCentre)
   })
 }, { immediate: true, deep: true })
 
@@ -480,7 +473,7 @@ async function loadSpheres() {
 
 async function loadCostCentres() {
   const res = await $fetch<{ ok: boolean, costCentres?: CostCentreRow[] }>('/api/cost_centres')
-  if (res.ok && res.costCentres) costCentres.value = res.costCentres.filter(entry => entry.is_active)
+  if (res.ok && res.costCentres) costCentres.value = res.costCentres
 }
 
 function addPosition() {
@@ -581,7 +574,7 @@ function selectCostCentre(index: number, costCentreId: unknown) {
 
   const costCentre = costCentres.value.find(entry => entry.id === normalizedCostCentreId)
   form.value.positions[index]!.cost_centre = costCentre?.id ?? 0
-  costCentreQueries.value[index] = costCentre ? `${costCentre.code} - ${costCentre.name}` : ''
+  costCentreQueries.value[index] = costCentre ? costCentreOptionLabel(costCentre) : ''
 }
 
 function clearCostCentre(index: number) {
@@ -594,7 +587,26 @@ function selectedCostCentreLabel(index: number) {
   const costCentreId = form.value.positions[index]?.cost_centre
   if (!costCentreId) return ''
   const costCentre = costCentres.value.find(entry => entry.id === costCentreId)
-  return costCentre ? `${costCentre.code} - ${costCentre.name}` : ''
+  return costCentre ? costCentreOptionLabel(costCentre) : ''
+}
+
+function availableCostCentres(index: number) {
+  const selectedCostCentreId = Number(form.value.positions[index]?.cost_centre || 0)
+  return costCentres.value.filter((costCentre) => Boolean(costCentre.is_active) || Number(costCentre.id) === selectedCostCentreId)
+}
+
+function costCentreOptionLabel(costCentre: CostCentreRow) {
+  const baseLabel = `${costCentre.code} - ${costCentre.name}`
+  return Boolean(costCentre.is_active) ? baseLabel : `${baseLabel} (${t('common.inactive')})`
+}
+
+function costCentreOptionsFor(index: number): SearchSelectOption<number>[] {
+  return availableCostCentres(index).map(costCentre => ({
+    key: costCentre.id,
+    value: costCentre.id,
+    label: costCentreOptionLabel(costCentre),
+    searchText: `${costCentre.code} ${costCentre.name} ${costCentre.description || ''}`.trim(),
+  }))
 }
 
 function autoResizeDescription(event: Event) {

@@ -1,23 +1,99 @@
 import { defineEventHandler, readBody } from 'h3'
+import { logFieldChanges } from '~/server/utils/api/audit'
 import { requirePermission } from '~/server/utils/api/guards'
-import { toggleActiveRecord } from '~/server/utils/api/toggle'
-import type { ActivateBody, ActivateResponse } from '~/types/activate'
+import { toDbBoolean } from '~/server/utils/api/request'
+import { logChange } from '~/server/utils/changeLogger'
+import { query, withTransaction } from '~/server/utils/db'
+import type { ActivateResponse } from '~/types/activate'
+import type { CostCentreRow } from '~/types/costCentre'
+
+interface ActivateCostCentreBody {
+  id: number
+  is_active: boolean
+  clear_child_parent_links?: boolean
+}
 
 export default defineEventHandler(async (event): Promise<ActivateResponse> => {
   const current = await requirePermission(event, 'settings.cost_centres.manage')
   if (!current.ok) return current
 
-  const { id, is_active } = await readBody<ActivateBody>(event)
-  if (id === undefined || id === null || is_active === undefined || is_active === null) return { ok: false, error: 'Missing fields' }
+  const {
+    id,
+    is_active,
+    clear_child_parent_links,
+  } = await readBody<ActivateCostCentreBody>(event)
+
+  if (id === undefined || id === null || is_active === undefined || is_active === null) {
+    return { ok: false, error: 'Missing fields' }
+  }
 
   try {
-    return await toggleActiveRecord({
-      table: 'cost_centres',
-      entityType: 'cost_centre',
-      id,
-      isActive: is_active,
-      userId: current.user.id,
-      notFoundMessage: 'No matching cost centres in database',
+    return await withTransaction(async (conn) => {
+      const existingRows = await query<CostCentreRow[]>(
+        `SELECT * FROM cost_centres WHERE id = ? LIMIT 1`,
+        [id],
+        conn,
+      )
+
+      if (!existingRows.length) {
+        return { ok: false, error: 'No matching cost centres in database' }
+      }
+
+      const existing = existingRows[0]!
+      const active = toDbBoolean(is_active)
+
+      await logChange({
+        entityType: 'cost_centre',
+        entityId: Number(id),
+        subEntityType: null,
+        subEntityId: null,
+        field: 'is_active',
+        oldValue: existing.is_active,
+        newValue: active,
+        userId: current.user.id,
+      }, conn)
+
+      await query(
+        `UPDATE cost_centres
+         SET is_active = ?
+         WHERE id = ?`,
+        [active, id],
+        conn,
+      )
+
+      if (is_active || !clear_child_parent_links) {
+        return { ok: true }
+      }
+
+      const childRows = await query<CostCentreRow[]>(
+        `SELECT * FROM cost_centres WHERE parent_id = ?`,
+        [id],
+        conn,
+      )
+
+      for (const child of childRows) {
+        await logFieldChanges({
+          entityType: 'cost_centre',
+          entityId: Number(child.id),
+          fields: ['parent_id'] satisfies (keyof CostCentreRow)[],
+          previous: child,
+          next: { parent_id: null },
+          userId: current.user.id,
+          conn,
+        })
+      }
+
+      if (childRows.length) {
+        await query(
+          `UPDATE cost_centres
+           SET parent_id = NULL
+           WHERE parent_id = ?`,
+          [id],
+          conn,
+        )
+      }
+
+      return { ok: true }
     })
   } catch (err: any) {
     return { ok: false, error: `An error occured while activating/deactivating the cost centre: ${err}` }
