@@ -142,6 +142,13 @@
         @clear-selection="subdivisionQuery = ''"
         @remove="removeSubdivision"
       />
+
+      <p
+        v-if="hasInactiveSelectedSubdivisions"
+        class="text-sm text-amber-700"
+      >
+        {{ t('member.inactiveSubdivisionHintRemove') }}
+      </p>
     </section>
 
     <section class="bg-white rounded-xl shadow-lg p-4 space-y-3">
@@ -343,8 +350,14 @@ const selectedSubdivisionItems = computed<SelectionListItem[]>(() => {
     .map(subdivision => ({
       id: subdivision.id,
       label: subdivision.name,
-      meta: subdivision.code,
+      meta: subdivision.is_active ? subdivision.code : `${subdivision.code} (${t('common.inactive')})`,
     }))
+})
+const hasInactiveSelectedSubdivisions = computed(() => {
+  return (form.value.subdivision_ids ?? []).some((subdivisionId) => {
+    const subdivision = subdivisionsById.value.get(subdivisionId)
+    return subdivision ? !Boolean(subdivision.is_active) : false
+  })
 })
 const subdivisionOptions = computed<SearchSelectOption<number>[]>(() => {
   const selectedIds = new Set(form.value.subdivision_ids ?? [])
@@ -353,9 +366,9 @@ const subdivisionOptions = computed<SearchSelectOption<number>[]>(() => {
     .filter(subdivision => (subdivision.is_active || selectedIds.has(subdivision.id)) && !selectedIds.has(subdivision.id))
     .map(subdivision => ({
       key: subdivision.id,
-      label: `${subdivision.code} - ${subdivision.name}`,
+      label: formatSubdivisionLabel(subdivision),
       value: subdivision.id,
-      searchText: `${subdivision.code} ${subdivision.name}`,
+      searchText: `${subdivision.code} ${subdivision.name} ${subdivision.is_active ? '' : t('common.inactive')}`.trim(),
     }))
 })
 const openStatus = ref<number | null>(null)
@@ -548,6 +561,11 @@ function clearPosition(index: number) {
 function formatPositionLabel(position: PositionRow) {
   const baseLabel = `${position.code} - ${position.name}`
   return position.is_active ? baseLabel : `${baseLabel} (${t('common.inactive')})`
+}
+
+function formatSubdivisionLabel(subdivision: SubdivisionOption) {
+  const baseLabel = `${subdivision.code} - ${subdivision.name}`
+  return subdivision.is_active ? baseLabel : `${baseLabel} (${t('common.inactive')})`
 }
 
 function isAssignedPositionInactive(index: number) {

@@ -8,6 +8,13 @@ interface NamedRow {
   label: string
 }
 
+interface SubdivisionStateRow {
+  id: number
+  code: string
+  name: string
+  is_active: number
+}
+
 interface SyncSubdivisionAssignmentsOptions {
   existingIds: number[]
   nextIds: number[]
@@ -52,6 +59,47 @@ export async function getSubdivisionLabels(
   )
 
   return new Map(rows.map(row => [Number(row.id), String(row.label)]))
+}
+
+export async function validateSubdivisionSelection(
+  subdivisionIds: number[],
+  allowedExistingSubdivisionIds: Iterable<number> = [],
+  conn: mariadb.PoolConnection,
+) {
+  const normalizedSubdivisionIds = Array.from(new Set(
+    subdivisionIds
+      .map(value => Number(value))
+      .filter(value => Number.isInteger(value) && value > 0),
+  ))
+
+  if (!normalizedSubdivisionIds.length) return null
+
+  const rows = await query<SubdivisionStateRow[]>(
+    `SELECT id, code, name, is_active
+     FROM subdivisions
+     WHERE id IN (${normalizedSubdivisionIds.map(() => '?').join(',')})`,
+    normalizedSubdivisionIds,
+    conn,
+  )
+
+  if (rows.length !== normalizedSubdivisionIds.length) {
+    return 'One or more selected subdivisions do not exist'
+  }
+
+  const allowedIds = new Set(
+    Array.from(allowedExistingSubdivisionIds)
+      .map(value => Number(value))
+      .filter(value => Number.isInteger(value) && value > 0),
+  )
+
+  const disallowedSubdivision = rows.find((row) => {
+    if (Boolean(row.is_active)) return false
+    return !allowedIds.has(Number(row.id))
+  })
+
+  if (!disallowedSubdivision) return null
+
+  return `${disallowedSubdivision.code} - ${disallowedSubdivision.name}: inactive subdivisions cannot be newly selected`
 }
 
 export async function getMemberLabels(

@@ -204,6 +204,13 @@ const messages = {
         loadFailed: 'Abteilungen konnten nicht geladen werden.',
         saveFailed: 'Abteilung konnte nicht gespeichert werden.',
         updateFailed: 'Abteilung konnte nicht aktualisiert werden.',
+        deactivateConfirm: {
+          title: 'Abteilung deaktivieren?',
+          intro: 'Die Abteilung {subdivision} wird auf inaktiv gesetzt.',
+          removeMembers: 'Alle aktuell zugeordneten Mitglieder aus dieser Abteilung entfernen.',
+          assignedMembersTitle: 'Betroffene Mitglieder:',
+          noAssignedMembers: 'Keine Mitglieder zugeordnet.',
+        },
       },
       costCentres: {
         deactivateConfirm: {
@@ -366,6 +373,7 @@ const messages = {
       positionPlaceholder: 'Position wählen',
       noPositions: 'Keine vorhandenen Positionen',
       inactivePositionHintEndAssignment: 'Diese Position ist inaktiv. Sie bleibt zur Übersicht sichtbar. Bitte prüfe, ob diese Zuordnung mit einem Enddatum beendet werden sollte.',
+      inactiveSubdivisionHintRemove: 'Eine Abteilung ist inaktiv. Sie bleibt zur Übersicht sichtbar. Bitte prüfe, ob die Zuordnung entfernt werden sollte.',
       subdivisionPlaceholder: 'Zu Abteilung hinzufügen',
       noSubdivisions: 'Keine passenden Abteilungen',
       noSubdivisionsAssigned: 'Keiner Abteilung zugeordnet',
@@ -1110,6 +1118,13 @@ const messages = {
         loadFailed: 'Failed to load subdivisions.',
         saveFailed: 'Failed to save subdivision.',
         updateFailed: 'Failed to update subdivision.',
+        deactivateConfirm: {
+          title: 'Deactivate subdivision?',
+          intro: 'The subdivision {subdivision} will be set to inactive.',
+          removeMembers: 'Remove all currently assigned members from this subdivision.',
+          assignedMembersTitle: 'Affected members:',
+          noAssignedMembers: 'No members are assigned.',
+        },
       },
       costCentres: {
         deactivateConfirm: {
@@ -1272,6 +1287,7 @@ const messages = {
       positionPlaceholder: 'Choose a position',
       noPositions: 'No existing positions',
       inactivePositionHintEndAssignment: 'This position is inactive. It stays visible for reference. Please review whether this assignment should be ended with an end date.',
+      inactiveSubdivisionHintRemove: 'A subdivision is inactive. It stays visible for reference. Please review whether this assignment should be removed.',
       subdivisionPlaceholder: 'Add to subdivision',
       noSubdivisions: 'No matching subdivisions',
       noSubdivisionsAssigned: 'Not assigned to any subdivision',

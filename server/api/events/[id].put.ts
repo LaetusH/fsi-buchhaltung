@@ -61,9 +61,27 @@ export default defineEventHandler(async (event): Promise<UpdateEventResponse> =>
         conn,
       )
 
+      const [memberRows, subdivisionRows] = await Promise.all([
+        query<{ member_id: number }[]>(
+          `SELECT member_id
+           FROM event_member_organizers
+           WHERE event_id = ?`,
+          [eventId],
+          conn,
+        ),
+        query<{ subdivision_id: number }[]>(
+          `SELECT subdivision_id
+           FROM event_subdivision_organizers
+           WHERE event_id = ?`,
+          [eventId],
+          conn,
+        ),
+      ])
+
       const relationError = await validateEventRelations(
         body,
         conn,
+        subdivisionRows.map(row => Number(row.subdivision_id)),
         existingSplitRows.map(row => Number(row.cost_centre_id)),
       )
       if (relationError) return { ok: false, error: relationError }
@@ -93,23 +111,6 @@ export default defineEventHandler(async (event): Promise<UpdateEventResponse> =>
         ],
         conn,
       )
-
-      const [memberRows, subdivisionRows] = await Promise.all([
-        query<{ member_id: number }[]>(
-          `SELECT member_id
-           FROM event_member_organizers
-           WHERE event_id = ?`,
-          [eventId],
-          conn,
-        ),
-        query<{ subdivision_id: number }[]>(
-          `SELECT subdivision_id
-           FROM event_subdivision_organizers
-           WHERE event_id = ?`,
-          [eventId],
-          conn,
-        ),
-      ])
 
       await syncEventMemberOrganizers({
         eventId,

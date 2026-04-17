@@ -193,7 +193,7 @@ const memberOrganizerOptions = computed<SearchSelectOption<EventMemberOption>[]>
   })))
 
 const subdivisionOrganizerOptions = computed<SearchSelectOption<EventSubdivisionOption>[]>(() => props.subdivisions
-  .filter(subdivision => !form.value.subdivision_organizer_ids.includes(subdivision.id))
+  .filter(subdivision => Boolean(subdivision.is_active) && !form.value.subdivision_organizer_ids.includes(subdivision.id))
   .map(subdivision => ({
     key: subdivision.id,
     label: `${subdivision.code} - ${subdivision.name}`,

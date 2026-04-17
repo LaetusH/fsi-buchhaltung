@@ -5,7 +5,7 @@ import { logFieldChanges } from '~/server/utils/api/audit'
 import { requirePermission } from '~/server/utils/api/guards'
 import { getNumericRouteParam } from '~/server/utils/api/request'
 import { ensureSubjectId, validateMemberPayload, applyMemberStatusActions } from '~/server/utils/members'
-import { getSubdivisionLabels, normalizeRelationIds, syncSubdivisionAssignments } from '~/server/utils/subdivisions'
+import { getSubdivisionLabels, normalizeRelationIds, syncSubdivisionAssignments, validateSubdivisionSelection } from '~/server/utils/subdivisions'
 import { normalizePositionAssignments, syncPositionAssignments, type PositionAssignmentRow } from '~/server/utils/positions'
 
 interface UpdateMemberSuccess {
@@ -136,6 +136,15 @@ export default defineEventHandler(async (event): Promise<UpdateMemberResponse> =
 
         const existingSubdivisionIds = existingSubdivisionRows.map(row => Number(row.subdivision_id))
         const allSubdivisionIds = Array.from(new Set([...existingSubdivisionIds, ...subdivisionIds]))
+        const subdivisionValidationError = await validateSubdivisionSelection(
+          subdivisionIds,
+          existingSubdivisionIds,
+          conn,
+        )
+        if (subdivisionValidationError) {
+          return { ok: false, error: subdivisionValidationError }
+        }
+
         const subdivisionLabels = await getSubdivisionLabels(allSubdivisionIds, conn)
         if (subdivisionLabels.size !== allSubdivisionIds.length) {
           return { ok: false, error: 'One or more selected subdivisions do not exist' }

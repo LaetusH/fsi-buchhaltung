@@ -4,7 +4,7 @@ import { query, withTransaction } from '~/server/utils/db'
 import { requirePermission } from '~/server/utils/api/guards'
 import { createUserAccount, DuplicateUsernameError } from '~/server/utils/userAccounts'
 import { ensureSubjectId, validateMemberPayload } from '~/server/utils/members'
-import { getSubdivisionLabels, normalizeRelationIds, syncSubdivisionAssignments } from '~/server/utils/subdivisions'
+import { getSubdivisionLabels, normalizeRelationIds, syncSubdivisionAssignments, validateSubdivisionSelection } from '~/server/utils/subdivisions'
 import { normalizePositionAssignments, syncPositionAssignments } from '~/server/utils/positions'
 
 interface CreateMemberSuccess {
@@ -93,6 +93,11 @@ export default defineEventHandler(async (event): Promise<CreateMemberResponse> =
       if (!syncedPositions.ok) return { ok: false, error: syncedPositions.error }
 
       if (canManageSubdivisions && subdivisionIds.length) {
+        const subdivisionValidationError = await validateSubdivisionSelection(subdivisionIds, [], conn)
+        if (subdivisionValidationError) {
+          return { ok: false, error: subdivisionValidationError }
+        }
+
         const subdivisionLabels = await getSubdivisionLabels(subdivisionIds, conn)
         if (subdivisionLabels.size !== subdivisionIds.length) {
           return { ok: false, error: 'One or more selected subdivisions do not exist' }

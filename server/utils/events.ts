@@ -3,7 +3,7 @@ import { logFieldChanges, syncScalarCollection } from '~/server/utils/api/audit'
 import { logChange } from '~/server/utils/changeLogger'
 import { validateSimpleCostCentreSelection } from '~/server/utils/costCentres'
 import { query } from '~/server/utils/db'
-import { getSubdivisionLabels, getMemberLabels, normalizeRelationIds } from '~/server/utils/subdivisions'
+import { getSubdivisionLabels, getMemberLabels, normalizeRelationIds, validateSubdivisionSelection } from '~/server/utils/subdivisions'
 import type {
   EventCostCentreOption,
   EventCostCentreSplit,
@@ -137,6 +137,7 @@ export function validateEventPayload(body: SaveEventBody) {
 export async function validateEventRelations(
   body: SaveEventBody,
   conn: mariadb.PoolConnection,
+  existingSubdivisionIds: number[] = [],
   existingCostCentreIds: number[] = [],
 ) {
   if (body.member_organizer_ids.length) {
@@ -159,6 +160,13 @@ export async function validateEventRelations(
       conn,
     )
     if (rows.length !== body.subdivision_organizer_ids.length) return 'At least one selected subdivision organizer does not exist'
+
+    const subdivisionValidationError = await validateSubdivisionSelection(
+      body.subdivision_organizer_ids,
+      existingSubdivisionIds,
+      conn,
+    )
+    if (subdivisionValidationError) return subdivisionValidationError
   }
 
   const costCentreIds = body.cost_centre_splits.map(split => split.cost_centre_id)

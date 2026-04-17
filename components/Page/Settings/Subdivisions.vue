@@ -14,6 +14,20 @@
     :map-edit-item="mapEditItem"
     :on-error="handleError"
   >
+    <template #actions="{ item, edit, reload }">
+      <button class="text-blue-600 hover:underline cursor-pointer" @click="edit()">
+        {{ t('actions.edit') }}
+      </button>
+
+      <button
+        class="hover:underline cursor-pointer"
+        :class="item.is_active ? 'text-red-500' : 'text-gray-500'"
+        @click="item.is_active ? openDeactivateModal(item, reload) : toggleSubdivision(item, true, false, reload)"
+      >
+        {{ item.is_active ? t('actions.deactivate') : t('actions.activate') }}
+      </button>
+    </template>
+
     <template #row-extra="{ item }">
       <td class="py-2 align-top text-slate-600">{{ memberSummary(item) }}</td>
       <td class="py-2 align-top font-medium text-slate-800">{{ memberCount(item) }}</td>
@@ -38,6 +52,61 @@
       </div>
     </template>
   </PageSettingsEntityManager>
+
+  <teleport to="body">
+    <div
+      v-if="deactivateModalOpen && deactivateTarget"
+      class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+    >
+      <div class="w-full max-w-xl rounded-xl bg-white p-6 shadow-xl space-y-4">
+        <div class="space-y-1">
+          <h3 class="text-lg font-semibold">{{ t('settings.subdivisions.deactivateConfirm.title') }}</h3>
+          <p class="text-sm text-slate-600">
+            {{ t('settings.subdivisions.deactivateConfirm.intro', { subdivision: `${deactivateTarget.code} - ${deactivateTarget.name}` }) }}
+          </p>
+        </div>
+
+        <label class="flex items-start gap-3 rounded-lg border border-slate-200 p-3">
+          <input
+            v-model="removeAssignedMembers"
+            type="checkbox"
+            class="checkbox mt-0.5"
+          >
+          <span class="text-sm text-slate-700 cursor-pointer">
+            {{ t('settings.subdivisions.deactivateConfirm.removeMembers') }}
+          </span>
+        </label>
+
+        <div v-if="deactivateMembers.length" class="space-y-2">
+          <div class="text-sm font-medium text-slate-700">
+            {{ t('settings.subdivisions.deactivateConfirm.assignedMembersTitle') }}
+          </div>
+          <div class="max-h-48 overflow-y-auto rounded-lg border border-slate-200 bg-slate-50 p-3">
+            <div
+              v-for="member in deactivateMembers"
+              :key="member.id"
+              class="text-sm text-slate-700"
+            >
+              {{ member.full_name }}
+            </div>
+          </div>
+        </div>
+
+        <p v-else class="text-sm text-slate-500">
+          {{ t('settings.subdivisions.deactivateConfirm.noAssignedMembers') }}
+        </p>
+
+        <div class="flex justify-end gap-3 pt-2">
+          <button class="btn-secondary" @click="closeDeactivateModal">
+            {{ t('actions.cancel') }}
+          </button>
+          <button class="btn-primary" @click="confirmDeactivate">
+            {{ t('actions.deactivate') }}
+          </button>
+        </div>
+      </div>
+    </div>
+  </teleport>
 </template>
 
 <script setup lang="ts">
@@ -61,6 +130,11 @@ const { hasPermission } = useAuth()
 const hasAccess = computed(() => hasPermission('settings.subdivisions.manage'))
 const memberOptions = ref<SubdivisionMemberOption[]>([])
 const memberQuery = ref('')
+const deactivateModalOpen = ref(false)
+const deactivateTarget = ref<SubdivisionRow | null>(null)
+const deactivateMembers = ref<SubdivisionRow['members']>([])
+const removeAssignedMembers = ref(false)
+const reloadAfterToggle = ref<null | (() => Promise<void>)>(null)
 
 const tableColumns = computed<EntityManagerColumn[]>(() => [
   {
@@ -162,6 +236,59 @@ function selectMember(value: unknown, editingItem: SaveSettingsEntityBody) {
 function removeMember(value: string | number, editingItem: SaveSettingsEntityBody) {
   const memberId = Number(value)
   subdivisionBody(editingItem).member_ids = subdivisionBody(editingItem).member_ids.filter(id => id !== memberId)
+}
+
+function openDeactivateModal(item: SettingsEntityRow, reload: () => Promise<void>) {
+  const subdivision = item as SubdivisionRow
+  deactivateTarget.value = subdivision
+  deactivateMembers.value = subdivision.members
+  removeAssignedMembers.value = subdivision.members.length > 0
+  reloadAfterToggle.value = reload
+  deactivateModalOpen.value = true
+}
+
+function closeDeactivateModal() {
+  deactivateModalOpen.value = false
+  deactivateTarget.value = null
+  deactivateMembers.value = []
+  removeAssignedMembers.value = false
+  reloadAfterToggle.value = null
+}
+
+async function toggleSubdivision(
+  item: SettingsEntityRow,
+  isActive: boolean,
+  removeMemberAssignments: boolean,
+  reload: () => Promise<void>,
+) {
+  const res = await $fetch<{ ok: boolean, error?: string }>('/api/subdivisions/activate', {
+    method: 'POST',
+    body: {
+      id: item.id,
+      is_active: isActive,
+      remove_member_assignments: removeMemberAssignments,
+    },
+  })
+
+  if (!res.ok) {
+    handleError({ phase: 'toggle', message: res.error })
+    return false
+  }
+
+  await reload()
+  return true
+}
+
+async function confirmDeactivate() {
+  if (!deactivateTarget.value || !reloadAfterToggle.value) return
+
+  const ok = await toggleSubdivision(
+    deactivateTarget.value,
+    false,
+    removeAssignedMembers.value,
+    reloadAfterToggle.value,
+  )
+  if (ok) closeDeactivateModal()
 }
 
 async function loadMemberOptions() {
