@@ -175,14 +175,14 @@
 
               <template #default="{ styling }">
                 <button
-                  v-for="sphere in spheres"
+                  v-for="sphere in availableSpheres(index)"
                   :key="sphere.id"
                   :class="styling"
                   @click="selectSphere(index, sphere)"
                 >
-                  {{ sphere.name }}
+                  {{ sphereOptionLabel(sphere) }}
                 </button>
-                <div v-if="spheres.length === 0" class="px-3 py-2 text-sm text-gray-500">
+                <div v-if="availableSpheres(index).length === 0" class="px-3 py-2 text-sm text-gray-500">
                   {{ t('invoice.noSpheres') }}
                 </div>
               </template>
@@ -475,7 +475,7 @@ async function loadCompanies() {
 
 async function loadSpheres() {
   const res = await $fetch<{ ok: boolean, spheres?: SphereRow[] }>('/api/spheres')
-  if (res.ok && res.spheres) spheres.value = res.spheres.filter(entry => entry.is_active)
+  if (res.ok && res.spheres) spheres.value = res.spheres
 }
 
 async function loadCostCentres() {
@@ -559,10 +559,20 @@ function selectSphere(index: number, sphere: SphereRow) {
   openSphereIndex.value = null
 }
 
+function availableSpheres(index: number) {
+  const selectedSphereId = Number(form.value.positions[index]?.sphere || 0)
+  return spheres.value.filter((sphere) => Boolean(sphere.is_active) || Number(sphere.id) === selectedSphereId)
+}
+
+function sphereOptionLabel(sphere: SphereRow) {
+  return Boolean(sphere.is_active) ? sphere.name : `${sphere.name} (${t('common.inactive')})`
+}
+
 function selectedSphereLabel(index: number) {
   const sphereId = form.value.positions[index]?.sphere
   if (!sphereId) return ''
-  return spheres.value.find(entry => entry.id === sphereId)?.name ?? ''
+  const sphere = spheres.value.find(entry => entry.id === sphereId)
+  return sphere ? sphereOptionLabel(sphere) : ''
 }
 
 function selectCostCentre(index: number, costCentreId: unknown) {

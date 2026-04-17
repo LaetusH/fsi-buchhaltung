@@ -4,6 +4,7 @@ import { requirePermission } from '~/server/utils/api/guards'
 import { readMultipart } from '~/server/utils/api/request'
 import { receiptRequiresFile, validateReceiptPayload } from '~/server/utils/receipts'
 import { storeAndAttachUploadedFile, validateUploadedFile } from '~/server/utils/files'
+import { validateSphereSelection } from '~/server/utils/spheres'
 
 interface CreateReceiptSuccess {
   ok: true
@@ -41,6 +42,15 @@ export default defineEventHandler(async (event): Promise<CreateReceiptResponse> 
 
   try {
     return await withTransaction(async (conn) => {
+      const sphereValidationError = await validateSphereSelection(
+        receipt.positions.map((position: any) => ({
+          sphereId: Number(position.sphere),
+        })),
+        [],
+        conn,
+      )
+      if (sphereValidationError) return { ok: false, error: sphereValidationError }
+
       const receiptResult: any = await query(
         `INSERT INTO receipts
           (company_id, receipt_date, receipt_number, description, status, created_by)

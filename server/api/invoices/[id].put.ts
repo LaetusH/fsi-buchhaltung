@@ -6,6 +6,7 @@ import { requirePermission } from '~/server/utils/api/guards'
 import { buildInvoicePdf } from '~/server/utils/invoicePdf'
 import { detachFileAttachment, getActiveFileAttachment, storeAndAttachUploadedFile, validateUploadedFile } from '~/server/utils/files'
 import { getAssociationBoardLineForInvoice, getAssociationLogoForInvoice, getAssociationProfileForInvoice, getInvoiceCompany, invoiceNeedsUploadedFile, invoiceNumberExists, normalizeInvoicePayload, validateInvoicePayload } from '~/server/utils/invoices'
+import { validateSphereSelection } from '~/server/utils/spheres'
 import { InvoiceSourceType, InvoiceStatus, type InvoicePosition } from '~/types/invoice'
 
 interface UpdateInvoiceSuccess {
@@ -185,6 +186,19 @@ export default defineEventHandler(async (event): Promise<UpdateInvoiceResponse> 
         [invoiceId],
         conn,
       )
+
+      const sphereValidationError = await validateSphereSelection(
+        parsed.positions.map(position => ({
+          itemId: position.id ? Number(position.id) : null,
+          sphereId: Number(position.sphere),
+        })),
+        existingPositions.map(position => ({
+          itemId: Number(position.id),
+          sphereId: Number(position.sphere),
+        })),
+        conn,
+      )
+      if (sphereValidationError) return { ok: false, error: sphereValidationError }
 
       if (existing.status !== InvoiceStatus.Draft) {
         const existingComparable = {

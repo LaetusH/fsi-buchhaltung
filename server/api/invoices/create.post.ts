@@ -5,6 +5,7 @@ import { requirePermission } from '~/server/utils/api/guards'
 import { buildInvoicePdf } from '~/server/utils/invoicePdf'
 import { getAssociationBoardLineForInvoice, getAssociationLogoForInvoice, getAssociationProfileForInvoice, getInvoiceCompany, invoiceNeedsUploadedFile, invoiceNumberExists, normalizeInvoicePayload, validateInvoicePayload } from '~/server/utils/invoices'
 import { storeAndAttachUploadedFile, validateUploadedFile } from '~/server/utils/files'
+import { validateSphereSelection } from '~/server/utils/spheres'
 import { InvoiceSourceType } from '~/types/invoice'
 
 interface CreateInvoiceSuccess {
@@ -50,6 +51,15 @@ export default defineEventHandler(async (event): Promise<CreateInvoiceResponse> 
       if (await invoiceNumberExists(parsed.invoice_number, null, conn)) {
         return { ok: false, error: 'Invoice number already exists' }
       }
+
+      const sphereValidationError = await validateSphereSelection(
+        parsed.positions.map(position => ({
+          sphereId: Number(position.sphere),
+        })),
+        [],
+        conn,
+      )
+      if (sphereValidationError) return { ok: false, error: sphereValidationError }
 
       const result: any = await query(
         `INSERT INTO invoices

@@ -11,6 +11,7 @@ import {
   validateUploadedFile,
 } from '~/server/utils/files'
 import { receiptRequiresFile, validateReceiptPayload } from '~/server/utils/receipts'
+import { validateSphereSelection } from '~/server/utils/spheres'
 import { ReceiptPosition, ReceiptRow } from '~/types/receipt'
 
 interface UpdateReceiptSuccess {
@@ -100,6 +101,19 @@ export default defineEventHandler(async (event): Promise<UpdateReceiptResponse> 
         [receiptId],
         conn
       )
+
+      const sphereValidationError = await validateSphereSelection(
+        updated.positions.map((position: any) => ({
+          itemId: position.id ? Number(position.id) : null,
+          sphereId: Number(position.sphere),
+        })),
+        existingPositions.map(position => ({
+          itemId: Number(position.id),
+          sphereId: Number(position.sphere),
+        })),
+        conn,
+      )
+      if (sphereValidationError) return { ok: false, error: sphereValidationError }
 
       const existingMap = new Map(existingPositions.map(position => [position.id, position]))
       const incomingMap = new Map(
