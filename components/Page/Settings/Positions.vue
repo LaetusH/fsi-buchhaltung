@@ -1,5 +1,6 @@
 <template>
   <PageSettingsEntityManager
+    ref="entityManagerRef"
     :title="t('settings.entities.positions')"
     :singular-label="t('settings.entities.position')"
     :add-label="t('settings.entities.newPosition')"
@@ -21,7 +22,28 @@
       </td>
     </template>
 
+    <template #actions="{ item, edit, toggle }">
+      <button class="text-blue-600 hover:underline cursor-pointer" @click="edit()">
+        {{ t('actions.edit') }}
+      </button>
+
+      <button
+        class="hover:underline cursor-pointer"
+        :class="item.is_active ? 'text-red-500' : 'text-gray-500'"
+        @click="item.is_active ? openDeactivateModal(item) : toggle()"
+      >
+        {{ item.is_active ? t('actions.deactivate') : t('actions.activate') }}
+      </button>
+    </template>
+
     <template #modal-fields-after-description="{ editingItem }">
+      <div
+        v-if="positionBody(editingItem).is_active === false"
+        class="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900"
+      >
+        <p class="font-medium">{{ t('settings.positions.inactiveBannerTitle') }}</p>
+        <p class="mt-1">{{ t('settings.positions.inactiveBannerText') }}</p>
+      </div>
       <div class="space-y-4 pt-1">
         <div class="rounded-lg overflow-hidden border border-slate-200 p-4 space-y-3 relative z-20">
           <div class="space-y-3">
@@ -32,6 +54,7 @@
               :options="memberSearchOptions(editingItem)"
               :placeholder="t('settings.positions.memberPlaceholder')"
               :empty-text="t('settings.positions.noMembersAvailable')"
+              :disabled="positionBody(editingItem).is_active === false"
               @select="selectMember($event, editingItem)"
               @clear-selection="memberQuery = ''"
             />
@@ -102,6 +125,90 @@
       </div>
     </template>
   </PageSettingsEntityManager>
+
+  <div
+    v-if="showDeactivateModal && deactivatePosition"
+    class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+  >
+    <div class="w-full max-w-2xl rounded-xl bg-white p-6 shadow-xl">
+      <h3 class="text-lg font-semibold text-slate-900">
+        {{ t('settings.positions.deactivateConfirm.title') }}
+      </h3>
+      <p class="mt-3 text-sm text-slate-700">
+        {{ t('settings.positions.deactivateConfirm.intro', { position: deactivatePositionLabel }) }}
+      </p>
+      <p class="mt-2 text-sm text-slate-600">
+        {{ t('settings.positions.deactivateConfirm.reviewHint') }}
+      </p>
+
+      <div class="mt-4 space-y-4">
+        <div class="rounded-lg border border-slate-200 bg-slate-50 p-4">
+          <label class="text-sm font-medium text-slate-700">{{ t('settings.positions.deactivateConfirm.untilDate') }}</label>
+          <input v-model="deactivateForm.assignment_until" type="date" class="input mt-2">
+          <p class="mt-2 text-sm text-slate-600">
+            {{ t('settings.positions.deactivateConfirm.untilDateHint') }}
+          </p>
+        </div>
+
+        <label class="inline-flex items-center gap-2 text-sm text-slate-700 cursor-pointer">
+          <input v-model="deactivateForm.delete_future_assignments" type="checkbox" class="checkbox">
+          {{ t('settings.positions.deactivateConfirm.deleteFuture') }}
+        </label>
+
+        <section
+          v-if="deactivatePreview.closedAssignments.length"
+          class="rounded-lg border border-slate-200 bg-slate-50 p-4"
+        >
+          <p class="text-sm font-medium text-slate-900">
+            {{ t('settings.positions.deactivateConfirm.closedAssignmentsTitle') }}
+          </p>
+          <ul class="mt-2 list-disc space-y-1 pl-5 text-sm text-slate-700">
+            <li
+              v-for="assignment in deactivatePreview.closedAssignments"
+              :key="assignment.key"
+            >
+              <span class="font-medium text-slate-900">{{ assignment.label }}</span>
+              <span class="text-slate-600">{{ ` ${assignment.detail}` }}</span>
+            </li>
+          </ul>
+        </section>
+
+        <section
+          v-if="deactivatePreview.removedAssignments.length"
+          class="rounded-lg border border-slate-200 bg-slate-50 p-4"
+        >
+          <p class="text-sm font-medium text-slate-900">
+            {{ t('settings.positions.deactivateConfirm.removedAssignmentsTitle') }}
+          </p>
+          <ul class="mt-2 list-disc space-y-1 pl-5 text-sm text-slate-700">
+            <li
+              v-for="assignment in deactivatePreview.removedAssignments"
+              :key="assignment.key"
+            >
+              <span class="font-medium text-slate-900">{{ assignment.label }}</span>
+              <span class="text-slate-600">{{ ` ${assignment.detail}` }}</span>
+            </li>
+          </ul>
+        </section>
+
+        <p
+          v-if="!deactivatePreview.hasConsequences"
+          class="rounded-lg border border-slate-200 bg-slate-50 p-4 text-sm text-slate-700"
+        >
+          {{ t('settings.positions.deactivateConfirm.none') }}
+        </p>
+      </div>
+
+      <div class="mt-6 flex justify-end gap-3">
+        <button class="btn-secondary" type="button" @click="closeDeactivateModal">
+          {{ t('actions.cancel') }}
+        </button>
+        <button class="btn-primary" type="button" @click="confirmDeactivate">
+          {{ t('actions.deactivate') }}
+        </button>
+      </div>
+    </div>
+  </div>
 </template>
 
 <script setup lang="ts">
@@ -143,10 +250,17 @@ const toast = useToast()
 const { hasPermission } = useAuth()
 
 const hasAccess = computed(() => hasPermission('settings.positions.manage'))
+const entityManagerRef = ref<{ loadItems: () => Promise<void> } | null>(null)
 const memberOptions = ref<PositionMemberOption[]>([])
 const memberQuery = ref('')
 const assignmentListRef = ref<HTMLElement | null>(null)
 const hasAssignmentScrollbar = ref(false)
+const deactivatePosition = ref<PositionRow | null>(null)
+const showDeactivateModal = ref(false)
+const deactivateForm = ref({
+  assignment_until: '',
+  delete_future_assignments: false,
+})
 
 let assignmentListResizeObserver: ResizeObserver | null = null
 let assignmentListMutationObserver: MutationObserver | null = null
@@ -371,6 +485,47 @@ function currentMemberSummary(item: SettingsEntityRow) {
   return `${labels.slice(0, 3).join(', ')} +${labels.length - 3}`
 }
 
+const deactivatePositionLabel = computed(() => {
+  if (!deactivatePosition.value) return ''
+  return `${deactivatePosition.value.code} - ${deactivatePosition.value.name}`
+})
+
+const deactivatePreview = computed(() => {
+  const position = deactivatePosition.value
+  const untilDate = deactivateForm.value.assignment_until || null
+  const deleteFutureAssignments = deactivateForm.value.delete_future_assignments
+  const cutoffDate = untilDate || todayValue()
+  const assignments = (position?.assignments ?? [])
+    .slice()
+    .map((assignment, index) => ({ assignment, index }))
+
+  const closedAssignments = untilDate
+    ? assignments
+      .filter(({ assignment }) => assignment.since <= untilDate && (!assignment.until || assignment.until > untilDate))
+      .map(({ assignment, index }) => ({
+        key: `closed-${assignment.id ?? index}`,
+        label: assignmentLabel(createAssignment(assignment)),
+        detail: `(${formatDate(assignment.since)} - ${formatDate(untilDate)})`,
+      }))
+    : []
+
+  const removedAssignments = deleteFutureAssignments
+    ? assignments
+      .filter(({ assignment }) => assignment.since > cutoffDate)
+      .map(({ assignment, index }) => ({
+        key: `removed-${assignment.id ?? index}`,
+        label: assignmentLabel(createAssignment(assignment)),
+        detail: `(${formatDate(assignment.since)} - ${assignment.until ? formatDate(assignment.until) : t('common.openEnded')})`,
+      }))
+    : []
+
+  return {
+    closedAssignments,
+    removedAssignments,
+    hasConsequences: closedAssignments.length > 0 || removedAssignments.length > 0,
+  }
+})
+
 function memberSearchOptions(editingItem: SaveSettingsEntityBody) {
   return memberOptions.value
     .map<SearchSelectOption<PositionMemberOption>>(member => ({
@@ -381,11 +536,30 @@ function memberSearchOptions(editingItem: SaveSettingsEntityBody) {
     }))
 }
 
+function openDeactivateModal(item: SettingsEntityRow) {
+  deactivatePosition.value = positionRow(item)
+  deactivateForm.value = {
+    assignment_until: '',
+    delete_future_assignments: false,
+  }
+  showDeactivateModal.value = true
+}
+
+function closeDeactivateModal() {
+  showDeactivateModal.value = false
+  deactivatePosition.value = null
+  deactivateForm.value = {
+    assignment_until: '',
+    delete_future_assignments: false,
+  }
+}
+
 function removeAssignment(index: number, editingItem: SaveSettingsEntityBody) {
   positionBody(editingItem).assignments.splice(index, 1)
 }
 
 function selectMember(value: unknown, editingItem: SaveSettingsEntityBody) {
+  if (positionBody(editingItem).is_active === false) return
   const member = value as PositionMemberOption
   if (!member?.id) return
 
@@ -395,6 +569,28 @@ function selectMember(value: unknown, editingItem: SaveSettingsEntityBody) {
     full_name: member.full_name,
   }))
   memberQuery.value = ''
+}
+
+async function confirmDeactivate() {
+  if (!deactivatePosition.value) return
+
+  const res = await $fetch<{ ok: boolean, error?: string }>('/api/positions/activate', {
+    method: 'POST',
+    body: {
+      id: deactivatePosition.value.id,
+      is_active: false,
+      assignment_until: deactivateForm.value.assignment_until || null,
+      delete_future_assignments: deactivateForm.value.delete_future_assignments,
+    },
+  })
+
+  if (!res.ok) {
+    toast.error(translatePositionAssignmentToast(res.error) || t('settings.positions.updateFailed'))
+    return
+  }
+
+  closeDeactivateModal()
+  await entityManagerRef.value?.loadItems()
 }
 
 function updateUntil(index: number, event: Event, editingItem: SaveSettingsEntityBody) {

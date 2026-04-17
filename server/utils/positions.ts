@@ -9,6 +9,11 @@ interface NamedRow {
   label: string
 }
 
+interface PositionStateInfoRow {
+  id: number
+  is_active: number
+}
+
 export interface PositionAssignmentRow {
   id: number
   member_id: number
@@ -213,6 +218,31 @@ export async function syncPositionAssignments({
 
   const existingById = new Map(existingAssignments.map(assignment => [assignment.id, assignment]))
   const retainedIds = new Set<number>()
+  const positionStateRows = positionIds.length
+    ? await query<PositionStateInfoRow[]>(
+        `SELECT id, is_active
+         FROM positions
+         WHERE id IN (${positionIds.map(() => '?').join(',')})`,
+        positionIds,
+        conn,
+      )
+    : []
+  const activePositionIds = new Set(
+    positionStateRows
+      .filter(row => Boolean(row.is_active))
+      .map(row => Number(row.id))
+      .filter(id => Number.isFinite(id)),
+  )
+
+  const inactiveAssignment = incomingAssignments.find((assignment) => {
+    if (activePositionIds.has(Number(assignment.position_id))) return false
+    return !assignment.id || !existingById.has(assignment.id)
+  })
+  if (inactiveAssignment) {
+    const positionLabel = positionLabels.get(Number(inactiveAssignment.position_id))
+      ?? `#${inactiveAssignment.position_id}`
+    return { ok: false as const, error: `${positionLabel}: inactive positions cannot receive new assignments` }
+  }
 
   for (const incoming of incomingAssignments) {
     if (!incoming.id || !existingById.has(incoming.id)) continue

@@ -60,6 +60,7 @@
               <tr class="text-left border-b">
                 <th class="py-2">{{ t('common.code') }}</th>
                 <th class="py-2">{{ t('common.name') }}</th>
+                <th class="py-2">{{ t('settings.permissions.positionStatus') }}</th>
                 <th class="py-2 text-right">{{ t('common.actions') }}</th>
               </tr>
             </thead>
@@ -67,6 +68,7 @@
               <tr v-for="position in positions" :key="position.id" class="border-b last:border-b-0">
                 <td class="py-2">{{ position.code }}</td>
                 <td class="py-2">{{ position.name }}</td>
+                <td class="py-2">{{ position.is_active ? t('common.active') : t('common.inactive') }}</td>
                 <td class="py-2 text-right">
                   <button class="text-orange-600 hover:underline cursor-pointer" @click="openPositionPermissions(position)">
                     {{ t('settings.permissions.editPermissions') }}
@@ -74,7 +76,7 @@
                 </td>
               </tr>
               <tr v-if="positions.length === 0">
-                <td colspan="3" class="py-6 text-center text-slate-500">
+                <td colspan="4" class="py-6 text-center text-slate-500">
                   {{ t('settings.permissions.noPositions') }}
                 </td>
               </tr>

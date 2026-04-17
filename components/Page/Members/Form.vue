@@ -149,16 +149,17 @@
 
       <div
         v-for="(assignment, i) in form.positions"
-        :key="i"
+        :key="positionRowKey(assignment)"
         class="grid grid-cols-1 md:grid-cols-[3fr_2fr_2fr_auto] gap-2 items-center"
       >
         <CommonSearchSelect
-          v-model="positionQueries[i]"
+          :model-value="positionQueryFor(assignment)"
           :options="positionOptions"
           :selected-label="selectedPositionLabel(i)"
           :placeholder="t('member.positionPlaceholder')"
           :empty-text="t('member.noPositions')"
           :disabled="disabled"
+          @update:model-value="setPositionQuery(assignment, $event)"
           @select="selectPositionFromOption(i, $event)"
           @clear-selection="clearPosition(i)"
         />
@@ -174,6 +175,13 @@
         >
           ✕
         </button>
+
+        <p
+          v-if="isAssignedPositionInactive(i)"
+          class="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900 md:col-span-3"
+        >
+          {{ t('member.inactivePositionHintEndAssignment') }}
+        </p>
       </div>
 
       <button
@@ -252,7 +260,7 @@ import type { SelectionListItem } from '~/components/Common/SelectionListField.v
 import { useI18n } from '~/composables/useI18n'
 import type { PositionRow } from '~/types/position'
 import type { SubdivisionOption } from '~/types/subdivision'
-import { MemberStatus, type SaveMemberBody } from '~/types/member'
+import { MemberStatus, type MemberPositionAssignment, type SaveMemberBody } from '~/types/member'
 import type { SubjectRow } from '~/types/subject'
 
 const props = defineProps<{
@@ -306,14 +314,25 @@ const subjectOptions = computed<SearchSelectOption<string>[]>(() => subjects.val
 })))
 const positions = ref<PositionRow[]>([])
 const subdivisions = ref<SubdivisionOption[]>([])
-const positionQueries = ref<Record<number, string>>({})
+const positionQueries = ref<Record<string, string>>({})
 const subdivisionQuery = ref('')
-const positionOptions = computed<SearchSelectOption<PositionRow>[]>(() => positions.value.map(position => ({
-  key: position.id,
-  label: `${position.code} - ${position.name}`,
-  value: position,
-  searchText: `${position.code} ${position.name}`,
-})))
+let nextPositionRowKey = 0
+const positionsById = computed(() => new Map(
+  positions.value.map(position => [Number(position.id), position]),
+))
+const selectedPositionIds = computed(() => new Set(
+  form.value.positions
+    .map(position => Number(position.position_id))
+    .filter(positionId => Number.isInteger(positionId) && positionId > 0),
+))
+const positionOptions = computed<SearchSelectOption<PositionRow>[]>(() => positions.value
+  .filter(position => position.is_active || selectedPositionIds.value.has(position.id))
+  .map(position => ({
+    key: position.id,
+    label: formatPositionLabel(position),
+    value: position,
+    searchText: `${position.code} ${position.name} ${position.is_active ? '' : t('common.inactive')}`.trim(),
+  })))
 const subdivisionsById = computed(() => {
   return new Map(subdivisions.value.map(subdivision => [subdivision.id, subdivision]))
 })
@@ -434,7 +453,7 @@ async function loadSubjects() {
 async function loadPositions() {
   const res = await $fetch<{ ok: boolean, positions?: PositionRow[] }>('/api/positions')
   if (res.ok && res.positions) {
-    positions.value = res.positions.filter(position => position.is_active)
+    positions.value = res.positions
   }
 }
 
@@ -489,24 +508,30 @@ function addPosition() {
     position_id: 0,
     since: '',
     until: null,
-  })
+    _rowKey: createPositionRowKey(),
+  } as MemberPositionAssignment & { _rowKey: string })
 }
 
 function removePosition(index: number) {
+  const assignment = form.value.positions[index]
+  if (!assignment) return
+  const rowKey = positionRowKey(assignment)
   form.value.positions.splice(index, 1)
+  delete positionQueries.value[rowKey]
 }
 
 function selectedPositionLabel(index: number) {
-  const positionId = form.value.positions[index]?.position_id
+  const positionId = Number(form.value.positions[index]?.position_id)
   if (!positionId) return ''
-  const selected = positions.value.find(position => position.id === positionId)
-  return selected ? `${selected.code} - ${selected.name}` : ''
+  const selected = positionsById.value.get(positionId)
+  return selected ? formatPositionLabel(selected) : ''
 }
 
 function selectPosition(index: number, position: PositionRow) {
-  if (!form.value.positions[index]) return
-  form.value.positions[index]!.position_id = position.id
-  positionQueries.value[index] = `${position.code} - ${position.name}`
+  const assignment = form.value.positions[index]
+  if (!assignment) return
+  assignment.position_id = position.id
+  positionQueries.value[positionRowKey(assignment)] = formatPositionLabel(position)
 }
 
 function selectPositionFromOption(index: number, value: unknown) {
@@ -514,9 +539,41 @@ function selectPositionFromOption(index: number, value: unknown) {
 }
 
 function clearPosition(index: number) {
-  if (!form.value.positions[index]) return
-  form.value.positions[index]!.position_id = 0
-  positionQueries.value[index] = ''
+  const assignment = form.value.positions[index]
+  if (!assignment) return
+  assignment.position_id = 0
+  positionQueries.value[positionRowKey(assignment)] = ''
+}
+
+function formatPositionLabel(position: PositionRow) {
+  const baseLabel = `${position.code} - ${position.name}`
+  return position.is_active ? baseLabel : `${baseLabel} (${t('common.inactive')})`
+}
+
+function isAssignedPositionInactive(index: number) {
+  const positionId = Number(form.value.positions[index]?.position_id)
+  if (!positionId) return false
+  const selected = positionsById.value.get(positionId)
+  return selected ? !Boolean(selected.is_active) : false
+}
+
+function createPositionRowKey() {
+  nextPositionRowKey += 1
+  return `position-row-${nextPositionRowKey}`
+}
+
+function positionRowKey(assignment: MemberPositionAssignment) {
+  const row = assignment as MemberPositionAssignment & { _rowKey?: string }
+  if (!row._rowKey) row._rowKey = row.id ? `position-row-saved-${row.id}` : createPositionRowKey()
+  return row._rowKey
+}
+
+function positionQueryFor(assignment: MemberPositionAssignment) {
+  return positionQueries.value[positionRowKey(assignment)] || ''
+}
+
+function setPositionQuery(assignment: MemberPositionAssignment, value: string) {
+  positionQueries.value[positionRowKey(assignment)] = value
 }
 
 function statusLabel(status: MemberStatus) {
@@ -554,13 +611,13 @@ function buildDefaultAccountUsername(firstName: string | null | undefined, lastN
 watch(
   [positions, () => form.value.positions],
   () => {
-    form.value.positions.forEach((assignment, index) => {
+    form.value.positions.forEach((assignment) => {
       if (!assignment.position_id) return
 
-      const selected = positions.value.find(position => position.id === assignment.position_id)
+      const selected = positions.value.find(position => Number(position.id) === Number(assignment.position_id))
       if (!selected) return
 
-      positionQueries.value[index] = `${selected.code} - ${selected.name}`
+      positionQueries.value[positionRowKey(assignment)] = formatPositionLabel(selected)
     })
   },
   { immediate: true, deep: true },

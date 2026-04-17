@@ -61,17 +61,27 @@
             />
 
             <td class="py-2 text-right space-x-2 align-top">
-              <button class="text-blue-600 hover:underline cursor-pointer" @click="editItem(item)">
-                {{ t('actions.edit') }}
-              </button>
-
-              <button
-                class="hover:underline cursor-pointer"
-                :class="item.is_active ? 'text-red-500' : 'text-gray-500'"
-                @click="toggleActive(item)"
+              <slot
+                name="actions"
+                :item="item"
+                :items="items"
+                :display-items="displayItems"
+                :edit="() => editItem(item)"
+                :toggle="() => toggleActive(item)"
+                :reload="loadItems"
               >
-                {{ item.is_active ? t('actions.deactivate') : t('actions.activate') }}
-              </button>
+                <button class="text-blue-600 hover:underline cursor-pointer" @click="editItem(item)">
+                  {{ t('actions.edit') }}
+                </button>
+
+                <button
+                  class="hover:underline cursor-pointer"
+                  :class="item.is_active ? 'text-red-500' : 'text-gray-500'"
+                  @click="toggleActive(item)"
+                >
+                  {{ item.is_active ? t('actions.deactivate') : t('actions.activate') }}
+                </button>
+              </slot>
             </td>
           </tr>
           <tr v-if="displayItems.length === 0">
@@ -222,6 +232,14 @@ defineSlots<{
     items: SettingsEntityRow[]
     displayItems: SettingsEntityRow[]
   }) => any
+  'actions'?: (props: {
+    item: SettingsEntityRow
+    items: SettingsEntityRow[]
+    displayItems: SettingsEntityRow[]
+    edit: () => void
+    toggle: () => Promise<void>
+    reload: () => Promise<void>
+  }) => any
   'modal-fields-before-description'?: (props: {
     editingItem: SaveSettingsEntityBody
     isNewItem: boolean
@@ -336,4 +354,8 @@ watch(() => props.canManage, async (canManage) => {
 
   await loadItems()
 }, { immediate: true })
+
+defineExpose({
+  loadItems,
+})
 </script>

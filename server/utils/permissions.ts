@@ -9,6 +9,10 @@ interface PositionRow {
   position_id: number
 }
 
+interface PositionStateRow {
+  id: number
+}
+
 interface PermissionRow {
   permission_key: PermissionKey
 }
@@ -35,7 +39,9 @@ export async function getUserPositionIds(userId: number): Promise<number[]> {
     `SELECT mp.position_id
      FROM members m
      JOIN member_positions mp ON mp.member_id = m.id
+     JOIN positions p ON p.id = mp.position_id
      WHERE m.account = ?
+       AND p.is_active = 1
        AND (mp.until IS NULL OR mp.until >= CURRENT_DATE())
        AND mp.since <= CURRENT_DATE()`,
     [userId]
@@ -68,13 +74,26 @@ export async function getUserPermissions(userId: number, roles: number[], positi
   }
 
   if (positionIds.length) {
-    const positionPerms = await query<PermissionRow[]>(
-      `SELECT permission_key
-       FROM position_permissions
-       WHERE position_id IN (${positionIds.map(() => '?').join(',')})`,
+    const activePositionRows = await query<PositionStateRow[]>(
+      `SELECT id
+       FROM positions
+       WHERE is_active = 1
+         AND id IN (${positionIds.map(() => '?').join(',')})`,
       positionIds
     )
-    positionPerms.forEach(p => permissions.add(p.permission_key))
+    const activePositionIds = activePositionRows
+      .map(row => Number(row.id))
+      .filter(id => Number.isFinite(id))
+
+    if (activePositionIds.length) {
+      const positionPerms = await query<PermissionRow[]>(
+        `SELECT permission_key
+         FROM position_permissions
+         WHERE position_id IN (${activePositionIds.map(() => '?').join(',')})`,
+        activePositionIds
+      )
+      positionPerms.forEach(p => permissions.add(p.permission_key))
+    }
   }
 
   const userPerms = await query<PermissionRow[]>(
