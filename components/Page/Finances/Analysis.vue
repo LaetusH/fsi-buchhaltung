@@ -23,22 +23,18 @@
             <div class="grid grid-cols-2 gap-4">
               <div class="field">
                 <label>{{ t('financeAnalysis.startDate') }}</label>
-                <input
-                  :value="startDate"
-                  type="date"
-                  class="input"
-                  @input="handleManualDateInput('start', $event)"
-                >
+                <CommonDateInput
+                  :model-value="startDate"
+                  @update:model-value="handleManualDateInput('start', $event)"
+                />
               </div>
 
               <div class="field">
                 <label>{{ t('financeAnalysis.endDate') }}</label>
-                <input
-                  :value="endDate"
-                  type="date"
-                  class="input"
-                  @input="handleManualDateInput('end', $event)"
-                >
+                <CommonDateInput
+                  :model-value="endDate"
+                  @update:model-value="handleManualDateInput('end', $event)"
+                />
               </div>
             </div>
 
@@ -1108,11 +1104,9 @@ function toggleMonthShortcut(value: string) {
   applyMonthShortcut()
 }
 
-function handleManualDateInput(field: ManualDateField, event: Event) {
-  const value = (event.target as HTMLInputElement).value
-
-  if (field === 'start') startDate.value = value
-  if (field === 'end') endDate.value = value
+function handleManualDateInput(field: ManualDateField, value: string | null) {
+  if (field === 'start') startDate.value = value || ''
+  if (field === 'end') endDate.value = value || ''
 
   quickYear.value = ''
   quickSemester.value = ''

@@ -1,7 +1,7 @@
 <template>
   <Page :headline1="t('event.title')" @open-menu="$emit('openMenu')">
     <template #cards>
-      <div class="col-span-12 lg:col-span-8 lg:col-start-3">
+      <div class="col-span-12 xl:col-span-8 xl:col-start-3">
         <PageEventsForm
           v-model="form"
           :members="members"

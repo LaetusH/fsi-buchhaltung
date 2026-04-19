@@ -85,15 +85,15 @@
       </div>
       <div class="field">
         <label>{{ t('invoice.invoiceDate') }}</label>
-        <input v-model="form.invoice_date" type="date" class="input" :disabled="disabled">
+        <CommonDateInput v-model="form.invoice_date" :disabled="disabled" />
       </div>
       <div class="field">
         <label>{{ t('invoice.serviceDate') }}</label>
-        <input v-model="form.service_date" type="date" class="input" :disabled="disabled">
+        <CommonDateInput v-model="form.service_date" :disabled="disabled" :empty-value="null" />
       </div>
       <div class="field">
         <label>{{ t('invoice.dueDate') }}</label>
-        <input v-model="form.due_date" type="date" class="input" :disabled="disabled">
+        <CommonDateInput v-model="form.due_date" :disabled="disabled" />
       </div>
       <div class="field">
         <label>{{ t('invoice.contactPerson') }}</label>
@@ -149,7 +149,7 @@
               v-model="position.description"
               :ref="element => setDescriptionRef(element, index)"
               rows="1"
-              class="input min-h-9 overflow-hidden resize-none"
+              class="input min-h-9.5 overflow-hidden resize-none"
               maxlength="255"
               :disabled="disabled"
               @input="autoResizeDescription($event)"
@@ -160,10 +160,13 @@
         <div
           class="grid grid-cols-1 gap-3 items-end"
           :class="!disabled && form.positions.length > 1
-            ? 'md:grid-cols-[1.2fr_1.4fr_0.8fr_0.8fr_0.9fr_0.8fr_auto]'
-            : 'md:grid-cols-[1.2fr_1.4fr_0.8fr_0.8fr_0.9fr_0.8fr]'"
+            ? 'md:grid-cols-[repeat(8,minmax(0,1fr))_auto] 2xl:grid-cols-[1.2fr_1.4fr_0.8fr_0.8fr_0.9fr_0.8fr_auto]'
+            : 'md:grid-cols-12 2xl:grid-cols-[1.2fr_1.4fr_0.8fr_0.8fr_0.9fr_0.8fr]'"
         >
-          <div class="field min-w-0">
+          <div
+            class="field min-w-0 2xl:col-span-1"
+            :class="!disabled && form.positions.length > 1 ? 'md:col-span-4' : 'md:col-span-6'"
+          >
             <label>{{ t('invoice.sphere') }}</label>
             <MenuDropdown v-model="openSphereIndex" :id="index" :disabled="disabled" class="min-w-0">
               <template #trigger="{ styling }">
@@ -188,7 +191,10 @@
               </template>
             </MenuDropdown>
           </div>
-          <div class="field min-w-0">
+          <div
+            class="field min-w-0 2xl:col-span-1"
+            :class="!disabled && form.positions.length > 1 ? 'md:col-span-5' : 'md:col-span-6'"
+          >
             <label>{{ t('invoice.costCentre') }}</label>
             <CommonSearchSelect
               v-model="costCentreQueries[index]"
@@ -203,7 +209,10 @@
               @clear-selection="clearCostCentre(index)"
             />
           </div>
-          <div class="field">
+          <div
+            class="field 2xl:col-span-1"
+            :class="!disabled && form.positions.length > 1 ? 'md:col-span-2' : 'md:col-span-3'"
+          >
             <label>{{ t('invoice.quantity') }}</label>
             <input
               type="text"
@@ -216,11 +225,17 @@
               @input="onDecimalInput($event, index, 'quantity')"
             >
           </div>
-          <div class="field">
+          <div
+            class="field 2xl:col-span-1"
+            :class="!disabled && form.positions.length > 1 ? 'md:col-span-2' : 'md:col-span-3'"
+          >
             <label>{{ t('invoice.unit') }}</label>
             <input v-model="position.unit" class="input" :disabled="disabled">
           </div>
-          <div class="field">
+          <div
+            class="field 2xl:col-span-1"
+            :class="!disabled && form.positions.length > 1 ? 'md:col-span-2' : 'md:col-span-3'"
+          >
             <label>{{ t('invoice.unitPrice') }}</label>
             <input
               type="text"
@@ -233,7 +248,10 @@
               @input="onDecimalInput($event, index, 'unit_price')"
             >
           </div>
-          <div class="field">
+          <div
+            class="field 2xl:col-span-1"
+            :class="!disabled && form.positions.length > 1 ? 'md:col-span-2' : 'md:col-span-3'"
+          >
             <label>{{ t('invoice.taxRate') }}</label>
             <input
               type="text"
@@ -249,7 +267,7 @@
           <button
             v-if="!disabled && form.positions.length > 1"
             type="button"
-            class="text-red-500 cursor-pointer p-2 w-10 rounded-md hover:bg-slate-100"
+            class="text-red-500 cursor-pointer p-2 w-10 rounded-md hover:bg-slate-100 md:col-span-1 2xl:col-span-1 md:self-end"
             @click="removePosition(index)"
           >
             ✕

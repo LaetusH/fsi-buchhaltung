@@ -16,12 +16,12 @@
 
         <div>
           <label class="text-sm font-medium text-slate-600">{{ t('event.startsOn') }}</label>
-          <input v-model="startsAtInput" type="datetime-local" class="input" :disabled="disabled">
+          <CommonDateInput v-model="startsAtInput" mode="datetime" :disabled="disabled" />
         </div>
 
         <div>
           <label class="text-sm font-medium text-slate-600">{{ t('event.endsOn') }}</label>
-          <input v-model="endsAtInput" type="datetime-local" class="input" :disabled="disabled">
+          <CommonDateInput v-model="endsAtInput" mode="datetime" :disabled="disabled" />
         </div>
 
         <div>
@@ -151,30 +151,22 @@ const form = computed({
   set: value => emit('update:modelValue', value),
 })
 
-function toInputDateTime(value: string) {
-  return value ? String(value).slice(0, 16).replace(' ', 'T') : ''
-}
-
-function fromInputDateTime(value: string) {
-  return value ? `${value.replace('T', ' ')}:00` : ''
-}
-
 const startsAtInput = computed({
-  get: () => toInputDateTime(form.value.starts_at),
-  set: (value: string) => {
+  get: () => form.value.starts_at,
+  set: (value: string | null) => {
     form.value = {
       ...form.value,
-      starts_at: fromInputDateTime(value),
+      starts_at: value || '',
     }
   },
 })
 
 const endsAtInput = computed({
-  get: () => toInputDateTime(form.value.ends_at),
-  set: (value: string) => {
+  get: () => form.value.ends_at,
+  set: (value: string | null) => {
     form.value = {
       ...form.value,
-      ends_at: fromInputDateTime(value),
+      ends_at: value || '',
     }
   },
 })

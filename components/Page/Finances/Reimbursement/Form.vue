@@ -20,7 +20,7 @@
 
         <div>
           <label class="text-sm font-medium text-slate-600">{{ t('reimbursement.submittedAt') }}</label>
-          <input v-model="submittedAtDate" type="date" class="input" :disabled="disabled">
+          <CommonDateInput v-model="submittedAtDate" :disabled="disabled" />
         </div>
       </div>
 
@@ -156,7 +156,7 @@
 
         <div>
           <label class="text-sm font-medium text-slate-600">{{ t('reimbursement.checkedAt') }}</label>
-          <input v-model="checkedAtDate" type="date" class="input" :disabled="disabled">
+          <CommonDateInput v-model="checkedAtDate" :disabled="disabled" :empty-value="null" />
         </div>
 
         <div>
@@ -175,7 +175,7 @@
 
         <div>
           <label class="text-sm font-medium text-slate-600">{{ t('reimbursement.disbursedAt') }}</label>
-          <input v-model="disbursedAtDate" type="date" class="input" :disabled="disabled">
+          <CommonDateInput v-model="disbursedAtDate" :disabled="disabled" :empty-value="null" />
         </div>
       </div>
     </section>
@@ -292,28 +292,23 @@ const receiptOptions = computed<SearchSelectOption<ReceiptRow>[]>(() => receipts
   searchText: [receipt.id, receipt.receipt_number, receipt.company_name, receipt.description, receipt.receipt_date].filter(Boolean).join(' '),
 })))
 
-function toDateOnly(value: string | null) {
-  if (!value) return ''
-  return String(value).slice(0, 10)
-}
-
 const submittedAtDate = computed({
-  get: () => toDateOnly(form.value.submitted_at),
-  set: (v: string) => {
+  get: () => form.value.submitted_at,
+  set: (v: string | null) => {
     form.value.submitted_at = v || ''
   },
 })
 
 const checkedAtDate = computed({
-  get: () => toDateOnly(form.value.checked_at),
-  set: (v: string) => {
+  get: () => form.value.checked_at,
+  set: (v: string | null) => {
     form.value.checked_at = v || null
   },
 })
 
 const disbursedAtDate = computed({
-  get: () => toDateOnly(form.value.disbursed_at),
-  set: (v: string) => {
+  get: () => form.value.disbursed_at,
+  set: (v: string | null) => {
     form.value.disbursed_at = v || null
   },
 })

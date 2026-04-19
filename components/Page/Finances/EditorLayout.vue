@@ -1,7 +1,7 @@
 ﻿<template>
   <Page :headline1="headline1" @open-menu="$emit('openMenu')">
     <template #cards>
-      <div class="col-span-6 self-start">
+      <div class="col-span-12 lg:col-span-6 self-start">
         <ClientOnly v-if="canViewFiles && sidebarMode === 'file'">
           <FileDrop
             :model-value="modelValue"
@@ -19,7 +19,7 @@
 
       <div
         data-finance-form-column
-        :class="[(canViewFiles || sidebarMode === 'custom') ? 'col-span-6 self-start' : 'col-span-12 lg:col-span-8 lg:col-start-3 self-start']"
+        :class="[(canViewFiles || sidebarMode === 'custom') ? 'col-span-12 lg:col-span-6 self-start' : 'col-span-12 lg:col-span-8 lg:col-start-3 self-start']"
       >
         <slot />
       </div>

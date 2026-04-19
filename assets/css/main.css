@@ -69,7 +69,8 @@ body > #hiddenCopyElement,
     }
 }
 
-.input[type="date"] {
+.input[type="date"],
+.input[type="datetime-local"] {
     height: calc(1.25rem + 1rem + 2px);
     min-height: 0;
     padding-top: 0.5rem;
@@ -82,12 +83,16 @@ body > #hiddenCopyElement,
 
 .input[type="date"]::-webkit-datetime-edit,
 .input[type="date"]::-webkit-datetime-edit-fields-wrapper,
-.input[type="date"]::-webkit-date-and-time-value {
+.input[type="date"]::-webkit-date-and-time-value,
+.input[type="datetime-local"]::-webkit-datetime-edit,
+.input[type="datetime-local"]::-webkit-datetime-edit-fields-wrapper,
+.input[type="datetime-local"]::-webkit-date-and-time-value {
     min-height: 0;
     padding: 0;
     line-height: 1.25rem;
 }
 
-.input[type="date"]::-webkit-calendar-picker-indicator {
+.input[type="date"]::-webkit-calendar-picker-indicator,
+.input[type="datetime-local"]::-webkit-calendar-picker-indicator {
     margin: 0;
 }

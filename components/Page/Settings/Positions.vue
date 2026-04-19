@@ -105,17 +105,16 @@
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
                   <label class="flex items-center gap-2 text-sm text-slate-700">
                     <span class="shrink-0">{{ t('common.from') }}</span>
-                    <input v-model="assignment.since" type="date" class="input min-w-0">
+                    <CommonDateInput v-model="assignment.since" class="min-w-0" />
                   </label>
 
                   <label class="flex items-center gap-2 text-sm text-slate-700">
                     <span class="shrink-0">{{ t('common.to') }}</span>
-                    <input
-                      :value="assignment.until || ''"
-                      type="date"
-                      class="input min-w-0"
-                      @input="updateUntil(index, $event, editingItem)"
-                    >
+                    <CommonDateInput
+                      v-model="assignment.until"
+                      class="min-w-0"
+                      :empty-value="null"
+                    />
                   </label>
                 </div>
               </div>
@@ -144,7 +143,7 @@
       <div class="mt-4 space-y-4">
         <div class="rounded-lg border border-slate-200 bg-slate-50 p-4">
           <label class="text-sm font-medium text-slate-700">{{ t('settings.positions.deactivateConfirm.untilDate') }}</label>
-          <input v-model="deactivateForm.assignment_until" type="date" class="input mt-2">
+          <CommonDateInput v-model="deactivateForm.assignment_until" class="mt-2" />
           <p class="mt-2 text-sm text-slate-600">
             {{ t('settings.positions.deactivateConfirm.untilDateHint') }}
           </p>
@@ -591,14 +590,6 @@ async function confirmDeactivate() {
 
   closeDeactivateModal()
   await entityManagerRef.value?.loadItems()
-}
-
-function updateUntil(index: number, event: Event, editingItem: SaveSettingsEntityBody) {
-  const assignment = positionBody(editingItem).assignments[index]
-  if (!assignment) return
-
-  const value = (event.target as HTMLInputElement).value
-  assignment.until = value || null
 }
 
 async function loadMemberOptions() {

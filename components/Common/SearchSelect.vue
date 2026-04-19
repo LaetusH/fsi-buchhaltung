@@ -19,7 +19,7 @@
         <div
           v-if="open"
           ref="menuRef"
-          class="search-select-menu fixed z-70 rounded-md border bg-white shadow-lg w-max overflow-y-auto"
+          class="search-select-menu absolute z-70 rounded-md border bg-white shadow-lg w-max overflow-y-auto"
           :class="menuWidthClass"
           :style="menuStyle"
         >
@@ -124,6 +124,7 @@ const menuStyle = ref<Record<string, string>>({
   minWidth: '0px',
   maxHeight: '12.5rem',
 })
+let positionFrame: number | null = null
 
 const currentQuery = computed(() => props.modelValue || '')
 const normalizedQuery = computed(() => currentQuery.value.trim().toLowerCase())
@@ -142,6 +143,7 @@ function updateMenuPosition() {
   if (!open.value || !rootRef.value) return
 
   const viewportPadding = 16
+  const menuGap = 4
   const preferredMaxHeight = 200
   const rootRect = rootRef.value.getBoundingClientRect()
   const menuElement = menuRef.value
@@ -150,16 +152,17 @@ function updateMenuPosition() {
   const bottomBoundary = window.innerHeight - viewportPadding
   const spaceBelow = bottomBoundary - rootRect.bottom
   const spaceAbove = rootRect.top - topBoundary
-  const shouldOpenUp = spaceBelow < 200 && spaceAbove > spaceBelow
-  const availableSpace = Math.max(shouldOpenUp ? spaceAbove : spaceBelow, 0)
-  const menuMaxHeight = Math.min(preferredMaxHeight, availableSpace)
-  const actualMenuHeight = Math.min(menuElement?.scrollHeight ?? preferredMaxHeight, menuMaxHeight)
-  const measuredWidth = menuRect?.width ?? rootRect.width
+  const desiredMenuHeight = Math.min(menuElement?.scrollHeight ?? preferredMaxHeight, preferredMaxHeight)
+  const shouldOpenUp = spaceBelow < desiredMenuHeight && spaceAbove > spaceBelow
+  const availableSpace = Math.max((shouldOpenUp ? spaceAbove : spaceBelow) - menuGap, 0)
+  const menuMaxHeight = Math.max(Math.min(preferredMaxHeight, availableSpace), 0)
+  const actualMenuHeight = Math.min(menuElement?.scrollHeight ?? desiredMenuHeight, menuMaxHeight || desiredMenuHeight)
+  const measuredWidth = menuRect?.width ?? Math.max(rootRect.width, menuElement?.scrollWidth ?? 0)
   const maxLeft = window.innerWidth - viewportPadding - measuredWidth
-  const left = Math.min(Math.max(rootRect.left, viewportPadding), Math.max(viewportPadding, maxLeft))
+  const left = window.scrollX + Math.min(Math.max(rootRect.left, viewportPadding), Math.max(viewportPadding, maxLeft))
   const top = shouldOpenUp
-    ? Math.max(topBoundary, rootRect.top - actualMenuHeight - 4)
-    : Math.min(bottomBoundary, rootRect.bottom + 4)
+    ? window.scrollY + Math.max(topBoundary, rootRect.top - actualMenuHeight - menuGap)
+    : window.scrollY + Math.min(bottomBoundary, rootRect.bottom + menuGap)
 
   menuStyle.value = {
     top: `${top}px`,
@@ -168,6 +171,15 @@ function updateMenuPosition() {
     maxHeight: `${menuMaxHeight}px`,
     maxWidth: props.menuWidth === 'wide' ? '48rem' : '30vw',
   }
+}
+
+function scheduleMenuPositionUpdate() {
+  if (!open.value) return
+  if (positionFrame !== null) cancelAnimationFrame(positionFrame)
+  positionFrame = requestAnimationFrame(() => {
+    positionFrame = null
+    updateMenuPosition()
+  })
 }
 
 function onInput(event: Event) {
@@ -232,25 +244,30 @@ function onDocumentClick(event: MouseEvent) {
 watch(open, async (isOpen) => {
   if (!isOpen) return
   await nextTick()
-  updateMenuPosition()
+  scheduleMenuPositionUpdate()
 })
 
 watch(() => filteredOptions.value.length, async () => {
   if (!open.value) return
   await nextTick()
-  updateMenuPosition()
+  scheduleMenuPositionUpdate()
 })
 
 onMounted(() => {
   document.addEventListener('mousedown', onDocumentClick)
-  window.addEventListener('resize', updateMenuPosition)
-  document.addEventListener('scroll', updateMenuPosition, true)
+  window.addEventListener('resize', scheduleMenuPositionUpdate)
+  window.addEventListener('scroll', scheduleMenuPositionUpdate, true)
+  window.visualViewport?.addEventListener('resize', scheduleMenuPositionUpdate)
+  window.visualViewport?.addEventListener('scroll', scheduleMenuPositionUpdate)
 })
 
 onBeforeUnmount(() => {
   document.removeEventListener('mousedown', onDocumentClick)
-  window.removeEventListener('resize', updateMenuPosition)
-  document.removeEventListener('scroll', updateMenuPosition, true)
+  window.removeEventListener('resize', scheduleMenuPositionUpdate)
+  window.removeEventListener('scroll', scheduleMenuPositionUpdate, true)
+  window.visualViewport?.removeEventListener('resize', scheduleMenuPositionUpdate)
+  window.visualViewport?.removeEventListener('scroll', scheduleMenuPositionUpdate)
+  if (positionFrame !== null) cancelAnimationFrame(positionFrame)
 })
 </script>
 

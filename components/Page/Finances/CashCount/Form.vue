@@ -62,22 +62,20 @@
 
         <div>
           <label class="text-sm font-medium text-slate-600">{{ t('cashCount.countedBeforeAt') }}</label>
-          <input
+          <CommonDateInput
             v-model="countedBeforeAtInput"
-            type="datetime-local"
-            class="input"
+            mode="datetime"
             :disabled="disabled"
-          >
+          />
         </div>
 
         <div>
           <label class="text-sm font-medium text-slate-600">{{ t('cashCount.countedAfterAt') }}</label>
-          <input
+          <CommonDateInput
             v-model="countedAfterAtInput"
-            type="datetime-local"
-            class="input"
+            mode="datetime"
             :disabled="disabled"
-          >
+          />
         </div>
       </div>
     </section>
@@ -95,28 +93,38 @@
         </button>
       </div>
 
-      <div class="hidden lg:grid grid-cols-[5rem_1fr_1fr_1fr_2fr_auto] gap-3 text-sm font-medium text-slate-500">
+      <div
+        class="hidden 2xl:grid gap-3 text-sm font-medium text-slate-500"
+        :class="!disabled && form.positions.length > 1
+          ? '2xl:grid-cols-[5rem_1fr_1fr_1fr_2fr_auto]'
+          : '2xl:grid-cols-[5rem_1fr_1fr_1fr_2fr]'"
+      >
         <div>{{ t('cashCount.register') }}</div>
         <div>{{ t('cashCount.amountBefore') }}</div>
         <div>{{ t('cashCount.amountAfter') }}</div>
         <div>{{ t('cashCount.difference') }}</div>
         <div>{{ t('cashCount.notes') }}</div>
-        <div />
+        <div v-if="!disabled && form.positions.length > 1" />
       </div>
 
       <div
         v-for="(position, index) in form.positions"
         :key="position.id || index"
-        class="rounded-xl border border-slate-200 p-3 lg:p-0 lg:border-0"
+        class="rounded-xl border border-slate-200 bg-slate-50 p-3"
       >
-        <div class="grid grid-cols-1 lg:grid-cols-[5rem_1fr_1fr_1fr_2fr_auto] gap-3 items-start">
-          <div>
-            <label class="text-sm font-medium text-slate-500 lg:hidden">{{ t('cashCount.register') }}</label>
+        <div
+          class="grid grid-cols-1 gap-3 items-start md:grid-cols-8"
+          :class="!disabled && form.positions.length > 1
+            ? '2xl:grid-cols-[5rem_1fr_1fr_1fr_2fr_auto]'
+            : '2xl:grid-cols-[5rem_1fr_1fr_1fr_2fr]'"
+        >
+          <div class="field md:col-span-2 2xl:col-span-1">
+            <label class="2xl:hidden">{{ t('cashCount.register') }}</label>
             <div class="input bg-slate-50 text-center font-semibold">{{ index + 1 }}</div>
           </div>
 
-          <div>
-            <label class="text-sm font-medium text-slate-500 lg:hidden">{{ t('cashCount.amountBefore') }}</label>
+          <div class="field md:col-span-2 2xl:col-span-1">
+            <label class="2xl:hidden">{{ t('cashCount.amountBefore') }}</label>
             <input
               type="text"
               class="input text-right"
@@ -129,8 +137,8 @@
             >
           </div>
 
-          <div>
-            <label class="text-sm font-medium text-slate-500 lg:hidden">{{ t('cashCount.amountAfter') }}</label>
+          <div class="field md:col-span-2 2xl:col-span-1">
+            <label class="2xl:hidden">{{ t('cashCount.amountAfter') }}</label>
             <input
               type="text"
               class="input text-right"
@@ -143,15 +151,20 @@
             >
           </div>
 
-          <div>
-            <label class="text-sm font-medium text-slate-500 lg:hidden">{{ t('cashCount.difference') }}</label>
+          <div class="field md:col-span-2 2xl:col-span-1">
+            <label class="2xl:hidden">{{ t('cashCount.difference') }}</label>
             <div class="input bg-slate-50 text-right font-medium">
               {{ formatCurrency(positionDifference(position)) }}
             </div>
           </div>
 
-          <div>
-            <label class="text-sm font-medium text-slate-500 lg:hidden">{{ t('cashCount.notes') }}</label>
+          <div
+            class="field min-w-0"
+            :class="!disabled && form.positions.length > 1
+              ? 'md:col-span-7 2xl:col-span-1'
+              : 'md:col-span-8 2xl:col-span-1'"
+          >
+            <label class="2xl:hidden">{{ t('cashCount.notes') }}</label>
             <input
               v-model="position.notes"
               class="input"
@@ -162,10 +175,10 @@
           <button
             v-if="!disabled && form.positions.length > 1"
             type="button"
-            class="text-red-500 cursor-pointer p-2 w-10 rounded-md hover:bg-slate-100 self-center"
+            class="text-red-500 cursor-pointer p-2 w-10 rounded-md hover:bg-white md:col-span-1 2xl:col-span-1 md:self-end"
             @click="removePosition(index)"
           >
-            x
+            ✕
           </button>
         </div>
       </div>
@@ -175,11 +188,7 @@
       <div class="flex items-center justify-between gap-4 flex-wrap">
         <h3 class="font-semibold">{{ t('cashCount.overview') }}</h3>
 
-        <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 text-sm min-w-full lg:min-w-0 lg:w-auto">
-          <div class="rounded-xl bg-slate-100 px-4 py-3">
-            <div class="text-slate-500">{{ t('cashCount.registerCount') }}</div>
-            <div class="text-lg font-semibold">{{ form.positions.length }}</div>
-          </div>
+        <div class="grid grid-cols-2 lg:grid-cols-3 gap-3 text-sm min-w-full lg:min-w-0 lg:w-auto">
           <div class="rounded-xl bg-slate-100 px-4 py-3">
             <div class="text-slate-500">{{ t('cashCount.totalBefore') }}</div>
             <div class="text-lg font-semibold">{{ formatCurrency(totalBefore) }}</div>
@@ -288,14 +297,14 @@ const validationErrors = computed(() => {
 
 const saveDisabled = computed(() => disabled.value || validationErrors.value.length > 0)
 const countedBeforeAtInput = computed({
-  get: () => toDateTimeLocal(form.value.counted_before_at),
-  set: (value: string) => {
+  get: () => form.value.counted_before_at,
+  set: (value: string | null) => {
     form.value.counted_before_at = value || ''
   },
 })
 const countedAfterAtInput = computed({
-  get: () => toDateTimeLocal(form.value.counted_after_at),
-  set: (value: string) => {
+  get: () => form.value.counted_after_at,
+  set: (value: string | null) => {
     form.value.counted_after_at = value || ''
   },
 })
@@ -303,11 +312,6 @@ const countedAfterAtInput = computed({
 const totalBefore = computed(() => form.value.positions.reduce((sum, position) => sum + Number(position.amount_before || 0), 0))
 const totalAfter = computed(() => form.value.positions.reduce((sum, position) => sum + Number(position.amount_after || 0), 0))
 const totalDifference = computed(() => totalAfter.value - totalBefore.value)
-
-function toDateTimeLocal(value: string | null) {
-  if (!value) return ''
-  return String(value).slice(0, 16)
-}
 
 function hasValidAmount(value: unknown) {
   return Number.isFinite(Number(value))

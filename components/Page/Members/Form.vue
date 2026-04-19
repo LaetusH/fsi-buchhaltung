@@ -16,7 +16,7 @@
 
         <div>
           <label class="text-sm font-medium text-slate-600">{{ t('member.birthdate') }}</label>
-          <input v-model="form.birthdate" type="date" class="input" :disabled="disabled">
+          <CommonDateInput v-model="form.birthdate" :disabled="disabled" />
         </div>
 
         <div>
@@ -104,17 +104,17 @@
 
         <div>
           <label class="text-sm font-medium text-slate-600">{{ t('member.appliedAt') }}</label>
-          <input v-model="form.applied_at" type="date" class="input" :disabled="disabled">
+          <CommonDateInput v-model="form.applied_at" :disabled="disabled" />
         </div>
 
         <div>
           <label class="text-sm font-medium text-slate-600">{{ t('member.joinedAt') }}</label>
-          <input v-model="form.joined_at" type="date" class="input" :disabled="disabled">
+          <CommonDateInput v-model="form.joined_at" :disabled="disabled" />
         </div>
 
         <div>
           <label class="text-sm font-medium text-slate-600">{{ t('member.leftAt') }}</label>
-          <input v-model="form.left_at" type="date" class="input" :disabled="disabled">
+          <CommonDateInput v-model="leftAtInput" :disabled="disabled" :empty-value="null" />
         </div>
       </div>
 
@@ -171,8 +171,8 @@
           @clear-selection="clearPosition(i)"
         />
 
-        <input v-model="assignment.since" type="date" class="input" :disabled="disabled">
-        <input v-model="assignment.until" type="date" class="input" :disabled="disabled">
+        <CommonDateInput v-model="assignment.since" :disabled="disabled" />
+        <CommonDateInput v-model="assignment.until" :disabled="disabled" :empty-value="null" />
 
         <button
           v-if="!disabled"
@@ -290,6 +290,12 @@ const { t } = useI18n()
 const form = computed({
   get: () => props.modelValue,
   set: v => emit('update:modelValue', v),
+})
+const leftAtInput = computed({
+  get: () => form.value.left_at ?? null,
+  set: (value: string | null) => {
+    form.value.left_at = value
+  },
 })
 const disabled = computed(() => Boolean(props.disabled))
 const canEditSubjects = computed(() => props.canEditSubjects !== false)

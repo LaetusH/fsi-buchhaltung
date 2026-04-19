@@ -40,7 +40,7 @@
 
       <div>
         <label class="text-sm font-medium text-slate-600">{{ t('receipt.receiptDate') }}</label>
-        <input v-model="form.receipt_date" type="date" class="input" :disabled="disabled">
+        <CommonDateInput v-model="form.receipt_date" :disabled="disabled" />
       </div>
     </section>
 
