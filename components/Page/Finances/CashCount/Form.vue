@@ -96,8 +96,8 @@
       <div
         class="hidden 2xl:grid gap-3 text-sm font-medium text-slate-500"
         :class="!disabled && form.positions.length > 1
-          ? '2xl:grid-cols-[5rem_1fr_1fr_1fr_2fr_auto]'
-          : '2xl:grid-cols-[5rem_1fr_1fr_1fr_2fr]'"
+          ? '2xl:grid-cols-[7rem_1fr_1fr_1fr_2fr_auto]'
+          : '2xl:grid-cols-[7rem_1fr_1fr_1fr_2fr]'"
       >
         <div>{{ t('cashCount.register') }}</div>
         <div>{{ t('cashCount.amountBefore') }}</div>
@@ -115,12 +115,20 @@
         <div
           class="grid grid-cols-1 gap-3 items-start md:grid-cols-8"
           :class="!disabled && form.positions.length > 1
-            ? '2xl:grid-cols-[5rem_1fr_1fr_1fr_2fr_auto]'
-            : '2xl:grid-cols-[5rem_1fr_1fr_1fr_2fr]'"
+            ? '2xl:grid-cols-[7rem_1fr_1fr_1fr_2fr_auto]'
+            : '2xl:grid-cols-[7rem_1fr_1fr_1fr_2fr]'"
         >
           <div class="field md:col-span-2 2xl:col-span-1">
             <label class="2xl:hidden">{{ t('cashCount.register') }}</label>
-            <div class="input bg-slate-50 text-center font-semibold">{{ index + 1 }}</div>
+            <input
+              :value="displayRegisterNumber(position.register_number)"
+              type="text"
+              class="input text-center font-semibold"
+              inputmode="numeric"
+              :disabled="disabled"
+              @input="onRegisterNumberInput($event, index)"
+              @blur="onRegisterNumberBlur(index)"
+            >
           </div>
 
           <div class="field md:col-span-2 2xl:col-span-1">
@@ -287,6 +295,12 @@ const validationErrors = computed(() => {
     errors.push(t('cashCount.required.order'))
   }
   if (!Array.isArray(form.value.positions) || form.value.positions.length === 0) errors.push(t('cashCount.required.positions'))
+  if (form.value.positions.some(position => !hasValidRegisterNumber(position.register_number))) {
+    errors.push(t('cashCount.required.registerNumber'))
+  }
+  if (hasDuplicateRegisterNumbers()) {
+    errors.push(t('cashCount.required.uniqueRegister'))
+  }
   if (form.value.positions.some(position => !hasValidAmount(position.amount_before) || !hasValidAmount(position.amount_after))) {
     errors.push(t('cashCount.required.completePosition'))
   }
@@ -315,6 +329,16 @@ const totalDifference = computed(() => totalAfter.value - totalBefore.value)
 
 function hasValidAmount(value: unknown) {
   return Number.isFinite(Number(value))
+}
+
+function hasValidRegisterNumber(value: unknown) {
+  const registerNumber = Number(value)
+  return Number.isInteger(registerNumber) && registerNumber > 0
+}
+
+function hasDuplicateRegisterNumbers() {
+  const registerNumbers = form.value.positions.map(position => Number(position.register_number))
+  return new Set(registerNumbers).size !== registerNumbers.length
 }
 
 function hasAllMembers() {
@@ -400,7 +424,12 @@ async function loadEvents() {
 }
 
 function addPosition() {
-  form.value.positions.push({ amount_before: 0, amount_after: 0, notes: null })
+  form.value.positions.push({
+    register_number: nextRegisterNumber(),
+    amount_before: 0,
+    amount_after: 0,
+    notes: null,
+  })
 }
 
 function removePosition(index: number) {
@@ -416,6 +445,40 @@ function removePosition(index: number) {
 
 function positionDifference(position: CreateCashCountPositionBody) {
   return Number(position.amount_after || 0) - Number(position.amount_before || 0)
+}
+
+function nextRegisterNumber() {
+  const usedNumbers = new Set(
+    form.value.positions
+      .map(position => Number(position.register_number))
+      .filter(registerNumber => Number.isInteger(registerNumber) && registerNumber > 0)
+  )
+
+  let candidate = 1
+  while (usedNumbers.has(candidate)) candidate += 1
+  return candidate
+}
+
+function displayRegisterNumber(value: unknown) {
+  return value === null || value === undefined ? '' : String(value)
+}
+
+function onRegisterNumberInput(event: Event, index: number) {
+  const position = form.value.positions[index]
+  if (!position) return
+
+  const value = (event.target as HTMLInputElement).value.replace(/[^\d]/g, '')
+  position.register_number = value ? Number(value) : 0
+  ;(event.target as HTMLInputElement).value = value
+}
+
+function onRegisterNumberBlur(index: number) {
+  const position = form.value.positions[index]
+  if (!position) return
+
+  position.register_number = hasValidRegisterNumber(position.register_number)
+    ? Number(position.register_number)
+    : nextRegisterNumber()
 }
 
 function isAmountFocused(index: number, field: AmountField) {

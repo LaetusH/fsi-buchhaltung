@@ -55,7 +55,7 @@ const form = ref<CreateCashCountBody>({
   checked_by: 0,
   counted_before_at: '',
   counted_after_at: '',
-  positions: [{ amount_before: 0, amount_after: 0, notes: null }],
+  positions: [{ register_number: 1, amount_before: 0, amount_after: 0, notes: null }],
 })
 
 onMounted(async () => {
@@ -118,10 +118,16 @@ function hasValidDateOrder() {
 
 function hasCompletePositions() {
   return form.value.positions.every(position => {
+    const registerNumber = Number(position.register_number)
     const beforeAmount = Number(position.amount_before)
     const afterAmount = Number(position.amount_after)
-    return Number.isFinite(beforeAmount) && Number.isFinite(afterAmount)
+    return Number.isInteger(registerNumber) && registerNumber > 0 && Number.isFinite(beforeAmount) && Number.isFinite(afterAmount)
   })
+}
+
+function hasUniqueRegisterNumbers() {
+  const registerNumbers = form.value.positions.map(position => Number(position.register_number))
+  return new Set(registerNumbers).size === registerNumbers.length
 }
 
 async function submit() {
@@ -167,6 +173,10 @@ async function submit() {
   }
   if (!hasCompletePositions()) {
     toast.error(t('cashCount.required.completePosition'))
+    return
+  }
+  if (!hasUniqueRegisterNumbers()) {
+    toast.error(t('cashCount.required.uniqueRegister'))
     return
   }
   if (!file.value && (!existingFile.value || removeExistingFile.value)) {

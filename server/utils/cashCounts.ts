@@ -8,9 +8,11 @@ export function normalizeCashCountAmount(value: unknown) {
 }
 
 export function normalizeCashCountPosition(position: CreateCashCountPositionBody, index: number) {
+  const registerNumber = Number(position.register_number ?? (index + 1))
+
   return {
     id: position.id ? Number(position.id) : undefined,
-    register_number: index + 1,
+    register_number: Number.isInteger(registerNumber) ? registerNumber : NaN,
     amount_before: normalizeCashCountAmount(position.amount_before),
     amount_after: normalizeCashCountAmount(position.amount_after),
     notes: position.notes?.trim() ? position.notes.trim() : null,
@@ -37,6 +39,12 @@ export function validateCashCountBody(body: ReturnType<typeof normalizeCashCount
     return 'All three member references must be distinct'
   }
   if (!body.positions.length) return 'At least one register is required'
+  if (body.positions.some(position => !Number.isInteger(position.register_number) || position.register_number < 1)) {
+    return 'Each position requires a valid register number'
+  }
+  if (new Set(body.positions.map(position => position.register_number)).size !== body.positions.length) {
+    return 'Register numbers must be unique within a cash count'
+  }
   if (body.positions.some(position => Number.isNaN(position.amount_before) || Number.isNaN(position.amount_after))) {
     return 'Each position requires amount_before and amount_after'
   }
