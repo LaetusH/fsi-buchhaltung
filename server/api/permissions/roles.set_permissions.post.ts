@@ -1,8 +1,7 @@
 import { defineEventHandler, readBody } from 'h3'
-import { query, withTransaction } from '~/server/utils/db'
+import { query, withAuditTransaction } from '~/server/utils/db'
 import { isValidPermissionKey } from '~/server/utils/permissions'
-import { logChange } from '~/server/utils/changeLogger'
-import { syncScalarCollection } from '~/server/utils/api/audit'
+import { syncScalarCollection } from '~/server/utils/syncScalarCollection'
 import { requirePermission } from '~/server/utils/api/guards'
 
 interface SetRolePermissionsBody {
@@ -40,7 +39,7 @@ export default defineEventHandler(async (event): Promise<SetRolePermissionsRespo
     : []
 
   try {
-    await withTransaction(async (conn) => {
+    await withAuditTransaction(current.user, async (conn) => {
       const existingRows = await query<{ permission_key: string }[]>(
         `SELECT permission_key
          FROM role_permissions
@@ -57,17 +56,6 @@ export default defineEventHandler(async (event): Promise<SetRolePermissionsRespo
         existing: existingPermissions,
         incoming: newPermissions,
         onRemove: async (perm) => {
-          await logChange({
-            entityType: 'role',
-            entityId: roleId,
-            subEntityType: 'permission',
-            subEntityId: null,
-            field: 'permission_removed',
-            oldValue: perm,
-            newValue: null,
-            userId: current.user.id,
-          }, conn)
-
           await query(
             `DELETE FROM role_permissions
              WHERE role_id = ? AND permission_key = ?`,
@@ -76,17 +64,6 @@ export default defineEventHandler(async (event): Promise<SetRolePermissionsRespo
           )
         },
         onAdd: async (perm) => {
-          await logChange({
-            entityType: 'role',
-            entityId: roleId,
-            subEntityType: 'permission',
-            subEntityId: null,
-            field: 'permission_added',
-            oldValue: null,
-            newValue: perm,
-            userId: current.user.id,
-          }, conn)
-
           await query(
             `INSERT INTO role_permissions (role_id, permission_key)
              VALUES (?, ?)`,

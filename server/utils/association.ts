@@ -1,6 +1,5 @@
 import type mariadb from 'mariadb'
-import { syncScalarCollection } from '~/server/utils/api/audit'
-import { logChange } from '~/server/utils/changeLogger'
+import { syncScalarCollection } from '~/server/utils/syncScalarCollection'
 import { query } from '~/server/utils/db'
 import { normalizeRelationIds } from '~/server/utils/subdivisions'
 
@@ -131,17 +130,6 @@ export async function syncAssociationResponsibleMembers({
     existing: existingIds,
     incoming: nextIds,
     onRemove: async (memberId) => {
-      await logChange({
-        entityType: 'association_profile',
-        entityId: profileId,
-        subEntityType: 'member',
-        subEntityId: memberId,
-        field: 'responsible_member_removed',
-        oldValue: labels.get(memberId) ?? String(memberId),
-        newValue: null,
-        userId,
-      }, conn)
-
       await query(
         `DELETE FROM association_responsible_members
          WHERE association_profile_id = ? AND member_id = ?`,
@@ -150,21 +138,10 @@ export async function syncAssociationResponsibleMembers({
       )
     },
     onAdd: async (memberId) => {
-      await logChange({
-        entityType: 'association_profile',
-        entityId: profileId,
-        subEntityType: 'member',
-        subEntityId: memberId,
-        field: 'responsible_member_added',
-        oldValue: null,
-        newValue: labels.get(memberId) ?? String(memberId),
-        userId,
-      }, conn)
-
       await query(
-        `INSERT INTO association_responsible_members (association_profile_id, member_id, created_by)
-         VALUES (?, ?, ?)`,
-        [profileId, memberId, userId],
+        `INSERT INTO association_responsible_members (association_profile_id, member_id)
+         VALUES (?, ?)`,
+        [profileId, memberId],
         conn,
       )
     },
@@ -195,17 +172,6 @@ export async function syncAssociationResponsiblePositions({
     existing: existingIds,
     incoming: nextIds,
     onRemove: async (positionId) => {
-      await logChange({
-        entityType: 'association_profile',
-        entityId: profileId,
-        subEntityType: 'position',
-        subEntityId: positionId,
-        field: 'responsible_position_removed',
-        oldValue: labels.get(positionId) ?? String(positionId),
-        newValue: null,
-        userId,
-      }, conn)
-
       await query(
         `DELETE FROM association_responsible_positions
          WHERE association_profile_id = ? AND position_id = ?`,
@@ -214,21 +180,10 @@ export async function syncAssociationResponsiblePositions({
       )
     },
     onAdd: async (positionId) => {
-      await logChange({
-        entityType: 'association_profile',
-        entityId: profileId,
-        subEntityType: 'position',
-        subEntityId: positionId,
-        field: 'responsible_position_added',
-        oldValue: null,
-        newValue: labels.get(positionId) ?? String(positionId),
-        userId,
-      }, conn)
-
       await query(
-        `INSERT INTO association_responsible_positions (association_profile_id, position_id, created_by)
-         VALUES (?, ?, ?)`,
-        [profileId, positionId, userId],
+        `INSERT INTO association_responsible_positions (association_profile_id, position_id)
+         VALUES (?, ?)`,
+        [profileId, positionId],
         conn,
       )
     },

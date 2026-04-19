@@ -21,7 +21,7 @@ export default defineEventHandler(async (event): Promise<GetPositionsResponse> =
   if (!current.ok) return current
 
   const rows = await query(`
-    SELECT id, code, name, is_active, description, created_at
+    SELECT id, code, name, is_active, description
     FROM positions
     ORDER BY code ASC
   `) as PositionRow[]

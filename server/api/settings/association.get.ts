@@ -28,7 +28,6 @@ interface AssociationProfileBaseRow {
   register_number: string | null
   register_court: string | null
   logo_file_id: number | null
-  created_at: string
 }
 
 interface AssociationMemberRow {
@@ -69,7 +68,7 @@ export default defineEventHandler(async (event): Promise<GetAssociationProfileRe
     query<AssociationProfileBaseRow[]>(`
       SELECT
         id, name, short_name, street, street_number, postal_code, city, email, phone, website,
-        vat_id, iban, bic, bankname, register_number, register_court, NULL AS logo_file_id, created_at
+        vat_id, iban, bic, bankname, register_number, register_court, NULL AS logo_file_id
       FROM association_profiles
       ORDER BY id ASC
       LIMIT 1

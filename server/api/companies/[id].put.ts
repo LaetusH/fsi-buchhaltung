@@ -1,6 +1,5 @@
 import { defineEventHandler, readBody } from 'h3'
-import { query, withTransaction } from '~/server/utils/db'
-import { logFieldChanges } from '~/server/utils/api/audit'
+import { query, withAuditTransaction } from '~/server/utils/db'
 import { requirePermission } from '~/server/utils/api/guards'
 import { getNumericRouteParam } from '~/server/utils/api/request'
 import type { CompanyRow, UpdateCompanyBody } from '~/types/company'
@@ -32,7 +31,7 @@ export default defineEventHandler(async (event): Promise<UpdateCompanyResponse> 
   const updated = body
 
   try {
-    return await withTransaction(async (conn) => {
+    return await withAuditTransaction(current.user, async (conn) => {
       const existingRows: CompanyRow[] = await query(
         `SELECT * FROM companies WHERE id = ? LIMIT 1`,
         [companyId],
@@ -40,20 +39,6 @@ export default defineEventHandler(async (event): Promise<UpdateCompanyResponse> 
       )
 
       if (!existingRows.length) return { ok: false, error: 'No matching companies in database' }
-      const existing = existingRows[0]
-
-      const fields = ['name', 'street', 'street_number', 'postal_code', 'city', 'country', 'iban', 'bic', 'bankname', 'vat_id', 'email', 'phone', 'notes'] as (keyof UpdateCompanyBody)[]
-
-      await logFieldChanges({
-        entityType: 'company',
-        entityId: companyId,
-        fields,
-        previous: existing,
-        next: updated,
-        userId: current.user.id,
-        conn,
-      })
-
       await query(
         `UPDATE companies
         SET

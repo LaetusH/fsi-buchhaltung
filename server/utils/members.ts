@@ -1,6 +1,4 @@
 import type mariadb from 'mariadb'
-import { logFieldChanges } from '~/server/utils/api/audit'
-import { logChange } from '~/server/utils/changeLogger'
 import { query } from '~/server/utils/db'
 import { getPositionLabels, type PositionAssignmentRow } from '~/server/utils/positions'
 import { getSubdivisionLabels, syncSubdivisionAssignments } from '~/server/utils/subdivisions'
@@ -35,7 +33,7 @@ export function validateMemberPayload(body: SaveMemberBody) {
   return null
 }
 
-export async function ensureSubjectId(subjectName: string, createdBy: number, conn: mariadb.PoolConnection) {
+export async function ensureSubjectId(subjectName: string, conn: mariadb.PoolConnection) {
   const name = subjectName.trim()
 
   const existing = await query<{ id: number }[]>(
@@ -47,8 +45,8 @@ export async function ensureSubjectId(subjectName: string, createdBy: number, co
   if (existing.length) return Number(existing[0]!.id)
 
   const created = await query<any>(
-    `INSERT INTO subjects (name, created_by) VALUES (?, ?)`,
-    [name, createdBy],
+    `INSERT INTO subjects (name) VALUES (?)`,
+    [name],
     conn,
   )
 
@@ -104,17 +102,6 @@ async function deactivateLinkedAccount(
 
   const account = accountRows[0]
   if (!account || !isTruthyDbBoolean(account.is_active)) return null
-
-  await logChange({
-    entityType: 'user',
-    entityId: Number(account.id),
-    subEntityType: null,
-    subEntityId: null,
-    field: 'is_active',
-    oldValue: account.is_active,
-    newValue: 0,
-    userId,
-  }, conn)
 
   await query(
     `UPDATE users
@@ -215,19 +202,6 @@ async function closeMemberPositionsAfterLeftDate(
   }))
 
   if (positionsToRemove.length) {
-    for (const position of positionsToRemove) {
-      await logChange({
-        entityType: 'member',
-        entityId: memberId,
-        subEntityType: 'position_assignment',
-        subEntityId: Number(position.id),
-        field: 'position_removed',
-        oldValue: memberPositionAssignmentSummary(position, positionLabels),
-        newValue: null,
-        userId,
-      }, conn)
-    }
-
     await query(
       `DELETE FROM member_positions
        WHERE member_id = ?
@@ -235,22 +209,6 @@ async function closeMemberPositionsAfterLeftDate(
       [memberId, leftAt],
       conn,
     )
-  }
-
-  for (const position of positionsToTruncate) {
-    await logFieldChanges({
-      entityType: 'member',
-      entityId: memberId,
-      subEntityType: 'position_assignment',
-      subEntityId: Number(position.id),
-      fields: ['until'] as const,
-      previous: position,
-      next: {
-        until: leftAt,
-      },
-      userId,
-      conn,
-    })
   }
 
   if (!positionsToTruncate.length) {

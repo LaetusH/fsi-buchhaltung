@@ -30,7 +30,6 @@ export interface AssociationProfileRow {
   register_number: string | null
   register_court: string | null
   logo_file_id: number | null
-  created_at: string
   responsible_member_ids: number[]
   responsible_position_ids: number[]
 }

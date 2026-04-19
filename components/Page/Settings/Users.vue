@@ -14,7 +14,6 @@
           <tr class="text-left border-b">
             <th class="py-2">{{ t('login.username') }}</th>
             <th class="py-2">{{ t('settings.users.linkedMember') }}</th>
-            <th class="py-2">{{ t('settings.users.createdAt') }}</th>
             <th class="py-2 text-right">{{ t('common.actions') }}</th>
           </tr>
         </thead>
@@ -22,7 +21,6 @@
           <tr v-for="user in users" :key="user.id" class="border-b last:border-b-0">
             <td class="py-2">{{ user.username }}</td>
             <td class="py-2">{{ user.member_name || t('settings.users.noLinkedMember') }}</td>
-            <td class="py-2">{{ formatDate(user.created_at) }}</td>
             <td class="py-2">
               <div class="flex justify-end gap-3">
                 <button class="text-blue-600 hover:underline cursor-pointer" @click="openMemberModal(user)">
@@ -152,14 +150,12 @@
 import type { SearchSelectOption } from '~/components/Common/SearchSelect.vue'
 import { useI18n } from '~/composables/useI18n'
 import { useToast } from '~/composables/useToast'
-import { useLocaleFormatters } from '~/composables/useLocaleFormatters'
 import { useAuth } from '~/composables/useAuth'
 
 interface UserListRow {
   id: number
   username: string
   is_active: number | boolean
-  created_at: string
   member_id: number | null
   member_name: string | null
 }
@@ -172,7 +168,6 @@ interface MemberOptionRow {
 }
 
 const { t } = useI18n()
-const { formatDate } = useLocaleFormatters()
 const toast = useToast()
 const { hasPermission } = useAuth()
 

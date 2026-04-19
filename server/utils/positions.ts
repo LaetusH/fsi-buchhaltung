@@ -1,7 +1,5 @@
 import type mariadb from 'mariadb'
-import { logFieldChanges } from '~/server/utils/api/audit'
 import { query } from '~/server/utils/db'
-import { logChange } from '~/server/utils/changeLogger'
 import { getMemberLabels } from '~/server/utils/subdivisions'
 
 interface NamedRow {
@@ -155,20 +153,6 @@ export async function getPositionLabels(
   return new Map(rows.map(row => [Number(row.id), String(row.label)]))
 }
 
-function assignmentSummary(
-  scope: SyncPositionAssignmentsOptions['scope'],
-  assignment: PositionAssignmentInput | PositionAssignmentRow,
-  memberLabels: Map<number, string>,
-  positionLabels: Map<number, string>,
-) {
-  const baseLabel = scope === 'member'
-    ? (positionLabels.get(assignment.position_id) ?? String(assignment.position_id))
-    : (memberLabels.get(assignment.member_id) ?? String(assignment.member_id))
-  const until = assignment.until || '-'
-
-  return `${baseLabel} (${assignment.since} - ${until})`
-}
-
 export async function syncPositionAssignments({
   scope,
   ownerId,
@@ -209,13 +193,6 @@ export async function syncPositionAssignments({
     return { ok: false as const, error: rangeValidationError }
   }
 
-  const entityType = scope
-  const addField = scope === 'member' ? 'position_added' : 'member_added'
-  const removeField = scope === 'member' ? 'position_removed' : 'member_removed'
-  const memberDiffFields: readonly (keyof PositionAssignmentInput)[] = ['position_id', 'since', 'until']
-  const positionDiffFields: readonly (keyof PositionAssignmentInput)[] = ['member_id', 'since', 'until']
-  const diffFields = scope === 'member' ? memberDiffFields : positionDiffFields
-
   const existingById = new Map(existingAssignments.map(assignment => [assignment.id, assignment]))
   const retainedIds = new Set<number>()
   const positionStateRows = positionIds.length
@@ -250,26 +227,6 @@ export async function syncPositionAssignments({
     const existing = existingById.get(incoming.id)!
     retainedIds.add(existing.id)
 
-    await logFieldChanges({
-      entityType,
-      entityId: ownerId,
-      subEntityType: 'position_assignment',
-      subEntityId: existing.id,
-      fields: diffFields,
-      previous: existing,
-      next: incoming,
-      userId,
-      conn,
-      transformOldValue: {
-        member_id: value => memberLabels.get(Number(value)) ?? value,
-        position_id: value => positionLabels.get(Number(value)) ?? value,
-      },
-      transformNewValue: {
-        member_id: value => memberLabels.get(Number(value)) ?? value,
-        position_id: value => positionLabels.get(Number(value)) ?? value,
-      },
-    })
-
     await query(
       `UPDATE member_positions
        SET member_id = ?, position_id = ?, since = ?, until = ?
@@ -282,17 +239,6 @@ export async function syncPositionAssignments({
   for (const existing of existingAssignments) {
     if (retainedIds.has(existing.id)) continue
 
-    await logChange({
-      entityType,
-      entityId: ownerId,
-      subEntityType: 'position_assignment',
-      subEntityId: existing.id,
-      field: removeField,
-      oldValue: assignmentSummary(scope, existing, memberLabels, positionLabels),
-      newValue: null,
-      userId,
-    }, conn)
-
     await query(
       `DELETE FROM member_positions
        WHERE id = ?`,
@@ -304,23 +250,12 @@ export async function syncPositionAssignments({
   for (const incoming of incomingAssignments) {
     if (incoming.id && existingById.has(incoming.id)) continue
 
-    const res = await query<{ insertId: number }>(
+    await query(
       `INSERT INTO member_positions (member_id, position_id, since, until)
        VALUES (?, ?, ?, ?)`,
       [incoming.member_id, incoming.position_id, incoming.since, incoming.until || null],
       conn,
     )
-
-    await logChange({
-      entityType,
-      entityId: ownerId,
-      subEntityType: 'position_assignment',
-      subEntityId: Number(res.insertId),
-      field: addField,
-      oldValue: null,
-      newValue: assignmentSummary(scope, incoming, memberLabels, positionLabels),
-      userId,
-    }, conn)
   }
 
   return { ok: true as const }

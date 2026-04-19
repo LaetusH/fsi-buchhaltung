@@ -1,6 +1,6 @@
 import { defineEventHandler, readBody } from 'h3'
 import type { SaveMemberBody } from '~/types/member'
-import { query, withTransaction } from '~/server/utils/db'
+import { query, withAuditTransaction } from '~/server/utils/db'
 import { requirePermission } from '~/server/utils/api/guards'
 import { createUserAccount, DuplicateUsernameError } from '~/server/utils/userAccounts'
 import { ensureSubjectId, validateMemberPayload } from '~/server/utils/members'
@@ -38,8 +38,8 @@ export default defineEventHandler(async (event): Promise<CreateMemberResponse> =
   if (positionAssignments === null) return { ok: false, error: 'Invalid position list' }
 
   try {
-    return await withTransaction(async (conn) => {
-      const subjectId = await ensureSubjectId(body.subject_name, current.user.id, conn)
+    return await withAuditTransaction(current.user, async (conn) => {
+      const subjectId = await ensureSubjectId(body.subject_name, conn)
       let accountId = body.account ?? null
 
       if (body.new_account) {
@@ -52,8 +52,8 @@ export default defineEventHandler(async (event): Promise<CreateMemberResponse> =
 
       const insertMemberRes = await query<any>(
         `INSERT INTO members
-          (account, last_name, first_name, birthdate, street, street_number, postal_code, city, subject, phone, email, notes, status, honorary, applied_at, joined_at, left_at, created_by)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          (account, last_name, first_name, birthdate, street, street_number, postal_code, city, subject, phone, email, notes, status, honorary, applied_at, joined_at, left_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
           accountId,
           body.last_name,
@@ -72,7 +72,6 @@ export default defineEventHandler(async (event): Promise<CreateMemberResponse> =
           body.applied_at,
           body.joined_at,
           body.left_at || null,
-          current.user.id,
         ],
         conn
       )

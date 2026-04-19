@@ -21,7 +21,7 @@ export default defineEventHandler(async (event): Promise<GetCompaniesResponse> =
   if (!current.ok) return current
 
   const rows = await query(`
-    SELECT id, name, street, street_number, postal_code, city, country, iban, bic, bankname, vat_id, email, phone, notes, created_at
+    SELECT id, name, street, street_number, postal_code, city, country, iban, bic, bankname, vat_id, email, phone, notes
     FROM companies
     ORDER BY name ASC
   `) as CompanyRow[]

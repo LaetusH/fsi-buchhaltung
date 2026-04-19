@@ -1,5 +1,7 @@
 import mariadb from 'mariadb'
+import { clearAuditActor, setAuditActor } from '~/server/utils/dbAudit'
 import { normalizeBigInt } from '~/server/utils/normalize'
+import type { User } from '~/types/user'
 
 const pool = mariadb.createPool({
   host: process.env.DB_HOST,
@@ -41,5 +43,31 @@ export async function withTransaction<T>(callback: (conn: mariadb.PoolConnection
     throw err
   } finally {
     conn.release()
+  }
+}
+
+type AuditActor = Pick<User, 'id' | 'username'> | { id: number | null, username?: string | null } | number | null | undefined
+
+export async function withAuditTransaction<T>(
+  actor: AuditActor,
+  callback: (conn: mariadb.PoolConnection) => Promise<T>,
+): Promise<T> {
+  const conn = await pool.getConnection()
+
+  try {
+    await conn.beginTransaction()
+    await setAuditActor(conn, actor)
+    const result = await callback(conn)
+    await conn.commit()
+    return normalizeBigInt(result)
+  } catch (err) {
+    await conn.rollback()
+    throw err
+  } finally {
+    try {
+      await clearAuditActor(conn)
+    } finally {
+      conn.release()
+    }
   }
 }

@@ -1,5 +1,5 @@
 import { defineEventHandler } from 'h3'
-import { query, withTransaction } from '~/server/utils/db'
+import { query, withAuditTransaction } from '~/server/utils/db'
 import { readMultipart } from '~/server/utils/api/request'
 import { requirePermission } from '~/server/utils/api/guards'
 import { validateCostCentreSelection } from '~/server/utils/costCentres'
@@ -48,7 +48,7 @@ export default defineEventHandler(async (event): Promise<CreateInvoiceResponse> 
   }
 
   try {
-    return await withTransaction(async (conn) => {
+    return await withAuditTransaction(current.user, async (conn) => {
       if (await invoiceNumberExists(parsed.invoice_number, null, conn)) {
         return { ok: false, error: 'Invoice number already exists' }
       }
@@ -73,8 +73,8 @@ export default defineEventHandler(async (event): Promise<CreateInvoiceResponse> 
 
       const result: any = await query(
         `INSERT INTO invoices
-          (company_id, source_type, is_kleinunternehmer, invoice_date, due_date, contact_person, service_date, invoice_number, subject, intro_text, notes, status, created_by)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          (company_id, source_type, is_kleinunternehmer, invoice_date, due_date, contact_person, service_date, invoice_number, subject, intro_text, notes, status)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
           parsed.company_id,
           parsed.source_type,
@@ -88,7 +88,6 @@ export default defineEventHandler(async (event): Promise<CreateInvoiceResponse> 
           parsed.intro_text,
           parsed.notes,
           parsed.status,
-          current.user.id,
         ],
         conn,
       )
@@ -98,8 +97,8 @@ export default defineEventHandler(async (event): Promise<CreateInvoiceResponse> 
       for (const position of parsed.positions) {
         await query(
           `INSERT INTO invoice_positions
-            (invoice_id, name, description, sphere, cost_centre, quantity, unit, unit_price, tax, created_by)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            (invoice_id, name, description, sphere, cost_centre, quantity, unit, unit_price, tax)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
           [
             invoiceId,
             position.name,
@@ -110,7 +109,6 @@ export default defineEventHandler(async (event): Promise<CreateInvoiceResponse> 
             position.unit,
             position.unit_price,
             position.tax,
-            current.user.id,
           ],
           conn,
         )

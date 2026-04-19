@@ -1,7 +1,6 @@
 import { defineEventHandler, readBody } from 'h3'
 import type mariadb from 'mariadb'
-import { query, withTransaction } from '~/server/utils/db'
-import { logFieldChanges } from '~/server/utils/api/audit'
+import { query, withAuditTransaction } from '~/server/utils/db'
 import { requirePermission } from '~/server/utils/api/guards'
 import { toDbBoolean } from '~/server/utils/api/request'
 import type { CostCentreRow, SaveCostCentreBody } from '~/types/costCentre'
@@ -106,7 +105,7 @@ export default defineEventHandler(async (event): Promise<SaveCostCentreResponse>
   const active = toDbBoolean(updated.is_active)
 
   try {
-    return await withTransaction(async (conn) => {
+    return await withAuditTransaction(current.user, async (conn) => {
       const parentValidation = await validateParentHierarchy(updated.id, updated.parent_id ?? null, conn)
       if (!parentValidation.ok) return parentValidation
 
@@ -118,20 +117,6 @@ export default defineEventHandler(async (event): Promise<SaveCostCentreResponse>
         )
       
         if (!existingRows.length) return { ok: false, error: 'No matching cost centres in database' }
-        const existing = existingRows[0]
-
-        const fields = ['code', 'name', 'description', 'parent_id'] as (keyof SaveCostCentreBody)[]
-
-        await logFieldChanges({
-          entityType: 'cost_centre',
-          entityId: updated.id,
-          fields,
-          previous: existing,
-          next: updated,
-          userId: current.user.id,
-          conn,
-        })
-
         await query(
           `UPDATE cost_centres
           SET code = ?, name = ?, description = ?, parent_id = ?
@@ -144,9 +129,9 @@ export default defineEventHandler(async (event): Promise<SaveCostCentreResponse>
       }
 
       const res = await query(
-        `INSERT INTO cost_centres (code, name, is_active, description, parent_id, created_by)
-        VALUES (?, ?, ?, ?, ?, ?)`,
-        [updated.code, updated.name, active, updated.description, updated.parent_id ?? null, current.user.id],
+        `INSERT INTO cost_centres (code, name, is_active, description, parent_id)
+        VALUES (?, ?, ?, ?, ?)`,
+        [updated.code, updated.name, active, updated.description, updated.parent_id ?? null],
         conn
       )
 

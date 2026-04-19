@@ -1,5 +1,5 @@
 import { PERMISSIONS, type PermissionKey, implied } from '~/config/permissions'
-import { query, withTransaction } from '~/server/utils/db'
+import { query } from '~/server/utils/db'
 
 interface RoleRow {
   role_id: number

@@ -1,5 +1,5 @@
 import { defineEventHandler } from 'h3'
-import { query, withTransaction } from '~/server/utils/db'
+import { query, withAuditTransaction } from '~/server/utils/db'
 import { requirePermission } from '~/server/utils/api/guards'
 import { readMultipart } from '~/server/utils/api/request'
 import { normalizeCashCountBody, validateCashCountBody, validateCashCountRelations } from '~/server/utils/cashCounts'
@@ -35,14 +35,14 @@ export default defineEventHandler(async (event): Promise<CreateCashCountResponse
   if (fileError) return { ok: false, error: fileError }
 
   try {
-    return await withTransaction(async (conn) => {
+    return await withAuditTransaction(current.user, async (conn) => {
       const relationError = await validateCashCountRelations(cashCount, conn)
       if (relationError) return { ok: false, error: relationError }
 
       const result: any = await query(
         `INSERT INTO cash_counts
-          (event_id, counted_by_first, counted_by_second, checked_by, counted_before_at, counted_after_at, created_by)
-         VALUES (?, ?, ?, ?, ?, ?, ?)`,
+          (event_id, counted_by_first, counted_by_second, checked_by, counted_before_at, counted_after_at)
+         VALUES (?, ?, ?, ?, ?, ?)`,
         [
           cashCount.event_id,
           cashCount.counted_by_first,
@@ -50,7 +50,6 @@ export default defineEventHandler(async (event): Promise<CreateCashCountResponse
           cashCount.checked_by,
           cashCount.counted_before_at,
           cashCount.counted_after_at,
-          current.user.id,
         ],
         conn
       )
@@ -60,15 +59,14 @@ export default defineEventHandler(async (event): Promise<CreateCashCountResponse
       for (const position of cashCount.positions) {
         await query(
           `INSERT INTO cash_count_positions
-            (cash_count_id, register_number, amount_before, amount_after, notes, created_by)
-           VALUES (?, ?, ?, ?, ?, ?)`,
+            (cash_count_id, register_number, amount_before, amount_after, notes)
+           VALUES (?, ?, ?, ?, ?)`,
           [
             cashCountId,
             position.register_number,
             position.amount_before,
             position.amount_after,
             position.notes,
-            current.user.id,
           ],
           conn
         )

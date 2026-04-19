@@ -89,9 +89,9 @@ async function ensureRole(conn, userId, code, permissions) {
 
   if (!roleId) {
     const result = await conn.query(
-      `INSERT INTO roles (code, name, is_active, is_default, description, created_by)
-       VALUES (?, ?, 1, ?, NULL, ?)`,
-      [code, code.toUpperCase(), code === 'user' ? 1 : 0, userId]
+      `INSERT INTO roles (code, name, is_active, is_default, description)
+       VALUES (?, ?, 1, ?, NULL)`,
+      [code, code.toUpperCase(), code === 'user' ? 1 : 0]
     )
     roleId = Number(result.insertId)
   }

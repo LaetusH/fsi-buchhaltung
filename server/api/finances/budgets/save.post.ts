@@ -1,9 +1,7 @@
 import { defineEventHandler, readBody } from 'h3'
 import type mariadb from 'mariadb'
-import { query, withTransaction } from '~/server/utils/db'
-import { logFieldChanges } from '~/server/utils/api/audit'
+import { query, withAuditTransaction } from '~/server/utils/db'
 import { requirePermission } from '~/server/utils/api/guards'
-import { logChange } from '~/server/utils/changeLogger'
 import type { BudgetSemester, SaveBudgetBody, SaveBudgetLineBody } from '~/types/budget'
 
 interface SaveBudgetSuccess {
@@ -139,7 +137,7 @@ export default defineEventHandler(async (event): Promise<SaveBudgetResponse> => 
   if (budgetId !== null && (!Number.isInteger(budgetId) || budgetId <= 0)) return { ok: false, error: 'Invalid budget id' }
 
   try {
-    return await withTransaction(async (conn) => {
+    return await withAuditTransaction(current.user, async (conn) => {
       const validCostCentreIds = await loadValidCostCentreIds(conn)
       const normalizedLinesResult = sanitizeLines(body.lines, validCostCentreIds)
       if (!normalizedLinesResult.ok) return normalizedLinesResult
@@ -154,21 +152,6 @@ export default defineEventHandler(async (event): Promise<SaveBudgetResponse> => 
         )
 
         if (!existingRows.length) return { ok: false, error: 'Budget not found' }
-        const existing = existingRows[0]!
-
-        await logFieldChanges({
-          entityType: 'budget',
-          entityId: budgetId,
-          fields: ['start_date', 'end_date', 'notes'] satisfies (keyof BudgetRow)[],
-          previous: existing,
-          next: {
-            start_date: startDate,
-            end_date: endDate,
-            notes: notes || null,
-          },
-          userId: current.user.id,
-          conn,
-        })
 
         const existingLineRows = await query<BudgetLineRow[]>(
           `SELECT id, budget_id, cost_centre_id, expense_amount, income_amount, notes
@@ -184,59 +167,6 @@ export default defineEventHandler(async (event): Promise<SaveBudgetResponse> => 
         const incomingLinesByCostCentre = new Map(
           normalizedLinesResult.lines.map(line => [Number(line.cost_centre_id), line]),
         )
-
-        for (const existingLine of existingLineRows) {
-          const incomingLine = incomingLinesByCostCentre.get(Number(existingLine.cost_centre_id))
-
-          if (!incomingLine) {
-            await logChange({
-              entityType: 'budget',
-              entityId: budgetId,
-              subEntityType: 'budget_cost_centre_line',
-              subEntityId: existingLine.id,
-              field: 'line_removed',
-              oldValue: JSON.stringify({
-                cost_centre_id: existingLine.cost_centre_id,
-                expense_amount: amountToLogValue(existingLine.expense_amount),
-                income_amount: amountToLogValue(existingLine.income_amount),
-                notes: existingLine.notes,
-              }),
-              newValue: null,
-              userId: current.user.id,
-            }, conn)
-            continue
-          }
-
-          await logFieldChanges({
-            entityType: 'budget',
-            entityId: budgetId,
-            subEntityType: 'budget_cost_centre_line',
-            subEntityId: existingLine.id,
-            fields: ['expense_amount', 'income_amount', 'notes'] satisfies (keyof BudgetLineRow)[],
-            previous: existingLine,
-            next: {
-              expense_amount: incomingLine.expense_amount,
-              income_amount: incomingLine.income_amount,
-              notes: incomingLine.notes ?? null,
-            },
-            userId: current.user.id,
-            conn,
-            equals: {
-              expense_amount: amountEquals,
-              income_amount: amountEquals,
-            },
-            transformOldValue: {
-              expense_amount: amountToLogValue,
-              income_amount: amountToLogValue,
-              notes: normalizeNotes,
-            },
-            transformNewValue: {
-              expense_amount: amountToLogValue,
-              income_amount: amountToLogValue,
-              notes: normalizeNotes,
-            },
-          })
-        }
 
         await query(
           `UPDATE budgets
@@ -276,43 +206,26 @@ export default defineEventHandler(async (event): Promise<SaveBudgetResponse> => 
         for (const line of normalizedLinesResult.lines) {
           if (existingLinesByCostCentre.has(Number(line.cost_centre_id))) continue
 
-          const insertLineResult = await query(
+          await query(
             `INSERT INTO budget_cost_centre_lines (
               budget_id,
               cost_centre_id,
               expense_amount,
               income_amount,
-              notes,
-              created_by
-            ) VALUES (?, ?, ?, ?, ?, ?)`,
-            [budgetId, line.cost_centre_id, line.expense_amount, line.income_amount, line.notes ?? null, current.user.id],
+              notes
+            ) VALUES (?, ?, ?, ?, ?)`,
+            [budgetId, line.cost_centre_id, line.expense_amount, line.income_amount, line.notes ?? null],
             conn,
           )
-
-          await logChange({
-            entityType: 'budget',
-            entityId: budgetId,
-            subEntityType: 'budget_cost_centre_line',
-            subEntityId: Number(insertLineResult.insertId),
-            field: 'line_added',
-            oldValue: null,
-            newValue: JSON.stringify({
-              cost_centre_id: line.cost_centre_id,
-              expense_amount: amountToLogValue(line.expense_amount),
-              income_amount: amountToLogValue(line.income_amount),
-              notes: line.notes ?? null,
-            }),
-            userId: current.user.id,
-          }, conn)
         }
 
         return { ok: true, id: budgetId }
       }
 
       const insertResult = await query(
-        `INSERT INTO budgets (start_date, end_date, notes, created_by)
-         VALUES (?, ?, ?, ?)`,
-        [startDate, endDate, notes || null, current.user.id],
+        `INSERT INTO budgets (start_date, end_date, notes)
+         VALUES (?, ?, ?)`,
+        [startDate, endDate, notes || null],
         conn,
       )
 
@@ -325,10 +238,9 @@ export default defineEventHandler(async (event): Promise<SaveBudgetResponse> => 
             cost_centre_id,
             expense_amount,
             income_amount,
-            notes,
-            created_by
-          ) VALUES (?, ?, ?, ?, ?, ?)`,
-          [createdBudgetId, line.cost_centre_id, line.expense_amount, line.income_amount, line.notes ?? null, current.user.id],
+            notes
+          ) VALUES (?, ?, ?, ?, ?)`,
+          [createdBudgetId, line.cost_centre_id, line.expense_amount, line.income_amount, line.notes ?? null],
           conn,
         )
       }

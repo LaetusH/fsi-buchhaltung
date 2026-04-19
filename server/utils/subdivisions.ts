@@ -1,7 +1,6 @@
 import type mariadb from 'mariadb'
 import { query } from '~/server/utils/db'
-import { logChange } from '~/server/utils/changeLogger'
-import { syncScalarCollection } from '~/server/utils/api/audit'
+import { syncScalarCollection } from '~/server/utils/syncScalarCollection'
 
 interface NamedRow {
   id: number
@@ -128,18 +127,7 @@ export async function syncSubdivisionAssignments(
     existing: existingIds,
     incoming: nextIds,
     onRemove: async (id) => {
-      const { subdivisionId, memberId, memberLabel } = getAssignment(id)
-
-      await logChange({
-        entityType: 'subdivision',
-        entityId: subdivisionId,
-        subEntityType: 'member',
-        subEntityId: memberId,
-        field: 'member_removed',
-        oldValue: memberLabel,
-        newValue: null,
-        userId,
-      }, conn)
+      const { subdivisionId, memberId } = getAssignment(id)
 
       await query(
         `DELETE FROM subdivision_members
@@ -149,23 +137,12 @@ export async function syncSubdivisionAssignments(
       )
     },
     onAdd: async (id) => {
-      const { subdivisionId, memberId, memberLabel } = getAssignment(id)
-
-      await logChange({
-        entityType: 'subdivision',
-        entityId: subdivisionId,
-        subEntityType: 'member',
-        subEntityId: memberId,
-        field: 'member_added',
-        oldValue: null,
-        newValue: memberLabel,
-        userId,
-      }, conn)
+      const { subdivisionId, memberId } = getAssignment(id)
 
       await query(
-        `INSERT INTO subdivision_members (subdivision_id, member_id, created_by)
-         VALUES (?, ?, ?)`,
-        [subdivisionId, memberId, userId],
+        `INSERT INTO subdivision_members (subdivision_id, member_id)
+         VALUES (?, ?)`,
+        [subdivisionId, memberId],
         conn,
       )
     },

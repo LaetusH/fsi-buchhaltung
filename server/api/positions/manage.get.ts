@@ -10,7 +10,6 @@ interface PositionManageRow {
   name: string
   is_active: boolean
   description: string | null
-  created_at: string
   assignment_id: number | null
   member_id: number | null
   full_name: string | null
@@ -41,7 +40,6 @@ export default defineEventHandler(async (event): Promise<GetManagedPositionsResp
       p.name,
       p.is_active,
       p.description,
-      p.created_at,
       mp.id AS assignment_id,
       mp.member_id,
       TRIM(CONCAT(m.first_name, ' ', m.last_name)) AS full_name,
@@ -64,7 +62,6 @@ export default defineEventHandler(async (event): Promise<GetManagedPositionsResp
         name: String(row.name),
         is_active: Boolean(row.is_active),
         description: row.description ? String(row.description) : '',
-        created_at: String(row.created_at),
         assignments: [],
       })
     }

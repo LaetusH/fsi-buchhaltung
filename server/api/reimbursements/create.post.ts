@@ -1,5 +1,5 @@
 import { defineEventHandler } from 'h3'
-import { query, withTransaction } from '~/server/utils/db'
+import { query, withAuditTransaction } from '~/server/utils/db'
 import { requirePermission } from '~/server/utils/api/guards'
 import { readMultipart } from '~/server/utils/api/request'
 import { statusFromReimbursement, validateReimbursementBody } from '~/server/utils/reimbursements'
@@ -38,7 +38,7 @@ export default defineEventHandler(async (event): Promise<CreateReimbursementResp
     || new Date().toISOString().slice(0, 19).replace('T', ' ')
 
   try {
-    return await withTransaction(async (conn) => {
+    return await withAuditTransaction(current.user, async (conn) => {
       const uniqueReceiptIds = [...new Set(
         reimbursement.positions
           .map((position: any) => Number(position.receipt_id))
@@ -67,8 +67,8 @@ export default defineEventHandler(async (event): Promise<CreateReimbursementResp
 
       const reimbursementResult: any = await query(
         `INSERT INTO reimbursements
-          (paid_by, bankname, account_holder, iban, bic, advance, cash, submitted_at, checked_at, checked_by, disbursed_at, disbursed_by, created_by)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          (paid_by, bankname, account_holder, iban, bic, advance, cash, submitted_at, checked_at, checked_by, disbursed_at, disbursed_by)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
           reimbursement.paid_by,
           reimbursement.bankname || null,
@@ -82,7 +82,6 @@ export default defineEventHandler(async (event): Promise<CreateReimbursementResp
           reimbursement.checked_by || null,
           reimbursement.disbursed_at || null,
           reimbursement.disbursed_by || null,
-          current.user.id,
         ],
         conn
       )
@@ -92,13 +91,9 @@ export default defineEventHandler(async (event): Promise<CreateReimbursementResp
       for (const receiptId of uniqueReceiptIds) {
         await query(
           `INSERT INTO reimbursement_positions
-            (reimbursement_id, receipt_id, created_by)
-          VALUES (?, ?, ?)`,
-          [
-            reimbursementId,
-            receiptId,
-            current.user.id,
-          ],
+            (reimbursement_id, receipt_id)
+          VALUES (?, ?)`,
+          [reimbursementId, receiptId],
           conn
         )
       }

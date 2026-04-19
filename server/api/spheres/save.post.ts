@@ -1,7 +1,6 @@
 import { defineEventHandler, readBody } from 'h3'
-import { query, withTransaction } from '~/server/utils/db'
+import { query, withAuditTransaction } from '~/server/utils/db'
 import { normalizeBigInt } from '~/server/utils/normalize'
-import { logFieldChanges } from '~/server/utils/api/audit'
 import { requirePermission } from '~/server/utils/api/guards'
 import { toDbBoolean } from '~/server/utils/api/request'
 import type { SaveSphereBody, SphereRow } from '~/types/sphere'
@@ -34,7 +33,7 @@ export default defineEventHandler(async (event): Promise<SaveSphereResponse> => 
   const active = toDbBoolean(updated.is_active)
 
   try {
-    return await withTransaction(async (conn) => {
+    return await withAuditTransaction(current.user, async (conn) => {
       if (updated.id && updated.id > 0) {
         const existingRows: SphereRow[] = await query(
           `SELECT * FROM spheres WHERE id = ? LIMIT 1`,
@@ -43,20 +42,6 @@ export default defineEventHandler(async (event): Promise<SaveSphereResponse> => 
         )
 
         if (!existingRows.length) return { ok: false, error: 'No matching spheres in database' }
-        const existing = existingRows[0]
-
-        const fields = ['code', 'name', 'description'] as (keyof SaveSphereBody)[]
-
-        await logFieldChanges({
-          entityType: 'sphere',
-          entityId: updated.id,
-          fields,
-          previous: existing,
-          next: updated,
-          userId: current.user.id,
-          conn,
-        })
-
         await query(
           `UPDATE spheres
             SET code = ?, name = ?, description = ?
@@ -69,9 +54,9 @@ export default defineEventHandler(async (event): Promise<SaveSphereResponse> => 
       }
 
       const res = await query(
-        `INSERT INTO spheres (code, name, is_active, description, created_by)
-        VALUES (?, ?, ?, ?, ?)`,
-        [updated.code, updated.name, active, updated.description, current.user.id],
+        `INSERT INTO spheres (code, name, is_active, description)
+        VALUES (?, ?, ?, ?)`,
+        [updated.code, updated.name, active, updated.description],
         conn
       )
 

@@ -1,8 +1,7 @@
 import { defineEventHandler, readBody } from 'h3'
-import { query, withTransaction } from '~/server/utils/db'
+import { query, withAuditTransaction } from '~/server/utils/db'
 import { isValidPermissionKey } from '~/server/utils/permissions'
-import { logChange } from '~/server/utils/changeLogger'
-import { syncScalarCollection } from '~/server/utils/api/audit'
+import { syncScalarCollection } from '~/server/utils/syncScalarCollection'
 import { requirePermission } from '~/server/utils/api/guards'
 
 interface UpdateUserAccessBody {
@@ -56,7 +55,7 @@ export default defineEventHandler(async (event): Promise<UpdateUserAccessRespons
   }
 
   try {
-    await withTransaction(async (conn) => {
+    await withAuditTransaction(current.user, async (conn) => {
       const existingRoleRows = await query<{ role_id: number }[]>(
         `SELECT role_id
          FROM user_roles
@@ -71,17 +70,6 @@ export default defineEventHandler(async (event): Promise<UpdateUserAccessRespons
         existing: existingRoles,
         incoming: newRoles,
         onRemove: async (role) => {
-          await logChange({
-            entityType: 'user',
-            entityId: userId,
-            subEntityType: 'role',
-            subEntityId: null,
-            field: 'role_removed',
-            oldValue: role,
-            newValue: null,
-            userId: current.user.id,
-          }, conn)
-
           await query(
             `DELETE FROM user_roles
              WHERE user_id = ? AND role_id = ?`,
@@ -90,17 +78,6 @@ export default defineEventHandler(async (event): Promise<UpdateUserAccessRespons
           )
         },
         onAdd: async (role) => {
-          await logChange({
-            entityType: 'user',
-            entityId: userId,
-            subEntityType: 'role',
-            subEntityId: null,
-            field: 'role_added',
-            oldValue: null,
-            newValue: role,
-            userId: current.user.id,
-          }, conn)
-
           await query(
             `INSERT INTO user_roles (user_id, role_id)
              VALUES (?, ?)`,
@@ -126,17 +103,6 @@ export default defineEventHandler(async (event): Promise<UpdateUserAccessRespons
         existing: existingPermissions,
         incoming: newPermissions,
         onRemove: async (perm) => {
-          await logChange({
-            entityType: 'user',
-            entityId: userId,
-            subEntityType: 'permission',
-            subEntityId: null,
-            field: 'permission_removed',
-            oldValue: perm,
-            newValue: null,
-            userId: current.user.id,
-          }, conn)
-
           await query(
             `DELETE FROM user_permissions
              WHERE user_id = ? AND permission_key = ?`,
@@ -145,17 +111,6 @@ export default defineEventHandler(async (event): Promise<UpdateUserAccessRespons
           )
         },
         onAdd: async (perm) => {
-          await logChange({
-            entityType: 'user',
-            entityId: userId,
-            subEntityType: 'permission',
-            subEntityId: null,
-            field: 'permission_added',
-            oldValue: null,
-            newValue: perm,
-            userId: current.user.id,
-          }, conn)
-
           await query(
             `INSERT INTO user_permissions (user_id, permission_key)
              VALUES (?, ?)`,

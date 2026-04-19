@@ -1,5 +1,5 @@
 import { defineEventHandler, readBody } from 'h3'
-import { query } from '~/server/utils/db'
+import { query, withAuditTransaction } from '~/server/utils/db'
 import { requirePermission } from '~/server/utils/api/guards'
 import type { CreateSubjectBody } from '~/types/subject'
 
@@ -31,10 +31,11 @@ export default defineEventHandler(async (event): Promise<CreateSubjectResponse> 
 
   if (existing.length) return { ok: true, id: Number(existing[0]!.id) }
 
-  const res = await query<any>(
-    `INSERT INTO subjects (name, created_by) VALUES (?, ?)`,
-    [name, current.user.id]
-  )
+  const res = await withAuditTransaction(current.user, async (conn) => query<any>(
+    `INSERT INTO subjects (name) VALUES (?)`,
+    [name],
+    conn,
+  ))
 
   return { ok: true, id: Number(res.insertId) }
 })

@@ -1,6 +1,5 @@
 import { defineEventHandler, readBody } from 'h3'
-import { query, withTransaction } from '~/server/utils/db'
-import { logFieldChanges } from '~/server/utils/api/audit'
+import { query, withAuditTransaction } from '~/server/utils/db'
 import { requirePermission } from '~/server/utils/api/guards'
 import { toDbBoolean } from '~/server/utils/api/request'
 import { getMemberLabels, normalizeRelationIds, syncSubdivisionAssignments } from '~/server/utils/subdivisions'
@@ -53,7 +52,7 @@ export default defineEventHandler(async (event): Promise<SaveSubdivisionResponse
   const active = toDbBoolean(updated.is_active)
 
   try {
-    return await withTransaction(async (conn) => {
+    return await withAuditTransaction(current.user, async (conn) => {
       const memberLabels = await getMemberLabels(updated.member_ids ?? [], conn)
       if (memberLabels.size !== (updated.member_ids?.length ?? 0)) {
         return { ok: false, error: 'One or more selected members do not exist' }
@@ -72,17 +71,6 @@ export default defineEventHandler(async (event): Promise<SaveSubdivisionResponse
         )
 
         if (!existingRows.length) return { ok: false, error: 'No matching subdivisions in database' }
-        const existing = existingRows[0]
-
-        await logFieldChanges({
-          entityType: 'subdivision',
-          entityId: subdivisionId,
-          fields: ['code', 'name', 'description'] as const,
-          previous: existing,
-          next: updated,
-          userId: current.user.id,
-          conn,
-        })
 
         await query(
           `UPDATE subdivisions
@@ -120,9 +108,9 @@ export default defineEventHandler(async (event): Promise<SaveSubdivisionResponse
       }
 
       const res = await query(
-        `INSERT INTO subdivisions (code, name, is_active, description, created_by)
-         VALUES (?, ?, ?, ?, ?)`,
-        [updated.code, updated.name, active, updated.description ?? null, current.user.id],
+        `INSERT INTO subdivisions (code, name, is_active, description)
+         VALUES (?, ?, ?, ?)`,
+        [updated.code, updated.name, active, updated.description ?? null],
         conn,
       )
 

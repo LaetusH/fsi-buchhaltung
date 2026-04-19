@@ -1,6 +1,4 @@
 import { defineEventHandler } from 'h3'
-import { logChange } from '~/server/utils/changeLogger'
-import { logFieldChanges } from '~/server/utils/api/audit'
 import { requirePermission } from '~/server/utils/api/guards'
 import { readMultipart } from '~/server/utils/api/request'
 import {
@@ -10,7 +8,7 @@ import {
   validateAssociationReferences,
   validateAssociationProfilePayload,
 } from '~/server/utils/association'
-import { query, withTransaction } from '~/server/utils/db'
+import { query, withAuditTransaction } from '~/server/utils/db'
 import { detachFileAttachment, getActiveFileAttachment, storeAndAttachUploadedFile, validateUploadedFile } from '~/server/utils/files'
 import { normalizeBigInt } from '~/server/utils/normalize'
 import type { AssociationProfileRow } from '~/types/association'
@@ -55,7 +53,7 @@ export default defineEventHandler(async (event): Promise<SaveAssociationProfileR
   }
 
   try {
-    return await withTransaction(async (conn) => {
+    return await withAuditTransaction(current.user, async (conn) => {
       const referenceValidation = await validateAssociationReferences({
         memberIds: updated.responsible_member_ids,
         positionIds: updated.responsible_position_ids,
@@ -66,7 +64,7 @@ export default defineEventHandler(async (event): Promise<SaveAssociationProfileR
       const existingRows = normalizeBigInt(await query<AssociationProfileRow[]>(`
         SELECT
           id, name, short_name, street, street_number, postal_code, city, email, phone, website,
-          vat_id, iban, bic, bankname, register_number, register_court, NULL AS logo_file_id, created_at
+          vat_id, iban, bic, bankname, register_number, register_court, NULL AS logo_file_id
         FROM association_profiles
         ORDER BY id ASC
         LIMIT 1
@@ -92,34 +90,6 @@ export default defineEventHandler(async (event): Promise<SaveAssociationProfileR
           [existing.id],
           conn,
         )) as { position_id: number }[]
-
-        const fields = [
-          'name',
-          'short_name',
-          'street',
-          'street_number',
-          'postal_code',
-          'city',
-          'email',
-          'phone',
-          'website',
-          'vat_id',
-          'iban',
-          'bic',
-          'bankname',
-          'register_number',
-          'register_court',
-        ] as const
-
-        await logFieldChanges({
-          entityType: 'association_profile',
-          entityId: existing.id,
-          fields,
-          previous: existing,
-          next: updated,
-          userId: current.user.id,
-          conn,
-        })
 
         await query(
           `UPDATE association_profiles
@@ -182,20 +152,10 @@ export default defineEventHandler(async (event): Promise<SaveAssociationProfileR
         const shouldReplaceLogo = Boolean(existingLogoAttachment) && (removeExistingLogo || Boolean(multipart.file))
         if (shouldReplaceLogo && existingLogoAttachment) {
           await detachFileAttachment(existingLogoAttachment.id, current.user.id, conn)
-          await logChange({
-            entityType: 'association_profile',
-            entityId: existing.id,
-            subEntityType: 'file_attachment',
-            subEntityId: existingLogoAttachment.id,
-            field: 'logo_detached',
-            oldValue: existingLogoAttachment.file_id,
-            newValue: null,
-            userId: current.user.id,
-          }, conn)
         }
 
         if (multipart.file) {
-          const { fileId, attachmentId } = await storeAndAttachUploadedFile(
+          await storeAndAttachUploadedFile(
             multipart.file,
             'association',
             'association_profile_logo',
@@ -203,17 +163,6 @@ export default defineEventHandler(async (event): Promise<SaveAssociationProfileR
             current.user.id,
             conn,
           )
-
-          await logChange({
-            entityType: 'association_profile',
-            entityId: existing.id,
-            subEntityType: 'file_attachment',
-            subEntityId: attachmentId,
-            field: 'logo_attached',
-            oldValue: null,
-            newValue: fileId,
-            userId: current.user.id,
-          }, conn)
         }
 
         return { ok: true, id: existing.id }
@@ -222,8 +171,8 @@ export default defineEventHandler(async (event): Promise<SaveAssociationProfileR
       const res = await query<{ insertId: number }>(
         `INSERT INTO association_profiles (
           singleton_key, name, short_name, street, street_number, postal_code, city, email, phone, website,
-          vat_id, iban, bic, bankname, register_number, register_court, created_by
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          vat_id, iban, bic, bankname, register_number, register_court
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
           1,
           updated.name,
@@ -241,7 +190,6 @@ export default defineEventHandler(async (event): Promise<SaveAssociationProfileR
           updated.bankname,
           updated.register_number,
           updated.register_court,
-          current.user.id,
         ],
         conn,
       )
@@ -250,24 +198,24 @@ export default defineEventHandler(async (event): Promise<SaveAssociationProfileR
 
       for (const memberId of updated.responsible_member_ids) {
         await query(
-          `INSERT INTO association_responsible_members (association_profile_id, member_id, created_by)
-           VALUES (?, ?, ?)`,
-          [profileId, memberId, current.user.id],
+          `INSERT INTO association_responsible_members (association_profile_id, member_id)
+           VALUES (?, ?)`,
+          [profileId, memberId],
           conn,
         )
       }
 
       for (const positionId of updated.responsible_position_ids) {
         await query(
-          `INSERT INTO association_responsible_positions (association_profile_id, position_id, created_by)
-           VALUES (?, ?, ?)`,
-          [profileId, positionId, current.user.id],
+          `INSERT INTO association_responsible_positions (association_profile_id, position_id)
+           VALUES (?, ?)`,
+          [profileId, positionId],
           conn,
         )
       }
 
       if (multipart.file) {
-        const { fileId, attachmentId } = await storeAndAttachUploadedFile(
+        await storeAndAttachUploadedFile(
           multipart.file,
           'association',
           'association_profile_logo',
@@ -275,17 +223,6 @@ export default defineEventHandler(async (event): Promise<SaveAssociationProfileR
           current.user.id,
           conn,
         )
-
-        await logChange({
-          entityType: 'association_profile',
-          entityId: profileId,
-          subEntityType: 'file_attachment',
-          subEntityId: attachmentId,
-          field: 'logo_attached',
-          oldValue: null,
-          newValue: fileId,
-          userId: current.user.id,
-        }, conn)
       }
 
       return { ok: true, id: profileId }

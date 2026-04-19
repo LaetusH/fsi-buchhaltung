@@ -11,7 +11,6 @@ interface SubdivisionBaseRow {
   name: string
   is_active: boolean
   description: string | null
-  created_at: string
 }
 
 interface SubdivisionMemberRow {
@@ -39,7 +38,7 @@ export default defineEventHandler(async (event): Promise<GetSubdivisionsResponse
   if (!current.ok) return current
 
   const subdivisionRows = normalizeBigInt(await query<SubdivisionBaseRow[]>(`
-    SELECT id, code, name, is_active, description, created_at
+    SELECT id, code, name, is_active, description
     FROM subdivisions
     ORDER BY code ASC, name ASC
   `)) as SubdivisionBaseRow[]
@@ -82,7 +81,6 @@ export default defineEventHandler(async (event): Promise<GetSubdivisionsResponse
       name: String(row.name),
       is_active: Boolean(row.is_active),
       description: row.description ? String(row.description) : null,
-      created_at: String(row.created_at),
       members: membersBySubdivision.get(Number(row.id)) ?? [],
     })),
   }

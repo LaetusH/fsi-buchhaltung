@@ -26,7 +26,7 @@ export default defineEventHandler(async (event): Promise<GetEventResponse> => {
 
   try {
     const rows = await query<EventRow[]>(
-      `SELECT id, name, starts_at, ends_at, location, expected_guests, created_at
+      `SELECT id, name, starts_at, ends_at, location, expected_guests
        FROM events
        WHERE id = ?
        LIMIT 1`,
@@ -47,7 +47,6 @@ export default defineEventHandler(async (event): Promise<GetEventResponse> => {
         ends_at: String(existing.ends_at),
         location: String(existing.location),
         expected_guests: Number(existing.expected_guests),
-        created_at: String(existing.created_at),
         member_organizers: relations.memberOrganizers.get(eventId) ?? [],
         subdivision_organizers: relations.subdivisionOrganizers.get(eventId) ?? [],
         cost_centre_splits: relations.costCentreSplits.get(eventId) ?? [],

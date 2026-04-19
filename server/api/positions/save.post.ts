@@ -1,8 +1,7 @@
 import { defineEventHandler, readBody } from 'h3'
 import type { PositionRow, SavePositionBody } from '~/types/position'
-import { query, withTransaction } from '~/server/utils/db'
+import { query, withAuditTransaction } from '~/server/utils/db'
 import { normalizeBigInt } from '~/server/utils/normalize'
-import { logFieldChanges } from '~/server/utils/api/audit'
 import { requirePermission } from '~/server/utils/api/guards'
 import { toDbBoolean } from '~/server/utils/api/request'
 import { normalizePositionAssignments, syncPositionAssignments, type PositionAssignmentRow } from '~/server/utils/positions'
@@ -35,7 +34,7 @@ export default defineEventHandler(async (event): Promise<SavePositionResponse> =
   const active = toDbBoolean(updated.is_active)
 
   try {
-    return await withTransaction(async (conn) => {
+    return await withAuditTransaction(current.user, async (conn) => {
       if (updated.id && updated.id > 0) {
         const positionId = updated.id
         const normalizedAssignments = normalizePositionAssignments(updated.assignments, { position_id: positionId })
@@ -47,20 +46,6 @@ export default defineEventHandler(async (event): Promise<SavePositionResponse> =
         )
 
         if (!existingRows.length) return { ok: false, error: 'No matching positions in database' }
-        const existing = existingRows[0]!
-
-        const fields = ['code', 'name', 'description'] as (keyof SavePositionBody)[]
-
-        await logFieldChanges({
-          entityType: 'position',
-          entityId: positionId,
-          fields,
-          previous: existing,
-          next: updated,
-          userId: current.user.id,
-          conn,
-        })
-
         await query(
           `UPDATE positions
             SET code = ?, name = ?, description = ?
@@ -91,9 +76,9 @@ export default defineEventHandler(async (event): Promise<SavePositionResponse> =
       }
 
       const res = await query(
-        `INSERT INTO positions (code, name, is_active, description, created_by)
-         VALUES (?, ?, ?, ?, ?)`,
-        [updated.code, updated.name, active, updated.description, current.user.id],
+        `INSERT INTO positions (code, name, is_active, description)
+         VALUES (?, ?, ?, ?)`,
+        [updated.code, updated.name, active, updated.description],
         conn
       )
 

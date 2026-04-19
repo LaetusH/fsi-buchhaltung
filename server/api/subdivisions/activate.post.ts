@@ -1,8 +1,7 @@
 import { defineEventHandler, readBody } from 'h3'
 import { requirePermission } from '~/server/utils/api/guards'
 import { toDbBoolean } from '~/server/utils/api/request'
-import { logChange } from '~/server/utils/changeLogger'
-import { query, withTransaction } from '~/server/utils/db'
+import { query, withAuditTransaction } from '~/server/utils/db'
 import { getMemberLabels, syncSubdivisionAssignments } from '~/server/utils/subdivisions'
 import type { ActivateResponse } from '~/types/activate'
 
@@ -32,7 +31,7 @@ export default defineEventHandler(async (event): Promise<ActivateResponse> => {
   }
 
   try {
-    return await withTransaction(async (conn) => {
+    return await withAuditTransaction(current.user, async (conn) => {
       const existingRows = await query<SubdivisionRow[]>(
         `SELECT id, is_active
          FROM subdivisions
@@ -46,19 +45,7 @@ export default defineEventHandler(async (event): Promise<ActivateResponse> => {
         return { ok: false, error: 'No matching subdivisions in database' }
       }
 
-      const existing = existingRows[0]!
       const active = toDbBoolean(is_active)
-
-      await logChange({
-        entityType: 'subdivision',
-        entityId: Number(id),
-        subEntityType: null,
-        subEntityId: null,
-        field: 'is_active',
-        oldValue: existing.is_active,
-        newValue: active,
-        userId: current.user.id,
-      }, conn)
 
       await query(
         `UPDATE subdivisions

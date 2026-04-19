@@ -21,7 +21,7 @@ export default defineEventHandler(async (event): Promise<GetCostCentresResponse>
   if (!current.ok) return current
 
   const rows = await query(`
-    SELECT id, code, name, is_active, description, parent_id, created_at
+    SELECT id, code, name, is_active, description, parent_id
     FROM cost_centres
     ORDER BY code ASC
   `) as CostCentreRow[]

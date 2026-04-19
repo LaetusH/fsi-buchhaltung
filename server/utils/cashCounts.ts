@@ -76,7 +76,3 @@ export async function validateCashCountRelations(
     ? null
     : 'At least one selected member does not exist'
 }
-
-export function sameDecimal(left: unknown, right: unknown) {
-  return Number(left ?? 0).toFixed(2) === Number(right ?? 0).toFixed(2)
-}

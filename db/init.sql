@@ -3,10 +3,7 @@ CREATE TABLE IF NOT EXISTS users (
   id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
   username VARCHAR(255) NOT NULL UNIQUE,
   password_hash VARCHAR(255) NOT NULL,
-  role VARCHAR(50) NOT NULL DEFAULT 'user',
-  is_active TINYINT(1) NOT NULL DEFAULT 1,
-  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+  is_active TINYINT(1) NOT NULL DEFAULT 1
 );
 
 CREATE TABLE IF NOT EXISTS roles (
@@ -15,10 +12,7 @@ CREATE TABLE IF NOT EXISTS roles (
   name VARCHAR(127) NOT NULL,
   is_active TINYINT(1) NOT NULL DEFAULT 1,
   is_default TINYINT(1) NOT NULL DEFAULT 0,
-  description TEXT,
-  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  created_by BIGINT UNSIGNED NOT NULL,
-  FOREIGN KEY (created_by) REFERENCES users(id)
+  description TEXT
 );
 
 CREATE TABLE IF NOT EXISTS user_roles (
@@ -54,26 +48,24 @@ CREATE TABLE IF NOT EXISTS sessions (
   UNIQUE KEY (token_hash)
 );
 
-CREATE TABLE IF NOT EXISTS entity_change_logs (
+CREATE TABLE IF NOT EXISTS entity_versions (
   id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-  entity_type VARCHAR(50) NOT NULL,
-  entity_id BIGINT UNSIGNED NOT NULL,
-  sub_entity_type VARCHAR(50) NULL,
-  sub_entity_id BIGINT UNSIGNED NULL,
-  field_name VARCHAR(100) NOT NULL,
-  old_value TEXT NULL,
-  new_value TEXT NULL,
-  changed_by BIGINT UNSIGNED NOT NULL,
-  changed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  FOREIGN KEY (changed_by) REFERENCES users(id) ON DELETE CASCADE
+  table_name VARCHAR(128) NOT NULL,
+  record_key VARCHAR(512) NOT NULL,
+  primary_key_json LONGTEXT NOT NULL,
+  operation VARCHAR(16) NOT NULL,
+  state LONGTEXT NULL,
+  changed_by BIGINT UNSIGNED NULL,
+  changed_by_username VARCHAR(255) NULL,
+  changed_at TIMESTAMP(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+  INDEX idx_entity_versions_lookup (table_name, record_key, id),
+  INDEX idx_entity_versions_changed_at (changed_at),
+  INDEX idx_entity_versions_changed_by (changed_by)
 );
 
 CREATE TABLE IF NOT EXISTS subjects (
   id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-  name VARCHAR(63) NOT NULL,
-  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  created_by BIGINT UNSIGNED NOT NULL,
-  FOREIGN KEY (created_by) REFERENCES users(id)
+  name VARCHAR(63) NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS positions (
@@ -81,10 +73,7 @@ CREATE TABLE IF NOT EXISTS positions (
   code VARCHAR(32) NOT NULL UNIQUE,
   name VARCHAR(127) NOT NULL,
   is_active TINYINT(1) NOT NULL DEFAULT 1,
-  description TEXT,
-  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  created_by BIGINT UNSIGNED NOT NULL,
-  FOREIGN KEY (created_by) REFERENCES users(id)
+  description TEXT
 );
 
 CREATE TABLE IF NOT EXISTS position_permissions (
@@ -113,9 +102,6 @@ CREATE TABLE IF NOT EXISTS members (
   applied_at DATE NOT NULL,
   joined_at DATE NOT NULL,
   left_at DATE,
-  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  created_by BIGINT UNSIGNED NOT NULL,
-  FOREIGN KEY (created_by) REFERENCES users(id),
   FOREIGN KEY (account) REFERENCES users(id),
   FOREIGN KEY (subject) REFERENCES subjects(id)
 );
@@ -144,10 +130,7 @@ CREATE TABLE IF NOT EXISTS companies (
   vat_id VARCHAR(63),
   email VARCHAR(255),
   phone VARCHAR(63),
-  notes TEXT,
-  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  created_by BIGINT UNSIGNED NOT NULL,
-  FOREIGN KEY (created_by) REFERENCES users(id)
+  notes TEXT
 );
 
 CREATE TABLE IF NOT EXISTS association_profiles (
@@ -167,32 +150,23 @@ CREATE TABLE IF NOT EXISTS association_profiles (
   bic VARCHAR(11),
   bankname VARCHAR(127),
   register_number VARCHAR(127),
-  register_court VARCHAR(255),
-  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  created_by BIGINT UNSIGNED NOT NULL,
-  FOREIGN KEY (created_by) REFERENCES users(id)
+  register_court VARCHAR(255)
 );
 
 CREATE TABLE IF NOT EXISTS association_responsible_members (
   association_profile_id BIGINT UNSIGNED NOT NULL,
   member_id BIGINT UNSIGNED NOT NULL,
-  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  created_by BIGINT UNSIGNED NOT NULL,
   PRIMARY KEY (association_profile_id, member_id),
   FOREIGN KEY (association_profile_id) REFERENCES association_profiles(id) ON DELETE CASCADE,
-  FOREIGN KEY (member_id) REFERENCES members(id) ON DELETE CASCADE,
-  FOREIGN KEY (created_by) REFERENCES users(id)
+  FOREIGN KEY (member_id) REFERENCES members(id) ON DELETE CASCADE
 );
 
 CREATE TABLE IF NOT EXISTS association_responsible_positions (
   association_profile_id BIGINT UNSIGNED NOT NULL,
   position_id BIGINT UNSIGNED NOT NULL,
-  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  created_by BIGINT UNSIGNED NOT NULL,
   PRIMARY KEY (association_profile_id, position_id),
   FOREIGN KEY (association_profile_id) REFERENCES association_profiles(id) ON DELETE CASCADE,
-  FOREIGN KEY (position_id) REFERENCES positions(id) ON DELETE CASCADE,
-  FOREIGN KEY (created_by) REFERENCES users(id)
+  FOREIGN KEY (position_id) REFERENCES positions(id) ON DELETE CASCADE
 );
 
 CREATE TABLE IF NOT EXISTS files (
@@ -234,10 +208,7 @@ CREATE TABLE IF NOT EXISTS invoices (
   intro_text TEXT NULL,
   notes TEXT NULL,
   status VARCHAR(31) NOT NULL,
-  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  created_by BIGINT UNSIGNED NOT NULL,
-  FOREIGN KEY (company_id) REFERENCES companies(id),
-  FOREIGN KEY (created_by) REFERENCES users(id)
+  FOREIGN KEY (company_id) REFERENCES companies(id)
 );
 
 CREATE TABLE IF NOT EXISTS cost_centres (
@@ -247,9 +218,6 @@ CREATE TABLE IF NOT EXISTS cost_centres (
   is_active TINYINT(1) NOT NULL DEFAULT 1,
   description TEXT,
   parent_id MEDIUMINT UNSIGNED NULL,
-  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  created_by BIGINT UNSIGNED NOT NULL,
-  FOREIGN KEY (created_by) REFERENCES users(id),
   FOREIGN KEY (parent_id) REFERENCES cost_centres(id) ON DELETE SET NULL
 );
 
@@ -258,10 +226,7 @@ CREATE TABLE IF NOT EXISTS budgets (
   start_date DATE NOT NULL,
   end_date DATE NOT NULL,
   notes TEXT NULL,
-  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  created_by BIGINT UNSIGNED NOT NULL,
-  UNIQUE KEY uq_budget_period (start_date, end_date),
-  FOREIGN KEY (created_by) REFERENCES users(id)
+  UNIQUE KEY uq_budget_period (start_date, end_date)
 );
 
 CREATE TABLE IF NOT EXISTS budget_cost_centre_lines (
@@ -271,12 +236,9 @@ CREATE TABLE IF NOT EXISTS budget_cost_centre_lines (
   expense_amount DECIMAL(12,2) NOT NULL DEFAULT 0,
   income_amount DECIMAL(12,2) NOT NULL DEFAULT 0,
   notes TEXT NULL,
-  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  created_by BIGINT UNSIGNED NOT NULL,
   UNIQUE KEY uq_budget_cost_centre_line (budget_id, cost_centre_id),
   FOREIGN KEY (budget_id) REFERENCES budgets(id) ON DELETE CASCADE,
-  FOREIGN KEY (cost_centre_id) REFERENCES cost_centres(id),
-  FOREIGN KEY (created_by) REFERENCES users(id)
+  FOREIGN KEY (cost_centre_id) REFERENCES cost_centres(id)
 );
 
 CREATE TABLE IF NOT EXISTS subdivisions (
@@ -284,21 +246,15 @@ CREATE TABLE IF NOT EXISTS subdivisions (
   code VARCHAR(32) NOT NULL UNIQUE,
   name VARCHAR(255) NOT NULL,
   is_active TINYINT(1) NOT NULL DEFAULT 1,
-  description TEXT,
-  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  created_by BIGINT UNSIGNED NOT NULL,
-  FOREIGN KEY (created_by) REFERENCES users(id)
+  description TEXT
 );
 
 CREATE TABLE IF NOT EXISTS subdivision_members (
   subdivision_id MEDIUMINT UNSIGNED NOT NULL,
   member_id BIGINT UNSIGNED NOT NULL,
-  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  created_by BIGINT UNSIGNED NOT NULL,
   PRIMARY KEY (subdivision_id, member_id),
   FOREIGN KEY (subdivision_id) REFERENCES subdivisions(id) ON DELETE CASCADE,
-  FOREIGN KEY (member_id) REFERENCES members(id) ON DELETE CASCADE,
-  FOREIGN KEY (created_by) REFERENCES users(id)
+  FOREIGN KEY (member_id) REFERENCES members(id) ON DELETE CASCADE
 );
 
 CREATE TABLE IF NOT EXISTS events (
@@ -307,34 +263,25 @@ CREATE TABLE IF NOT EXISTS events (
   starts_at DATETIME NOT NULL,
   ends_at DATETIME NOT NULL,
   location VARCHAR(255) NOT NULL,
-  expected_guests MEDIUMINT UNSIGNED NOT NULL,
-  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  created_by BIGINT UNSIGNED NOT NULL,
-  FOREIGN KEY (created_by) REFERENCES users(id)
+  expected_guests MEDIUMINT UNSIGNED NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS event_member_organizers (
   id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
   event_id BIGINT UNSIGNED NOT NULL,
   member_id BIGINT UNSIGNED NOT NULL,
-  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  created_by BIGINT UNSIGNED NOT NULL,
   UNIQUE KEY unique_event_member_organizer (event_id, member_id),
   FOREIGN KEY (event_id) REFERENCES events(id) ON DELETE CASCADE,
-  FOREIGN KEY (member_id) REFERENCES members(id),
-  FOREIGN KEY (created_by) REFERENCES users(id)
+  FOREIGN KEY (member_id) REFERENCES members(id)
 );
 
 CREATE TABLE IF NOT EXISTS event_subdivision_organizers (
   id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
   event_id BIGINT UNSIGNED NOT NULL,
   subdivision_id MEDIUMINT UNSIGNED NOT NULL,
-  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  created_by BIGINT UNSIGNED NOT NULL,
   UNIQUE KEY unique_event_subdivision_organizer (event_id, subdivision_id),
   FOREIGN KEY (event_id) REFERENCES events(id) ON DELETE CASCADE,
-  FOREIGN KEY (subdivision_id) REFERENCES subdivisions(id),
-  FOREIGN KEY (created_by) REFERENCES users(id)
+  FOREIGN KEY (subdivision_id) REFERENCES subdivisions(id)
 );
 
 CREATE TABLE IF NOT EXISTS event_cost_centre_splits (
@@ -342,12 +289,9 @@ CREATE TABLE IF NOT EXISTS event_cost_centre_splits (
   event_id BIGINT UNSIGNED NOT NULL,
   cost_centre_id MEDIUMINT UNSIGNED NOT NULL,
   allocation_percentage DECIMAL(7,2) NOT NULL,
-  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  created_by BIGINT UNSIGNED NOT NULL,
   UNIQUE KEY unique_event_cost_centre_split (event_id, cost_centre_id),
   FOREIGN KEY (event_id) REFERENCES events(id) ON DELETE CASCADE,
-  FOREIGN KEY (cost_centre_id) REFERENCES cost_centres(id),
-  FOREIGN KEY (created_by) REFERENCES users(id)
+  FOREIGN KEY (cost_centre_id) REFERENCES cost_centres(id)
 );
 
 CREATE TABLE IF NOT EXISTS spheres (
@@ -355,10 +299,7 @@ CREATE TABLE IF NOT EXISTS spheres (
   code VARCHAR(32) NOT NULL UNIQUE,
   name VARCHAR(127) NOT NULL,
   is_active TINYINT(1) NOT NULL DEFAULT 1,
-  description TEXT,
-  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  created_by BIGINT UNSIGNED NOT NULL,
-  FOREIGN KEY (created_by) REFERENCES users(id)
+  description TEXT
 );
 
 CREATE TABLE IF NOT EXISTS invoice_positions (
@@ -372,12 +313,9 @@ CREATE TABLE IF NOT EXISTS invoice_positions (
   unit VARCHAR(31) NULL,
   unit_price DECIMAL(10,2) NOT NULL,
   tax DECIMAL(5,2) NOT NULL DEFAULT 19.00,
-  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  created_by BIGINT UNSIGNED NOT NULL,
   FOREIGN KEY (invoice_id) REFERENCES invoices(id) ON DELETE CASCADE,
   FOREIGN KEY (sphere) REFERENCES spheres(id),
-  FOREIGN KEY (cost_centre) REFERENCES cost_centres(id),
-  FOREIGN KEY (created_by) REFERENCES users(id)
+  FOREIGN KEY (cost_centre) REFERENCES cost_centres(id)
 );
 
 CREATE TABLE IF NOT EXISTS receipts (
@@ -387,9 +325,6 @@ CREATE TABLE IF NOT EXISTS receipts (
   receipt_number VARCHAR(100),
   description TEXT,
   status VARCHAR(15) NOT NULL,
-  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  created_by BIGINT UNSIGNED NOT NULL,
-  FOREIGN KEY (created_by) REFERENCES users(id),
   FOREIGN KEY (company_id) REFERENCES companies(id)
 );
 
@@ -400,9 +335,6 @@ CREATE TABLE IF NOT EXISTS receipt_positions (
   cost_centre MEDIUMINT UNSIGNED NOT NULL,
   amount DECIMAL(10,2) NOT NULL,
   tax TINYINT UNSIGNED DEFAULT 19,
-  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  created_by BIGINT UNSIGNED NOT NULL,
-  FOREIGN KEY (created_by) REFERENCES users(id),
   FOREIGN KEY (receipt_id) REFERENCES receipts(id) ON DELETE CASCADE,
   FOREIGN KEY (cost_centre) REFERENCES cost_centres(id),
   FOREIGN KEY (sphere) REFERENCES spheres(id)
@@ -422,9 +354,6 @@ CREATE TABLE IF NOT EXISTS reimbursements (
   checked_by BIGINT UNSIGNED,
   disbursed_at TIMESTAMP,
   disbursed_by BIGINT UNSIGNED,
-  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  created_by BIGINT UNSIGNED NOT NULL,
-  FOREIGN KEY (created_by) REFERENCES users(id),
   FOREIGN KEY (paid_by) REFERENCES members(id),
   FOREIGN KEY (checked_by) REFERENCES members(id),
   FOREIGN KEY (disbursed_by) REFERENCES members(id)
@@ -434,9 +363,6 @@ CREATE TABLE IF NOT EXISTS reimbursement_positions (
   id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
   reimbursement_id BIGINT UNSIGNED NOT NULL,
   receipt_id BIGINT UNSIGNED NOT NULL,
-  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  created_by BIGINT UNSIGNED NOT NULL,
-  FOREIGN KEY (created_by) REFERENCES users(id),
   FOREIGN KEY (reimbursement_id) REFERENCES reimbursements(id) ON DELETE CASCADE,
   FOREIGN KEY (receipt_id) REFERENCES receipts(id)
 );
@@ -449,9 +375,6 @@ CREATE TABLE IF NOT EXISTS cash_counts (
   checked_by BIGINT UNSIGNED NOT NULL,
   counted_before_at TIMESTAMP NOT NULL,
   counted_after_at TIMESTAMP NOT NULL,
-  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  created_by BIGINT UNSIGNED NOT NULL,
-  FOREIGN KEY (created_by) REFERENCES users(id),
   FOREIGN KEY (event_id) REFERENCES events(id),
   FOREIGN KEY (counted_by_first) REFERENCES members(id),
   FOREIGN KEY (counted_by_second) REFERENCES members(id),
@@ -465,9 +388,6 @@ CREATE TABLE IF NOT EXISTS cash_count_positions (
   amount_before DECIMAL(10,2) NOT NULL DEFAULT 0,
   amount_after DECIMAL(10,2) NOT NULL DEFAULT 0,
   notes TEXT,
-  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  created_by BIGINT UNSIGNED NOT NULL,
-  FOREIGN KEY (created_by) REFERENCES users(id),
   FOREIGN KEY (cash_count_id) REFERENCES cash_counts(id) ON DELETE CASCADE,
   UNIQUE KEY uq_cash_count_register (cash_count_id, register_number)
 );

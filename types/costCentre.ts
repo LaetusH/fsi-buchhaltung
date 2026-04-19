@@ -14,5 +14,4 @@ export interface CostCentreRow {
   is_active: boolean
   description: string
   parent_id: number | null
-  created_at: string
 }

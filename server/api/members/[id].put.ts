@@ -1,7 +1,6 @@
 import { defineEventHandler, readBody } from 'h3'
 import type { MemberStatusActionSummary, SaveMemberBody } from '~/types/member'
-import { query, withTransaction } from '~/server/utils/db'
-import { logFieldChanges } from '~/server/utils/api/audit'
+import { query, withAuditTransaction } from '~/server/utils/db'
 import { requirePermission } from '~/server/utils/api/guards'
 import { getNumericRouteParam } from '~/server/utils/api/request'
 import { ensureSubjectId, validateMemberPayload, applyMemberStatusActions } from '~/server/utils/members'
@@ -43,12 +42,12 @@ export default defineEventHandler(async (event): Promise<UpdateMemberResponse> =
   if (positionAssignments === null) return { ok: false, error: 'Invalid position list' }
 
   try {
-    return await withTransaction(async (conn) => {
+    return await withAuditTransaction(current.user, async (conn) => {
       const existingRows = await query<any[]>(`SELECT * FROM members WHERE id = ? LIMIT 1`, [memberId], conn)
       const existing = existingRows[0]
       if (!existing) return { ok: false, error: 'Member not found' }
 
-      const subjectId = await ensureSubjectId(body.subject_name, current.user.id, conn)
+      const subjectId = await ensureSubjectId(body.subject_name, conn)
 
       const updatedFields = {
         account: body.account ?? null,
@@ -69,16 +68,6 @@ export default defineEventHandler(async (event): Promise<UpdateMemberResponse> =
         joined_at: body.joined_at,
         left_at: body.left_at || null,
       }
-
-      await logFieldChanges({
-        entityType: 'member',
-        entityId: memberId,
-        fields: Object.keys(updatedFields) as (keyof typeof updatedFields)[],
-        previous: existing,
-        next: updatedFields,
-        userId: current.user.id,
-        conn,
-      })
 
       await query(
         `UPDATE members

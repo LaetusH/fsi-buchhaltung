@@ -15,6 +15,7 @@ services:
       - DB_PORT=${DB_PORT:-3307}
       - DB_USER=${DB_USER:-fsi}
       - DB_PASSWORD=${DB_PASSWORD:-fsi_password}
+      - DB_ROOT_PASSWORD=${DB_ROOT_PASSWORD:-root_password}
       - DB_NAME=${DB_NAME:-fsi_buchhaltung}
       - DB_CONN_LIMIT=${DB_CONN_LIMIT:-5}
       - UPLOAD_DIR=/uploads
@@ -28,7 +29,7 @@ services:
       - APP_BASE_URL=${APP_BASE_URL:-/}
     ports:
       - "3002:3002"
-    command: sh -c "npm ci && node scripts/seed-admin.mjs && npm run build && node .output/server/index.mjs"
+    command: sh -c "npm ci && npm run setup:audit && node scripts/seed-admin.mjs && npm run build && node .output/server/index.mjs"
     depends_on:
       db:
         condition: service_healthy

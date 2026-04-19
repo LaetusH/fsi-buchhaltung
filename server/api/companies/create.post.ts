@@ -1,5 +1,5 @@
 import { defineEventHandler, readBody } from 'h3'
-import { query } from '~/server/utils/db'
+import { query, withAuditTransaction } from '~/server/utils/db'
 import { normalizeBigInt } from '~/server/utils/normalize'
 import { requirePermission } from '~/server/utils/api/guards'
 import type { CreateCompanyBody } from '~/types/company'
@@ -29,10 +29,11 @@ export default defineEventHandler(async (event): Promise<CreateCompanyResponse> 
   const { name, street, postal_code, city, country, iban, bic, bankname, vat_id, email, phone, notes } = body
 
   try {
-    const res = await query(
-      `INSERT INTO companies (name, street, postal_code, city, country, iban, bic, bankname, vat_id, email, phone, notes, created_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [name, street, postal_code, city, country, iban, bic, bankname, vat_id, email, phone, notes, current.user.id]
-    )
+    const res = await withAuditTransaction(current.user, async (conn) => query(
+      `INSERT INTO companies (name, street, postal_code, city, country, iban, bic, bankname, vat_id, email, phone, notes) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [name, street, postal_code, city, country, iban, bic, bankname, vat_id, email, phone, notes],
+      conn,
+    ))
 
     return { ok: true, id: normalizeBigInt(res.insertId) }
   } catch (err: unknown) {

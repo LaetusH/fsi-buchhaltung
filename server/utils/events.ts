@@ -1,9 +1,8 @@
 import type mariadb from 'mariadb'
-import { logFieldChanges, syncScalarCollection } from '~/server/utils/api/audit'
-import { logChange } from '~/server/utils/changeLogger'
+import { syncScalarCollection } from '~/server/utils/syncScalarCollection'
 import { validateSimpleCostCentreSelection } from '~/server/utils/costCentres'
 import { query } from '~/server/utils/db'
-import { getSubdivisionLabels, getMemberLabels, normalizeRelationIds, validateSubdivisionSelection } from '~/server/utils/subdivisions'
+import { normalizeRelationIds, validateSubdivisionSelection } from '~/server/utils/subdivisions'
 import type {
   EventCostCentreOption,
   EventCostCentreSplit,
@@ -185,61 +184,21 @@ export async function validateEventRelations(
   return validateSimpleCostCentreSelection(costCentreIds, existingCostCentreIds, conn)
 }
 
-export async function getCostCentreLabels(
-  costCentreIds: number[],
-  conn: mariadb.PoolConnection,
-) {
-  if (!costCentreIds.length) return new Map<number, string>()
-
-  const rows = await query<{ id: number, label: string }[]>(
-    `SELECT id, TRIM(CONCAT(code, ' - ', name)) AS label
-     FROM cost_centres
-     WHERE id IN (${costCentreIds.map(() => '?').join(',')})`,
-    costCentreIds,
-    conn,
-  )
-
-  return new Map(rows.map(row => [Number(row.id), String(row.label)]))
-}
-
-function formatCostCentreSplitLog(label: string, allocationPercentage: number) {
-  return `${label} (${Number(allocationPercentage).toFixed(2)}%)`
-}
-
 export async function syncEventMemberOrganizers({
   eventId,
   existingIds,
   nextIds,
-  userId,
   conn,
-  logChanges = true,
 }: {
   eventId: number
   existingIds: number[]
   nextIds: number[]
-  userId: number
   conn: mariadb.PoolConnection
-  logChanges?: boolean
 }) {
-  const memberLabels = await getMemberLabels([...new Set([...existingIds, ...nextIds])], conn)
-
   await syncScalarCollection({
     existing: existingIds,
     incoming: nextIds,
     onRemove: async (memberId) => {
-      if (logChanges) {
-        await logChange({
-          entityType: 'event',
-          entityId: eventId,
-          subEntityType: 'member',
-          subEntityId: memberId,
-          field: 'organizer_removed',
-          oldValue: memberLabels.get(memberId) ?? String(memberId),
-          newValue: null,
-          userId,
-        }, conn)
-      }
-
       await query(
         `DELETE FROM event_member_organizers
          WHERE event_id = ? AND member_id = ?`,
@@ -249,24 +208,11 @@ export async function syncEventMemberOrganizers({
     },
     onAdd: async (memberId) => {
       await query(
-        `INSERT INTO event_member_organizers (event_id, member_id, created_by)
-         VALUES (?, ?, ?)`,
-        [eventId, memberId, userId],
+        `INSERT INTO event_member_organizers (event_id, member_id)
+         VALUES (?, ?)`,
+        [eventId, memberId],
         conn,
       )
-
-      if (logChanges) {
-        await logChange({
-          entityType: 'event',
-          entityId: eventId,
-          subEntityType: 'member',
-          subEntityId: memberId,
-          field: 'organizer_added',
-          oldValue: null,
-          newValue: memberLabels.get(memberId) ?? String(memberId),
-          userId,
-        }, conn)
-      }
     },
   })
 }
@@ -275,36 +221,17 @@ export async function syncEventSubdivisionOrganizers({
   eventId,
   existingIds,
   nextIds,
-  userId,
   conn,
-  logChanges = true,
 }: {
   eventId: number
   existingIds: number[]
   nextIds: number[]
-  userId: number
   conn: mariadb.PoolConnection
-  logChanges?: boolean
 }) {
-  const subdivisionLabels = await getSubdivisionLabels([...new Set([...existingIds, ...nextIds])], conn)
-
   await syncScalarCollection({
     existing: existingIds,
     incoming: nextIds,
     onRemove: async (subdivisionId) => {
-      if (logChanges) {
-        await logChange({
-          entityType: 'event',
-          entityId: eventId,
-          subEntityType: 'subdivision',
-          subEntityId: subdivisionId,
-          field: 'organizer_removed',
-          oldValue: subdivisionLabels.get(subdivisionId) ?? String(subdivisionId),
-          newValue: null,
-          userId,
-        }, conn)
-      }
-
       await query(
         `DELETE FROM event_subdivision_organizers
          WHERE event_id = ? AND subdivision_id = ?`,
@@ -314,24 +241,11 @@ export async function syncEventSubdivisionOrganizers({
     },
     onAdd: async (subdivisionId) => {
       await query(
-        `INSERT INTO event_subdivision_organizers (event_id, subdivision_id, created_by)
-         VALUES (?, ?, ?)`,
-        [eventId, subdivisionId, userId],
+        `INSERT INTO event_subdivision_organizers (event_id, subdivision_id)
+         VALUES (?, ?)`,
+        [eventId, subdivisionId],
         conn,
       )
-
-      if (logChanges) {
-        await logChange({
-          entityType: 'event',
-          entityId: eventId,
-          subEntityType: 'subdivision',
-          subEntityId: subdivisionId,
-          field: 'organizer_added',
-          oldValue: null,
-          newValue: subdivisionLabels.get(subdivisionId) ?? String(subdivisionId),
-          userId,
-        }, conn)
-      }
     },
   })
 }
@@ -340,40 +254,18 @@ export async function syncEventCostCentreSplits({
   eventId,
   existingRows,
   nextRows,
-  userId,
   conn,
-  logChanges = true,
 }: {
   eventId: number
   existingRows: EventCostCentreSplitLogRow[]
   nextRows: SaveEventCostCentreSplit[]
-  userId: number
   conn: mariadb.PoolConnection
-  logChanges?: boolean
 }) {
   const existingByCostCentreId = new Map(existingRows.map(row => [Number(row.cost_centre_id), row]))
   const nextByCostCentreId = new Map(nextRows.map(row => [Number(row.cost_centre_id), row]))
-  const costCentreLabels = await getCostCentreLabels(
-    [...new Set([...existingByCostCentreId.keys(), ...nextByCostCentreId.keys()])],
-    conn,
-  )
 
   for (const row of existingRows) {
     if (nextByCostCentreId.has(Number(row.cost_centre_id))) continue
-
-    const label = costCentreLabels.get(Number(row.cost_centre_id)) ?? String(row.cost_centre_id)
-    if (logChanges) {
-      await logChange({
-        entityType: 'event',
-        entityId: eventId,
-        subEntityType: 'cost_centre_split',
-        subEntityId: Number(row.id),
-        field: 'cost_centre_split_removed',
-        oldValue: formatCostCentreSplitLog(label, Number(row.allocation_percentage)),
-        newValue: null,
-        userId,
-      }, conn)
-    }
 
     await query(
       `DELETE FROM event_cost_centre_splits
@@ -385,51 +277,16 @@ export async function syncEventCostCentreSplits({
 
   for (const split of nextRows) {
     const existing = existingByCostCentreId.get(Number(split.cost_centre_id))
-    const label = costCentreLabels.get(Number(split.cost_centre_id)) ?? String(split.cost_centre_id)
 
     if (!existing) {
-      const insertResult: any = await query(
-        `INSERT INTO event_cost_centre_splits (event_id, cost_centre_id, allocation_percentage, created_by)
-         VALUES (?, ?, ?, ?)`,
-        [eventId, split.cost_centre_id, split.allocation_percentage, userId],
+      await query(
+        `INSERT INTO event_cost_centre_splits (event_id, cost_centre_id, allocation_percentage)
+         VALUES (?, ?, ?)`,
+        [eventId, split.cost_centre_id, split.allocation_percentage],
         conn,
       )
-
-      if (logChanges) {
-        await logChange({
-          entityType: 'event',
-          entityId: eventId,
-          subEntityType: 'cost_centre_split',
-          subEntityId: Number(insertResult.insertId),
-          field: 'cost_centre_split_added',
-          oldValue: null,
-          newValue: formatCostCentreSplitLog(label, split.allocation_percentage),
-          userId,
-        }, conn)
-      }
       continue
     }
-
-    await logFieldChanges({
-      entityType: 'event',
-      entityId: eventId,
-      subEntityType: 'cost_centre_split',
-      subEntityId: Number(existing.id),
-      fields: ['allocation_percentage'] as const,
-      previous: existing,
-      next: split,
-      userId,
-      conn,
-      equals: {
-        allocation_percentage: (left, right) => Number(left).toFixed(2) === Number(right ?? 0).toFixed(2),
-      },
-      transformOldValue: {
-        allocation_percentage: (value) => formatCostCentreSplitLog(label, Number(value)),
-      },
-      transformNewValue: {
-        allocation_percentage: (value) => formatCostCentreSplitLog(label, Number(value ?? 0)),
-      },
-    })
 
     await query(
       `UPDATE event_cost_centre_splits

@@ -1,6 +1,5 @@
 import { defineEventHandler, readBody } from 'h3'
-import { query, withTransaction } from '~/server/utils/db'
-import { logFieldChanges } from '~/server/utils/api/audit'
+import { query, withAuditTransaction } from '~/server/utils/db'
 import { requirePermission } from '~/server/utils/api/guards'
 import { toDbBoolean } from '~/server/utils/api/request'
 
@@ -42,7 +41,7 @@ export default defineEventHandler(async (event): Promise<SaveRoleResponse> => {
   const nextIsDefault = updated.is_active ? updated.is_default : false
 
   try {
-    return await withTransaction(async (conn) => {
+    return await withAuditTransaction(current.user, async (conn) => {
       if (updated.id && updated.id > 0) {
         const existingRows = await query<any[]>(
           `SELECT id, code, name, description, is_active, is_default FROM roles WHERE id = ? LIMIT 1`,
@@ -51,10 +50,6 @@ export default defineEventHandler(async (event): Promise<SaveRoleResponse> => {
         )
 
         if (!existingRows.length) return { ok: false, error: 'No matching role in database' }
-        const existing = existingRows[0]
-
-        const fields = ['code', 'name', 'description', 'is_active', 'is_default'] as (keyof typeof updated)[]
-
         if (nextIsDefault) {
           await query(
             `UPDATE roles
@@ -64,20 +59,6 @@ export default defineEventHandler(async (event): Promise<SaveRoleResponse> => {
             conn
           )
         }
-
-        await logFieldChanges({
-          entityType: 'role',
-          entityId: updated.id,
-          fields,
-          previous: existing,
-          next: {
-            ...updated,
-            is_active: toDbBoolean(updated.is_active),
-            is_default: toDbBoolean(nextIsDefault),
-          },
-          userId: current.user.id,
-          conn,
-        })
 
         await query(
           `UPDATE roles
@@ -91,9 +72,9 @@ export default defineEventHandler(async (event): Promise<SaveRoleResponse> => {
       }
 
       const insertResult = await query<any>(
-        `INSERT INTO roles (code, name, is_active, is_default, description, created_by)
-        VALUES (?, ?, ?, ?, ?, ?)`,
-        [updated.code, updated.name, toDbBoolean(updated.is_active), toDbBoolean(nextIsDefault), updated.description, current.user.id],
+        `INSERT INTO roles (code, name, is_active, is_default, description)
+        VALUES (?, ?, ?, ?, ?)`,
+        [updated.code, updated.name, toDbBoolean(updated.is_active), toDbBoolean(nextIsDefault), updated.description],
         conn
       )
 

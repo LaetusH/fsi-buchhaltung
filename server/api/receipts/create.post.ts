@@ -1,5 +1,5 @@
 import { defineEventHandler } from 'h3'
-import { query, withTransaction } from '~/server/utils/db'
+import { query, withAuditTransaction } from '~/server/utils/db'
 import { requirePermission } from '~/server/utils/api/guards'
 import { readMultipart } from '~/server/utils/api/request'
 import { validateCostCentreSelection } from '~/server/utils/costCentres'
@@ -42,7 +42,7 @@ export default defineEventHandler(async (event): Promise<CreateReceiptResponse> 
   }
 
   try {
-    return await withTransaction(async (conn) => {
+    return await withAuditTransaction(current.user, async (conn) => {
       const sphereValidationError = await validateSphereSelection(
         receipt.positions.map((position: any) => ({
           sphereId: Number(position.sphere),
@@ -63,15 +63,14 @@ export default defineEventHandler(async (event): Promise<CreateReceiptResponse> 
 
       const receiptResult: any = await query(
         `INSERT INTO receipts
-          (company_id, receipt_date, receipt_number, description, status, created_by)
-        VALUES (?, ?, ?, ?, ?, ?)`,
+          (company_id, receipt_date, receipt_number, description, status)
+        VALUES (?, ?, ?, ?, ?)`,
         [
           receipt.company_id || null,
           receipt.receipt_date,
           receipt.receipt_number || null,
           receipt.description || null,
           receipt.status,
-          current.user.id,
         ],
         conn
       )
@@ -81,15 +80,14 @@ export default defineEventHandler(async (event): Promise<CreateReceiptResponse> 
       for (const position of receipt.positions) {
         await query(
           `INSERT INTO receipt_positions
-            (receipt_id, sphere, cost_centre, amount, tax, created_by)
-          VALUES (?, ?, ?, ?, ?, ?)`,
+            (receipt_id, sphere, cost_centre, amount, tax)
+          VALUES (?, ?, ?, ?, ?)`,
           [
             receiptId,
             position.sphere,
             position.cost_centre,
             position.amount,
             position.tax ?? 19,
-            current.user.id,
           ],
           conn
         )

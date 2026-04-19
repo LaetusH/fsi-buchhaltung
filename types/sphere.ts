@@ -12,5 +12,4 @@ export interface SphereRow {
   name: string
   is_active: boolean
   description: string
-  created_at: string
 }

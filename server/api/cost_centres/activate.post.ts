@@ -1,9 +1,7 @@
 import { defineEventHandler, readBody } from 'h3'
-import { logFieldChanges } from '~/server/utils/api/audit'
 import { requirePermission } from '~/server/utils/api/guards'
 import { toDbBoolean } from '~/server/utils/api/request'
-import { logChange } from '~/server/utils/changeLogger'
-import { query, withTransaction } from '~/server/utils/db'
+import { query, withAuditTransaction } from '~/server/utils/db'
 import type { ActivateResponse } from '~/types/activate'
 import type { CostCentreRow } from '~/types/costCentre'
 
@@ -28,7 +26,7 @@ export default defineEventHandler(async (event): Promise<ActivateResponse> => {
   }
 
   try {
-    return await withTransaction(async (conn) => {
+    return await withAuditTransaction(current.user, async (conn) => {
       const existingRows = await query<CostCentreRow[]>(
         `SELECT * FROM cost_centres WHERE id = ? LIMIT 1`,
         [id],
@@ -39,19 +37,7 @@ export default defineEventHandler(async (event): Promise<ActivateResponse> => {
         return { ok: false, error: 'No matching cost centres in database' }
       }
 
-      const existing = existingRows[0]!
       const active = toDbBoolean(is_active)
-
-      await logChange({
-        entityType: 'cost_centre',
-        entityId: Number(id),
-        subEntityType: null,
-        subEntityId: null,
-        field: 'is_active',
-        oldValue: existing.is_active,
-        newValue: active,
-        userId: current.user.id,
-      }, conn)
 
       await query(
         `UPDATE cost_centres
@@ -70,18 +56,6 @@ export default defineEventHandler(async (event): Promise<ActivateResponse> => {
         [id],
         conn,
       )
-
-      for (const child of childRows) {
-        await logFieldChanges({
-          entityType: 'cost_centre',
-          entityId: Number(child.id),
-          fields: ['parent_id'] satisfies (keyof CostCentreRow)[],
-          previous: child,
-          next: { parent_id: null },
-          userId: current.user.id,
-          conn,
-        })
-      }
 
       if (childRows.length) {
         await query(

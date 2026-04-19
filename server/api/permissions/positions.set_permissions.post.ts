@@ -1,8 +1,7 @@
 import { defineEventHandler, readBody } from 'h3'
-import { query, withTransaction } from '~/server/utils/db'
+import { query, withAuditTransaction } from '~/server/utils/db'
 import { isValidPermissionKey } from '~/server/utils/permissions'
-import { logChange } from '~/server/utils/changeLogger'
-import { syncScalarCollection } from '~/server/utils/api/audit'
+import { syncScalarCollection } from '~/server/utils/syncScalarCollection'
 import { requirePermission } from '~/server/utils/api/guards'
 
 interface SetPositionPermissionsBody {
@@ -40,7 +39,7 @@ export default defineEventHandler(async (event): Promise<SetPositionPermissionsR
     : []
 
   try {
-    await withTransaction(async (conn) => {
+    await withAuditTransaction(current.user, async (conn) => {
       const existingRows = await query<{ permission_key: string }[]>(
         `SELECT permission_key
          FROM position_permissions
@@ -57,17 +56,6 @@ export default defineEventHandler(async (event): Promise<SetPositionPermissionsR
         existing: existingPermissions,
         incoming: newPermissions,
         onRemove: async (perm) => {
-          await logChange({
-            entityType: 'position',
-            entityId: positionId,
-            subEntityType: 'permission',
-            subEntityId: null,
-            field: 'permission_removed',
-            oldValue: perm,
-            newValue: null,
-            userId: current.user.id,
-          }, conn)
-
           await query(
             `DELETE FROM position_permissions
              WHERE position_id = ? AND permission_key = ?`,
@@ -76,17 +64,6 @@ export default defineEventHandler(async (event): Promise<SetPositionPermissionsR
           )
         },
         onAdd: async (perm) => {
-          await logChange({
-            entityType: 'position',
-            entityId: positionId,
-            subEntityType: 'permission',
-            subEntityId: null,
-            field: 'permission_added',
-            oldValue: null,
-            newValue: perm,
-            userId: current.user.id,
-          }, conn)
-
           await query(
             `INSERT INTO position_permissions (position_id, permission_key)
              VALUES (?, ?)`,

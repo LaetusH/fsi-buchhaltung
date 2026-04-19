@@ -22,7 +22,7 @@ export default defineEventHandler(async (event): Promise<GetEventsResponse> => {
 
   try {
     const rows = await query<EventRow[]>(
-      `SELECT id, name, starts_at, ends_at, location, expected_guests, created_at
+      `SELECT id, name, starts_at, ends_at, location, expected_guests
        FROM events
        ORDER BY starts_at DESC, ends_at DESC, name ASC`,
     )
@@ -39,7 +39,6 @@ export default defineEventHandler(async (event): Promise<GetEventsResponse> => {
         ends_at: String(row.ends_at),
         location: String(row.location),
         expected_guests: Number(row.expected_guests),
-        created_at: String(row.created_at),
         member_organizers: relations.memberOrganizers.get(Number(row.id)) ?? [],
         subdivision_organizers: relations.subdivisionOrganizers.get(Number(row.id)) ?? [],
         cost_centre_splits: relations.costCentreSplits.get(Number(row.id)) ?? [],

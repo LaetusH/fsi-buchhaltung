@@ -21,7 +21,7 @@ export default defineEventHandler(async (event): Promise<GetCashCountEventOption
 
   try {
     const rows = await query<EventRow[]>(
-      `SELECT id, name, starts_at, ends_at, location, expected_guests, created_at
+      `SELECT id, name, starts_at, ends_at, location, expected_guests
        FROM events
        ORDER BY starts_at DESC, ends_at DESC, name ASC`,
     )
@@ -35,7 +35,6 @@ export default defineEventHandler(async (event): Promise<GetCashCountEventOption
         ends_at: String(row.ends_at),
         location: String(row.location),
         expected_guests: Number(row.expected_guests),
-        created_at: String(row.created_at),
       })),
     }
   } catch (err: any) {

@@ -1,5 +1,5 @@
 import { defineEventHandler, readBody } from 'h3'
-import { query, withTransaction } from '~/server/utils/db'
+import { query, withAuditTransaction } from '~/server/utils/db'
 import { requirePermission } from '~/server/utils/api/guards'
 import { assignMemberToUser, MemberAlreadyLinkedError, MemberNotFoundError } from '~/server/utils/userAccounts'
 
@@ -30,7 +30,7 @@ export default defineEventHandler(async (event): Promise<LinkMemberResponse> => 
   if (!userId) return { ok: false, error: 'Missing user id' }
   if (memberId !== null && !memberId) return { ok: false, error: 'Missing member id' }
 
-  return withTransaction(async (conn) => {
+  return withAuditTransaction(current.user, async (conn) => {
     const userRows = await query<{ id: number }[]>(`SELECT id FROM users WHERE id = ? LIMIT 1`, [userId], conn)
     if (!userRows[0]) return { ok: false, error: 'User not found' }
 

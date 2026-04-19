@@ -2,10 +2,7 @@ import { defineEventHandler, readBody } from 'h3'
 import type { ActivateResponse } from '~/types/activate'
 import { requirePermission } from '~/server/utils/api/guards'
 import { toggleActiveRecord } from '~/server/utils/api/toggle'
-import { query, withTransaction } from '~/server/utils/db'
-import { logChange } from '~/server/utils/changeLogger'
-import { logFieldChanges } from '~/server/utils/api/audit'
-import { getMemberLabels } from '~/server/utils/subdivisions'
+import { query, withAuditTransaction } from '~/server/utils/db'
 
 interface PositionActivateBody {
   id: number
@@ -41,10 +38,6 @@ function todayValue() {
   return `${year}-${month}-${day}`
 }
 
-function assignmentSummary(memberLabel: string, assignment: PositionAssignmentRow) {
-  return `${memberLabel} (${assignment.since} - ${assignment.until || '-'})`
-}
-
 export default defineEventHandler(async (event): Promise<ActivateResponse> => {
   const current = await requirePermission(event, 'settings.positions.manage')
   if (!current.ok) return current
@@ -76,7 +69,7 @@ export default defineEventHandler(async (event): Promise<ActivateResponse> => {
       })
     }
 
-    return await withTransaction(async (conn) => {
+    return await withAuditTransaction(current.user, async (conn) => {
       const existingRows = await query<PositionRow[]>(
         `SELECT id, code, name, is_active
          FROM positions
@@ -85,26 +78,13 @@ export default defineEventHandler(async (event): Promise<ActivateResponse> => {
         [id],
         conn,
       )
-      const position = existingRows[0]
-      if (!position) return { ok: false as const, error: 'No matching positions in database' }
-
-      const nextActive = 0
-      await logChange({
-        entityType: 'position',
-        entityId: id,
-        subEntityType: null,
-        subEntityId: null,
-        field: 'is_active',
-        oldValue: position.is_active,
-        newValue: nextActive,
-        userId: current.user.id,
-      }, conn)
+      if (!existingRows[0]) return { ok: false as const, error: 'No matching positions in database' }
 
       await query(
         `UPDATE positions
          SET is_active = ?
          WHERE id = ?`,
-        [nextActive, id],
+        [0, id],
         conn,
       )
 
@@ -118,8 +98,6 @@ export default defineEventHandler(async (event): Promise<ActivateResponse> => {
 
       if (!assignments.length) return { ok: true as const }
 
-      const memberIds = Array.from(new Set(assignments.map(assignment => Number(assignment.member_id))))
-      const memberLabels = await getMemberLabels(memberIds, conn)
       const effectiveEndDate = assignment_until?.trim() || null
       const futureCutoff = effectiveEndDate || todayValue()
 
@@ -130,21 +108,6 @@ export default defineEventHandler(async (event): Promise<ActivateResponse> => {
         ))
 
         for (const assignment of assignmentsToClose) {
-          await logFieldChanges({
-            entityType: 'position',
-            entityId: id,
-            subEntityType: 'position_assignment',
-            subEntityId: assignment.id,
-            fields: ['until'],
-            previous: assignment,
-            next: {
-              ...assignment,
-              until: effectiveEndDate,
-            },
-            userId: current.user.id,
-            conn,
-          })
-
           await query(
             `UPDATE member_positions
              SET until = ?
@@ -159,18 +122,6 @@ export default defineEventHandler(async (event): Promise<ActivateResponse> => {
         const assignmentsToDelete = assignments.filter(assignment => assignment.since > futureCutoff)
 
         for (const assignment of assignmentsToDelete) {
-          const memberLabel = memberLabels.get(Number(assignment.member_id)) ?? `#${assignment.member_id}`
-          await logChange({
-            entityType: 'position',
-            entityId: id,
-            subEntityType: 'position_assignment',
-            subEntityId: assignment.id,
-            field: 'member_removed',
-            oldValue: assignmentSummary(memberLabel, assignment),
-            newValue: null,
-            userId: current.user.id,
-          }, conn)
-
           await query(
             `DELETE FROM member_positions
              WHERE id = ?`,

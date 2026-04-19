@@ -1,5 +1,5 @@
 import { defineEventHandler, readBody } from 'h3'
-import { withTransaction } from '~/server/utils/db'
+import { withAuditTransaction } from '~/server/utils/db'
 import { requirePermission } from '~/server/utils/api/guards'
 import {
   assignMemberToUser,
@@ -35,7 +35,7 @@ export default defineEventHandler(async (event): Promise<RegisterResponse> => {
   if (!body.username || !body.password) return { ok: false, error: 'Missing fields' }
 
   try {
-    await withTransaction(async (conn) => {
+    await withAuditTransaction(current.user, async (conn) => {
       const userId = await createUserAccount(body, conn)
       if (body.member_id !== undefined) {
         await assignMemberToUser(userId, body.member_id ?? null, current.user.id, conn)

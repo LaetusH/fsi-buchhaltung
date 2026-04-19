@@ -1,6 +1,5 @@
 import { defineEventHandler } from 'h3'
-import { query, withTransaction } from '~/server/utils/db'
-import { logChange } from '~/server/utils/changeLogger'
+import { query, withAuditTransaction } from '~/server/utils/db'
 import { getNumericRouteParam, readMultipart } from '~/server/utils/api/request'
 import { requirePermission } from '~/server/utils/api/guards'
 import { validateCostCentreSelection } from '~/server/utils/costCentres'
@@ -23,45 +22,6 @@ type UpdateInvoiceResponse = UpdateInvoiceSuccess | UpdateInvoiceError
 
 interface MysqlError extends Error {
   code?: string
-}
-
-async function ensureLogChange(logPromise: Promise<{ ok: boolean, error?: string }>) {
-  const result = await logPromise
-  if (!result.ok) throw new Error(result.error || 'Failed to write invoice change log')
-}
-
-async function ensureLogFieldChanges(options: {
-  entityType: string
-  entityId: number
-  fields: readonly string[]
-  previous: Record<string, any>
-  next: Record<string, any>
-  userId: number
-  conn?: any
-  subEntityType?: string | null
-  subEntityId?: number | null
-  equals?: Record<string, ((left: any, right: any) => boolean) | undefined>
-  transformOldValue?: Record<string, ((value: any) => any) | undefined>
-  transformNewValue?: Record<string, ((value: any) => any) | undefined>
-}) {
-  for (const field of options.fields) {
-    const oldValue = options.previous[field]
-    const newValue = options.next[field]
-    const comparator = options.equals?.[field] ?? ((left: any, right: any) => String(left) === String(right))
-
-    if (comparator(oldValue, newValue as any)) continue
-
-    await ensureLogChange(logChange({
-      entityType: options.entityType,
-      entityId: options.entityId,
-      subEntityType: options.subEntityType ?? null,
-      subEntityId: options.subEntityId ?? null,
-      field: String(field),
-      oldValue: options.transformOldValue?.[field]?.(oldValue) ?? oldValue,
-      newValue: options.transformNewValue?.[field]?.(newValue as any) ?? newValue,
-      userId: options.userId,
-    }, options.conn))
-  }
 }
 
 function normalizeInvoiceLogRow(invoice: any) {
@@ -124,14 +84,6 @@ function buildGeneratedInvoiceComparable(invoice: Record<string, any>, positions
   }
 }
 
-function sameNumericValue(left: any, right: any) {
-  return Number(left ?? 0) === Number(right ?? 0)
-}
-
-function formatNumericLogValue(value: any, digits = 2) {
-  return Number(value ?? 0).toFixed(digits)
-}
-
 export default defineEventHandler(async (event): Promise<UpdateInvoiceResponse> => {
   const current = await requirePermission(event, 'invoices.edit')
   if (!current.ok) return current
@@ -154,7 +106,7 @@ export default defineEventHandler(async (event): Promise<UpdateInvoiceResponse> 
   if (fileError && multipart.file) return { ok: false, error: fileError }
 
   try {
-    return await withTransaction(async (conn) => {
+    return await withAuditTransaction(current.user, async (conn) => {
       const existingRows = await query<any[]>(
         `SELECT
           id,
@@ -252,16 +204,6 @@ export default defineEventHandler(async (event): Promise<UpdateInvoiceResponse> 
           return { ok: false, error: 'Only the status of finalized invoices can be changed' }
         }
 
-        await ensureLogFieldChanges({
-          entityType: 'invoice',
-          entityId: invoiceId,
-          fields: ['status'],
-          previous: existing,
-          next: parsed,
-          userId: current.user.id,
-          conn,
-        })
-
         if (existing.status !== parsed.status) {
           await query(
             `UPDATE invoices
@@ -300,37 +242,6 @@ export default defineEventHandler(async (event): Promise<UpdateInvoiceResponse> 
         )
       )
 
-      const invoiceFields = [
-        'company_id',
-        'source_type',
-        'is_kleinunternehmer',
-        'invoice_date',
-        'due_date',
-        'contact_person',
-        'service_date',
-        'invoice_number',
-        'subject',
-        'intro_text',
-        'notes',
-        'status',
-      ] as const
-
-      await ensureLogFieldChanges({
-        entityType: 'invoice',
-        entityId: invoiceId,
-        fields: invoiceFields,
-        previous: existing,
-        next: parsed,
-        userId: current.user.id,
-        conn,
-        transformOldValue: {
-          is_kleinunternehmer: value => String(Boolean(value)),
-        },
-        transformNewValue: {
-          is_kleinunternehmer: value => String(Boolean(value)),
-        },
-      })
-
       await query(
         `UPDATE invoices
          SET company_id = ?, source_type = ?, is_kleinunternehmer = ?, invoice_date = ?, due_date = ?, contact_person = ?, service_date = ?, invoice_number = ?, subject = ?, intro_text = ?, notes = ?, status = ?
@@ -357,58 +268,13 @@ export default defineEventHandler(async (event): Promise<UpdateInvoiceResponse> 
 
       for (const existingPosition of existingPositions) {
         if (!incomingIds.has(Number(existingPosition.id))) {
-          await ensureLogChange(logChange({
-            entityType: 'invoice',
-            entityId: invoiceId,
-            subEntityType: 'invoice_position',
-            subEntityId: Number(existingPosition.id),
-            field: 'position_removed',
-            oldValue: JSON.stringify(existingPosition),
-            newValue: null,
-            userId: current.user.id,
-          }, conn))
-
           await query(`DELETE FROM invoice_positions WHERE id = ?`, [existingPosition.id], conn)
         }
       }
-
-      const positionFields = ['name', 'description', 'sphere', 'cost_centre', 'quantity', 'unit', 'unit_price', 'tax'] as const
       const existingPositionMap = new Map(existingPositions.map(position => [Number(position.id), position]))
 
       for (const position of parsed.positions) {
         if (position.id) {
-          const existingPosition = existingPositionMap.get(Number(position.id))
-          if (existingPosition) {
-            await ensureLogFieldChanges({
-              entityType: 'invoice',
-              entityId: invoiceId,
-              subEntityType: 'invoice_position',
-              subEntityId: Number(position.id),
-              fields: positionFields,
-              previous: existingPosition,
-              next: position,
-              userId: current.user.id,
-              conn,
-              equals: {
-                sphere: sameNumericValue,
-                cost_centre: sameNumericValue,
-                quantity: sameNumericValue,
-                unit_price: sameNumericValue,
-                tax: sameNumericValue,
-              },
-              transformOldValue: {
-                quantity: value => formatNumericLogValue(value),
-                unit_price: value => formatNumericLogValue(value),
-                tax: value => formatNumericLogValue(value),
-              },
-              transformNewValue: {
-                quantity: value => formatNumericLogValue(value),
-                unit_price: value => formatNumericLogValue(value),
-                tax: value => formatNumericLogValue(value),
-              },
-            })
-          }
-
           await query(
             `UPDATE invoice_positions
              SET name = ?, description = ?, sphere = ?, cost_centre = ?, quantity = ?, unit = ?, unit_price = ?, tax = ?
@@ -430,10 +296,10 @@ export default defineEventHandler(async (event): Promise<UpdateInvoiceResponse> 
           continue
         }
 
-        const result: any = await query(
+        await query(
           `INSERT INTO invoice_positions
-            (invoice_id, name, description, sphere, cost_centre, quantity, unit, unit_price, tax, created_by)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            (invoice_id, name, description, sphere, cost_centre, quantity, unit, unit_price, tax)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
           [
             invoiceId,
             position.name,
@@ -444,21 +310,10 @@ export default defineEventHandler(async (event): Promise<UpdateInvoiceResponse> 
             position.unit,
             position.unit_price,
             position.tax,
-            current.user.id,
           ],
           conn,
         )
 
-        await ensureLogChange(logChange({
-          entityType: 'invoice',
-          entityId: invoiceId,
-          subEntityType: 'invoice_position',
-          subEntityId: Number(result.insertId),
-          field: 'position_added',
-          oldValue: null,
-          newValue: JSON.stringify(position),
-          userId: current.user.id,
-        }, conn))
       }
 
       const shouldReplaceAttachment = Boolean(existingAttachment) && (
@@ -469,17 +324,6 @@ export default defineEventHandler(async (event): Promise<UpdateInvoiceResponse> 
 
       if (shouldReplaceAttachment && existingAttachment) {
         await detachFileAttachment(existingAttachment.id, current.user.id, conn)
-
-        await ensureLogChange(logChange({
-          entityType: 'invoice',
-          entityId: invoiceId,
-          subEntityType: 'file_attachment',
-          subEntityId: existingAttachment.id,
-          field: 'file_detached',
-          oldValue: existingAttachment.file_id,
-          newValue: null,
-          userId: current.user.id,
-        }, conn))
       }
 
       if (parsed.source_type === InvoiceSourceType.Upload) {
@@ -488,18 +332,7 @@ export default defineEventHandler(async (event): Promise<UpdateInvoiceResponse> 
         }
 
         if (multipart.file) {
-          const { fileId, attachmentId } = await storeAndAttachUploadedFile(multipart.file, 'invoices', 'invoice', invoiceId, current.user.id, conn)
-
-          await ensureLogChange(logChange({
-            entityType: 'invoice',
-            entityId: invoiceId,
-            subEntityType: 'file_attachment',
-            subEntityId: attachmentId,
-            field: 'file_attached',
-            oldValue: null,
-            newValue: fileId,
-            userId: current.user.id,
-          }, conn))
+          await storeAndAttachUploadedFile(multipart.file, 'invoices', 'invoice', invoiceId, current.user.id, conn)
         }
       }
 
@@ -516,22 +349,11 @@ export default defineEventHandler(async (event): Promise<UpdateInvoiceResponse> 
           mimeType: logo.file.mime_type,
           data: logo.data,
         } : null, boardLine })
-        const { fileId, attachmentId } = await storeAndAttachUploadedFile({
+        await storeAndAttachUploadedFile({
           filename: `${parsed.invoice_number}.pdf`,
           type: 'application/pdf',
           data: pdfBuffer,
         }, 'invoices', 'invoice', invoiceId, current.user.id, conn)
-
-        await ensureLogChange(logChange({
-          entityType: 'invoice',
-          entityId: invoiceId,
-          subEntityType: 'file_attachment',
-          subEntityId: attachmentId,
-          field: 'file_attached',
-          oldValue: null,
-          newValue: fileId,
-          userId: current.user.id,
-        }, conn))
       }
 
       return { ok: true }

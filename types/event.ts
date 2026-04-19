@@ -21,7 +21,6 @@ export interface EventRow {
   ends_at: string
   location: string
   expected_guests: number
-  created_at: string
 }
 
 export interface EventMemberOrganizer {

@@ -1,6 +1,5 @@
 import type mariadb from 'mariadb'
 import { hashPassword } from '~/server/utils/auth'
-import { logChange } from '~/server/utils/changeLogger'
 import { query } from '~/server/utils/db'
 import { assignDefaultRoleToUser } from '~/server/utils/roles'
 
@@ -65,29 +64,10 @@ export async function createUserAccount(input: CreateUserAccountInput, conn?: ma
 export async function assignMemberToUser(
   userId: number,
   memberId: number | null,
-  changedByUserId: number,
+  _changedByUserId: number,
   conn?: mariadb.PoolConnection
 ) {
   if (memberId === null) {
-    const existingLinks = await query<{ id: number, account: number | null }[]>(
-      `SELECT id, account FROM members WHERE account = ?`,
-      [userId],
-      conn
-    )
-
-    for (const linkedMember of existingLinks) {
-      await logChange({
-        entityType: 'member',
-        entityId: Number(linkedMember.id),
-        subEntityType: null,
-        subEntityId: null,
-        field: 'account',
-        oldValue: linkedMember.account,
-        newValue: null,
-        userId: changedByUserId,
-      }, conn)
-    }
-
     await query(`UPDATE members SET account = NULL WHERE account = ?`, [userId], conn)
     return
   }
@@ -101,38 +81,6 @@ export async function assignMemberToUser(
   if (!member) throw new MemberNotFoundError()
   if (member.account !== null && Number(member.account) !== userId) {
     throw new MemberAlreadyLinkedError()
-  }
-
-  const previousLinks = await query<{ id: number, account: number | null }[]>(
-    `SELECT id, account FROM members WHERE account = ? AND id <> ?`,
-    [userId, memberId],
-    conn
-  )
-
-  for (const linkedMember of previousLinks) {
-    await logChange({
-      entityType: 'member',
-      entityId: Number(linkedMember.id),
-      subEntityType: null,
-      subEntityId: null,
-      field: 'account',
-      oldValue: linkedMember.account,
-      newValue: null,
-      userId: changedByUserId,
-    }, conn)
-  }
-
-  if (member.account !== userId) {
-    await logChange({
-      entityType: 'member',
-      entityId: Number(member.id),
-      subEntityType: null,
-      subEntityId: null,
-      field: 'account',
-      oldValue: member.account,
-      newValue: userId,
-      userId: changedByUserId,
-    }, conn)
   }
 
   await query(`UPDATE members SET account = NULL WHERE account = ? AND id <> ?`, [userId, memberId], conn)

@@ -1,7 +1,5 @@
 import { defineEventHandler } from 'h3'
-import { query, withTransaction } from '~/server/utils/db'
-import { logChange } from '~/server/utils/changeLogger'
-import { logFieldChanges } from '~/server/utils/api/audit'
+import { query, withAuditTransaction } from '~/server/utils/db'
 import { requirePermission } from '~/server/utils/api/guards'
 import { getNumericRouteParam, readMultipart, toDbBoolean } from '~/server/utils/api/request'
 import {
@@ -12,7 +10,6 @@ import {
 } from '~/server/utils/files'
 import type { ReimbursementPositionRow, ReimbursementRow } from '~/types/reimbursement'
 import { statusFromReimbursement, validateReimbursementBody } from '~/server/utils/reimbursements'
-import { ReceiptStatus } from '~/types/receipt'
 
 interface UpdateReimbursementSuccess {
   ok: true
@@ -24,20 +21,6 @@ interface UpdateReimbursementError {
 }
 
 type UpdateReimbursementResponse = UpdateReimbursementSuccess | UpdateReimbursementError
-
-type ReimbursementLogField =
-  | 'paid_by'
-  | 'bankname'
-  | 'account_holder'
-  | 'iban'
-  | 'bic'
-  | 'advance'
-  | 'cash'
-  | 'submitted_at'
-  | 'checked_at'
-  | 'checked_by'
-  | 'disbursed_at'
-  | 'disbursed_by'
 
 export default defineEventHandler(async (event): Promise<UpdateReimbursementResponse> => {
   const current = await requirePermission(event, 'reimbursements.edit')
@@ -59,7 +42,7 @@ export default defineEventHandler(async (event): Promise<UpdateReimbursementResp
   if (validationError) return { ok: false, error: validationError }
 
   try {
-    return await withTransaction(async (conn) => {
+    return await withAuditTransaction(current.user, async (conn) => {
       const existingRows: ReimbursementRow[] = await query(
         `SELECT * FROM reimbursements WHERE id = ? LIMIT 1`,
         [reimbursementId],
@@ -67,8 +50,6 @@ export default defineEventHandler(async (event): Promise<UpdateReimbursementResp
       )
 
       if (!existingRows.length) return { ok: false, error: 'Reimbursement not found' }
-      const existing = existingRows[0]
-
       const incomingReceiptIds = updated.positions
         .map((position: any) => Number(position.receipt_id))
         .filter((receiptId: number) => Boolean(receiptId))
@@ -115,40 +96,6 @@ export default defineEventHandler(async (event): Promise<UpdateReimbursementResp
         disbursed_at: updated.disbursed_at || null,
         disbursed_by: updated.disbursed_by || null,
       }
-
-      const fields: ReimbursementLogField[] = [
-        'paid_by',
-        'bankname',
-        'account_holder',
-        'iban',
-        'bic',
-        'advance',
-        'cash',
-        'submitted_at',
-        'checked_at',
-        'checked_by',
-        'disbursed_at',
-        'disbursed_by',
-      ]
-
-      await logFieldChanges({
-        entityType: 'reimbursement',
-        entityId: reimbursementId,
-        fields,
-        previous: existing,
-        next: normalizedUpdated,
-        userId: current.user.id,
-        conn,
-        equals: {
-          advance: (left, right) => Number(left ?? 0).toFixed(2) === Number(right ?? 0).toFixed(2),
-        },
-        transformOldValue: {
-          advance: (value) => Number(value ?? 0).toFixed(2),
-        },
-        transformNewValue: {
-          advance: (value) => Number(value ?? 0).toFixed(2),
-        },
-      })
 
       await query(
         `UPDATE reimbursements SET
@@ -198,17 +145,6 @@ export default defineEventHandler(async (event): Promise<UpdateReimbursementResp
           continue
         }
 
-        await logChange({
-          entityType: 'reimbursement',
-          entityId: reimbursementId,
-          subEntityType: 'reimbursement_position',
-          subEntityId: position.id,
-          field: 'position_removed',
-          oldValue: JSON.stringify(position),
-          newValue: null,
-          userId: current.user.id,
-        }, conn)
-
         await query(
           `DELETE FROM reimbursement_positions WHERE id = ?`,
           [position.id],
@@ -217,47 +153,25 @@ export default defineEventHandler(async (event): Promise<UpdateReimbursementResp
       }
 
       for (const receiptId of remainingIncomingReceiptIds) {
-        const insertResult: any = await query(
+        await query(
           `INSERT INTO reimbursement_positions
-            (reimbursement_id, receipt_id, created_by)
-           VALUES (?, ?, ?)`,
+            (reimbursement_id, receipt_id)
+           VALUES (?, ?)`,
           [
             reimbursementId,
             receiptId,
-            current.user.id,
           ],
           conn
         )
 
-        await logChange({
-          entityType: 'reimbursement',
-          entityId: reimbursementId,
-          subEntityType: 'reimbursement_position',
-          subEntityId: Number(insertResult.insertId),
-          field: 'position_added',
-          oldValue: null,
-          newValue: JSON.stringify({ receipt_id: receiptId }),
-          userId: current.user.id,
-        }, conn)
       }
 
       if (removeExistingFile && existingAttachment) {
         await detachFileAttachment(existingAttachment.id, current.user.id, conn)
-
-        await logChange({
-          entityType: 'reimbursement',
-          entityId: reimbursementId,
-          subEntityType: 'file_attachment',
-          subEntityId: existingAttachment.id,
-          field: 'file_detached',
-          oldValue: existingAttachment.file_id,
-          newValue: null,
-          userId: current.user.id,
-        }, conn)
       }
 
       if (multipart.file) {
-        const { fileId, attachmentId } = await storeAndAttachUploadedFile(
+        await storeAndAttachUploadedFile(
           multipart.file,
           'reimbursements',
           'reimbursement',
@@ -265,43 +179,9 @@ export default defineEventHandler(async (event): Promise<UpdateReimbursementResp
           current.user.id,
           conn,
         )
-
-        await logChange({
-          entityType: 'reimbursement',
-          entityId: reimbursementId,
-          subEntityType: 'file_attachment',
-          subEntityId: Number(attachmentId),
-          field: 'file_attached',
-          oldValue: null,
-          newValue: fileId,
-          userId: current.user.id,
-        }, conn)
       }
 
       const targetStatus = statusFromReimbursement(updated)
-
-      const receiptStatusRows: { id: number, status: ReceiptStatus }[] = await query(
-        `SELECT id, status
-         FROM receipts
-         WHERE id IN (${uniqueIncomingReceiptIds.map(() => '?').join(',')})`,
-        uniqueIncomingReceiptIds,
-        conn
-      )
-
-      for (const row of receiptStatusRows) {
-        if (row.status === targetStatus) continue
-
-        await logChange({
-          entityType: 'receipt',
-          entityId: Number(row.id),
-          subEntityType: null,
-          subEntityId: null,
-          field: 'status',
-          oldValue: row.status,
-          newValue: targetStatus,
-          userId: current.user.id,
-        }, conn)
-      }
 
       await query(
         `UPDATE receipts

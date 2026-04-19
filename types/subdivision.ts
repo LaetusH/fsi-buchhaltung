@@ -23,7 +23,6 @@ export interface SubdivisionRow {
   name: string
   is_active: boolean
   description: string | null
-  created_at: string
   members: SubdivisionMember[]
 }
 

@@ -29,6 +29,5 @@ export interface PositionRow {
   name: string
   is_active: boolean
   description: string
-  created_at: string
   assignments?: PositionMemberAssignment[]
 }

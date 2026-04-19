@@ -106,7 +106,7 @@ export async function getAssociationProfileForInvoice(conn?: any): Promise<Assoc
   const rows = await query<Array<Omit<AssociationProfileRow, 'responsible_member_ids' | 'responsible_position_ids'>>>(
     `SELECT
       id, name, short_name, street, street_number, postal_code, city, email, phone, website,
-      vat_id, iban, bic, bankname, register_number, register_court, created_at
+      vat_id, iban, bic, bankname, register_number, register_court
      FROM association_profiles
      ORDER BY id ASC
      LIMIT 1`,
@@ -157,7 +157,7 @@ export async function getAssociationBoardLineForInvoice(conn?: any): Promise<str
 
 export async function getInvoiceCompany(companyId: number, conn?: any): Promise<CompanyRow | null> {
   const rows = await query<CompanyRow[]>(
-    `SELECT id, name, street, street_number, postal_code, city, country, iban, bic, bankname, vat_id, email, phone, notes, created_at
+    `SELECT id, name, street, street_number, postal_code, city, country, iban, bic, bankname, vat_id, email, phone, notes
      FROM companies
      WHERE id = ?
      LIMIT 1`,

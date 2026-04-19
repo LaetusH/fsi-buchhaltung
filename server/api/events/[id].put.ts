@@ -1,8 +1,7 @@
 import { defineEventHandler, readBody } from 'h3'
 import { requirePermission } from '~/server/utils/api/guards'
-import { logFieldChanges } from '~/server/utils/api/audit'
 import { getNumericRouteParam } from '~/server/utils/api/request'
-import { query, withTransaction } from '~/server/utils/db'
+import { query, withAuditTransaction } from '~/server/utils/db'
 import {
   normalizeEventPayload,
   syncEventCostCentreSplits,
@@ -24,8 +23,6 @@ interface UpdateEventError {
 
 export type UpdateEventResponse = UpdateEventSuccess | UpdateEventError
 
-type EventLogField = 'name' | 'starts_at' | 'ends_at' | 'location' | 'expected_guests'
-
 export default defineEventHandler(async (event): Promise<UpdateEventResponse> => {
   const current = await requirePermission(event, 'events.edit')
   if (!current.ok) return current
@@ -40,9 +37,9 @@ export default defineEventHandler(async (event): Promise<UpdateEventResponse> =>
   if (validationError) return { ok: false, error: validationError }
 
   try {
-    return await withTransaction(async (conn) => {
+    return await withAuditTransaction(current.user, async (conn) => {
       const existingRows = await query<EventRow[]>(
-        `SELECT id, name, starts_at, ends_at, location, expected_guests, created_at
+        `SELECT id, name, starts_at, ends_at, location, expected_guests
          FROM events
          WHERE id = ?
          LIMIT 1`,
@@ -86,17 +83,6 @@ export default defineEventHandler(async (event): Promise<UpdateEventResponse> =>
       )
       if (relationError) return { ok: false, error: relationError }
 
-      const fields: EventLogField[] = ['name', 'starts_at', 'ends_at', 'location', 'expected_guests']
-      await logFieldChanges({
-        entityType: 'event',
-        entityId: eventId,
-        fields,
-        previous: existing,
-        next: body,
-        userId: current.user.id,
-        conn,
-      })
-
       await query(
         `UPDATE events
          SET name = ?, starts_at = ?, ends_at = ?, location = ?, expected_guests = ?
@@ -116,14 +102,12 @@ export default defineEventHandler(async (event): Promise<UpdateEventResponse> =>
         eventId,
         existingIds: memberRows.map(row => Number(row.member_id)),
         nextIds: body.member_organizer_ids,
-        userId: current.user.id,
         conn,
       })
       await syncEventSubdivisionOrganizers({
         eventId,
         existingIds: subdivisionRows.map(row => Number(row.subdivision_id)),
         nextIds: body.subdivision_organizer_ids,
-        userId: current.user.id,
         conn,
       })
       await syncEventCostCentreSplits({
@@ -134,7 +118,6 @@ export default defineEventHandler(async (event): Promise<UpdateEventResponse> =>
           allocation_percentage: Number(row.allocation_percentage),
         })),
         nextRows: body.cost_centre_splits,
-        userId: current.user.id,
         conn,
       })
 
