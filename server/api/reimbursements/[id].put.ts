@@ -5,6 +5,7 @@ import { getNumericRouteParam, readMultipart, toDbBoolean } from '~/server/utils
 import {
   detachFileAttachment,
   getActiveFileAttachment,
+  getEntityIdsWithActiveFiles,
   storeAndAttachUploadedFile,
   validateUploadedFile,
 } from '~/server/utils/files'
@@ -52,9 +53,9 @@ export default defineEventHandler(async (event): Promise<UpdateReimbursementResp
       if (!existingRows.length) return { ok: false, error: 'Reimbursement not found' }
       const incomingReceiptIds = updated.positions
         .map((position: any) => Number(position.receipt_id))
-        .filter((receiptId: number) => Boolean(receiptId))
+        .filter((receiptId: number): receiptId is number => Boolean(receiptId))
 
-      const uniqueIncomingReceiptIds = [...new Set(incomingReceiptIds)]
+      const uniqueIncomingReceiptIds = Array.from(new Set<number>(incomingReceiptIds))
       if (uniqueIncomingReceiptIds.length !== incomingReceiptIds.length) {
         return { ok: false, error: 'A receipt can only be added once per reimbursement' }
       }
@@ -74,6 +75,11 @@ export default defineEventHandler(async (event): Promise<UpdateReimbursementResp
 
       if (conflicts.length) {
         return { ok: false, error: 'At least one selected receipt is already part of another reimbursement' }
+      }
+
+      const receiptIdsWithFiles = await getEntityIdsWithActiveFiles('receipt', uniqueIncomingReceiptIds, conn)
+      if (receiptIdsWithFiles.size !== uniqueIncomingReceiptIds.length) {
+        return { ok: false, error: 'Each receipt in a reimbursement must have a file attached' }
       }
 
       const existingAttachment = await getActiveFileAttachment('reimbursement', reimbursementId, conn)

@@ -159,7 +159,7 @@
 
     <section class="bg-white rounded-xl shadow-lg p-4 flex items-center gap-4">
       <span class="font-medium">{{ t('receipt.paymentStatus') }}</span>
-      <PageFinancesPaymentStatus v-model="form.status" :disabled="disabled" />
+      <PageFinancesPaymentStatus v-model="form.status" :disabled="disabled || statusDisabled" />
     </section>
 
     <CommonFormActions
@@ -223,8 +223,10 @@ import CompanyForm from '../CompanyForm.vue'
 const props = defineProps<{
   modelValue: CreateReceiptBody
   disabled?: boolean
+  statusDisabled?: boolean
   hasFile?: boolean
   canEditCompany?: boolean
+  externalValidationErrors?: string[]
 }>()
 
 const emit = defineEmits<{
@@ -242,6 +244,7 @@ const form = computed({
 })
 const canEditCompany = computed(() => props.canEditCompany === true)
 const disabled = computed(() => Boolean(props.disabled))
+const statusDisabled = computed(() => Boolean(props.statusDisabled))
 
 const validationErrors = computed(() => {
   const errors: string[] = []
@@ -254,6 +257,9 @@ const validationErrors = computed(() => {
   }
   const requiresFile = form.value.status === ReceiptStatus.Open || form.value.status === ReceiptStatus.Paid
   if (requiresFile && !props.hasFile) errors.push(t('receipt.required.fileForStatus'))
+  if (Array.isArray(props.externalValidationErrors)) {
+    errors.push(...props.externalValidationErrors.filter(error => typeof error === 'string' && error.trim().length > 0))
+  }
   return errors
 })
 

@@ -3,7 +3,7 @@ import { query } from '~/server/utils/db'
 import { normalizeBigInt } from '~/server/utils/normalize'
 import { requirePermission } from '~/server/utils/api/guards'
 import { getNumericRouteParam } from '~/server/utils/api/request'
-import { getAttachedFile } from '~/server/utils/files'
+import { getAttachedFile, getEntityIdsWithActiveFiles } from '~/server/utils/files'
 import { Reimbursement, ReimbursementPosition, ReimbursementRow } from '~/types/reimbursement'
 import { ReceiptStatus } from '~/types/receipt'
 import type { FileRow } from '~/types/file'
@@ -84,6 +84,9 @@ export default defineEventHandler(async (event): Promise<GetReimbursementRespons
       [id]
     )
 
+    const receiptIds = [...new Set(rows.map(row => Number(row.receipt_id)).filter(Boolean))]
+    const receiptIdsWithFiles = await getEntityIdsWithActiveFiles('receipt', receiptIds)
+
     const map = new Map<number, ReimbursementPosition>()
 
     for (const row of rows) {
@@ -96,6 +99,7 @@ export default defineEventHandler(async (event): Promise<GetReimbursementRespons
             receipt_number: row.receipt_number ?? null,
             description: row.description ?? null,
             status: row.status as ReceiptStatus,
+            has_file: receiptIdsWithFiles.has(Number(row.receipt_id)),
             company_id: row.company_id != null ? Number(row.company_id) : null,
             company_name: row.company_name ?? null,
             positions: []

@@ -1,6 +1,7 @@
 import { defineEventHandler } from 'h3'
 import { query } from '~/server/utils/db'
 import { requirePermission } from '~/server/utils/api/guards'
+import { getEntityIdsWithActiveFiles } from '~/server/utils/files'
 import { ReceiptRow, ReceiptStatus } from '~/types/receipt'
 
 interface GetReceiptsSuccess {
@@ -39,6 +40,9 @@ export default defineEventHandler(async (event): Promise<GetReceiptsResponse> =>
       `
     )
 
+    const receiptIds = receipts.map(receipt => Number(receipt.id))
+    const receiptIdsWithFiles = await getEntityIdsWithActiveFiles('receipt', receiptIds)
+
     return { ok: true, receipts: receipts.map(receipt => ({
       id: Number(receipt.id),
       receipt_date: String(receipt.receipt_date),
@@ -47,6 +51,7 @@ export default defineEventHandler(async (event): Promise<GetReceiptsResponse> =>
       company_id: Number(receipt.company_id),
       status: receipt.status as ReceiptStatus,
       description: receipt.description ? String(receipt.description) : null,
+      has_file: receiptIdsWithFiles.has(Number(receipt.id)),
       total_amount: Number(receipt.total_amount),
     }))}
   } catch (err: any) {

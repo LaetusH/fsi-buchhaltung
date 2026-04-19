@@ -153,3 +153,25 @@ export async function getAttachedFile(
 
   return fileRows[0] ?? null
 }
+
+export async function getEntityIdsWithActiveFiles(
+  entityType: string,
+  entityIds: number[],
+  conn?: mariadb.PoolConnection,
+) {
+  if (!entityIds.length) return new Set<number>()
+
+  const rows = await query<Array<{ entity_id: number }>>(
+    `
+    SELECT DISTINCT entity_id
+    FROM file_attachments
+    WHERE entity_type = ?
+      AND detached_at IS NULL
+      AND entity_id IN (${entityIds.map(() => '?').join(',')})
+    `,
+    [entityType, ...entityIds],
+    conn,
+  )
+
+  return new Set(rows.map(row => Number(row.entity_id)))
+}

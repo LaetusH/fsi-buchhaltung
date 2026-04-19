@@ -14,6 +14,8 @@
       :has-file="!!file || (!!existingFile && !removeExistingFile)"
       :disabled="!canEdit"
       :can-create-receipt="canCreateReceipt"
+      :can-edit-receipt="canCreateReceipt"
+      :external-validation-errors="externalValidationErrors"
       @submit="submit"
       @cancel="cancel"
     />
@@ -29,6 +31,7 @@ import { usePage } from '~/composables/usePage'
 import type { CreateReimbursementBody } from '~/types/reimbursement'
 import type { GetReimbursementResponse } from '~/server/api/reimbursements/[id].get'
 import { useAuth } from '~/composables/useAuth'
+import type { ReceiptRow } from '~/types/receipt'
 
 const emit = defineEmits<{
   (e: 'openMenu'): void
@@ -49,6 +52,7 @@ const reimbursementId = ref<number | null>(null)
 const file = ref<File | null>(null)
 const existingFile = ref<{ id: number, url: string, name: string, mime_type: string, size: number } | null>(null)
 const removeExistingFile = ref(false)
+const receipts = ref<ReceiptRow[]>([])
 
 const form = ref<CreateReimbursementBody>({
   paid_by: 0,
@@ -64,6 +68,34 @@ const form = ref<CreateReimbursementBody>({
   disbursed_at: null,
   disbursed_by: null,
   positions: [],
+})
+
+const receiptFileStateById = computed(() => new Map(
+  receipts.value.map(receipt => [receipt.id, Boolean(receipt.has_file)]),
+))
+
+const reimbursementReceiptsMissingFiles = computed(() => {
+  const missingIds = new Set<number>()
+
+  for (const position of form.value.positions) {
+    const receiptId = Number(position.receipt_id || position.receipt?.id || 0)
+    if (!receiptId) continue
+
+    const hasFileFromEmbedded = position.receipt?.has_file
+    const hasFile = typeof hasFileFromEmbedded === 'boolean'
+      ? hasFileFromEmbedded
+      : receiptFileStateById.value.get(receiptId)
+
+    if (!hasFile) missingIds.add(receiptId)
+  }
+
+  return Array.from(missingIds)
+})
+
+const externalValidationErrors = computed(() => {
+  const errors: string[] = []
+  if (reimbursementReceiptsMissingFiles.value.length) errors.push(t('reimbursement.required.receiptFile'))
+  return errors
 })
 
 function mergeNewReceiptIntoForm(newReceiptId: number) {
@@ -95,6 +127,9 @@ function applyDraft(draft: Partial<CreateReimbursementBody>) {
 }
 
 onMounted(async () => {
+  const receiptsRes = await $fetch('/api/receipts', { method: 'GET' })
+  if (receiptsRes.ok) receipts.value = receiptsRes.receipts
+
   reimbursementId.value = pageMeta.value?.reimbursementId || null
 
   if (pageMeta.value?.reimbursementDraft) {
@@ -162,6 +197,10 @@ function onRemoveFile() {
 async function submit() {
   if (!canEdit.value) {
     toast.error(t('common.notAuthorized'))
+    return
+  }
+  if (reimbursementReceiptsMissingFiles.value.length) {
+    toast.error(t('reimbursement.required.receiptFile'))
     return
   }
   if (!form.value.paid_by) {

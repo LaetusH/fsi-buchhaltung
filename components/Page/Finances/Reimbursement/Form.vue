@@ -80,7 +80,19 @@
           option-class="overflow-hidden text-ellipsis"
           @select="selectReceiptFromOption(i, $event)"
           @clear-selection="clearReceipt(i)"
-        />
+        >
+          <template #after-trigger>
+            <button
+              v-if="canEditSelectedReceipt(i)"
+              type="button"
+              class="p-2 h-10 w-10 rounded-md hover:bg-slate-100 text-orange-500 cursor-pointer"
+              :title="t('actions.edit')"
+              @click.stop.prevent="editSelectedReceipt(i)"
+            >
+              <Icon name="material-symbols:edit-square-outline-rounded" class="text-xl" />
+            </button>
+          </template>
+        </CommonSearchSelect>
 
         <div class="text-right text-sm text-slate-600">
           {{ selectedReceiptAmount(i) }}
@@ -212,6 +224,8 @@ const props = defineProps<{
   disabled?: boolean
   hasFile?: boolean
   canCreateReceipt?: boolean
+  canEditReceipt?: boolean
+  externalValidationErrors?: string[]
 }>()
 
 const emit = defineEmits<{
@@ -232,6 +246,7 @@ const form = computed({
 
 const disabled = computed(() => Boolean(props.disabled))
 const canCreateReceipt = computed(() => props.canCreateReceipt !== false)
+const canEditReceipt = computed(() => props.canEditReceipt === true)
 
 const validationErrors = computed(() => {
   const errors: string[] = []
@@ -266,6 +281,10 @@ const validationErrors = computed(() => {
   const hasDisbursedBy = Boolean(form.value.disbursed_by)
   const hasDisbursedAt = Boolean(form.value.disbursed_at)
   if (hasDisbursedBy !== hasDisbursedAt) errors.push(t('reimbursement.required.disbursedPair'))
+
+  if (Array.isArray(props.externalValidationErrors)) {
+    errors.push(...props.externalValidationErrors.filter(error => typeof error === 'string' && error.trim().length > 0))
+  }
 
   return errors
 })
@@ -383,6 +402,7 @@ function selectReceipt(index: number, receipt: ReceiptRow) {
     company_id: receipt.company_id,
     company_name: receipt.company_name,
     status: receipt.status,
+    has_file: receipt.has_file,
     positions: [],
   } as Receipt
 
@@ -416,6 +436,7 @@ function selectedReceipt(index: number) {
     company_id: embedded.company_id,
     description: embedded.description,
     status: embedded.status,
+    has_file: Boolean(embedded.has_file),
     total_amount: embedded.positions.reduce((sum, p) => sum + Number(p.amount || 0), 0),
   } as ReceiptRow
 }
@@ -468,16 +489,38 @@ function buildDraftMeta() {
   return JSON.parse(JSON.stringify(form.value))
 }
 
-function createNewReceipt() {
+function buildReceiptReturnMeta() {
   const nestedReturnTargetMeta: Record<string, any> = {
     reimbursementDraft: buildDraftMeta(),
   }
   if (pageMeta.value?.reimbursementId) nestedReturnTargetMeta.reimbursementId = pageMeta.value.reimbursementId
   nestedReturnTargetMeta.returnTarget = returnTarget.value
 
+  return nestedReturnTargetMeta
+}
+
+function createNewReceipt() {
+  const nestedReturnTargetMeta = buildReceiptReturnMeta()
+
   setPageWithReturnTarget(
     'ReceiptCreate',
     undefined,
+    buildReturnTarget('ReimbursementCreate', nestedReturnTargetMeta),
+  )
+}
+
+function canEditSelectedReceipt(index: number) {
+  return canEditReceipt.value && Boolean(selectedReceipt(index))
+}
+
+function editSelectedReceipt(index: number) {
+  const receipt = selectedReceipt(index)
+  if (!receipt) return
+
+  const nestedReturnTargetMeta = buildReceiptReturnMeta()
+  setPageWithReturnTarget(
+    'ReceiptCreate',
+    { receiptId: receipt.id },
     buildReturnTarget('ReimbursementCreate', nestedReturnTargetMeta),
   )
 }

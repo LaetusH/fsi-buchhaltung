@@ -3,7 +3,7 @@ import { query } from '~/server/utils/db'
 import { normalizeBigInt } from '~/server/utils/normalize'
 import { requirePermission } from '~/server/utils/api/guards'
 import { getNumericRouteParam } from '~/server/utils/api/request'
-import { getAttachedFile } from '~/server/utils/files'
+import { getAttachedFile, getEntityIdsWithActiveFiles } from '~/server/utils/files'
 import type { Receipt, ReceiptPosition, ReceiptRow } from '~/types/receipt'
 import type { FileRow } from '~/types/file'
 
@@ -11,6 +11,7 @@ interface GetReceiptSuccess {
   ok: true
   receipt: Receipt
   file: FileRow | null
+  statusLocked: boolean
 }
 
 interface GetReceiptError {
@@ -63,7 +64,18 @@ export default defineEventHandler(async (event): Promise<GetReceiptResponse> => 
       [id]
     )
 
+    const reimbursementLinks: Array<{ reimbursement_id: number }> = await query(
+      `
+      SELECT reimbursement_id
+      FROM reimbursement_positions
+      WHERE receipt_id = ?
+      LIMIT 1
+      `,
+      [id]
+    )
+
     const file = await getAttachedFile('receipt', id)
+    const receiptIdsWithFiles = await getEntityIdsWithActiveFiles('receipt', [id])
 
     return {
       ok: true,
@@ -74,9 +86,11 @@ export default defineEventHandler(async (event): Promise<GetReceiptResponse> => 
         company_id: Number(receipt.company_id),
         company_name: receipt.company_name,
         status: receipt.status,
+        has_file: receiptIdsWithFiles.has(id),
         positions: normalizeBigInt(positions) as ReceiptPosition[],
       }),
-      file: file ? normalizeBigInt(file) : null
+      file: file ? normalizeBigInt(file) : null,
+      statusLocked: reimbursementLinks.length > 0,
     }
   } catch (err: any) {
     return { ok: false, error: `An error occurred while fetching a receipt: ${err}` }

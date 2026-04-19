@@ -3,7 +3,7 @@ import { query, withAuditTransaction } from '~/server/utils/db'
 import { requirePermission } from '~/server/utils/api/guards'
 import { readMultipart } from '~/server/utils/api/request'
 import { statusFromReimbursement, validateReimbursementBody } from '~/server/utils/reimbursements'
-import { storeAndAttachUploadedFile, validateUploadedFile } from '~/server/utils/files'
+import { getEntityIdsWithActiveFiles, storeAndAttachUploadedFile, validateUploadedFile } from '~/server/utils/files'
 
 interface CreateReimbursementSuccess {
   ok: true
@@ -39,11 +39,10 @@ export default defineEventHandler(async (event): Promise<CreateReimbursementResp
 
   try {
     return await withAuditTransaction(current.user, async (conn) => {
-      const uniqueReceiptIds = [...new Set(
-        reimbursement.positions
-          .map((position: any) => Number(position.receipt_id))
-          .filter((receiptId: number) => Boolean(receiptId))
-      )]
+      const receiptIds = reimbursement.positions
+        .map((position: any) => Number(position.receipt_id))
+        .filter((receiptId: number): receiptId is number => Boolean(receiptId))
+      const uniqueReceiptIds = Array.from(new Set<number>(receiptIds))
 
       if (uniqueReceiptIds.length !== reimbursement.positions.length) {
         return { ok: false, error: 'A receipt can only be added once per reimbursement' }
@@ -63,6 +62,11 @@ export default defineEventHandler(async (event): Promise<CreateReimbursementResp
 
       if (conflicts.length) {
         return { ok: false, error: 'At least one selected receipt is already part of another reimbursement' }
+      }
+
+      const receiptIdsWithFiles = await getEntityIdsWithActiveFiles('receipt', uniqueReceiptIds, conn)
+      if (receiptIdsWithFiles.size !== uniqueReceiptIds.length) {
+        return { ok: false, error: 'Each receipt in a reimbursement must have a file attached' }
       }
 
       const reimbursementResult: any = await query(

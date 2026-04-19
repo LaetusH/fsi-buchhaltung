@@ -21,6 +21,7 @@ export interface Receipt {
   receipt_number: string | null
   description: string | null
   status: ReceiptStatus
+  has_file: boolean
   positions: ReceiptPosition[]
 }
 
@@ -41,6 +42,7 @@ export interface ReceiptRow {
   receipt_number: string | null
   description: string | null
   status: ReceiptStatus
+  has_file: boolean
   total_amount: number
 }
 

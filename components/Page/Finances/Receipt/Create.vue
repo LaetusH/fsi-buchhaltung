@@ -13,7 +13,9 @@
       v-model="form"
       :has-file="!!file || (!!existingFile && !removeExistingFile)"
       :disabled="!canEdit"
+      :status-disabled="statusLocked"
       :can-edit-company="canEditCompany"
+      :external-validation-errors="externalValidationErrors"
       @submit="submit"
       @cancel="cancel"
     />
@@ -29,6 +31,7 @@ import { ReceiptStatus, type CreateReceiptBody } from '~/types/receipt'
 import { usePage } from '~/composables/usePage'
 import type { GetReceiptResponse } from '~/server/api/receipts/[id].get'
 import { useAuth } from '~/composables/useAuth'
+import type { CreateReimbursementBody } from '~/types/reimbursement'
 
 const emit = defineEmits<{
   (e: 'openMenu'): void
@@ -49,6 +52,7 @@ const receiptId = ref<number | null>(null)
 const file = ref<File | null>(null)
 const existingFile = ref<{ id: number, url: string, name: string, mime_type: string, size: number } | null>(null)
 const removeExistingFile = ref(false)
+const statusLockedFromAssociation = ref(false)
 
 const form = ref<CreateReceiptBody>({
   receipt_date: '',
@@ -59,9 +63,33 @@ const form = ref<CreateReceiptBody>({
   positions: [{ sphere: 0, cost_centre: 0, amount: 0.0, tax: 19 }],
 })
 
+const reimbursementDraftContext = computed<Partial<CreateReimbursementBody> | null>(() => {
+  if (returnTarget.value.page !== 'ReimbursementCreate') return null
+  const draft = returnTarget.value.meta?.reimbursementDraft as Partial<CreateReimbursementBody> | undefined
+  return draft ?? null
+})
+
+const statusLockedByDraft = computed(() => reimbursementDraftContext.value !== null)
+const statusLocked = computed(() => statusLockedFromAssociation.value || statusLockedByDraft.value)
+const hasReceiptFile = computed(() => Boolean(file.value) || (!!existingFile.value && !removeExistingFile.value))
+const externalValidationErrors = computed(() => {
+  const errors: string[] = []
+  if (statusLocked.value && !hasReceiptFile.value) errors.push(t('receipt.required.fileForReimbursement'))
+  return errors
+})
+
+function statusFromReimbursementDraft(reimbursement: Partial<CreateReimbursementBody> | null) {
+  if (reimbursement?.disbursed_at) return ReceiptStatus.Paid
+  if (reimbursement?.checked_at) return ReceiptStatus.Open
+  return ReceiptStatus.Draft
+}
+
 onMounted(async () => {
   receiptId.value = pageMeta.value?.receiptId
-  if (!receiptId.value) return
+  if (!receiptId.value) {
+    if (statusLockedByDraft.value) form.value.status = statusFromReimbursementDraft(reimbursementDraftContext.value)
+    return
+  }
 
   isEditMode.value = true
 
@@ -76,10 +104,11 @@ onMounted(async () => {
     receipt_date: res.receipt.receipt_date,
     receipt_number: res.receipt.receipt_number,
     description: res.receipt.description,
-    status: res.receipt.status,
+    status: statusLockedByDraft.value ? statusFromReimbursementDraft(reimbursementDraftContext.value) : res.receipt.status,
     company_id: res.receipt.company_id,
     positions: res.receipt.positions,
   }
+  statusLockedFromAssociation.value = Boolean(res.statusLocked)
 
   if (!res.file) return
   existingFile.value = {
@@ -102,6 +131,13 @@ async function submit() {
   if (!canEdit.value) {
     toast.error(t('common.notAuthorized'))
     return
+  }
+  if (statusLocked.value && !hasReceiptFile.value) {
+    toast.error(t('receipt.required.fileForReimbursement'))
+    return
+  }
+  if (statusLockedByDraft.value) {
+    form.value.status = statusFromReimbursementDraft(reimbursementDraftContext.value)
   }
   if (!form.value.company_id) {
     toast.error(t('receipt.required.enterCompany'))

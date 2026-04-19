@@ -52,11 +52,22 @@ export default defineEventHandler(async (event): Promise<UpdateReceiptResponse> 
       )
 
       if (!existingRows.length) return { ok: false, error: 'No matching receipts in database' }
+      const existingReceipt = existingRows[0]
+      const reimbursementLinks: Array<{ reimbursement_id: number }> = await query(
+        `SELECT reimbursement_id FROM reimbursement_positions WHERE receipt_id = ? LIMIT 1`,
+        [receiptId],
+        conn,
+      )
+      const statusLocked = reimbursementLinks.length > 0
       const existingAttachment = await getActiveFileAttachment('receipt', receiptId, conn)
       const hasExistingFile = Boolean(existingAttachment)
       const hasFileAfterSave = Boolean(multipart.file) || (hasExistingFile && !removeExistingFile)
+      const targetStatus = statusLocked ? existingReceipt.status : updated.status
 
-      if (receiptRequiresFile(updated.status) && !hasFileAfterSave) {
+      if (statusLocked && !hasFileAfterSave) {
+        return { ok: false, error: 'Receipts that are part of a reimbursement must always have a file attached' }
+      }
+      if (receiptRequiresFile(targetStatus) && !hasFileAfterSave) {
         return { ok: false, error: 'A file is required for open or paid receipts' }
       }
 
@@ -76,7 +87,7 @@ export default defineEventHandler(async (event): Promise<UpdateReceiptResponse> 
           updated.receipt_date,
           updated.receipt_number || null,
           updated.description || null,
-          updated.status,
+          targetStatus,
           receiptId,
         ],
         conn
