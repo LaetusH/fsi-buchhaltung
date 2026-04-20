@@ -3,8 +3,11 @@ import mariadb from 'mariadb'
 const {
   DB_HOST = 'db',
   DB_PORT = '3306',
+  DB_USER = 'fsi',
+  DB_PASSWORD = 'fsi_password',
   DB_NAME = 'fsi_buchhaltung',
-  DB_ROOT_PASSWORD = 'root_password',
+  DB_AUDIT_SETUP_USER,
+  DB_AUDIT_SETUP_PASSWORD,
   DB_CONN_LIMIT = '2',
 } = process.env
 
@@ -131,11 +134,16 @@ async function entityVersionsTableExists(conn, databaseName) {
 }
 
 async function ensureAuditInfrastructure() {
+  const setupUser = DB_AUDIT_SETUP_USER || DB_USER
+  const setupPassword = DB_AUDIT_SETUP_USER
+    ? (DB_AUDIT_SETUP_PASSWORD ?? '')
+    : DB_PASSWORD
+
   const pool = mariadb.createPool({
     host: DB_HOST,
     port: Number(DB_PORT),
-    user: 'root',
-    password: DB_ROOT_PASSWORD,
+    user: setupUser,
+    password: setupPassword,
     database: DB_NAME,
     connectionLimit: Number(DB_CONN_LIMIT),
   })
@@ -268,6 +276,16 @@ async function ensureAuditInfrastructure() {
 }
 
 ensureAuditInfrastructure().catch((error) => {
+  if (error?.code === 'ER_ACCESS_DENIED_NO_PASSWORD_ERROR' || error?.cause?.code === 'ER_ACCESS_DENIED_NO_PASSWORD_ERROR') {
+    const attemptedUser = DB_AUDIT_SETUP_USER || DB_USER
+    const attemptedPasswordVar = DB_AUDIT_SETUP_USER ? 'DB_AUDIT_SETUP_PASSWORD' : 'DB_PASSWORD'
+
+    console.error(
+      `ensure-audit-infrastructure: database authentication failed for user "${attemptedUser}". ` +
+      `Check DB_HOST/DB_PORT/DB_NAME and the ${attemptedPasswordVar} value in .env.`,
+    )
+  }
+
   console.error('ensure-audit-infrastructure: failed', error)
   process.exit(1)
 })
