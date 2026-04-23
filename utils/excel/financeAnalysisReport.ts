@@ -1,8 +1,11 @@
 ﻿import type { CostCentreRow } from '~/types/costCentre'
+import type { BudgetCostCentreLine } from '~/types/budget'
 import type {
+  FinanceAnalysisCashCountItem,
   FinanceAnalysisData,
   FinanceAnalysisInvoiceBreakdownItem,
   FinanceAnalysisInvoiceItem,
+  FinanceAnalysisReceiptItem,
   FinanceAnalysisReceiptBreakdownItem,
 } from '~/types/financeAnalysis'
 import { InvoiceStatus } from '~/types/invoice'
@@ -13,6 +16,7 @@ import {
   downloadExcelWorkbook,
   sanitizeFileNamePart,
   type SpreadsheetCell,
+  type SpreadsheetImageDefinition,
   type SpreadsheetWorksheetDefinition,
 } from '~/utils/excel/workbook'
 
@@ -27,7 +31,17 @@ interface FinanceAnalysisReportFormatters {
 }
 
 export type FinanceAnalysisExportGrouping = 'none' | 'costCentres' | 'spheres'
+export type FinanceAnalysisReceiptDateField = 'receipt_date' | 'reimbursement_submitted_at'
 export type FinanceAnalysisInvoiceDateField = 'invoice_date' | 'due_date' | 'service_date'
+export type FinanceAnalysisBudgetComparisonExportMode = 'comparisonOnly' | 'annualAndComparison'
+
+interface FinanceAnalysisReportLogo {
+  data: Uint8Array
+  extension: 'png' | 'jpeg' | 'jpg'
+  mimeType: string
+  width: number
+  height: number
+}
 
 export interface FinanceAnalysisReportOptions extends FinanceAnalysisReportFormatters {
   t: TranslateFunction
@@ -38,13 +52,22 @@ export interface FinanceAnalysisReportOptions extends FinanceAnalysisReportForma
   endDate: string
   includeComparison: boolean
   selectedStatuses: ReceiptStatus[]
+  receiptDateField: FinanceAnalysisReceiptDateField
   selectedInvoiceStatuses: InvoiceStatus[]
   receiptStatusLabels: Record<ReceiptStatus, string>
   invoiceDateField: FinanceAnalysisInvoiceDateField
+  costCentres: CostCentreRow[]
   selectedCostCentre: CostCentreRow | null
+  includeChildCostCentres: boolean
+  annualClosing: boolean
+  compareToBudget: boolean
+  budgetComparisonExportMode: FinanceAnalysisBudgetComparisonExportMode
+  comparisonBudgetLabel?: string | null
+  comparisonBudgetLines?: BudgetCostCentreLine[] | null
   exportGrouping: FinanceAnalysisExportGrouping
   exportSplitByMonth: boolean
   exportSplitByPaymentStatus: boolean
+  logo?: FinanceAnalysisReportLogo | null
 }
 
 interface ReceiptOverviewAggregate {
@@ -63,6 +86,33 @@ interface InvoiceOverviewAggregate {
   totalAmount: number
 }
 
+interface CashCountOverviewAggregate {
+  groupLabel: string
+  monthKey: string
+  cashCountCount: number
+  registerCount: number
+  totalBeforeAmount: number
+  totalAfterAmount: number
+  totalDifference: number
+}
+
+interface StatementCostCentreRow extends CostCentreRow {
+  depth: number
+  hasChildren: boolean
+}
+
+interface StatementSummary {
+  ownExpense: number
+  ownIncome: number
+  ownSaldo: number
+  childExpense: number
+  childIncome: number
+  childSaldo: number
+  totalExpense: number
+  totalIncome: number
+  totalSaldo: number
+}
+
 const receiptStatusOrder: ReceiptStatus[] = [
   ReceiptStatus.Draft,
   ReceiptStatus.Open,
@@ -76,6 +126,11 @@ const invoiceStatusOrder: InvoiceStatus[] = [
   InvoiceStatus.Paid,
   InvoiceStatus.Cancelled,
 ]
+
+const WORKSHEET_MARGIN = 0.35
+const BRANDING_ROW_HEIGHT = 28
+const OVERVIEW_SPACER_ROW_HEIGHT = 12
+const EMU_PER_PIXEL = 9525
 
 function exportFileName(startDate: string, endDate: string, selectedCostCentre: CostCentreRow | null) {
   const parts = ['finance-analysis', startDate, endDate]
@@ -91,6 +146,16 @@ function countCell(value: number, styleId = 'CountCell', mergeAcross = 0): Sprea
   return { value, styleId, type: 'Number', mergeAcross }
 }
 
+function createBandRow(totalColumns: number, value: string, styleId: string, height?: number) {
+  return createSpreadsheetRow([
+    {
+      value,
+      styleId,
+      mergeAcross: Math.max(totalColumns - 1, 0),
+    },
+  ], height)
+}
+
 function signedCurrencyStyle(value: number) {
   if (value > 0) return 'PositiveCurrencyCell'
   if (value < 0) return 'NegativeCurrencyCell'
@@ -103,8 +168,26 @@ function signedCountStyle(value: number) {
   return 'CountCell'
 }
 
+function groupSignedCurrencyStyle(value: number) {
+  if (value > 0) return 'GroupPositiveCurrencyCell'
+  if (value < 0) return 'GroupNegativeCurrencyCell'
+  return 'GroupCurrencyCell'
+}
+
+function hasExportOptionsSummary(options: FinanceAnalysisReportOptions) {
+  return options.exportGrouping !== 'none'
+    || options.exportSplitByMonth
+    || options.exportSplitByPaymentStatus
+    || options.annualClosing
+    || options.compareToBudget
+}
+
 function hasReceiptOverviewExport(options: FinanceAnalysisReportOptions) {
   return options.exportGrouping !== 'none' || options.exportSplitByMonth || options.exportSplitByPaymentStatus
+}
+
+function hasCashCountOverviewExport(options: FinanceAnalysisReportOptions) {
+  return options.exportGrouping === 'costCentres' || options.exportSplitByMonth
 }
 
 function exportGroupingLabel(options: FinanceAnalysisReportOptions) {
@@ -118,6 +201,13 @@ function exportGroupingLabel(options: FinanceAnalysisReportOptions) {
   }
 }
 
+function reportPagesModeLabel(options: FinanceAnalysisReportOptions) {
+  if (options.annualClosing && options.compareToBudget) return options.t('financeAnalysis.exportReportPageModes.both')
+  if (options.annualClosing) return options.t('financeAnalysis.exportReportPageModes.reportOnly')
+  if (options.compareToBudget) return options.t('financeAnalysis.exportReportPageModes.comparisonOnly')
+  return options.t('financeAnalysis.exportReportPageModes.none')
+}
+
 function formatMonthKey(monthKey: string, locale: string) {
   if (!/^\d{4}-\d{2}$/.test(monthKey)) return monthKey
 
@@ -127,6 +217,244 @@ function formatMonthKey(monthKey: string, locale: string) {
   if (!Number.isFinite(year) || !Number.isFinite(monthIndex) || monthIndex < 0 || monthIndex > 11) return monthKey
 
   return new Intl.DateTimeFormat(locale, { month: 'short', year: 'numeric' }).format(new Date(year, monthIndex, 1))
+}
+
+function formatCashCountCostCentres(costCentres: FinanceAnalysisCashCountItem['cost_centres'], t: TranslateFunction) {
+  if (!costCentres.length) return t('common.notAvailable')
+
+  return costCentres
+    .map(costCentre => {
+      const label = [costCentre.code, costCentre.name].filter(Boolean).join(' - ')
+      return costCentres.length > 1
+        ? `${label} (${costCentre.allocation_percentage.toFixed(2)}%)`
+        : label
+    })
+    .join(', ')
+}
+
+function roundCurrency(value: number) {
+  return Number(value.toFixed(2))
+}
+
+function addOneDay(dateString: string) {
+  const parts = dateString.split('-').map(Number)
+  if (parts.length !== 3 || parts.some(value => Number.isNaN(value))) return dateString
+
+  const [year, month, day] = parts as [number, number, number]
+  const next = new Date(year, month - 1, day)
+  next.setDate(next.getDate() + 1)
+  return `${next.getFullYear()}-${String(next.getMonth() + 1).padStart(2, '0')}-${String(next.getDate()).padStart(2, '0')}`
+}
+
+function buildVisibleStatementCostCentres(options: FinanceAnalysisReportOptions, ownAmountsByCostCentreId: Map<number, { expense: number, income: number }>) {
+  const { costCentres, selectedCostCentre, includeChildCostCentres, comparisonBudgetLines } = options
+  const lineMap = new Map(costCentres.map(item => [item.id, item]))
+  const childrenByParent = new Map<number | null, CostCentreRow[]>()
+
+  for (const item of costCentres) {
+    const parentId = item.parent_id !== null && item.parent_id !== item.id && lineMap.has(item.parent_id)
+      ? item.parent_id
+      : null
+    const bucket = childrenByParent.get(parentId) ?? []
+    bucket.push(item)
+    childrenByParent.set(parentId, bucket)
+  }
+
+  const budgetLineIds = new Set((comparisonBudgetLines ?? []).map(line => Number(line.cost_centre_id)))
+  const hasOwnContent = (costCentreId: number) => {
+    const own = ownAmountsByCostCentreId.get(costCentreId)
+    if (own && (own.expense !== 0 || own.income !== 0)) return true
+    return budgetLineIds.has(costCentreId)
+  }
+
+  const shouldDisplay = (costCentreId: number): boolean => {
+    const costCentre = lineMap.get(costCentreId)
+    if (!costCentre) return false
+    if (costCentre.is_active) return true
+    if (hasOwnContent(costCentreId)) return true
+    return (childrenByParent.get(costCentreId) ?? []).some(child => shouldDisplay(child.id))
+  }
+
+  const ordered: StatementCostCentreRow[] = []
+  const visited = new Set<number>()
+  const visit = (parentId: number | null, depth: number) => {
+    const children = [...(childrenByParent.get(parentId) ?? [])].sort((left, right) => (
+      left.code.localeCompare(right.code, undefined, { numeric: true, sensitivity: 'base' })
+      || left.name.localeCompare(right.name, undefined, { sensitivity: 'base' })
+    ))
+
+    for (const child of children) {
+      if (visited.has(child.id) || !shouldDisplay(child.id)) continue
+      visited.add(child.id)
+      ordered.push({
+        ...child,
+        depth,
+        hasChildren: (childrenByParent.get(child.id) ?? []).some(grandChild => shouldDisplay(grandChild.id)),
+      })
+
+      if (includeChildCostCentres || !selectedCostCentre || child.id !== selectedCostCentre.id) {
+        visit(child.id, depth + 1)
+      }
+    }
+  }
+
+  if (selectedCostCentre) {
+    const selected = lineMap.get(selectedCostCentre.id)
+    if (selected && shouldDisplay(selected.id)) {
+      ordered.push({
+        ...selected,
+        depth: 0,
+        hasChildren: (childrenByParent.get(selected.id) ?? []).some(child => shouldDisplay(child.id)),
+      })
+      if (includeChildCostCentres) visit(selected.id, 1)
+    }
+    return ordered
+  }
+
+  visit(null, 0)
+  return ordered
+}
+
+function buildStatementSummaryMap(
+  costCentres: CostCentreRow[],
+  visibleCostCentres: StatementCostCentreRow[],
+  ownAmountsByCostCentreId: Map<number, { expense: number, income: number }>,
+) {
+  const visibleIds = new Set(visibleCostCentres.map(item => item.id))
+  const childrenByParent = new Map<number | null, number[]>()
+  for (const costCentre of costCentres) {
+    const bucket = childrenByParent.get(costCentre.parent_id ?? null) ?? []
+    bucket.push(costCentre.id)
+    childrenByParent.set(costCentre.parent_id ?? null, bucket)
+  }
+
+  const cache = new Map<number, StatementSummary>()
+  const compute = (costCentreId: number): StatementSummary => {
+    if (cache.has(costCentreId)) return cache.get(costCentreId)!
+
+    const own = ownAmountsByCostCentreId.get(costCentreId) ?? { expense: 0, income: 0 }
+    let childExpense = 0
+    let childIncome = 0
+
+    for (const childId of childrenByParent.get(costCentreId) ?? []) {
+      if (!visibleIds.has(childId)) continue
+      const childSummary = compute(childId)
+      childExpense += childSummary.totalExpense
+      childIncome += childSummary.totalIncome
+    }
+
+    const summary = {
+      ownExpense: roundCurrency(own.expense),
+      ownIncome: roundCurrency(own.income),
+      ownSaldo: roundCurrency(own.income - own.expense),
+      childExpense: roundCurrency(childExpense),
+      childIncome: roundCurrency(childIncome),
+      childSaldo: roundCurrency(childIncome - childExpense),
+      totalExpense: roundCurrency(own.expense + childExpense),
+      totalIncome: roundCurrency(own.income + childIncome),
+      totalSaldo: roundCurrency((own.income + childIncome) - (own.expense + childExpense)),
+    }
+
+    cache.set(costCentreId, summary)
+    return summary
+  }
+
+  const result = new Map<number, StatementSummary>()
+  for (const row of visibleCostCentres) result.set(row.id, compute(row.id))
+  return result
+}
+
+function buildActualOwnAmountsByCostCentreId(options: FinanceAnalysisReportOptions) {
+  const amounts = new Map<number, { expense: number, income: number }>()
+  const add = (costCentreId: number, expense: number, income: number) => {
+    const current = amounts.get(costCentreId) ?? { expense: 0, income: 0 }
+    current.expense = roundCurrency(current.expense + expense)
+    current.income = roundCurrency(current.income + income)
+    amounts.set(costCentreId, current)
+  }
+
+  options.analysis.receiptBreakdown
+    .filter(item => item.group_type === 'costCentre')
+    .forEach((item) => {
+      if (item.group_id !== null) add(item.group_id, item.total_amount, 0)
+    })
+
+  options.analysis.invoiceBreakdown
+    .filter(item => item.group_type === 'costCentre')
+    .forEach((item) => {
+      if (item.group_id !== null) add(item.group_id, 0, item.total_amount)
+    })
+
+  options.analysis.cashCounts.forEach((cashCount) => {
+    cashCount.cost_centres.forEach((costCentre) => {
+      const factor = Number(costCentre.allocation_percentage || 0) / 100
+      add(costCentre.cost_centre_id, 0, roundCurrency(cashCount.total_difference * factor))
+    })
+  })
+
+  return amounts
+}
+
+function buildBudgetOwnAmountsByCostCentreId(lines: BudgetCostCentreLine[] | null | undefined) {
+  const amounts = new Map<number, { expense: number, income: number }>()
+  for (const line of lines ?? []) {
+    const costCentreId = Number(line.cost_centre_id)
+    const current = amounts.get(costCentreId) ?? { expense: 0, income: 0 }
+    current.expense = roundCurrency(current.expense + Number(line.expense_amount || 0))
+    current.income = roundCurrency(current.income + Number(line.income_amount || 0))
+    amounts.set(costCentreId, current)
+  }
+  return amounts
+}
+
+function buildCashCountExportRows(options: FinanceAnalysisReportOptions) {
+  return options.analysis.cashCounts.flatMap((cashCount) => {
+    if (options.exportGrouping !== 'costCentres') {
+      return [{
+        countedAfterAt: cashCount.counted_after_at,
+        eventName: cashCount.event_name,
+        costCentreLabel: formatCashCountCostCentres(cashCount.cost_centres, options.t),
+        countedByFirstName: cashCount.counted_by_first_name,
+        countedBySecondName: cashCount.counted_by_second_name,
+        checkedByName: cashCount.checked_by_name,
+        registerCount: cashCount.register_count,
+        totalBeforeAmount: cashCount.total_before_amount,
+        totalAfterAmount: cashCount.total_after_amount,
+        totalDifference: cashCount.total_difference,
+      }]
+    }
+
+    if (!cashCount.cost_centres.length) {
+      return [{
+        countedAfterAt: cashCount.counted_after_at,
+        eventName: cashCount.event_name,
+        costCentreLabel: options.t('common.notAvailable'),
+        countedByFirstName: cashCount.counted_by_first_name,
+        countedBySecondName: cashCount.counted_by_second_name,
+        checkedByName: cashCount.checked_by_name,
+        registerCount: cashCount.register_count,
+        totalBeforeAmount: 0,
+        totalAfterAmount: 0,
+        totalDifference: cashCount.total_difference,
+      }]
+    }
+
+    return cashCount.cost_centres.map((costCentre) => {
+      const allocationFactor = Number(costCentre.allocation_percentage || 0) / 100
+      return {
+        countedAfterAt: cashCount.counted_after_at,
+        eventName: cashCount.event_name,
+        costCentreLabel: [costCentre.code, costCentre.name].filter(Boolean).join(' - '),
+        countedByFirstName: cashCount.counted_by_first_name,
+        countedBySecondName: cashCount.counted_by_second_name,
+        checkedByName: cashCount.checked_by_name,
+        registerCount: cashCount.register_count,
+        totalBeforeAmount: Number((cashCount.total_before_amount * allocationFactor).toFixed(2)),
+        totalAfterAmount: Number((cashCount.total_after_amount * allocationFactor).toFixed(2)),
+        totalDifference: Number((cashCount.total_difference * allocationFactor).toFixed(2)),
+      }
+    })
+  })
 }
 
 function buildOverviewRows(options: FinanceAnalysisReportOptions) {
@@ -148,10 +476,10 @@ function buildOverviewRows(options: FinanceAnalysisReportOptions) {
 
   const summary = analysis.summary
   const hasComparison = includeComparison && Boolean(comparisonAnalysis)
-  const hasExportOverview = hasReceiptOverviewExport(options)
-  const rowMergeAcross = 3
-  const valueMergeAcross = 2
-  const singleValueMergeAcross = 1
+  const totalColumns = hasComparison ? 4 : 3
+  const rowMergeAcross = totalColumns - 1
+  const valueMergeAcross = totalColumns - 2
+  const singleValueMergeAcross = totalColumns - 2
   const orderedSelectedStatuses = receiptStatusOrder.filter(status => selectedStatuses.includes(status))
   const orderedSelectedInvoiceStatuses = invoiceStatusOrder.filter(status => options.selectedInvoiceStatuses.includes(status))
   const receiptStateRows = [
@@ -170,19 +498,65 @@ function buildOverviewRows(options: FinanceAnalysisReportOptions) {
     }
   })
 
+  const createThreeValueHeaderRow = (first: string, second: string, third: string) => (
+    createSpreadsheetRow([
+      { value: first, styleId: 'Header' },
+      { value: second, styleId: 'Header' },
+      { value: third, styleId: 'Header', mergeAcross: hasComparison ? 1 : 0 },
+    ])
+  )
+
   const rows = [
-    createSpreadsheetRow([{ value: t('financeAnalysis.title'), styleId: 'Title', mergeAcross: rowMergeAcross }], 26),
-    createSpreadsheetRow([{ value: t('financeAnalysis.periodLabel', { start: formatDate(startDate), end: formatDate(endDate) }), styleId: 'Subtitle', mergeAcross: rowMergeAcross }]),
+    createBandRow(totalColumns, t('financeAnalysis.title'), 'Title', 22),
+    createBandRow(totalColumns, t('financeAnalysis.periodLabel', { start: formatDate(startDate), end: formatDate(endDate) }), 'Subtitle'),
     createSpreadsheetRow([
       { value: t('financeAnalysis.reportGeneratedAt'), styleId: 'Label' },
       { value: formatDateTime(new Date().toISOString()), styleId: 'Body', mergeAcross: valueMergeAcross },
     ]),
-    createSpreadsheetRow([{ value: '', styleId: 'Body', mergeAcross: rowMergeAcross }]),
-    createSpreadsheetRow([{ value: t('financeAnalysis.menuTitle'), styleId: 'Section', mergeAcross: rowMergeAcross }], 22),
+    createBandRow(totalColumns, '', 'BodyMuted', OVERVIEW_SPACER_ROW_HEIGHT),
+    createBandRow(totalColumns, t('financeAnalysis.menuTitle'), 'Section', 19),
+  ]
+
+  if (selectedCostCentre) {
+    rows.push(createSpreadsheetRow([
+      { value: t('financeAnalysis.costCentre'), styleId: 'Label' },
+      {
+        value: options.includeChildCostCentres
+          ? `${selectedCostCentre.code} - ${selectedCostCentre.name} (${t('financeAnalysis.includeChildCostCentres')})`
+          : `${selectedCostCentre.code} - ${selectedCostCentre.name}`,
+        styleId: 'Body',
+        mergeAcross: valueMergeAcross,
+      },
+    ]))
+  }
+
+  rows.push(
+    createSpreadsheetRow([
+      { value: t('financeAnalysis.receiptDateField'), styleId: 'Label' },
+      {
+        value: options.receiptDateField === 'reimbursement_submitted_at'
+          ? t('financeAnalysis.receiptDateFieldOptions.reimbursementSubmittedAt')
+          : t('financeAnalysis.receiptDateFieldOptions.receiptDate'),
+        styleId: 'Body',
+        mergeAcross: valueMergeAcross,
+      },
+    ]),
     createSpreadsheetRow([
       { value: t('financeAnalysis.receiptStateFilters'), styleId: 'Label' },
       {
         value: orderedSelectedStatuses.map(status => receiptStatusLabels[status]).join(', ') || t('financeAnalysis.noneSelected'),
+        styleId: 'Body',
+        mergeAcross: valueMergeAcross,
+      },
+    ]),
+    createSpreadsheetRow([
+      { value: t('financeAnalysis.invoiceDateField'), styleId: 'Label' },
+      {
+        value: options.invoiceDateField === 'due_date'
+          ? t('financeAnalysis.invoiceDateFieldOptions.dueDate')
+          : options.invoiceDateField === 'service_date'
+            ? t('financeAnalysis.invoiceDateFieldOptions.serviceDate')
+            : t('financeAnalysis.invoiceDateFieldOptions.invoiceDate'),
         styleId: 'Body',
         mergeAcross: valueMergeAcross,
       },
@@ -195,14 +569,7 @@ function buildOverviewRows(options: FinanceAnalysisReportOptions) {
         mergeAcross: valueMergeAcross,
       },
     ]),
-  ]
-
-  if (selectedCostCentre) {
-    rows.push(createSpreadsheetRow([
-      { value: t('financeAnalysis.costCentre'), styleId: 'Label' },
-      { value: `${selectedCostCentre.code} - ${selectedCostCentre.name}`, styleId: 'Body', mergeAcross: valueMergeAcross },
-    ]))
-  }
+  )
 
   if (hasComparison && comparisonAnalysis) {
     rows.push(createSpreadsheetRow([
@@ -215,10 +582,14 @@ function buildOverviewRows(options: FinanceAnalysisReportOptions) {
     ]))
   }
 
-  if (hasExportOverview) {
+  if (hasExportOptionsSummary(options)) {
     rows.push(
-      createSpreadsheetRow([{ value: '', styleId: 'Body', mergeAcross: rowMergeAcross }]),
-      createSpreadsheetRow([{ value: t('financeAnalysis.exportOptionsTitle'), styleId: 'Section', mergeAcross: rowMergeAcross }], 22),
+      createBandRow(totalColumns, '', 'BodyMuted', OVERVIEW_SPACER_ROW_HEIGHT),
+      createBandRow(totalColumns, t('financeAnalysis.exportOptionsTitle'), 'Section', 19),
+      createSpreadsheetRow([
+        { value: t('financeAnalysis.exportReportPagesTitle'), styleId: 'Label' },
+        { value: reportPagesModeLabel(options), styleId: 'Body', mergeAcross: valueMergeAcross },
+      ]),
       createSpreadsheetRow([
         { value: t('financeAnalysis.exportGroupingLabel'), styleId: 'Label' },
         { value: exportGroupingLabel(options), styleId: 'Body', mergeAcross: valueMergeAcross },
@@ -235,8 +606,8 @@ function buildOverviewRows(options: FinanceAnalysisReportOptions) {
   }
 
   rows.push(
-    createSpreadsheetRow([{ value: '', styleId: 'Body', mergeAcross: rowMergeAcross }]),
-    createSpreadsheetRow([{ value: t('financeAnalysis.analysisTitle'), styleId: 'Section', mergeAcross: rowMergeAcross }], 22),
+    createBandRow(totalColumns, '', 'BodyMuted', OVERVIEW_SPACER_ROW_HEIGHT),
+    createBandRow(totalColumns, t('financeAnalysis.analysisTitle'), 'Section', 19),
   )
 
   if (hasComparison && comparisonAnalysis) {
@@ -287,84 +658,90 @@ function buildOverviewRows(options: FinanceAnalysisReportOptions) {
     )
   } else {
     rows.push(
-      createSpreadsheetRow([{ value: t('financeAnalysis.cards.receiptTotal'), styleId: 'TextCell' }, currencyCell(summary.receipt_total, 'CurrencyCell', 1)]),
-      createSpreadsheetRow([{ value: t('financeAnalysis.cards.cashCountRevenue'), styleId: 'TextCell' }, currencyCell(summary.cash_count_total_difference, 'CurrencyCell', 1)]),
-      createSpreadsheetRow([{ value: t('financeAnalysis.cards.invoiceRevenue'), styleId: 'TextCell' }, currencyCell(summary.invoice_total, 'CurrencyCell', 1)]),
-      createSpreadsheetRow([{ value: t('financeAnalysis.cards.netResult'), styleId: 'TextCell' }, currencyCell(summary.net_result, signedCurrencyStyle(summary.net_result), 1)]),
-      createSpreadsheetRow([{ value: t('financeAnalysis.cards.entriesReviewed'), styleId: 'TextCell' }, countCell(summary.receipt_count + summary.cash_count_count + summary.invoice_count, 'CountCell', 1)]),
+      createSpreadsheetRow([{ value: t('financeAnalysis.cards.receiptTotal'), styleId: 'TextCell' }, currencyCell(summary.receipt_total, 'CurrencyCell', singleValueMergeAcross)]),
+      createSpreadsheetRow([{ value: t('financeAnalysis.cards.cashCountRevenue'), styleId: 'TextCell' }, currencyCell(summary.cash_count_total_difference, 'CurrencyCell', singleValueMergeAcross)]),
+      createSpreadsheetRow([{ value: t('financeAnalysis.cards.invoiceRevenue'), styleId: 'TextCell' }, currencyCell(summary.invoice_total, 'CurrencyCell', singleValueMergeAcross)]),
+      createSpreadsheetRow([{ value: t('financeAnalysis.cards.netResult'), styleId: 'TextCell' }, currencyCell(summary.net_result, signedCurrencyStyle(summary.net_result), singleValueMergeAcross)]),
+      createSpreadsheetRow([{ value: t('financeAnalysis.cards.entriesReviewed'), styleId: 'TextCell' }, countCell(summary.receipt_count + summary.cash_count_count + summary.invoice_count, 'CountCell', singleValueMergeAcross)]),
     )
   }
 
   rows.push(
-    createSpreadsheetRow([{ value: '', styleId: 'Body', mergeAcross: rowMergeAcross }]),
-    createSpreadsheetRow([{ value: t('financeAnalysis.receiptsSectionTitle'), styleId: 'Section', mergeAcross: rowMergeAcross }], 22),
-    createSpreadsheetRow([
-      { value: t('financeAnalysis.receiptStatusLabel'), styleId: 'Header' },
-      { value: t('financeAnalysis.countHeader'), styleId: 'Header' },
-      { value: t('financeAnalysis.cards.receiptTotal'), styleId: 'Header' },
-    ]),
+    createBandRow(totalColumns, '', 'BodyMuted', OVERVIEW_SPACER_ROW_HEIGHT),
+    createBandRow(totalColumns, t('financeAnalysis.receiptsSectionTitle'), 'Section', 19),
+    createThreeValueHeaderRow(
+      t('financeAnalysis.receiptStatusLabel'),
+      t('financeAnalysis.countHeader'),
+      t('financeAnalysis.cards.receiptTotal'),
+    ),
   )
 
   rows.push(...receiptStateRows.map(row => createSpreadsheetRow([
     { value: row.label, styleId: 'TextCell' },
     countCell(row.count),
-    currencyCell(row.total),
+    currencyCell(row.total, 'CurrencyCell', hasComparison ? 1 : 0),
   ])))
 
   rows.push(
-    createSpreadsheetRow([{ value: '', styleId: 'Body', mergeAcross: rowMergeAcross }]),
-    createSpreadsheetRow([{ value: t('financeAnalysis.cashCountsSectionTitle'), styleId: 'Section', mergeAcross: rowMergeAcross }], 22),
+    createBandRow(totalColumns, '', 'BodyMuted', OVERVIEW_SPACER_ROW_HEIGHT),
+    createBandRow(totalColumns, t('financeAnalysis.cashCountsSectionTitle'), 'Section', 19),
     createSpreadsheetRow([{ value: t('financeAnalysis.cashCards.totalBefore'), styleId: 'TextCell' }, currencyCell(summary.cash_count_total_before, 'CurrencyCell', singleValueMergeAcross)]),
     createSpreadsheetRow([{ value: t('financeAnalysis.cashCards.totalAfter'), styleId: 'TextCell' }, currencyCell(summary.cash_count_total_after, 'CurrencyCell', singleValueMergeAcross)]),
     createSpreadsheetRow([{ value: t('financeAnalysis.cashCards.registers'), styleId: 'TextCell' }, countCell(summary.cash_count_register_total, 'CountCell', singleValueMergeAcross)]),
   )
 
   rows.push(
-    createSpreadsheetRow([{ value: '', styleId: 'Body', mergeAcross: rowMergeAcross }]),
-    createSpreadsheetRow([{ value: t('financeAnalysis.invoicesSectionTitle'), styleId: 'Section', mergeAcross: rowMergeAcross }], 22),
-    createSpreadsheetRow([
-      { value: t('financeAnalysis.invoiceStatusLabel'), styleId: 'Header' },
-      { value: t('financeAnalysis.countHeader'), styleId: 'Header' },
-      { value: t('financeAnalysis.cards.invoiceRevenue'), styleId: 'Header' },
-    ]),
+    createBandRow(totalColumns, '', 'BodyMuted', OVERVIEW_SPACER_ROW_HEIGHT),
+    createBandRow(totalColumns, t('financeAnalysis.invoicesSectionTitle'), 'Section', 19),
+    createThreeValueHeaderRow(
+      t('financeAnalysis.invoiceStatusLabel'),
+      t('financeAnalysis.countHeader'),
+      t('financeAnalysis.cards.invoiceRevenue'),
+    ),
   )
 
   rows.push(...invoiceStateRows.map(row => createSpreadsheetRow([
     { value: row.label, styleId: 'TextCell' },
     countCell(row.count),
-    currencyCell(row.total),
+    currencyCell(row.total, 'CurrencyCell', hasComparison ? 1 : 0),
   ])))
 
   return rows
 }
 
 function buildReceiptRows(options: FinanceAnalysisReportOptions) {
-  const { t, analysis, startDate, endDate, formatDate, receiptStatusLabels } = options
+  const { t, analysis, startDate, endDate, formatDate, receiptStatusLabels, receiptDateField } = options
+  const receiptDateLabel = receiptDateField === 'reimbursement_submitted_at'
+    ? t('financeAnalysis.receiptDateFieldOptions.reimbursementSubmittedAt')
+    : t('financeAnalysis.receiptDateFieldOptions.receiptDate')
+  const useExpandedAmountColumn = options.includeComparison
+  const totalColumns = useExpandedAmountColumn ? 6 : 5
+  const amountMergeAcross = useExpandedAmountColumn ? 1 : 0
 
   const rows = [
-    createSpreadsheetRow([{ value: t('financeAnalysis.receiptsTableTitle'), styleId: 'Title', mergeAcross: 4 }], 24),
-    createSpreadsheetRow([{ value: t('financeAnalysis.periodLabel', { start: formatDate(startDate), end: formatDate(endDate) }), styleId: 'Subtitle', mergeAcross: 4 }]),
-    createSpreadsheetRow([{ value: t('financeAnalysis.countLabel', { count: analysis.receipts.length }), styleId: 'BodyMuted', mergeAcross: 4 }]),
+    createBandRow(totalColumns, t('financeAnalysis.receiptsTableTitle'), 'Title', 20),
+    createBandRow(totalColumns, t('financeAnalysis.periodLabel', { start: formatDate(startDate), end: formatDate(endDate) }), 'Subtitle'),
+    createBandRow(totalColumns, t('financeAnalysis.countLabel', { count: analysis.receipts.length }), 'BodyMuted'),
     createSpreadsheetRow([
-      { value: t('receipt.receiptDate'), styleId: 'Header' },
+      { value: receiptDateLabel, styleId: 'Header' },
       { value: t('receipt.receiptNumber'), styleId: 'Header' },
       { value: t('receipt.company'), styleId: 'Header' },
       { value: t('receipt.paymentStatus'), styleId: 'Header' },
-      { value: t('receipt.grossAmount'), styleId: 'Header' },
+      { value: t('receipt.grossAmount'), styleId: 'Header', mergeAcross: amountMergeAcross },
     ]),
   ]
 
   if (analysis.receipts.length === 0) {
-    rows.push(createSpreadsheetRow([{ value: t('financeAnalysis.noReceipts'), styleId: 'Body', mergeAcross: 4 }]))
+    rows.push(createSpreadsheetRow([{ value: t('financeAnalysis.noReceipts'), styleId: 'Body', mergeAcross: totalColumns - 1 }]))
     return rows
   }
 
   rows.push(...analysis.receipts.map(receipt => createSpreadsheetRow([
-    { value: formatDate(receipt.receipt_date), styleId: 'TextCell' },
+    { value: formatDate(getReceiptDateValue(receipt, receiptDateField)), styleId: 'TextCell' },
     { value: receipt.receipt_number || t('receipt.noNumber'), styleId: 'TextCell' },
     { value: receipt.company_name || t('receipt.noCompany'), styleId: 'TextCell' },
     { value: receiptStatusLabels[receipt.status], styleId: 'TextCell' },
-    currencyCell(receipt.total_amount),
+    currencyCell(receipt.total_amount, 'CurrencyCell', amountMergeAcross),
   ])))
 
   return rows
@@ -372,38 +749,45 @@ function buildReceiptRows(options: FinanceAnalysisReportOptions) {
 
 function buildCashCountRows(options: FinanceAnalysisReportOptions) {
   const { t, analysis, startDate, endDate, formatDate, formatDateTime } = options
+  const mergeAcross = 8
+  const headerCells: SpreadsheetCell[] = [
+    { value: t('cashCount.countedAfterAt'), styleId: 'Header' },
+    { value: t('cashCount.event'), styleId: 'Header' },
+    { value: t('cashCount.countedByFirst'), styleId: 'Header' },
+    { value: t('cashCount.countedBySecond'), styleId: 'Header' },
+    { value: t('cashCount.checkedBy'), styleId: 'Header' },
+    { value: t('cashCount.registerCount'), styleId: 'Header' },
+    { value: t('financeAnalysis.cashCards.totalBefore'), styleId: 'Header' },
+    { value: t('cashCount.totalAfter'), styleId: 'Header' },
+    { value: t('cashCount.totalDifference'), styleId: 'Header' },
+  ]
 
   const rows = [
-    createSpreadsheetRow([{ value: t('financeAnalysis.cashCountsTableTitle'), styleId: 'Title', mergeAcross: 7 }], 24),
-    createSpreadsheetRow([{ value: t('financeAnalysis.periodLabel', { start: formatDate(startDate), end: formatDate(endDate) }), styleId: 'Subtitle', mergeAcross: 7 }]),
-    createSpreadsheetRow([{ value: t('financeAnalysis.countLabel', { count: analysis.cashCounts.length }), styleId: 'BodyMuted', mergeAcross: 7 }]),
-    createSpreadsheetRow([
-      { value: t('cashCount.countedAfterAt'), styleId: 'Header' },
-      { value: t('cashCount.event'), styleId: 'Header' },
-      { value: t('cashCount.countedByFirst'), styleId: 'Header' },
-      { value: t('cashCount.countedBySecond'), styleId: 'Header' },
-      { value: t('cashCount.checkedBy'), styleId: 'Header' },
-      { value: t('cashCount.registerCount'), styleId: 'Header' },
-      { value: t('cashCount.totalAfter'), styleId: 'Header' },
-      { value: t('cashCount.totalDifference'), styleId: 'Header' },
-    ]),
+    createBandRow(mergeAcross + 1, t('financeAnalysis.cashCountsTableTitle'), 'Title', 20),
+    createBandRow(mergeAcross + 1, t('financeAnalysis.periodLabel', { start: formatDate(startDate), end: formatDate(endDate) }), 'Subtitle'),
+    createBandRow(mergeAcross + 1, t('financeAnalysis.countLabel', { count: analysis.cashCounts.length }), 'BodyMuted'),
+    createSpreadsheetRow(headerCells),
   ]
 
   if (analysis.cashCounts.length === 0) {
-    rows.push(createSpreadsheetRow([{ value: t('financeAnalysis.noCashCounts'), styleId: 'Body', mergeAcross: 7 }]))
+    rows.push(createSpreadsheetRow([{ value: t('financeAnalysis.noCashCounts'), styleId: 'Body', mergeAcross }]))
     return rows
   }
 
-  rows.push(...analysis.cashCounts.map(cashCount => createSpreadsheetRow([
-    { value: formatDateTime(cashCount.counted_after_at), styleId: 'TextCell' },
-    { value: cashCount.event_name, styleId: 'TextCell' },
-    { value: cashCount.counted_by_first_name || t('common.notAvailable'), styleId: 'TextCell' },
-    { value: cashCount.counted_by_second_name || t('common.notAvailable'), styleId: 'TextCell' },
-    { value: cashCount.checked_by_name || t('common.notAvailable'), styleId: 'TextCell' },
-    countCell(cashCount.register_count),
-    currencyCell(cashCount.total_after_amount),
-    currencyCell(cashCount.total_difference, signedCurrencyStyle(cashCount.total_difference)),
-  ])))
+  rows.push(...analysis.cashCounts.map(cashCount => {
+    const cells: SpreadsheetCell[] = [
+      { value: formatDateTime(cashCount.counted_after_at), styleId: 'TextCell' },
+      { value: cashCount.event_name, styleId: 'TextCell' },
+      { value: cashCount.counted_by_first_name || t('common.notAvailable'), styleId: 'TextCell' },
+      { value: cashCount.counted_by_second_name || t('common.notAvailable'), styleId: 'TextCell' },
+      { value: cashCount.checked_by_name || t('common.notAvailable'), styleId: 'TextCell' },
+      countCell(cashCount.register_count),
+      currencyCell(cashCount.total_before_amount),
+      currencyCell(cashCount.total_after_amount),
+      currencyCell(cashCount.total_difference, signedCurrencyStyle(cashCount.total_difference)),
+    ]
+    return createSpreadsheetRow(cells)
+  }))
 
   return rows
 }
@@ -415,22 +799,25 @@ function buildInvoiceRows(options: FinanceAnalysisReportOptions) {
     due_date: t('financeAnalysis.invoiceDateFieldOptions.dueDate'),
     service_date: t('financeAnalysis.invoiceDateFieldOptions.serviceDate'),
   }
+  const useExpandedAmountColumn = options.includeComparison
+  const totalColumns = useExpandedAmountColumn ? 6 : 5
+  const amountMergeAcross = useExpandedAmountColumn ? 1 : 0
 
   const rows = [
-    createSpreadsheetRow([{ value: t('financeAnalysis.invoicesTableTitle'), styleId: 'Title', mergeAcross: 4 }], 24),
-    createSpreadsheetRow([{ value: t('financeAnalysis.periodLabel', { start: formatDate(startDate), end: formatDate(endDate) }), styleId: 'Subtitle', mergeAcross: 4 }]),
-    createSpreadsheetRow([{ value: t('financeAnalysis.countLabel', { count: analysis.invoices.length }), styleId: 'BodyMuted', mergeAcross: 4 }]),
+    createBandRow(totalColumns, t('financeAnalysis.invoicesTableTitle'), 'Title', 20),
+    createBandRow(totalColumns, t('financeAnalysis.periodLabel', { start: formatDate(startDate), end: formatDate(endDate) }), 'Subtitle'),
+    createBandRow(totalColumns, t('financeAnalysis.countLabel', { count: analysis.invoices.length }), 'BodyMuted'),
     createSpreadsheetRow([
       { value: invoiceDateLabelByField[invoiceDateField], styleId: 'Header' },
       { value: t('invoice.invoiceNumber'), styleId: 'Header' },
       { value: t('receipt.company'), styleId: 'Header' },
       { value: t('receipt.paymentStatus'), styleId: 'Header' },
-      { value: t('receipt.grossAmount'), styleId: 'Header' },
+      { value: t('receipt.grossAmount'), styleId: 'Header', mergeAcross: amountMergeAcross },
     ]),
   ]
 
   if (analysis.invoices.length === 0) {
-    rows.push(createSpreadsheetRow([{ value: t('financeAnalysis.noInvoices'), styleId: 'Body', mergeAcross: 4 }]))
+    rows.push(createSpreadsheetRow([{ value: t('financeAnalysis.noInvoices'), styleId: 'Body', mergeAcross: totalColumns - 1 }]))
     return rows
   }
 
@@ -439,10 +826,15 @@ function buildInvoiceRows(options: FinanceAnalysisReportOptions) {
     { value: invoice.invoice_number, styleId: 'TextCell' },
     { value: invoice.company_name || t('receipt.noCompany'), styleId: 'TextCell' },
     { value: t(`invoice.states.${invoice.status}`), styleId: 'TextCell' },
-    currencyCell(invoice.total_amount),
+    currencyCell(invoice.total_amount, 'CurrencyCell', amountMergeAcross),
   ])))
 
   return rows
+}
+
+function getReceiptDateValue(receipt: FinanceAnalysisReceiptItem, receiptDateField: FinanceAnalysisReceiptDateField) {
+  if (receiptDateField === 'reimbursement_submitted_at') return receipt.reimbursement_submitted_at || receipt.receipt_date
+  return receipt.receipt_date
 }
 
 function getInvoiceDateValue(invoice: FinanceAnalysisInvoiceItem, invoiceDateField: FinanceAnalysisInvoiceDateField) {
@@ -476,7 +868,7 @@ function buildReceiptOverviewAggregates(options: FinanceAnalysisReportOptions) {
     options.analysis.receipts.forEach((receipt) => {
       pushAggregate(
         '',
-        options.exportSplitByMonth ? receipt.receipt_date.slice(0, 7) : '',
+        options.exportSplitByMonth ? getReceiptDateValue(receipt, options.receiptDateField).slice(0, 7) : '',
         options.exportSplitByPaymentStatus ? receipt.status : '',
         1,
         receipt.total_amount,
@@ -533,9 +925,9 @@ function buildReceiptOverviewRows(options: FinanceAnalysisReportOptions) {
 
   const mergeAcross = Math.max(headerCells.length - 1, 0)
   const rows = [
-    createSpreadsheetRow([{ value: t('financeAnalysis.receiptOverviewExportTitle'), styleId: 'Title', mergeAcross }], 24),
-    createSpreadsheetRow([{ value: t('financeAnalysis.periodLabel', { start: formatDate(startDate), end: formatDate(endDate) }), styleId: 'Subtitle', mergeAcross }]),
-    createSpreadsheetRow([{ value: t('financeAnalysis.countLabel', { count: groupedRows.length }), styleId: 'BodyMuted', mergeAcross }]),
+    createBandRow(mergeAcross + 1, t('financeAnalysis.receiptOverviewExportTitle'), 'Title', 20),
+    createBandRow(mergeAcross + 1, t('financeAnalysis.periodLabel', { start: formatDate(startDate), end: formatDate(endDate) }), 'Subtitle'),
+    createBandRow(mergeAcross + 1, t('financeAnalysis.countLabel', { count: groupedRows.length }), 'BodyMuted'),
     createSpreadsheetRow(headerCells),
   ]
 
@@ -640,9 +1032,9 @@ function buildInvoiceOverviewRows(options: FinanceAnalysisReportOptions) {
 
   const mergeAcross = Math.max(headerCells.length - 1, 0)
   const rows = [
-    createSpreadsheetRow([{ value: t('financeAnalysis.invoiceOverviewExportTitle'), styleId: 'Title', mergeAcross }], 24),
-    createSpreadsheetRow([{ value: t('financeAnalysis.periodLabel', { start: formatDate(startDate), end: formatDate(endDate) }), styleId: 'Subtitle', mergeAcross }]),
-    createSpreadsheetRow([{ value: t('financeAnalysis.countLabel', { count: groupedRows.length }), styleId: 'BodyMuted', mergeAcross }]),
+    createBandRow(mergeAcross + 1, t('financeAnalysis.invoiceOverviewExportTitle'), 'Title', 20),
+    createBandRow(mergeAcross + 1, t('financeAnalysis.periodLabel', { start: formatDate(startDate), end: formatDate(endDate) }), 'Subtitle'),
+    createBandRow(mergeAcross + 1, t('financeAnalysis.countLabel', { count: groupedRows.length }), 'BodyMuted'),
     createSpreadsheetRow(headerCells),
   ]
 
@@ -664,12 +1056,360 @@ function buildInvoiceOverviewRows(options: FinanceAnalysisReportOptions) {
   return rows
 }
 
+function buildCashCountOverviewAggregates(options: FinanceAnalysisReportOptions) {
+  const groups = new Map<string, CashCountOverviewAggregate>()
+
+  const pushAggregate = (
+    groupLabel: string,
+    monthKey: string,
+    cashCountCount: number,
+    registerCount: number,
+    totalBeforeAmount: number,
+    totalAfterAmount: number,
+    totalDifference: number,
+  ) => {
+    const key = [groupLabel, monthKey].join('|')
+    const current = groups.get(key)
+    if (current) {
+      current.cashCountCount += cashCountCount
+      current.registerCount += registerCount
+      current.totalBeforeAmount += totalBeforeAmount
+      current.totalAfterAmount += totalAfterAmount
+      current.totalDifference += totalDifference
+      return
+    }
+
+    groups.set(key, {
+      groupLabel,
+      monthKey,
+      cashCountCount,
+      registerCount,
+      totalBeforeAmount,
+      totalAfterAmount,
+      totalDifference,
+    })
+  }
+
+  buildCashCountExportRows(options).forEach((cashCount) => {
+    pushAggregate(
+      options.exportGrouping === 'costCentres' ? cashCount.costCentreLabel : '',
+      options.exportSplitByMonth ? cashCount.countedAfterAt.slice(0, 7) : '',
+      1,
+      cashCount.registerCount,
+      cashCount.totalBeforeAmount,
+      cashCount.totalAfterAmount,
+      cashCount.totalDifference,
+    )
+  })
+
+  return Array.from(groups.values())
+    .map(group => ({
+      ...group,
+      cashCountCount: Number(group.cashCountCount.toFixed(0)),
+      registerCount: Number(group.registerCount.toFixed(0)),
+      totalBeforeAmount: Number(group.totalBeforeAmount.toFixed(2)),
+      totalAfterAmount: Number(group.totalAfterAmount.toFixed(2)),
+      totalDifference: Number(group.totalDifference.toFixed(2)),
+    }))
+    .sort((left, right) => {
+      if (left.groupLabel !== right.groupLabel) return left.groupLabel.localeCompare(right.groupLabel)
+      return left.monthKey.localeCompare(right.monthKey)
+    })
+}
+
+function buildCashCountOverviewRows(options: FinanceAnalysisReportOptions) {
+  const { t, locale, startDate, endDate, formatDate } = options
+  const groupedRows = buildCashCountOverviewAggregates(options)
+  const hideBalances = options.exportGrouping === 'costCentres'
+  const headerCells: SpreadsheetCell[] = []
+
+  if (options.exportGrouping === 'costCentres') {
+    headerCells.push({ value: t('financeAnalysis.exportGroupingCostCentres'), styleId: 'Header' })
+  }
+  if (options.exportSplitByMonth) headerCells.push({ value: t('financeAnalysis.quickMonth'), styleId: 'Header' })
+  headerCells.push({ value: t('financeAnalysis.countHeader'), styleId: 'Header' })
+  headerCells.push({ value: t('financeAnalysis.cashCards.registers'), styleId: 'Header' })
+  if (!hideBalances) {
+    headerCells.push({ value: t('financeAnalysis.cashCards.totalBefore'), styleId: 'Header' })
+    headerCells.push({ value: t('financeAnalysis.cashCards.totalAfter'), styleId: 'Header' })
+  }
+  headerCells.push({ value: t('financeAnalysis.cards.cashCountRevenue'), styleId: 'Header' })
+
+  const mergeAcross = Math.max(headerCells.length - 1, 0)
+  const rows = [
+    createBandRow(mergeAcross + 1, t('financeAnalysis.cashCountOverviewExportTitle'), 'Title', 20),
+    createBandRow(mergeAcross + 1, t('financeAnalysis.periodLabel', { start: formatDate(startDate), end: formatDate(endDate) }), 'Subtitle'),
+    createBandRow(mergeAcross + 1, t('financeAnalysis.countLabel', { count: groupedRows.length }), 'BodyMuted'),
+    createSpreadsheetRow(headerCells),
+  ]
+
+  if (groupedRows.length === 0) {
+    rows.push(createSpreadsheetRow([{ value: t('financeAnalysis.noCashCounts'), styleId: 'Body', mergeAcross }]))
+    return rows
+  }
+
+  rows.push(...groupedRows.map(group => {
+    const cells: SpreadsheetCell[] = []
+    if (options.exportGrouping === 'costCentres') cells.push({ value: group.groupLabel, styleId: 'TextCell' })
+    if (options.exportSplitByMonth) cells.push({ value: formatMonthKey(group.monthKey, locale), styleId: 'TextCell' })
+    cells.push(countCell(group.cashCountCount))
+    cells.push(countCell(group.registerCount))
+    if (!hideBalances) {
+      cells.push(currencyCell(group.totalBeforeAmount))
+      cells.push(currencyCell(group.totalAfterAmount))
+    }
+    cells.push(currencyCell(group.totalDifference, signedCurrencyStyle(group.totalDifference)))
+    return createSpreadsheetRow(cells)
+  }))
+
+  return rows
+}
+
+function buildAnnualClosingRows(options: FinanceAnalysisReportOptions, includeBudgetComparison: boolean) {
+  const { t, startDate, endDate, formatDate, costCentres, comparisonBudgetLines, comparisonBudgetLabel } = options
+  const actualOwnAmounts = buildActualOwnAmountsByCostCentreId(options)
+  const budgetOwnAmounts = buildBudgetOwnAmountsByCostCentreId(comparisonBudgetLines)
+  const visibleCostCentres = buildVisibleStatementCostCentres(options, actualOwnAmounts)
+  const actualSummaryByCostCentre = buildStatementSummaryMap(costCentres, visibleCostCentres, actualOwnAmounts)
+  const budgetSummaryByCostCentre = buildStatementSummaryMap(costCentres, visibleCostCentres, budgetOwnAmounts)
+  const compareBudget = includeBudgetComparison && options.compareToBudget && Boolean(comparisonBudgetLines?.length)
+
+  const actualTotals = visibleCostCentres
+    .filter(row => row.depth === 0)
+    .reduce((totals, row) => {
+      const summary = actualSummaryByCostCentre.get(row.id)
+      if (!summary) return totals
+      totals.expense += summary.totalExpense
+      totals.income += summary.totalIncome
+      return totals
+    }, { expense: 0, income: 0 })
+
+  const budgetTotals = visibleCostCentres
+    .filter(row => row.depth === 0)
+    .reduce((totals, row) => {
+      const summary = budgetSummaryByCostCentre.get(row.id)
+      if (!summary) return totals
+      totals.expense += summary.totalExpense
+      totals.income += summary.totalIncome
+      return totals
+    }, { expense: 0, income: 0 })
+
+  const actualSaldo = roundCurrency(actualTotals.income - actualTotals.expense)
+  const budgetSaldo = roundCurrency(budgetTotals.income - budgetTotals.expense)
+  const totalColumns = compareBudget ? 11 : 5
+  const rowMergeAcross = totalColumns - 1
+
+  const rows = [
+    createBandRow(totalColumns, compareBudget ? t('financeAnalysis.annualClosingComparisonTitle') : t('financeAnalysis.annualClosingTitle'), 'Title', 22),
+    createBandRow(totalColumns, t('financeAnalysis.periodLabel', { start: formatDate(startDate), end: formatDate(endDate) }), 'Subtitle'),
+  ]
+
+  if (compareBudget && comparisonBudgetLabel) {
+    rows.push(createSpreadsheetRow([
+      { value: t('financeAnalysis.compareBudgetLabel'), styleId: 'Label' },
+      { value: comparisonBudgetLabel, styleId: 'Body', mergeAcross: totalColumns - 2 },
+    ]))
+  }
+
+  rows.push(
+    createBandRow(totalColumns, '', 'BodyMuted', 7),
+    createBandRow(totalColumns, t('financeAnalysis.analysisTitle'), 'Section', 19),
+    createSpreadsheetRow([
+      { value: '', styleId: 'Header' },
+      { value: '', styleId: 'Header' },
+      { value: t('financeAnalysis.annualClosingActual'), styleId: 'Header', mergeAcross: 2 },
+      ...(compareBudget ? [
+        { value: t('financeAnalysis.annualClosingBudget'), styleId: 'Header', mergeAcross: 2 },
+        { value: t('financeAnalysis.differenceHeader'), styleId: 'Header', mergeAcross: 2 },
+      ] : []),
+    ]),
+    createSpreadsheetRow([
+      { value: t('financeAnalysis.annualClosingCombinedAmounts'), styleId: 'GroupTextCell', mergeAcross: 1 },
+      currencyCell(roundCurrency(actualTotals.expense), 'GroupCurrencyCell'),
+      currencyCell(roundCurrency(actualTotals.income), 'GroupCurrencyCell'),
+      currencyCell(actualSaldo, groupSignedCurrencyStyle(actualSaldo)),
+      ...(compareBudget ? [
+        currencyCell(roundCurrency(budgetTotals.expense), 'GroupCurrencyCell'),
+        currencyCell(roundCurrency(budgetTotals.income), 'GroupCurrencyCell'),
+        currencyCell(budgetSaldo, groupSignedCurrencyStyle(budgetSaldo)),
+        currencyCell(roundCurrency(actualTotals.expense - budgetTotals.expense), groupSignedCurrencyStyle(actualTotals.expense - budgetTotals.expense)),
+        currencyCell(roundCurrency(actualTotals.income - budgetTotals.income), groupSignedCurrencyStyle(actualTotals.income - budgetTotals.income)),
+        currencyCell(roundCurrency(actualSaldo - budgetSaldo), groupSignedCurrencyStyle(actualSaldo - budgetSaldo)),
+      ] : []),
+    ]),
+    createBandRow(totalColumns, '', 'BodyMuted', 7),
+  )
+
+  const headerCells: SpreadsheetCell[] = [
+    { value: t('budget.costCentre'), styleId: 'Header' },
+    { value: t('financeAnalysis.annualClosingCategoryLabel'), styleId: 'Header' },
+    { value: t('financeAnalysis.annualClosingActual'), styleId: 'Header', mergeAcross: 2 },
+  ]
+
+  if (compareBudget) {
+    headerCells.push(
+      { value: t('financeAnalysis.annualClosingBudget'), styleId: 'Header', mergeAcross: 2 },
+      { value: t('financeAnalysis.differenceHeader'), styleId: 'Header', mergeAcross: 2 },
+    )
+  }
+
+  rows.push(createSpreadsheetRow(headerCells))
+  rows.push(createSpreadsheetRow([
+    { value: '', styleId: 'Header' },
+    { value: '', styleId: 'Header' },
+    { value: t('budget.expenses'), styleId: 'Header' },
+    { value: t('budget.income'), styleId: 'Header' },
+    { value: t('budget.saldo'), styleId: 'Header' },
+    ...(compareBudget ? [
+      { value: t('budget.expenses'), styleId: 'Header' },
+      { value: t('budget.income'), styleId: 'Header' },
+      { value: t('budget.saldo'), styleId: 'Header' },
+      { value: t('budget.expenses'), styleId: 'Header' },
+      { value: t('budget.income'), styleId: 'Header' },
+      { value: t('budget.saldo'), styleId: 'Header' },
+    ] : []),
+  ]))
+
+  if (visibleCostCentres.length === 0) {
+    rows.push(createSpreadsheetRow([{ value: t('financeAnalysis.noCostCentres'), styleId: 'Body', mergeAcross: rowMergeAcross }]))
+    return rows
+  }
+
+  visibleCostCentres.forEach((costCentre, index) => {
+    const actual = actualSummaryByCostCentre.get(costCentre.id) ?? {
+      ownExpense: 0, ownIncome: 0, ownSaldo: 0,
+      childExpense: 0, childIncome: 0, childSaldo: 0,
+      totalExpense: 0, totalIncome: 0, totalSaldo: 0,
+    }
+    const budget = budgetSummaryByCostCentre.get(costCentre.id) ?? {
+      ownExpense: 0, ownIncome: 0, ownSaldo: 0,
+      childExpense: 0, childIncome: 0, childSaldo: 0,
+      totalExpense: 0, totalIncome: 0, totalSaldo: 0,
+    }
+
+    if (costCentre.depth === 0 && index > 0) {
+      rows.push(createBandRow(totalColumns, '', 'BodyMuted', 6))
+    }
+
+    const labelPrefix = costCentre.depth > 0 ? `${'  '.repeat(costCentre.depth)}|- ` : ''
+    const label = `${labelPrefix}${costCentre.code} - ${costCentre.name}`
+    const isGroupRow = costCentre.depth === 0
+    const textStyle = isGroupRow ? 'GroupTextCell' : 'TextCell'
+    const currencyStyle = isGroupRow ? 'GroupCurrencyCell' : 'CurrencyCell'
+    const saldoStyle = isGroupRow ? groupSignedCurrencyStyle : signedCurrencyStyle
+
+    const buildAnnualClosingValueRow = (
+      costCentreLabel: string,
+      categoryLabel: string,
+      categoryStyle: string,
+      amountExpense: number,
+      amountIncome: number,
+      amountSaldo: number,
+      budgetExpense: number,
+      budgetIncome: number,
+      budgetSaldoValue: number,
+    ) => {
+      const rowCells: SpreadsheetCell[] = [
+        { value: costCentreLabel, styleId: textStyle },
+        { value: categoryLabel, styleId: categoryStyle },
+        currencyCell(amountExpense, currencyStyle),
+        currencyCell(amountIncome, currencyStyle),
+        currencyCell(amountSaldo, saldoStyle(amountSaldo)),
+      ]
+
+      if (compareBudget) {
+        rowCells.push(
+          currencyCell(budgetExpense, currencyStyle),
+          currencyCell(budgetIncome, currencyStyle),
+          currencyCell(budgetSaldoValue, saldoStyle(budgetSaldoValue)),
+          currencyCell(roundCurrency(amountExpense - budgetExpense), saldoStyle(amountExpense - budgetExpense)),
+          currencyCell(roundCurrency(amountIncome - budgetIncome), saldoStyle(amountIncome - budgetIncome)),
+          currencyCell(roundCurrency(amountSaldo - budgetSaldoValue), saldoStyle(amountSaldo - budgetSaldoValue)),
+        )
+      }
+
+      rows.push(createSpreadsheetRow(rowCells, isGroupRow ? 18 : undefined))
+    }
+
+    if (costCentre.hasChildren) {
+      buildAnnualClosingValueRow(
+        label,
+        t('financeAnalysis.annualClosingCombinedAmounts'),
+        textStyle,
+        actual.totalExpense,
+        actual.totalIncome,
+        actual.totalSaldo,
+        budget.totalExpense,
+        budget.totalIncome,
+        budget.totalSaldo,
+      )
+      buildAnnualClosingValueRow(
+        '',
+        t('financeAnalysis.annualClosingOwnAmounts'),
+        textStyle,
+        actual.ownExpense,
+        actual.ownIncome,
+        actual.ownSaldo,
+        0,
+        0,
+        0,
+      )
+      buildAnnualClosingValueRow(
+        '',
+        t('financeAnalysis.annualClosingChildAmounts'),
+        textStyle,
+        actual.childExpense,
+        actual.childIncome,
+        actual.childSaldo,
+        0,
+        0,
+        0,
+      )
+      return
+    }
+
+    buildAnnualClosingValueRow(
+      label,
+      '',
+      textStyle,
+      actual.ownExpense,
+      actual.ownIncome,
+      actual.ownSaldo,
+      budget.totalExpense,
+      budget.totalIncome,
+      budget.totalSaldo,
+    )
+  })
+
+  return rows
+}
+
+function buildAnnualClosingColumnWidths(options: FinanceAnalysisReportOptions) {
+  return options.compareToBudget && options.comparisonBudgetLines?.length
+    ? [200, 145, 54, 54, 54, 54, 54, 54, 54, 54, 54]
+    : [220, 155, 62, 62, 62]
+}
+
+function hasBudgetComparisonSheet(options: FinanceAnalysisReportOptions) {
+  return options.compareToBudget && Boolean(options.comparisonBudgetLines?.length)
+}
+
 function buildReceiptOverviewColumnWidths(options: FinanceAnalysisReportOptions) {
   const widths: number[] = []
-  if (options.exportGrouping !== 'none') widths.push(210)
-  if (options.exportSplitByMonth) widths.push(120)
-  if (options.exportSplitByPaymentStatus) widths.push(120)
-  widths.push(85, 120)
+  if (options.exportGrouping !== 'none') widths.push(185)
+  if (options.exportSplitByMonth) widths.push(92)
+  if (options.exportSplitByPaymentStatus) widths.push(112)
+  widths.push(72, 100)
+  return widths
+}
+
+function buildCashCountOverviewColumnWidths(options: FinanceAnalysisReportOptions) {
+  const widths: number[] = []
+  if (options.exportGrouping === 'costCentres') widths.push(190)
+  if (options.exportSplitByMonth) widths.push(92)
+  widths.push(70, 70)
+  if (options.exportGrouping !== 'costCentres') widths.push(98, 98)
+  widths.push(100)
   return widths
 }
 
@@ -688,20 +1428,97 @@ function scaleColumnWidthsToTotal(widths: number[], targetTotal: number) {
   return scaledWidths
 }
 
+function prependWorksheetBranding(
+  sheet: SpreadsheetWorksheetDefinition,
+  logo?: FinanceAnalysisReportLogo | null,
+): SpreadsheetWorksheetDefinition {
+  if (!logo) {
+    return {
+      ...sheet,
+      marginLeft: WORKSHEET_MARGIN,
+      marginRight: WORKSHEET_MARGIN,
+      marginTop: WORKSHEET_MARGIN,
+      marginBottom: WORKSHEET_MARGIN,
+    }
+  }
+
+  const lastColumnIndex = Math.max(sheet.columnWidths.length - 1, 0)
+  const logoWidth = sheet.columnWidths.length <= 4 ? 2 : 3
+  const firstLogoColumn = Math.max(lastColumnIndex - (logoWidth - 1), 0)
+  const availableWidthUnits = sheet.columnWidths
+    .slice(firstLogoColumn, lastColumnIndex + 1)
+    .reduce((sum, width) => sum + width, 0)
+  const lastColumnWidthUnits = sheet.columnWidths[lastColumnIndex] ?? 40
+  const sourceRatio = logo.width > 0 && logo.height > 0 ? logo.width / logo.height : 1
+  const maxWidthPx = Math.max(availableWidthUnits * 0.72, 48)
+  const maxHeightPx = 24
+  let displayHeightPx = maxHeightPx
+  let displayWidthPx = displayHeightPx * sourceRatio
+
+  if (displayWidthPx > maxWidthPx) {
+    displayWidthPx = maxWidthPx
+    displayHeightPx = displayWidthPx / Math.max(sourceRatio, 0.1)
+  }
+
+  const lastColumnWidthPx = Math.max(lastColumnWidthUnits, displayWidthPx)
+  const rightPaddingPx = 6
+  const columnOffsetPx = Math.max(lastColumnWidthPx - displayWidthPx - rightPaddingPx, 0)
+
+  const images: SpreadsheetImageDefinition[] = [{
+    data: logo.data,
+    extension: logo.extension,
+    mimeType: logo.mimeType,
+    fileName: 'association-logo',
+    altText: 'Association logo',
+    anchor: {
+      fromColumn: lastColumnIndex,
+      fromRow: 0,
+      fromColumnOffset: Math.round(columnOffsetPx * EMU_PER_PIXEL),
+      fromRowOffset: 20000,
+      widthEmu: Math.round(displayWidthPx * EMU_PER_PIXEL),
+      heightEmu: Math.round(displayHeightPx * EMU_PER_PIXEL),
+    },
+  }]
+
+  return {
+    ...sheet,
+    marginLeft: WORKSHEET_MARGIN,
+    marginRight: WORKSHEET_MARGIN,
+    marginTop: WORKSHEET_MARGIN,
+    marginBottom: WORKSHEET_MARGIN,
+    rows: [
+      createSpreadsheetRow([{ value: '', styleId: 'BodyMuted', mergeAcross: Math.max(sheet.columnWidths.length - 1, 0) }], BRANDING_ROW_HEIGHT),
+      ...sheet.rows,
+    ],
+    images,
+  }
+}
+
 function buildWorkbook(options: FinanceAnalysisReportOptions) {
-  const overviewColumnWidths = [190, 95, 120, 120]
-  const overviewSheetTargetWidth = 780
-  const receiptColumnWidths = [95, 160, 190, 95, 85]
-  const cashCountColumnWidths = [120, 170, 110, 110, 110, 70, 90, 90]
-  const invoiceColumnWidths = [95, 150, 220, 100, 95]
+  const overviewColumnWidths = options.includeComparison && options.comparisonAnalysis
+    ? [190, 92, 118, 118]
+    : [220, 156, 156]
+  const overviewSheetTargetWidth = 760
+  const receiptColumnWidths = options.includeComparison
+    ? [86, 138, 172, 90, 70, 70]
+    : [86, 138, 172, 90, 82]
+  const cashCountColumnWidths = [104, 156, 98, 98, 98, 64, 82, 82, 82]
+  const invoiceColumnWidths = options.includeComparison
+    ? [86, 132, 186, 94, 70, 70]
+    : [86, 132, 186, 94, 82]
+  const annualClosingColumnWidths = buildAnnualClosingColumnWidths(options)
   const receiptOverviewColumnWidths = buildReceiptOverviewColumnWidths(options)
-  const detailSheetTargetWidth = 1100
+  const cashCountOverviewColumnWidths = buildCashCountOverviewColumnWidths(options)
+  const annualClosingSheetTargetWidth = 720
+  const detailSheetTargetWidth = 1380
   const detailSheetWidth = Math.max(
     detailSheetTargetWidth,
+    annualClosingColumnWidths.reduce((sum, width) => sum + width, 0),
     receiptColumnWidths.reduce((sum, width) => sum + width, 0),
     cashCountColumnWidths.reduce((sum, width) => sum + width, 0),
     invoiceColumnWidths.reduce((sum, width) => sum + width, 0),
     receiptOverviewColumnWidths.reduce((sum, width) => sum + width, 0),
+    cashCountOverviewColumnWidths.reduce((sum, width) => sum + width, 0),
   )
 
   const sheets: SpreadsheetWorksheetDefinition[] = [
@@ -710,8 +1527,29 @@ function buildWorkbook(options: FinanceAnalysisReportOptions) {
       columnWidths: scaleColumnWidthsToTotal(overviewColumnWidths, overviewSheetTargetWidth),
       rows: buildOverviewRows(options),
       orientation: 'portrait',
+      fitToHeight: 1,
     },
   ]
+
+  if (options.annualClosing) {
+    sheets.push({
+      name: options.t('financeAnalysis.annualClosingTitle'),
+      columnWidths: scaleColumnWidthsToTotal(buildAnnualClosingColumnWidths({ ...options, compareToBudget: false }), annualClosingSheetTargetWidth),
+      rows: buildAnnualClosingRows({ ...options, compareToBudget: false }, false),
+      orientation: 'portrait',
+      fitToHeight: 1,
+    })
+  }
+
+  if (hasBudgetComparisonSheet(options)) {
+    sheets.push({
+      name: options.t('financeAnalysis.annualClosingComparisonTitle'),
+      columnWidths: scaleColumnWidthsToTotal(annualClosingColumnWidths, detailSheetWidth),
+      rows: buildAnnualClosingRows(options, true),
+      orientation: 'landscape',
+      fitToHeight: 1,
+    })
+  }
 
   if (hasReceiptOverviewExport(options)) {
     sheets.push({
@@ -720,6 +1558,18 @@ function buildWorkbook(options: FinanceAnalysisReportOptions) {
       rows: buildReceiptOverviewRows(options),
       orientation: 'landscape',
     })
+  }
+
+  if (hasCashCountOverviewExport(options)) {
+    sheets.push({
+      name: options.t('financeAnalysis.cashCountOverviewExportTitle'),
+      columnWidths: scaleColumnWidthsToTotal(cashCountOverviewColumnWidths, detailSheetWidth),
+      rows: buildCashCountOverviewRows(options),
+      orientation: 'landscape',
+    })
+  }
+
+  if (hasReceiptOverviewExport(options)) {
     sheets.push({
       name: options.t('financeAnalysis.invoiceOverviewExportTitle'),
       columnWidths: scaleColumnWidthsToTotal(receiptOverviewColumnWidths, detailSheetWidth),
@@ -750,7 +1600,7 @@ function buildWorkbook(options: FinanceAnalysisReportOptions) {
   )
 
   return createSpreadsheetWorkbook({
-    sheets,
+    sheets: sheets.map(sheet => prependWorksheetBranding(sheet, options.logo)),
   })
 }
 

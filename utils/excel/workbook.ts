@@ -13,11 +13,42 @@ export interface SpreadsheetRowDefinition {
   height?: number
 }
 
+export type SpreadsheetImageExtension = 'png' | 'jpg' | 'jpeg'
+
+export interface SpreadsheetImageAnchor {
+  fromColumn: number
+  fromRow: number
+  toColumn?: number
+  toRow?: number
+  fromColumnOffset?: number
+  fromRowOffset?: number
+  toColumnOffset?: number
+  toRowOffset?: number
+  widthEmu?: number
+  heightEmu?: number
+}
+
+export interface SpreadsheetImageDefinition {
+  data: Uint8Array
+  extension: SpreadsheetImageExtension
+  mimeType: string
+  fileName?: string
+  altText?: string
+  anchor: SpreadsheetImageAnchor
+}
+
 export interface SpreadsheetWorksheetDefinition {
   name: string
   columnWidths: number[]
   rows: SpreadsheetRowDefinition[]
   orientation?: WorksheetOrientation
+  fitToWidth?: number
+  fitToHeight?: number
+  marginLeft?: number
+  marginRight?: number
+  marginTop?: number
+  marginBottom?: number
+  images?: SpreadsheetImageDefinition[]
 }
 
 export interface SpreadsheetWorkbookDefinition {
@@ -47,6 +78,10 @@ const STYLE_INDEX = {
   NegativeCurrencyCell: 12,
   PositiveCountCell: 13,
   NegativeCountCell: 14,
+  GroupTextCell: 15,
+  GroupCurrencyCell: 16,
+  GroupPositiveCurrencyCell: 17,
+  GroupNegativeCurrencyCell: 18,
 } as const
 
 const CRC_TABLE = createCrcTable()
@@ -125,8 +160,14 @@ function getStyleIndex(styleId?: string) {
   return STYLE_INDEX[styleId as keyof typeof STYLE_INDEX] ?? STYLE_INDEX.Body
 }
 
-function createWorksheetXml(sheet: SpreadsheetWorksheetDefinition) {
+function createWorksheetXml(sheet: Omit<SpreadsheetWorksheetDefinition, 'images'> & { images?: unknown[] }) {
   const orientation = sheet.orientation === 'portrait' ? 'portrait' : 'landscape'
+  const fitToWidth = Math.max(sheet.fitToWidth ?? 1, 1)
+  const fitToHeight = Math.max(sheet.fitToHeight ?? 0, 0)
+  const marginLeft = sheet.marginLeft ?? 0.2
+  const marginRight = sheet.marginRight ?? 0.2
+  const marginTop = sheet.marginTop ?? 0.28
+  const marginBottom = sheet.marginBottom ?? 0.28
   const merges: string[] = []
   const rowXml: string[] = []
   let maxColumn = Math.max(sheet.columnWidths.length, 1)
@@ -150,6 +191,10 @@ function createWorksheetXml(sheet: SpreadsheetWorksheetDefinition) {
       const mergeAcross = cell.mergeAcross ?? 0
       if (mergeAcross > 0) {
         merges.push(`<mergeCell ref="${reference}:${cellReference(rowIndex + 1, currentColumn + mergeAcross)}"/>`)
+        for (let offset = 1; offset <= mergeAcross; offset += 1) {
+          const mergedReference = cellReference(rowIndex + 1, currentColumn + offset)
+          cellXml.push(`<c r="${mergedReference}" s="${styleIndex}" t="inlineStr"><is><t></t></is></c>`)
+        }
       }
 
       currentColumn += mergeAcross + 1
@@ -167,7 +212,7 @@ function createWorksheetXml(sheet: SpreadsheetWorksheetDefinition) {
     .join('')
 
   return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
+<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
   <sheetPr>
     <pageSetUpPr fitToPage="1" autoPageBreaks="0"/>
   </sheetPr>
@@ -179,8 +224,10 @@ function createWorksheetXml(sheet: SpreadsheetWorksheetDefinition) {
   <cols>${columnsXml}</cols>
   <sheetData>${rowXml.join('')}</sheetData>
   ${merges.length > 0 ? `<mergeCells count="${merges.length}">${merges.join('')}</mergeCells>` : ''}
-  <pageMargins left="0.4" right="0.4" top="0.55" bottom="0.55" header="0.25" footer="0.25"/>
-  <pageSetup orientation="${orientation}" paperSize="9" fitToWidth="1" fitToHeight="0"/>
+  <printOptions horizontalCentered="1"/>
+  <pageMargins left="${marginLeft}" right="${marginRight}" top="${marginTop}" bottom="${marginBottom}" header="0.2" footer="0.2"/>
+  <pageSetup orientation="${orientation}" paperSize="9" fitToWidth="${fitToWidth}" fitToHeight="${fitToHeight}"/>
+  ${sheet.images?.length ? '<drawing r:id="rId1"/>' : ''}
 </worksheet>`
 }
 
@@ -219,20 +266,49 @@ function createRootRelationshipsXml() {
 </Relationships>`
 }
 
-function createContentTypesXml(sheetCount: number) {
+function createWorksheetRelationshipsXml(drawingIndex: number) {
+  return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+  <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/drawing" Target="../drawings/drawing${drawingIndex}.xml"/>
+</Relationships>`
+}
+
+function createDrawingRelationshipsXml(images: PreparedSheetImage[]) {
+  const imageRelationships = images.map((image, index) => {
+    return `<Relationship Id="rId${index + 1}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="../media/${xmlEscape(image.targetFileName)}"/>`
+  }).join('')
+
+  return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+  ${imageRelationships}
+</Relationships>`
+}
+
+function createContentTypesXml(sheetCount: number, drawingCount: number, imageExtensions: SpreadsheetImageExtension[]) {
   const worksheetOverrides = Array.from({ length: sheetCount }, (_, index) => {
     return `<Override PartName="/xl/worksheets/sheet${index + 1}.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>`
   }).join('')
+  const drawingOverrides = Array.from({ length: drawingCount }, (_, index) => {
+    return `<Override PartName="/xl/drawings/drawing${index + 1}.xml" ContentType="application/vnd.openxmlformats-officedocument.drawing+xml"/>`
+  }).join('')
+  const imageDefaults = Array.from(new Set(imageExtensions))
+    .map((extension) => {
+      const contentType = extension === 'png' ? 'image/png' : 'image/jpeg'
+      return `<Default Extension="${extension}" ContentType="${contentType}"/>`
+    })
+    .join('')
 
   return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
   <Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>
   <Default Extension="xml" ContentType="application/xml"/>
+  ${imageDefaults}
   <Override PartName="/docProps/app.xml" ContentType="application/vnd.openxmlformats-officedocument.extended-properties+xml"/>
   <Override PartName="/docProps/core.xml" ContentType="application/vnd.openxmlformats-package.core-properties+xml"/>
   <Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>
   <Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>
   ${worksheetOverrides}
+  ${drawingOverrides}
 </Types>`
 }
 
@@ -277,40 +353,59 @@ function createStylesXml() {
     <numFmt numFmtId="167" formatCode="+0;-0;0"/>
   </numFmts>
   <fonts count="9">
-    <font><sz val="11"/><color rgb="FF0F172A"/><name val="Calibri"/><family val="2"/></font>
-    <font><b/><sz val="16"/><color rgb="FF9A3412"/><name val="Calibri"/><family val="2"/></font>
-    <font><i/><sz val="11"/><color rgb="FF64748B"/><name val="Calibri"/><family val="2"/></font>
-    <font><b/><sz val="12"/><color rgb="FF0F172A"/><name val="Calibri"/><family val="2"/></font>
-    <font><b/><sz val="11"/><color rgb="FF334155"/><name val="Calibri"/><family val="2"/></font>
-    <font><b/><sz val="11"/><color rgb="FFFFFFFF"/><name val="Calibri"/><family val="2"/></font>
-    <font><sz val="11"/><color rgb="FF64748B"/><name val="Calibri"/><family val="2"/></font>
-    <font><b/><sz val="11"/><color rgb="FF047857"/><name val="Calibri"/><family val="2"/></font>
-    <font><b/><sz val="11"/><color rgb="FFB91C1C"/><name val="Calibri"/><family val="2"/></font>
+    <font><sz val="10"/><color rgb="FF171717"/><name val="Aptos"/><family val="2"/></font>
+    <font><b/><sz val="16"/><color rgb="FF171717"/><name val="Aptos Display"/><family val="2"/></font>
+    <font><i/><sz val="10"/><color rgb="FF746A6A"/><name val="Aptos"/><family val="2"/></font>
+    <font><b/><sz val="11"/><color rgb="FF171717"/><name val="Aptos"/><family val="2"/></font>
+    <font><b/><sz val="10"/><color rgb="FF171717"/><name val="Aptos"/><family val="2"/></font>
+    <font><b/><sz val="10"/><color rgb="FFFFFFFF"/><name val="Aptos"/><family val="2"/></font>
+    <font><sz val="10"/><color rgb="FF746A6A"/><name val="Aptos"/><family val="2"/></font>
+    <font><b/><sz val="10"/><color rgb="FF3E9B72"/><name val="Aptos"/><family val="2"/></font>
+    <font><b/><sz val="10"/><color rgb="FFC26268"/><name val="Aptos"/><family val="2"/></font>
   </fonts>
   <fills count="5">
     <fill><patternFill patternType="none"/></fill>
     <fill><patternFill patternType="gray125"/></fill>
-    <fill><patternFill patternType="solid"><fgColor rgb="FFFFF7ED"/><bgColor indexed="64"/></patternFill></fill>
-    <fill><patternFill patternType="solid"><fgColor rgb="FFF1F5F9"/><bgColor indexed="64"/></patternFill></fill>
-    <fill><patternFill patternType="solid"><fgColor rgb="FF0F172A"/><bgColor indexed="64"/></patternFill></fill>
+    <fill><patternFill patternType="solid"><fgColor rgb="FFF8F5F5"/><bgColor indexed="64"/></patternFill></fill>
+    <fill><patternFill patternType="solid"><fgColor rgb="FFE9D4D6"/><bgColor indexed="64"/></patternFill></fill>
+    <fill><patternFill patternType="solid"><fgColor rgb="FFCC3B43"/><bgColor indexed="64"/></patternFill></fill>
   </fills>
-  <borders count="3">
+  <borders count="4">
     <border><left/><right/><top/><bottom/><diagonal/></border>
-    <border><left/><right/><top/><bottom style="thin"><color rgb="FFE2E8F0"/></bottom><diagonal/></border>
-    <border><left/><right/><top/><bottom style="thin"><color rgb="FFCBD5E1"/></bottom><diagonal/></border>
+    <border>
+      <left style="thin"><color rgb="FFD5C4C5"/></left>
+      <right style="thin"><color rgb="FFD5C4C5"/></right>
+      <top style="thin"><color rgb="FFD5C4C5"/></top>
+      <bottom style="thin"><color rgb="FFD5C4C5"/></bottom>
+      <diagonal/>
+    </border>
+    <border>
+      <left style="thin"><color rgb="FFC89DA0"/></left>
+      <right style="thin"><color rgb="FFC89DA0"/></right>
+      <top style="medium"><color rgb="FFC89DA0"/></top>
+      <bottom style="medium"><color rgb="FFC89DA0"/></bottom>
+      <diagonal/>
+    </border>
+    <border>
+      <left style="thin"><color rgb="FFCC3B43"/></left>
+      <right style="thin"><color rgb="FFCC3B43"/></right>
+      <top style="thin"><color rgb="FFCC3B43"/></top>
+      <bottom style="medium"><color rgb="FFB13A42"/></bottom>
+      <diagonal/>
+    </border>
   </borders>
   <cellStyleXfs count="1">
     <xf numFmtId="0" fontId="0" fillId="0" borderId="0"/>
   </cellStyleXfs>
-  <cellXfs count="15">
+  <cellXfs count="19">
     <xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/>
-    <xf numFmtId="0" fontId="1" fillId="2" borderId="0" xfId="0" applyFont="1" applyFill="1" applyAlignment="1"><alignment vertical="center" wrapText="1"/></xf>
+    <xf numFmtId="0" fontId="1" fillId="2" borderId="3" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment vertical="center" wrapText="1"/></xf>
     <xf numFmtId="0" fontId="2" fillId="0" borderId="0" xfId="0" applyFont="1" applyAlignment="1"><alignment vertical="center" wrapText="1"/></xf>
     <xf numFmtId="0" fontId="3" fillId="3" borderId="2" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment vertical="center" wrapText="1"/></xf>
-    <xf numFmtId="0" fontId="4" fillId="0" borderId="0" xfId="0" applyFont="1" applyAlignment="1"><alignment vertical="center" wrapText="1"/></xf>
-    <xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0" applyAlignment="1"><alignment vertical="center" wrapText="1"/></xf>
+    <xf numFmtId="0" fontId="4" fillId="2" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment vertical="center" wrapText="1"/></xf>
+    <xf numFmtId="0" fontId="0" fillId="0" borderId="1" xfId="0" applyBorder="1" applyAlignment="1"><alignment vertical="center" wrapText="1"/></xf>
     <xf numFmtId="0" fontId="6" fillId="0" borderId="0" xfId="0" applyFont="1" applyAlignment="1"><alignment vertical="center" wrapText="1"/></xf>
-    <xf numFmtId="0" fontId="5" fillId="4" borderId="0" xfId="0" applyFont="1" applyFill="1" applyAlignment="1"><alignment horizontal="center" vertical="center" wrapText="1"/></xf>
+    <xf numFmtId="0" fontId="5" fillId="4" borderId="3" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center" wrapText="1"/></xf>
     <xf numFmtId="0" fontId="0" fillId="0" borderId="1" xfId="0" applyBorder="1" applyAlignment="1"><alignment vertical="center" wrapText="1"/></xf>
     <xf numFmtId="164" fontId="0" fillId="0" borderId="1" xfId="0" applyBorder="1" applyNumberFormat="1" applyAlignment="1"><alignment horizontal="right" vertical="center"/></xf>
     <xf numFmtId="165" fontId="0" fillId="0" borderId="1" xfId="0" applyBorder="1" applyNumberFormat="1" applyAlignment="1"><alignment horizontal="right" vertical="center"/></xf>
@@ -318,6 +413,10 @@ function createStylesXml() {
     <xf numFmtId="166" fontId="8" fillId="0" borderId="1" xfId="0" applyFont="1" applyBorder="1" applyNumberFormat="1" applyAlignment="1"><alignment horizontal="right" vertical="center"/></xf>
     <xf numFmtId="167" fontId="7" fillId="0" borderId="1" xfId="0" applyFont="1" applyBorder="1" applyNumberFormat="1" applyAlignment="1"><alignment horizontal="right" vertical="center"/></xf>
     <xf numFmtId="167" fontId="8" fillId="0" borderId="1" xfId="0" applyFont="1" applyBorder="1" applyNumberFormat="1" applyAlignment="1"><alignment horizontal="right" vertical="center"/></xf>
+    <xf numFmtId="0" fontId="4" fillId="2" borderId="2" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment vertical="center" wrapText="1"/></xf>
+    <xf numFmtId="164" fontId="4" fillId="2" borderId="2" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyNumberFormat="1" applyAlignment="1"><alignment horizontal="right" vertical="center"/></xf>
+    <xf numFmtId="166" fontId="7" fillId="2" borderId="2" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyNumberFormat="1" applyAlignment="1"><alignment horizontal="right" vertical="center"/></xf>
+    <xf numFmtId="166" fontId="8" fillId="2" borderId="2" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyNumberFormat="1" applyAlignment="1"><alignment horizontal="right" vertical="center"/></xf>
   </cellXfs>
   <cellStyles count="1">
     <cellStyle name="Normal" xfId="0" builtinId="0"/>
@@ -325,6 +424,84 @@ function createStylesXml() {
   <dxfs count="0"/>
   <tableStyles count="0" defaultTableStyle="TableStyleMedium2" defaultPivotStyle="PivotStyleLight16"/>
 </styleSheet>`
+}
+
+interface PreparedSheetImage {
+  targetFileName: string
+  image: SpreadsheetImageDefinition
+}
+
+type PreparedWorksheetDefinition = Omit<SpreadsheetWorksheetDefinition, 'images'> & {
+  images?: PreparedSheetImage[]
+}
+
+function createDrawingXml(images: PreparedSheetImage[]) {
+  const anchors = images.map((entry, index) => {
+    const {
+      fromColumn,
+      fromRow,
+      toColumn,
+      toRow,
+      fromColumnOffset = 0,
+      fromRowOffset = 0,
+      toColumnOffset = 0,
+      toRowOffset = 0,
+      widthEmu,
+      heightEmu,
+    } = entry.image.anchor
+    const pictureName = entry.image.fileName ?? `Image ${index + 1}`
+    const altText = entry.image.altText ?? pictureName
+    const pictureXml = `<xdr:pic>
+    <xdr:nvPicPr>
+      <xdr:cNvPr id="${index + 1}" name="${xmlEscape(pictureName)}" descr="${xmlEscape(altText)}"/>
+      <xdr:cNvPicPr><a:picLocks noChangeAspect="1"/></xdr:cNvPicPr>
+    </xdr:nvPicPr>
+    <xdr:blipFill>
+      <a:blip r:embed="rId${index + 1}"/>
+      <a:stretch><a:fillRect/></a:stretch>
+    </xdr:blipFill>
+    <xdr:spPr>
+      <a:xfrm><a:off x="0" y="0"/><a:ext cx="0" cy="0"/></a:xfrm>
+      <a:prstGeom prst="rect"><a:avLst/></a:prstGeom>
+    </xdr:spPr>
+  </xdr:pic>`
+
+    if (typeof widthEmu === 'number' && typeof heightEmu === 'number') {
+      return `<xdr:oneCellAnchor>
+  <xdr:from>
+    <xdr:col>${fromColumn}</xdr:col>
+    <xdr:colOff>${fromColumnOffset}</xdr:colOff>
+    <xdr:row>${fromRow}</xdr:row>
+    <xdr:rowOff>${fromRowOffset}</xdr:rowOff>
+  </xdr:from>
+  <xdr:ext cx="${widthEmu}" cy="${heightEmu}"/>
+  ${pictureXml}
+  <xdr:clientData/>
+</xdr:oneCellAnchor>`
+    }
+
+    return `<xdr:twoCellAnchor editAs="oneCell">
+  <xdr:from>
+    <xdr:col>${fromColumn}</xdr:col>
+    <xdr:colOff>${fromColumnOffset}</xdr:colOff>
+    <xdr:row>${fromRow}</xdr:row>
+    <xdr:rowOff>${fromRowOffset}</xdr:rowOff>
+  </xdr:from>
+  <xdr:to>
+    <xdr:col>${toColumn}</xdr:col>
+    <xdr:colOff>${toColumnOffset}</xdr:colOff>
+    <xdr:row>${toRow}</xdr:row>
+    <xdr:rowOff>${toRowOffset}</xdr:rowOff>
+  </xdr:to>
+  ${pictureXml}
+  <xdr:clientData/>
+</xdr:twoCellAnchor>`
+  }).join('')
+
+  return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<xdr:wsDr xmlns:xdr="http://schemas.openxmlformats.org/drawingml/2006/spreadsheetDrawing" xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
+  ${anchors}
+</xdr:wsDr>`
 }
 
 function getDosDateTime(date: Date) {
@@ -435,24 +612,59 @@ export function createSpreadsheetRow(cells: SpreadsheetCell[], height?: number):
   }
 }
 
-export function createSpreadsheetWorkbook({ sheets, author = 'FSi Accounting', company = 'FSi Accounting' }: SpreadsheetWorkbookDefinition) {
-  const preparedSheets = sheets.map(sheet => ({
+export function createSpreadsheetWorkbook({ sheets, stylesXml, author = 'FSi Accounting', company = 'FSi Accounting' }: SpreadsheetWorkbookDefinition) {
+  const imageExtensions: SpreadsheetImageExtension[] = []
+  let globalImageIndex = 0
+  const preparedSheets: PreparedWorksheetDefinition[] = sheets.map(sheet => ({
     ...sheet,
     name: sanitizeSheetName(sheet.name),
+    images: sheet.images?.map((image) => {
+      globalImageIndex += 1
+      imageExtensions.push(image.extension)
+      const extension = image.extension === 'jpg' ? 'jpg' : image.extension
+      return {
+        targetFileName: `image${globalImageIndex}.${extension}`,
+        image,
+      }
+    }),
   }))
+  const sheetsWithImages = preparedSheets.filter(sheet => sheet.images?.length)
+  const workbookStylesXml = stylesXml ?? createStylesXml()
 
   const entries = [
-    { name: '[Content_Types].xml', data: encodeXml(createContentTypesXml(preparedSheets.length)) },
+    { name: '[Content_Types].xml', data: encodeXml(createContentTypesXml(preparedSheets.length, sheetsWithImages.length, imageExtensions)) },
     { name: '_rels/.rels', data: encodeXml(createRootRelationshipsXml()) },
     { name: 'docProps/app.xml', data: encodeXml(createAppPropertiesXml(preparedSheets.map(sheet => sheet.name), company)) },
     { name: 'docProps/core.xml', data: encodeXml(createCorePropertiesXml(author)) },
     { name: 'xl/workbook.xml', data: encodeXml(createWorkbookXml(preparedSheets.map(sheet => sheet.name))) },
     { name: 'xl/_rels/workbook.xml.rels', data: encodeXml(createWorkbookRelationshipsXml(preparedSheets.length)) },
-    { name: 'xl/styles.xml', data: encodeXml(createStylesXml()) },
+    { name: 'xl/styles.xml', data: encodeXml(workbookStylesXml) },
     ...preparedSheets.map((sheet, index) => ({
       name: `xl/worksheets/sheet${index + 1}.xml`,
       data: encodeXml(createWorksheetXml(sheet)),
     })),
+    ...(() => {
+      let drawingIndex = 0
+
+      return preparedSheets.flatMap((sheet, index) => {
+      if (!sheet.images?.length) return []
+
+      drawingIndex += 1
+      return [{
+        name: `xl/worksheets/_rels/sheet${index + 1}.xml.rels`,
+        data: encodeXml(createWorksheetRelationshipsXml(drawingIndex)),
+      }, {
+        name: `xl/drawings/drawing${drawingIndex}.xml`,
+        data: encodeXml(createDrawingXml(sheet.images)),
+      }, {
+        name: `xl/drawings/_rels/drawing${drawingIndex}.xml.rels`,
+        data: encodeXml(createDrawingRelationshipsXml(sheet.images)),
+      }, ...sheet.images.map(image => ({
+        name: `xl/media/${image.targetFileName}`,
+        data: image.image.data,
+      }))]
+      })
+    })(),
   ]
 
   return new Blob([createZip(entries)], { type: XLSX_MIME_TYPE })

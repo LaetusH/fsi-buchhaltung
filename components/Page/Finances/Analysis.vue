@@ -116,6 +116,10 @@
               @select="selectCostCentreFromOption"
               @clear-selection="clearSelectedCostCentre"
             />
+            <label v-if="selectedCostCentreHasChildren" class="mt-3 flex items-center gap-2 text-sm text-slate-700 cursor-pointer">
+              <input v-model="includeChildCostCentres" type="checkbox" class="h-4 w-4 rounded border-slate-300 text-orange-500 focus:ring-orange-500 cursor-pointer">
+              <span>{{ t('financeAnalysis.includeChildCostCentres') }}</span>
+            </label>
           </div>
         </div>
 
@@ -133,6 +137,30 @@
           </button>
 
           <div v-if="receiptFiltersExpanded" class="space-y-3">
+            <div class="field">
+              <label>{{ t('financeAnalysis.receiptDateField') }}</label>
+              <MenuDropdown v-model="openFilterDropdown" :id="2">
+                <template #trigger="{ styling }">
+                  <button :class="[styling, 'cursor-pointer']" type="button">
+                    <span class="truncate">{{ selectedReceiptDateFieldLabel }}</span>
+                    <Icon name="material-symbols:keyboard-arrow-down-rounded" class="mt-0.5 h-5 w-5 shrink-0 text-slate-500" />
+                  </button>
+                </template>
+
+                <template #default="{ styling }">
+                  <button
+                    v-for="option in receiptDateFieldOptions"
+                    :key="option.value"
+                    :class="styling"
+                    type="button"
+                    @click="selectReceiptDateField(option.value)"
+                  >
+                    {{ option.label }}
+                  </button>
+                </template>
+              </MenuDropdown>
+            </div>
+
             <div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-2 gap-2">
               <button
                 v-for="option in receiptStatusOptions"
@@ -235,7 +263,7 @@
           </div>
 
           <div class="flex flex-wrap items-center justify-end gap-3">
-            <div class="relative">
+            <div ref="exportMenuWrapper" class="relative">
               <button
                 type="button"
                 class="inline-flex items-center gap-2 rounded-xl bg-orange-500 px-4 py-3 text-sm font-medium text-white transition hover:bg-orange-600 cursor-pointer"
@@ -248,52 +276,112 @@
                 <span>{{ isExporting ? t('financeAnalysis.exportingReport') : t('financeAnalysis.exportReport') }}</span>
               </button>
 
-              <div v-if="isExportMenuOpen && canExportAnalysis" class="absolute right-0 top-full z-20 mt-2 w-80 rounded-xl border border-slate-200 bg-white p-4 shadow-xl space-y-4">
-                <div class="space-y-2">
+              <div v-if="isExportMenuOpen && canExportAnalysis" class="absolute right-0 top-full z-20 mt-2 w-100 rounded-xl border border-slate-200 bg-white p-3 shadow-xl space-y-3">
+                <div class="space-y-0.5">
                   <div class="text-sm font-semibold text-slate-900">{{ t('financeAnalysis.exportOptionsTitle') }}</div>
-                  <div class="grid grid-cols-3 gap-2">
-                    <button
-                      type="button"
-                      :class="exportGroupingButtonClass('none')"
-                      @click="setExportGrouping('none')"
-                    >
-                      {{ t('financeAnalysis.exportGroupingNone') }}
-                    </button>
-                    <button
-                      type="button"
-                      :class="exportGroupingButtonClass('costCentres')"
-                      @click="setExportGrouping('costCentres')"
-                    >
-                      {{ t('financeAnalysis.exportGroupingCostCentres') }}
-                    </button>
-                    <button
-                      type="button"
-                      :class="exportGroupingButtonClass('spheres')"
-                      @click="setExportGrouping('spheres')"
-                    >
-                      {{ t('financeAnalysis.exportGroupingSpheres') }}
-                    </button>
+                  <p class="text-xs text-slate-500">{{ t('financeAnalysis.exportOptionsHint') }}</p>
+                </div>
+
+                <section v-if="showReportPagesExportOptions" class="space-y-2 rounded-xl border border-slate-200 p-2.5">
+                  <div>
+                    <div class="text-sm font-semibold text-slate-900">{{ t('financeAnalysis.exportReportPagesTitle') }}</div>
+                    <p class="text-[11px] text-slate-500">{{ t('financeAnalysis.exportReportPagesHint') }}</p>
                   </div>
-                </div>
 
-                <div class="grid grid-cols-1 gap-2">
-                  <button
-                    type="button"
-                    :class="exportToggleButtonClass(exportSplitByMonth)"
-                    @click="exportSplitByMonth = !exportSplitByMonth"
-                  >
-                    {{ t('financeAnalysis.exportSplitByMonth') }}
-                  </button>
-                  <button
-                    type="button"
-                    :class="exportToggleButtonClass(exportSplitByPaymentStatus)"
-                    @click="exportSplitByPaymentStatus = !exportSplitByPaymentStatus"
-                  >
-                    {{ t('financeAnalysis.exportSplitByPaymentStatus') }}
-                  </button>
-                </div>
+                  <MenuDropdown v-model="openFilterDropdown" :id="3">
+                    <template #trigger="{ styling }">
+                      <button :class="[styling, 'cursor-pointer']" type="button">
+                        <span class="truncate">{{ selectedReportPagesExportLabel }}</span>
+                        <Icon name="material-symbols:keyboard-arrow-down-rounded" class="mt-0.5 h-5 w-5 shrink-0 text-slate-500" />
+                      </button>
+                    </template>
 
-                <div class="flex items-center justify-between gap-2">
+                    <template #default="{ styling }">
+                      <button
+                        v-for="option in reportPagesExportOptions"
+                        :key="option.value"
+                        :class="[
+                          styling,
+                          option.disabled ? 'cursor-not-allowed text-slate-400 hover:bg-white' : '',
+                        ]"
+                        type="button"
+                        :disabled="option.disabled"
+                        @click="selectReportPagesExportMode(option.value)"
+                      >
+                        {{ option.label }}
+                      </button>
+                    </template>
+                  </MenuDropdown>
+
+                  <div
+                    :class="[
+                      'rounded-lg px-2.5 py-1.5 text-[11px]',
+                      canCompareToBudget
+                        ? 'bg-emerald-50 text-emerald-800'
+                        : 'bg-slate-100 text-slate-600',
+                    ]"
+                  >
+                    {{ compareToBudgetHint }}
+                  </div>
+
+                </section>
+
+                <section class="space-y-2 rounded-xl border border-slate-200 p-2.5">
+                  <div>
+                    <div class="text-sm font-semibold text-slate-900">{{ t('financeAnalysis.exportOverviewSheetsTitle') }}</div>
+                    <p class="text-[11px] text-slate-500">{{ t('financeAnalysis.exportOverviewSheetsHint') }}</p>
+                  </div>
+
+                  <div class="space-y-1.5 rounded-lg bg-slate-50 p-2">
+                    <div class="text-[11px] font-semibold uppercase tracking-wide text-slate-500">{{ t('financeAnalysis.exportGroupingLabel') }}</div>
+                    <div :class="['grid gap-2', showCostCentreGroupingOption ? 'grid-cols-3' : 'grid-cols-2']">
+                      <button
+                        type="button"
+                        :class="exportGroupingButtonClass('none')"
+                        @click="setExportGrouping('none')"
+                      >
+                        {{ t('financeAnalysis.exportGroupingNone') }}
+                      </button>
+                      <button
+                        v-if="showCostCentreGroupingOption"
+                        type="button"
+                        :class="exportGroupingButtonClass('costCentres')"
+                        @click="setExportGrouping('costCentres')"
+                      >
+                        {{ t('financeAnalysis.exportGroupingCostCentres') }}
+                      </button>
+                      <button
+                        type="button"
+                        :class="exportGroupingButtonClass('spheres')"
+                        @click="setExportGrouping('spheres')"
+                      >
+                        {{ t('financeAnalysis.exportGroupingSpheres') }}
+                      </button>
+                    </div>
+                  </div>
+
+                  <div class="space-y-1.5 rounded-lg bg-slate-50 p-2">
+                    <div class="text-[11px] font-semibold uppercase tracking-wide text-slate-500">{{ t('financeAnalysis.exportSplitLabel') }}</div>
+                    <div class="grid grid-cols-2 gap-2">
+                      <button
+                        type="button"
+                        :class="exportToggleButtonClass(exportSplitByMonth)"
+                        @click="exportSplitByMonth = !exportSplitByMonth"
+                      >
+                        {{ t('financeAnalysis.exportSplitByMonth') }}
+                      </button>
+                      <button
+                        type="button"
+                        :class="exportToggleButtonClass(exportSplitByPaymentStatus)"
+                        @click="exportSplitByPaymentStatus = !exportSplitByPaymentStatus"
+                      >
+                        {{ t('financeAnalysis.exportSplitByPaymentStatus') }}
+                      </button>
+                    </div>
+                  </div>
+                </section>
+
+                <div class="flex items-center justify-between gap-2 pt-1">
                   <button type="button" class="btn-secondary" @click="closeExportMenu">
                     {{ t('actions.cancel') }}
                   </button>
@@ -304,7 +392,7 @@
               </div>
             </div>
 
-            <div class="flex items-center justify-between gap-3 rounded-xl border border-slate-200 px-4 py-3 sm:min-w-fit">
+            <div class="flex items-center justify-between gap-3 rounded-xl border border-slate-200 px-4 py-2.25 sm:min-w-fit">
               <label class="text-sm font-medium text-slate-900" for="comparison-toggle">
                 {{ t('financeAnalysis.compareWithPreviousYear') }}
               </label>
@@ -470,7 +558,7 @@
                 <table class="w-full table-fixed text-sm border-collapse">
                   <thead>
                     <tr class="text-left border-b">
-                      <th class="w-[18%] py-2 pr-3">{{ t('receipt.receiptDate') }}</th>
+                      <th class="w-[18%] py-2 pr-3">{{ selectedReceiptDateFieldLabel }}</th>
                       <th class="w-[28%] py-2 pr-3">{{ t('receipt.receiptNumber') }}</th>
                       <th class="w-[28%] py-2 pr-3">{{ t('receipt.company') }}</th>
                       <th class="w-[14%] py-2 text-right">{{ t('receipt.grossAmount') }}</th>
@@ -481,7 +569,7 @@
 
                   <tbody>
                     <tr v-for="receipt in receipts" :key="receipt.id" class="border-b last:border-b-0">
-                      <td class="py-2 pr-3 align-middle whitespace-nowrap">{{ formatDate(receipt.receipt_date) }}</td>
+                      <td class="py-2 pr-3 align-middle whitespace-nowrap">{{ formatReceiptDateByBasis(receipt) }}</td>
                       <td class="py-2 pr-3 align-middle">
                         <div class="min-w-0 whitespace-normal break-words" :title="receipt.receipt_number || t('receipt.noNumber')">
                           {{ receipt.receipt_number || t('receipt.noNumber') }}
@@ -679,6 +767,8 @@ import { useI18n } from '~/composables/useI18n'
 import { useLocaleFormatters } from '~/composables/useLocaleFormatters'
 import { usePage } from '~/composables/usePage'
 import { buildReturnTarget } from '~/composables/useReturnTarget'
+import type { GetBudgetResponse } from '~/server/api/finances/budgets/[id].get'
+import type { BudgetDetail, BudgetListItem } from '~/types/budget'
 import type { CostCentreRow } from '~/types/costCentre'
 import type { FinanceAnalysisData, FinanceAnalysisReceiptItem } from '~/types/financeAnalysis'
 import { InvoiceStatus } from '~/types/invoice'
@@ -688,7 +778,16 @@ import { downloadFinanceAnalysisReport, type FinanceAnalysisExportGrouping } fro
 type QuickSemester = '' | 'summer' | 'winter'
 type ManualDateField = 'start' | 'end'
 type ComparisonValueType = 'currency' | 'count'
+type ReceiptDateField = 'receipt_date' | 'reimbursement_submitted_at'
 type InvoiceDateField = 'invoice_date' | 'due_date' | 'service_date'
+type ReportPagesExportMode = 'none' | 'reportOnly' | 'comparisonOnly' | 'both'
+type FinanceAnalysisExportLogo = {
+  data: Uint8Array
+  extension: 'png' | 'jpeg'
+  mimeType: string
+  width: number
+  height: number
+}
 
 interface FinanceAnalysisResponse {
   ok: true
@@ -708,6 +807,7 @@ interface PersistedFinanceAnalysisState {
   quickMonth?: string
   compareWithPreviousYear?: boolean
   selectedStatuses?: ReceiptStatus[]
+  receiptDateField?: ReceiptDateField
   selectedInvoiceStatuses?: InvoiceStatus[]
   invoiceDateField?: InvoiceDateField
   periodFiltersExpanded?: boolean
@@ -718,12 +818,14 @@ interface PersistedFinanceAnalysisState {
   cashCountsExpanded?: boolean
   invoicesExpanded?: boolean
   selectedCostCentreId?: number | null
+  includeChildCostCentres?: boolean
 }
 
 interface PersistedFinanceAnalysisExportState {
   exportGrouping?: FinanceAnalysisExportGrouping
   exportSplitByMonth?: boolean
   exportSplitByPaymentStatus?: boolean
+  reportPagesExportMode?: ReportPagesExportMode
 }
 
 const emit = defineEmits<{
@@ -752,6 +854,7 @@ const quickSemester = ref<QuickSemester>('')
 const quickMonth = ref('')
 const compareWithPreviousYear = ref(false)
 const selectedStatuses = ref<ReceiptStatus[]>([...defaultStatuses])
+const receiptDateField = ref<ReceiptDateField>('receipt_date')
 const selectedInvoiceStatuses = ref<InvoiceStatus[]>([...defaultInvoiceStatuses])
 const invoiceDateField = ref<InvoiceDateField>('invoice_date')
 const periodFiltersExpanded = ref(true)
@@ -762,14 +865,19 @@ const receiptsExpanded = ref(false)
 const cashCountsExpanded = ref(false)
 const invoicesExpanded = ref(false)
 const costCentres = ref<CostCentreRow[]>([])
+const budgets = ref<BudgetListItem[]>([])
 const costCentreQuery = ref('')
 const selectedCostCentre = ref<CostCentreRow | null>(null)
+const includeChildCostCentres = ref(false)
+const exportMenuWrapper = ref<HTMLElement | null>(null)
 const isExportMenuOpen = ref(false)
 const exportGrouping = ref<FinanceAnalysisExportGrouping>('none')
 const exportSplitByMonth = ref(false)
 const exportSplitByPaymentStatus = ref(false)
+const reportPagesExportMode = ref<ReportPagesExportMode>('none')
 const openFilterDropdown = ref<number | null>(null)
 const hasCostCentreAccess = computed(() => hasPermission('cost_centres.view'))
+const hasBudgetAccess = computed(() => hasPermission('budgets.view'))
 const sessionAnalysisState = useState<PersistedFinanceAnalysisState | null>('finance-analysis-session-state', () => null)
 const sessionExportState = useState<PersistedFinanceAnalysisExportState | null>('finance-analysis-export-session-state', () => null)
 
@@ -789,6 +897,90 @@ const costCentreOptions = computed<SearchSelectOption<CostCentreRow>[]>(() => {
 const selectedCostCentreLabel = computed(() => {
   if (!selectedCostCentre.value) return ''
   return costCentreOptionLabel(selectedCostCentre.value)
+})
+const selectedCostCentreHasChildren = computed(() => {
+  if (!selectedCostCentre.value) return false
+  return costCentres.value.some(costCentre => costCentre.parent_id === selectedCostCentre.value?.id)
+})
+const hasSingleSelectedCostCentre = computed(() => {
+  return Boolean(selectedCostCentre.value) && !includeChildCostCentres.value
+})
+const showReportPagesExportOptions = computed(() => !hasSingleSelectedCostCentre.value)
+const showCostCentreGroupingOption = computed(() => !hasSingleSelectedCostCentre.value)
+
+function addOneDay(dateString: string) {
+  const parts = dateString.split('-').map(Number)
+  if (parts.length !== 3 || parts.some(value => Number.isNaN(value))) return dateString
+
+  const [year, month, day] = parts as [number, number, number]
+  const date = new Date(year, month - 1, day)
+  date.setDate(date.getDate() + 1)
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
+}
+
+function budgetOptionLabel(budget: BudgetListItem) {
+  return `${budget.year} · ${budget.semester === 'summer' ? t('budget.semesters.summer') : t('budget.semesters.winter')}`
+}
+
+function findCoveringBudgets(periodStartDate: string, periodEndDate: string, items: BudgetListItem[]) {
+  const budgetsByStart = new Map<string, BudgetListItem>()
+  for (const budget of items) budgetsByStart.set(budget.start_date, budget)
+
+  const matched: BudgetListItem[] = []
+  let cursor = periodStartDate
+
+  while (cursor <= periodEndDate) {
+    const budget = budgetsByStart.get(cursor)
+    if (!budget) return null
+    matched.push(budget)
+
+    if (budget.end_date === periodEndDate) return matched
+    if (budget.end_date > periodEndDate) return null
+    cursor = addOneDay(budget.end_date)
+  }
+
+  return null
+}
+
+const coveringBudgets = computed(() => findCoveringBudgets(startDate.value, endDate.value, budgets.value))
+const canCompareToBudget = computed(() => hasBudgetAccess.value && Boolean(coveringBudgets.value?.length))
+const comparisonBudgetLabel = computed(() => coveringBudgets.value?.map(budgetOptionLabel).join(', ') ?? '')
+const reportPagesExportOptions = computed<Array<{ value: ReportPagesExportMode, label: string, disabled: boolean }>>(() => [
+  {
+    value: 'none',
+    label: t('financeAnalysis.exportReportPageModes.none'),
+    disabled: false,
+  },
+  {
+    value: 'reportOnly',
+    label: t('financeAnalysis.exportReportPageModes.reportOnly'),
+    disabled: false,
+  },
+  {
+    value: 'comparisonOnly',
+    label: t('financeAnalysis.exportReportPageModes.comparisonOnly'),
+    disabled: !canCompareToBudget.value,
+  },
+  {
+    value: 'both',
+    label: t('financeAnalysis.exportReportPageModes.both'),
+    disabled: !canCompareToBudget.value,
+  },
+])
+const selectedReportPagesExportLabel = computed(() => {
+  return reportPagesExportOptions.value.find(option => option.value === reportPagesExportMode.value)?.label
+    || t('financeAnalysis.exportReportPageModes.none')
+})
+const exportIncludesAnnualClosing = computed(() => (
+  reportPagesExportMode.value === 'reportOnly' || reportPagesExportMode.value === 'both'
+))
+const exportIncludesBudgetComparison = computed(() => (
+  (reportPagesExportMode.value === 'comparisonOnly' || reportPagesExportMode.value === 'both') && canCompareToBudget.value
+))
+const compareToBudgetHint = computed(() => {
+  if (!hasBudgetAccess.value) return t('financeAnalysis.exportCompareToBudgetNeedsBudgetPermission')
+  if (!coveringBudgets.value?.length) return t('financeAnalysis.exportCompareToBudgetUnavailable')
+  return t('financeAnalysis.exportCompareToBudgetAvailable', { budgets: comparisonBudgetLabel.value })
 })
 
 const monthOptions = computed(() => {
@@ -814,6 +1006,16 @@ const receiptStatusOptions = computed(() => {
     { value: ReceiptStatus.Cancelled, label: receiptStatusLabels.value[ReceiptStatus.Cancelled] },
   ]
 })
+
+const receiptDateFieldOptions = computed<Array<{ value: ReceiptDateField, label: string }>>(() => [
+  { value: 'receipt_date', label: t('financeAnalysis.receiptDateFieldOptions.receiptDate') },
+  { value: 'reimbursement_submitted_at', label: t('financeAnalysis.receiptDateFieldOptions.reimbursementSubmittedAt') },
+])
+
+const selectedReceiptDateFieldLabel = computed(() => {
+  return receiptDateFieldOptions.value.find(option => option.value === receiptDateField.value)?.label || t('financeAnalysis.receiptDateFieldOptions.receiptDate')
+})
+
 const invoiceStatusLabels = computed<Record<InvoiceStatus, string>>(() => ({
   draft: t('invoice.states.draft'),
   open: t('invoice.states.open'),
@@ -946,6 +1148,7 @@ function restoreSelectedCostCentre(costCentreId: number | null | undefined) {
   if (typeof costCentreId !== 'number') {
     selectedCostCentre.value = null
     costCentreQuery.value = ''
+    includeChildCostCentres.value = false
     return
   }
 
@@ -968,6 +1171,9 @@ function applyAnalysisState(state?: PersistedFinanceAnalysisState | null) {
   if (Array.isArray(state.selectedStatuses)) {
     selectedStatuses.value = state.selectedStatuses.filter((status): status is ReceiptStatus => statusOrder.includes(status as ReceiptStatus))
   }
+  if (state.receiptDateField === 'receipt_date' || state.receiptDateField === 'reimbursement_submitted_at') {
+    receiptDateField.value = state.receiptDateField
+  }
   if (Array.isArray(state.selectedInvoiceStatuses)) {
     selectedInvoiceStatuses.value = state.selectedInvoiceStatuses.filter((status): status is InvoiceStatus => invoiceStatusOrder.includes(status as InvoiceStatus))
   }
@@ -981,6 +1187,7 @@ function applyAnalysisState(state?: PersistedFinanceAnalysisState | null) {
   if (typeof state.receiptsExpanded === 'boolean') receiptsExpanded.value = state.receiptsExpanded
   if (typeof state.cashCountsExpanded === 'boolean') cashCountsExpanded.value = state.cashCountsExpanded
   if (typeof state.invoicesExpanded === 'boolean') invoicesExpanded.value = state.invoicesExpanded
+  if (typeof state.includeChildCostCentres === 'boolean') includeChildCostCentres.value = state.includeChildCostCentres
   restoreSelectedCostCentre(state.selectedCostCentreId)
 }
 
@@ -997,6 +1204,9 @@ function restoreStoredExportState() {
   }
   if (typeof state.exportSplitByMonth === 'boolean') exportSplitByMonth.value = state.exportSplitByMonth
   if (typeof state.exportSplitByPaymentStatus === 'boolean') exportSplitByPaymentStatus.value = state.exportSplitByPaymentStatus
+  if (state.reportPagesExportMode === 'none' || state.reportPagesExportMode === 'reportOnly' || state.reportPagesExportMode === 'comparisonOnly' || state.reportPagesExportMode === 'both') {
+    reportPagesExportMode.value = state.reportPagesExportMode
+  }
 }
 
 function persistAnalysisState() {
@@ -1008,6 +1218,7 @@ function persistAnalysisState() {
     quickMonth: quickMonth.value,
     compareWithPreviousYear: compareWithPreviousYear.value,
     selectedStatuses: [...selectedStatuses.value],
+    receiptDateField: receiptDateField.value,
     selectedInvoiceStatuses: [...selectedInvoiceStatuses.value],
     invoiceDateField: invoiceDateField.value,
     periodFiltersExpanded: periodFiltersExpanded.value,
@@ -1018,6 +1229,7 @@ function persistAnalysisState() {
     cashCountsExpanded: cashCountsExpanded.value,
     invoicesExpanded: invoicesExpanded.value,
     selectedCostCentreId: selectedCostCentre.value?.id ?? null,
+    includeChildCostCentres: includeChildCostCentres.value,
   } satisfies PersistedFinanceAnalysisState
 }
 
@@ -1026,6 +1238,7 @@ function persistExportState() {
     exportGrouping: exportGrouping.value,
     exportSplitByMonth: exportSplitByMonth.value,
     exportSplitByPaymentStatus: exportSplitByPaymentStatus.value,
+    reportPagesExportMode: reportPagesExportMode.value,
   } satisfies PersistedFinanceAnalysisExportState
 }
 
@@ -1051,24 +1264,13 @@ function applyFullYearRange(year: number) {
   setRange(`${year}-01-01`, `${year}-12-31`)
 }
 
-function ensureQuickYear() {
-  if (!quickYear.value) quickYear.value = String(currentYear)
-  return Number(quickYear.value)
-}
-
-function applyYearShortcut() {
-  if (!quickYear.value) return
-  quickSemester.value = ''
-  quickMonth.value = ''
-  applyFullYearRange(Number(quickYear.value))
-}
-
-function applySemesterShortcut() {
+function applyQuickSelectionRange() {
   const year = ensureQuickYear()
-  quickMonth.value = ''
 
-  if (!quickSemester.value) {
-    applyFullYearRange(year)
+  if (quickMonth.value) {
+    const month = Number(quickMonth.value)
+    const lastDay = new Date(year, month, 0).getDate()
+    setRange(`${year}-${pad(month)}-01`, `${year}-${pad(month)}-${pad(lastDay)}`)
     return
   }
 
@@ -1077,7 +1279,27 @@ function applySemesterShortcut() {
     return
   }
 
-  setRange(`${year}-10-01`, `${year + 1}-03-31`)
+  if (quickSemester.value === 'winter') {
+    setRange(`${year}-10-01`, `${year + 1}-03-31`)
+    return
+  }
+
+  applyFullYearRange(year)
+}
+
+function ensureQuickYear() {
+  if (!quickYear.value) quickYear.value = String(currentYear)
+  return Number(quickYear.value)
+}
+
+function applyYearShortcut() {
+  if (!quickYear.value) return
+  applyQuickSelectionRange()
+}
+
+function applySemesterShortcut() {
+  quickMonth.value = ''
+  applyQuickSelectionRange()
 }
 
 function toggleSemesterShortcut(value: Exclude<QuickSemester, ''>) {
@@ -1086,17 +1308,8 @@ function toggleSemesterShortcut(value: Exclude<QuickSemester, ''>) {
 }
 
 function applyMonthShortcut() {
-  const year = ensureQuickYear()
   quickSemester.value = ''
-
-  if (!quickMonth.value) {
-    applyFullYearRange(year)
-    return
-  }
-
-  const month = Number(quickMonth.value)
-  const lastDay = new Date(year, month, 0).getDate()
-  setRange(`${year}-${pad(month)}-01`, `${year}-${pad(month)}-${pad(lastDay)}`)
+  applyQuickSelectionRange()
 }
 
 function toggleMonthShortcut(value: string) {
@@ -1119,6 +1332,7 @@ function resetToCurrentYear() {
   quickMonth.value = ''
   compareWithPreviousYear.value = false
   selectedStatuses.value = [...defaultStatuses]
+  receiptDateField.value = 'receipt_date'
   selectedInvoiceStatuses.value = [...defaultInvoiceStatuses]
   invoiceDateField.value = 'invoice_date'
   selectedCostCentre.value = null
@@ -1147,6 +1361,11 @@ function toggleInvoiceStatus(status: InvoiceStatus) {
   selectedInvoiceStatuses.value = [...selectedInvoiceStatuses.value, status].sort((left, right) => {
     return invoiceStatusOrder.indexOf(left) - invoiceStatusOrder.indexOf(right)
   })
+}
+
+function selectReceiptDateField(value: ReceiptDateField) {
+  receiptDateField.value = value
+  openFilterDropdown.value = null
 }
 
 function selectInvoiceDateField(value: InvoiceDateField) {
@@ -1187,7 +1406,7 @@ function monthButtonClass(value: string) {
 function exportGroupingButtonClass(value: FinanceAnalysisExportGrouping) {
   const selected = exportGrouping.value === value
   return [
-    'rounded-lg border px-3 py-2 text-xs font-medium transition cursor-pointer',
+    'rounded-lg border px-2.5 py-1.5 text-xs font-medium leading-tight transition cursor-pointer',
     selected
       ? 'border-orange-400 bg-orange-50 text-orange-700'
       : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50',
@@ -1196,7 +1415,7 @@ function exportGroupingButtonClass(value: FinanceAnalysisExportGrouping) {
 
 function exportToggleButtonClass(selected: boolean) {
   return [
-    'w-full rounded-lg border px-3 py-2 text-sm font-medium text-left transition cursor-pointer',
+    'w-full rounded-lg border px-2.5 py-1.5 text-xs font-medium leading-tight transition cursor-pointer',
     selected
       ? 'border-orange-400 bg-orange-50 text-orange-700'
       : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50',
@@ -1207,8 +1426,16 @@ function setExportGrouping(value: FinanceAnalysisExportGrouping) {
   exportGrouping.value = value
 }
 
+function selectReportPagesExportMode(value: ReportPagesExportMode) {
+  const option = reportPagesExportOptions.value.find(item => item.value === value)
+  if (!option || option.disabled) return
+  reportPagesExportMode.value = value
+  openFilterDropdown.value = null
+}
+
 function closeExportMenu() {
   isExportMenuOpen.value = false
+  openFilterDropdown.value = null
 }
 
 function toggleExportMenu() {
@@ -1238,10 +1465,129 @@ function formatInvoiceDateByBasis(invoice: FinanceAnalysisData['invoices'][numbe
   return formatDate(invoice.invoice_date)
 }
 
+function formatReceiptDateByBasis(receipt: FinanceAnalysisReceiptItem) {
+  if (receiptDateField.value === 'reimbursement_submitted_at') {
+    return receipt.reimbursement_submitted_at ? formatDate(receipt.reimbursement_submitted_at) : formatDate(receipt.receipt_date)
+  }
+
+  return formatDate(receipt.receipt_date)
+}
+
 function comparisonDifferenceClass(value: number) {
   if (value > 0) return 'text-emerald-700'
   if (value < 0) return 'text-red-700'
   return 'text-slate-600'
+}
+
+async function loadExportLogo(): Promise<FinanceAnalysisExportLogo | null> {
+  try {
+    const response = await fetch('/api/settings/association/logo', {
+      credentials: 'same-origin',
+    })
+
+    if (!response.ok) return null
+
+    const blob = await response.blob()
+    const mimeType = blob.type.toLowerCase()
+    const extension = mimeType === 'image/png'
+      ? 'png'
+      : mimeType === 'image/jpeg' || mimeType === 'image/jpg'
+        ? 'jpeg'
+        : null
+
+    if (!extension) return null
+
+    const data = new Uint8Array(await blob.arrayBuffer())
+    const dimensions = extension === 'png'
+      ? readPngDimensions(data)
+      : readJpegDimensions(data)
+
+    if (!dimensions) return null
+
+    return {
+      data,
+      extension,
+      mimeType: extension === 'png' ? 'image/png' : 'image/jpeg',
+      width: dimensions.width,
+      height: dimensions.height,
+    }
+  } catch {
+    return null
+  }
+}
+
+function readPngDimensions(bytes: Uint8Array) {
+  if (bytes.length < 24) return null
+  const signatureMatches = bytes[0] === 0x89
+    && bytes[1] === 0x50
+    && bytes[2] === 0x4E
+    && bytes[3] === 0x47
+
+  if (!signatureMatches) return null
+
+  const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength)
+  const width = view.getUint32(16)
+  const height = view.getUint32(20)
+  if (width <= 0 || height <= 0) return null
+  return { width, height }
+}
+
+function readJpegDimensions(bytes: Uint8Array) {
+  if (bytes.length < 4 || bytes[0] !== 0xFF || bytes[1] !== 0xD8) return null
+
+  let offset = 2
+  while (offset + 8 < bytes.length) {
+    const prefix = bytes[offset]
+    const marker = bytes[offset + 1]
+    const lengthHigh = bytes[offset + 2]
+    const lengthLow = bytes[offset + 3]
+
+    if (
+      prefix === undefined
+      || marker === undefined
+      || lengthHigh === undefined
+      || lengthLow === undefined
+    ) return null
+
+    if (prefix !== 0xFF) {
+      offset += 1
+      continue
+    }
+
+    if (marker === 0xD9 || marker === 0xDA) break
+
+    const segmentLength = (lengthHigh << 8) | lengthLow
+    if (segmentLength < 2 || offset + 2 + segmentLength > bytes.length) return null
+
+    const isStartOfFrame = marker >= 0xC0
+      && marker <= 0xCF
+      && marker !== 0xC4
+      && marker !== 0xC8
+      && marker !== 0xCC
+
+    if (isStartOfFrame) {
+      const heightHigh = bytes[offset + 5]
+      const heightLow = bytes[offset + 6]
+      const widthHigh = bytes[offset + 7]
+      const widthLow = bytes[offset + 8]
+
+      if (
+        heightHigh === undefined
+        || heightLow === undefined
+        || widthHigh === undefined
+        || widthLow === undefined
+      ) return null
+
+      const height = (heightHigh << 8) | heightLow
+      const width = (widthHigh << 8) | widthLow
+      if (width <= 0 || height <= 0) return null
+      return { width, height }
+    }
+
+    offset += 2 + segmentLength
+  }
+
+  return null
 }
 
 async function exportAnalysisReport() {
@@ -1250,6 +1596,19 @@ async function exportAnalysisReport() {
   isExporting.value = true
 
   try {
+    let comparisonBudget: BudgetDetail[] = []
+    const logo = await loadExportLogo()
+
+    if (exportIncludesBudgetComparison.value && coveringBudgets.value?.length) {
+      const budgetResponses = await Promise.all(
+        coveringBudgets.value.map(budget => $fetch<GetBudgetResponse>(`/api/finances/budgets/${budget.id}`)),
+      )
+
+      comparisonBudget = budgetResponses
+        .filter((response): response is { ok: true, budget: BudgetDetail } => response.ok)
+        .map(response => response.budget)
+    }
+
     downloadFinanceAnalysisReport({
       t,
       locale: locale.value,
@@ -1259,13 +1618,22 @@ async function exportAnalysisReport() {
       endDate: endDate.value,
       includeComparison: compareWithPreviousYear.value,
       selectedStatuses: selectedStatuses.value,
+      receiptDateField: receiptDateField.value,
       selectedInvoiceStatuses: selectedInvoiceStatuses.value,
       receiptStatusLabels: receiptStatusLabels.value,
       invoiceDateField: invoiceDateField.value,
+      costCentres: costCentres.value,
       selectedCostCentre: selectedCostCentre.value,
+      includeChildCostCentres: includeChildCostCentres.value,
+      annualClosing: exportIncludesAnnualClosing.value,
+      compareToBudget: exportIncludesBudgetComparison.value && comparisonBudget.length > 0,
+      budgetComparisonExportMode: reportPagesExportMode.value === 'both' ? 'annualAndComparison' : 'comparisonOnly',
+      comparisonBudgetLabel: comparisonBudgetLabel.value || null,
+      comparisonBudgetLines: comparisonBudget.flatMap(budget => budget.lines),
       exportGrouping: exportGrouping.value,
       exportSplitByMonth: exportSplitByMonth.value,
       exportSplitByPaymentStatus: exportSplitByPaymentStatus.value,
+      logo,
       formatCurrency,
       formatDate,
       formatDateTime,
@@ -1289,9 +1657,11 @@ async function fetchAnalysisRange(periodStartDate: string, periodEndDate: string
       startDate: periodStartDate,
       endDate: periodEndDate,
       statuses: selectedStatuses.value,
+      receiptDateField: receiptDateField.value,
       invoiceStatuses: selectedInvoiceStatuses.value,
       invoiceDateField: invoiceDateField.value,
       costCentreId: selectedCostCentre.value?.id || undefined,
+      includeChildCostCentres: selectedCostCentre.value ? includeChildCostCentres.value : undefined,
     },
   })
 
@@ -1309,6 +1679,7 @@ function getAnalysisPageMeta() {
       quickMonth: quickMonth.value,
       compareWithPreviousYear: compareWithPreviousYear.value,
       selectedStatuses: [...selectedStatuses.value],
+      receiptDateField: receiptDateField.value,
       selectedInvoiceStatuses: [...selectedInvoiceStatuses.value],
       invoiceDateField: invoiceDateField.value,
       periodFiltersExpanded: periodFiltersExpanded.value,
@@ -1319,6 +1690,7 @@ function getAnalysisPageMeta() {
       cashCountsExpanded: cashCountsExpanded.value,
       invoicesExpanded: invoicesExpanded.value,
       selectedCostCentreId: selectedCostCentre.value?.id ?? null,
+      includeChildCostCentres: includeChildCostCentres.value,
     },
   }
 }
@@ -1342,6 +1714,21 @@ async function loadCostCentres() {
   }
 }
 
+async function loadBudgets() {
+  if (!hasBudgetAccess.value) return
+
+  try {
+    const response = await $fetch<{ ok: true, budgets: BudgetListItem[] } | { ok: false, error: string }>('/api/finances/budgets', {
+      method: 'GET',
+    })
+
+    if (!response.ok) return
+    budgets.value = response.budgets
+  } catch {
+    budgets.value = []
+  }
+}
+
 function selectCostCentre(costCentre: CostCentreRow) {
   selectedCostCentre.value = costCentre
   costCentreQuery.value = costCentreOptionLabel(costCentre)
@@ -1359,6 +1746,7 @@ function selectCostCentreFromOption(value: unknown) {
 function clearSelectedCostCentre() {
   selectedCostCentre.value = null
   costCentreQuery.value = ''
+  includeChildCostCentres.value = false
 }
 
 function openReceipt(id: number) {
@@ -1444,6 +1832,13 @@ function receiptStatusDotClass(status: ReceiptStatus | InvoiceStatus) {
   }
 }
 
+function handleExportMenuClickOutside(event: MouseEvent) {
+  if (!isExportMenuOpen.value) return
+  if (!exportMenuWrapper.value) return
+  if (exportMenuWrapper.value.contains(event.target as Node)) return
+  closeExportMenu()
+}
+
 watch(() => ({
   startDate: startDate.value,
   endDate: endDate.value,
@@ -1452,6 +1847,7 @@ watch(() => ({
   quickMonth: quickMonth.value,
   compareWithPreviousYear: compareWithPreviousYear.value,
   selectedStatuses: [...selectedStatuses.value],
+  receiptDateField: receiptDateField.value,
   selectedInvoiceStatuses: [...selectedInvoiceStatuses.value],
   invoiceDateField: invoiceDateField.value,
   periodFiltersExpanded: periodFiltersExpanded.value,
@@ -1462,6 +1858,7 @@ watch(() => ({
   cashCountsExpanded: cashCountsExpanded.value,
   invoicesExpanded: invoicesExpanded.value,
   selectedCostCentreId: selectedCostCentre.value?.id ?? null,
+  includeChildCostCentres: includeChildCostCentres.value,
 }), () => {
   persistAnalysisState()
 }, { deep: true })
@@ -1470,15 +1867,40 @@ watch(() => ({
   exportGrouping: exportGrouping.value,
   exportSplitByMonth: exportSplitByMonth.value,
   exportSplitByPaymentStatus: exportSplitByPaymentStatus.value,
+  reportPagesExportMode: reportPagesExportMode.value,
 }), () => {
   persistExportState()
 }, { deep: true })
 
+watch(canCompareToBudget, (value) => {
+  if (!value && (reportPagesExportMode.value === 'comparisonOnly' || reportPagesExportMode.value === 'both')) {
+    reportPagesExportMode.value = exportIncludesAnnualClosing.value ? 'reportOnly' : 'none'
+  }
+})
+
+watch(selectedCostCentreHasChildren, (value) => {
+  if (!value) includeChildCostCentres.value = false
+})
+
+watch(showReportPagesExportOptions, (value) => {
+  if (!value) reportPagesExportMode.value = 'none'
+})
+
+watch(showCostCentreGroupingOption, (value) => {
+  if (!value && exportGrouping.value === 'costCentres') exportGrouping.value = 'none'
+})
+
 onMounted(async () => {
+  document.addEventListener('mousedown', handleExportMenuClickOutside)
   await loadCostCentres()
+  await loadBudgets()
   restoreStoredAnalysisState()
   restoreStoredExportState()
   restoreAnalysisPageMeta()
   await loadAnalysis()
+})
+
+onBeforeUnmount(() => {
+  document.removeEventListener('mousedown', handleExportMenuClickOutside)
 })
 </script>

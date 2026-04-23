@@ -4,6 +4,7 @@ import type { ReceiptStatus } from '~/types/receipt'
 export interface FinanceAnalysisReceiptItem {
   id: number
   receipt_date: string
+  reimbursement_submitted_at: string | null
   receipt_number: string | null
   company_name: string | null
   status: ReceiptStatus
@@ -36,6 +37,12 @@ export interface FinanceAnalysisCashCountItem {
   id: number
   event_id: number
   event_name: string
+  cost_centres: {
+    cost_centre_id: number
+    code: string
+    name: string
+    allocation_percentage: number
+  }[]
   counted_before_at: string
   counted_after_at: string
   counted_by_first_name: string

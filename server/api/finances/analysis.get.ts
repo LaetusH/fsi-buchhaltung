@@ -63,12 +63,91 @@ function getInvoiceDateColumn(value: unknown) {
   return 'i.invoice_date'
 }
 
+function getReceiptDateExpression(value: unknown) {
+  if (value === 'reimbursement_submitted_at') return 'COALESCE(DATE(reimb.submitted_at), r.receipt_date)'
+  return 'r.receipt_date'
+}
+
 function parsePositiveInteger(value: unknown) {
   if (typeof value === 'number' && Number.isInteger(value) && value > 0) return value
   if (typeof value !== 'string' || !/^\d+$/.test(value)) return null
 
   const parsed = Number(value)
   return Number.isInteger(parsed) && parsed > 0 ? parsed : null
+}
+
+function parseBoolean(value: unknown) {
+  return value === true || value === 'true' || value === '1' || value === 1
+}
+
+async function resolveSelectedCostCentreIds(costCentreId: number | null, includeChildCostCentres: boolean) {
+  if (!costCentreId) return []
+  if (!includeChildCostCentres) return [costCentreId]
+
+  const rows: any[] = await query(`
+    SELECT id, parent_id
+    FROM cost_centres
+  `)
+
+  const childrenByParentId = new Map<number | null, number[]>()
+  for (const row of rows) {
+    const parentId = row.parent_id === null || row.parent_id === undefined ? null : Number(row.parent_id)
+    const current = childrenByParentId.get(parentId) ?? []
+    current.push(Number(row.id))
+    childrenByParentId.set(parentId, current)
+  }
+
+  const selectedIds = new Set<number>()
+  const queue = [costCentreId]
+
+  while (queue.length) {
+    const currentId = queue.shift()
+    if (!currentId || selectedIds.has(currentId)) continue
+    selectedIds.add(currentId)
+
+    for (const childId of childrenByParentId.get(currentId) ?? []) {
+      if (!selectedIds.has(childId)) queue.push(childId)
+    }
+  }
+
+  return Array.from(selectedIds)
+}
+
+async function loadCashCountCostCentreSplits(eventIds: number[]) {
+  if (!eventIds.length) return new Map<number, FinanceAnalysisCashCountItem['cost_centres']>()
+
+  const placeholders = eventIds.map(() => '?').join(', ')
+  const rows: any[] = await query(
+    `
+    SELECT
+      eccs.event_id,
+      eccs.cost_centre_id,
+      cc.code,
+      cc.name,
+      eccs.allocation_percentage
+    FROM event_cost_centre_splits eccs
+    INNER JOIN cost_centres cc ON cc.id = eccs.cost_centre_id
+    WHERE eccs.event_id IN (${placeholders})
+    ORDER BY cc.code ASC, cc.name ASC
+    `,
+    eventIds,
+  )
+
+  const splitsByEventId = new Map<number, FinanceAnalysisCashCountItem['cost_centres']>()
+
+  for (const row of rows) {
+    const eventId = Number(row.event_id)
+    const current = splitsByEventId.get(eventId) ?? []
+    current.push({
+      cost_centre_id: Number(row.cost_centre_id),
+      code: String(row.code || ''),
+      name: String(row.name || ''),
+      allocation_percentage: Number(row.allocation_percentage || 0),
+    })
+    splitsByEventId.set(eventId, current)
+  }
+
+  return splitsByEventId
 }
 
 export default defineEventHandler(async (event): Promise<FinanceAnalysisResponse> => {
@@ -81,17 +160,22 @@ export default defineEventHandler(async (event): Promise<FinanceAnalysisResponse
   const endDate = isDateOnly(queryParams.endDate) ? queryParams.endDate : fallback.end
   const selectedStatuses = getRequestedStatuses(queryParams.statuses)
   const selectedInvoiceStatuses = getRequestedInvoiceStatuses(queryParams.invoiceStatuses)
+  const receiptDateExpression = getReceiptDateExpression(queryParams.receiptDateField)
   const invoiceDateColumn = getInvoiceDateColumn(queryParams.invoiceDateField)
   const costCentreId = parsePositiveInteger(queryParams.costCentreId)
+  const includeChildCostCentres = parseBoolean(queryParams.includeChildCostCentres)
 
   if (startDate > endDate) {
     return { ok: false, error: 'The start date must be before or equal to the end date.' }
   }
 
   try {
+    const selectedCostCentreIds = await resolveSelectedCostCentreIds(costCentreId, includeChildCostCentres)
+    const costCentrePlaceholders = selectedCostCentreIds.map(() => '?').join(', ')
+    const hasCostCentreFilter = selectedCostCentreIds.length > 0
     const statusPlaceholders = selectedStatuses.map(() => '?').join(', ')
-    const receiptFilterParams = costCentreId
-      ? [startDate, endDate, ...selectedStatuses, costCentreId]
+    const receiptFilterParams = hasCostCentreFilter
+      ? [startDate, endDate, ...selectedStatuses, ...selectedCostCentreIds]
       : [startDate, endDate, ...selectedStatuses]
 
     const receiptRows: any[] = selectedStatuses.length
@@ -100,6 +184,7 @@ export default defineEventHandler(async (event): Promise<FinanceAnalysisResponse
           SELECT
             r.id,
             r.receipt_date,
+            MAX(DATE(reimb.submitted_at)) AS reimbursement_submitted_at,
             r.receipt_number,
             r.status,
             c.name AS company_name,
@@ -107,11 +192,13 @@ export default defineEventHandler(async (event): Promise<FinanceAnalysisResponse
           FROM receipts r
           LEFT JOIN companies c ON c.id = r.company_id
           LEFT JOIN receipt_positions rp ON rp.receipt_id = r.id
-          WHERE r.receipt_date BETWEEN ? AND ?
+          LEFT JOIN reimbursement_positions rlink ON rlink.receipt_id = r.id
+          LEFT JOIN reimbursements reimb ON reimb.id = rlink.reimbursement_id
+          WHERE ${receiptDateExpression} BETWEEN ? AND ?
             AND r.status IN (${statusPlaceholders})
-            ${costCentreId ? 'AND rp.cost_centre = ?' : ''}
+            ${hasCostCentreFilter ? `AND rp.cost_centre IN (${costCentrePlaceholders})` : ''}
           GROUP BY r.id
-          ORDER BY r.receipt_date DESC, r.id DESC
+          ORDER BY ${receiptDateExpression} DESC, r.id DESC
           `,
           receiptFilterParams,
         )
@@ -128,16 +215,18 @@ export default defineEventHandler(async (event): Promise<FinanceAnalysisResponse
               cc.id AS group_id,
               cc.code AS group_code,
               cc.name AS group_name,
-              DATE_FORMAT(r.receipt_date, '%Y-%m') AS month_key,
+              DATE_FORMAT(${receiptDateExpression}, '%Y-%m') AS month_key,
               r.status,
               COUNT(DISTINCT r.id) AS receipt_count,
               IFNULL(SUM(rp.amount), 0) AS total_amount
             FROM receipts r
             INNER JOIN receipt_positions rp ON rp.receipt_id = r.id
             INNER JOIN cost_centres cc ON cc.id = rp.cost_centre
-            WHERE r.receipt_date BETWEEN ? AND ?
+            LEFT JOIN reimbursement_positions rlink ON rlink.receipt_id = r.id
+            LEFT JOIN reimbursements reimb ON reimb.id = rlink.reimbursement_id
+            WHERE ${receiptDateExpression} BETWEEN ? AND ?
               AND r.status IN (${statusPlaceholders})
-              ${costCentreId ? 'AND rp.cost_centre = ?' : ''}
+              ${hasCostCentreFilter ? `AND rp.cost_centre IN (${costCentrePlaceholders})` : ''}
             GROUP BY cc.id, cc.code, cc.name, month_key, r.status
 
             UNION ALL
@@ -147,16 +236,18 @@ export default defineEventHandler(async (event): Promise<FinanceAnalysisResponse
               s.id AS group_id,
               s.code AS group_code,
               s.name AS group_name,
-              DATE_FORMAT(r.receipt_date, '%Y-%m') AS month_key,
+              DATE_FORMAT(${receiptDateExpression}, '%Y-%m') AS month_key,
               r.status,
               COUNT(DISTINCT r.id) AS receipt_count,
               IFNULL(SUM(rp.amount), 0) AS total_amount
             FROM receipts r
             INNER JOIN receipt_positions rp ON rp.receipt_id = r.id
             INNER JOIN spheres s ON s.id = rp.sphere
-            WHERE r.receipt_date BETWEEN ? AND ?
+            LEFT JOIN reimbursement_positions rlink ON rlink.receipt_id = r.id
+            LEFT JOIN reimbursements reimb ON reimb.id = rlink.reimbursement_id
+            WHERE ${receiptDateExpression} BETWEEN ? AND ?
               AND r.status IN (${statusPlaceholders})
-              ${costCentreId ? 'AND rp.cost_centre = ?' : ''}
+              ${hasCostCentreFilter ? `AND rp.cost_centre IN (${costCentrePlaceholders})` : ''}
             GROUP BY s.id, s.code, s.name, month_key, r.status
           ) breakdown
           ORDER BY breakdown.group_type, breakdown.group_code, breakdown.group_name, breakdown.month_key, breakdown.status
@@ -165,9 +256,7 @@ export default defineEventHandler(async (event): Promise<FinanceAnalysisResponse
         )
       : []
 
-    const cashCountRows: any[] = costCentreId
-      ? []
-      : await query(
+    const cashCountRows: any[] = await query(
           `
           SELECT
             cc.id,
@@ -184,6 +273,7 @@ export default defineEventHandler(async (event): Promise<FinanceAnalysisResponse
             IFNULL(SUM(ccp.amount_after - ccp.amount_before), 0) AS total_difference
           FROM cash_counts cc
           INNER JOIN events e ON e.id = cc.event_id
+          ${hasCostCentreFilter ? `INNER JOIN event_cost_centre_splits eccs_filter ON eccs_filter.event_id = e.id AND eccs_filter.cost_centre_id IN (${costCentrePlaceholders})` : ''}
           LEFT JOIN members m1 ON m1.id = cc.counted_by_first
           LEFT JOIN members m2 ON m2.id = cc.counted_by_second
           LEFT JOIN members m3 ON m3.id = cc.checked_by
@@ -192,12 +282,25 @@ export default defineEventHandler(async (event): Promise<FinanceAnalysisResponse
           GROUP BY cc.id
           ORDER BY cc.counted_after_at DESC, cc.id DESC
           `,
-          [startDate, endDate],
+          hasCostCentreFilter ? [...selectedCostCentreIds, startDate, endDate] : [startDate, endDate],
+        )
+
+    const cashCountRegisterSummaryRows: any[] = await query(
+          `
+          SELECT
+            COUNT(DISTINCT ccp.register_number) AS register_total
+          FROM cash_counts cc
+          INNER JOIN events e ON e.id = cc.event_id
+          ${hasCostCentreFilter ? `INNER JOIN event_cost_centre_splits eccs_filter ON eccs_filter.event_id = e.id AND eccs_filter.cost_centre_id IN (${costCentrePlaceholders})` : ''}
+          LEFT JOIN cash_count_positions ccp ON ccp.cash_count_id = cc.id
+          WHERE DATE(cc.counted_after_at) BETWEEN ? AND ?
+          `,
+          hasCostCentreFilter ? [...selectedCostCentreIds, startDate, endDate] : [startDate, endDate],
         )
 
     const invoiceStatusPlaceholders = selectedInvoiceStatuses.map(() => '?').join(', ')
-    const invoiceFilterParams = costCentreId
-      ? [startDate, endDate, ...selectedInvoiceStatuses, costCentreId]
+    const invoiceFilterParams = hasCostCentreFilter
+      ? [startDate, endDate, ...selectedInvoiceStatuses, ...selectedCostCentreIds]
       : [startDate, endDate, ...selectedInvoiceStatuses]
 
     const invoiceRows: any[] = selectedInvoiceStatuses.length === 0
@@ -218,7 +321,7 @@ export default defineEventHandler(async (event): Promise<FinanceAnalysisResponse
           LEFT JOIN invoice_positions ip ON ip.invoice_id = i.id
           WHERE ${invoiceDateColumn} BETWEEN ? AND ?
             AND i.status IN (${invoiceStatusPlaceholders})
-            ${costCentreId ? 'AND ip.cost_centre = ?' : ''}
+            ${hasCostCentreFilter ? `AND ip.cost_centre IN (${costCentrePlaceholders})` : ''}
           GROUP BY i.id
           ORDER BY ${invoiceDateColumn} DESC, i.id DESC
           `,
@@ -245,7 +348,7 @@ export default defineEventHandler(async (event): Promise<FinanceAnalysisResponse
             INNER JOIN cost_centres cc ON cc.id = ip.cost_centre
             WHERE ${invoiceDateColumn} BETWEEN ? AND ?
               AND i.status IN (${invoiceStatusPlaceholders})
-              ${costCentreId ? 'AND ip.cost_centre = ?' : ''}
+              ${hasCostCentreFilter ? `AND ip.cost_centre IN (${costCentrePlaceholders})` : ''}
             GROUP BY cc.id, cc.code, cc.name, month_key, i.status
 
             UNION ALL
@@ -264,7 +367,7 @@ export default defineEventHandler(async (event): Promise<FinanceAnalysisResponse
             INNER JOIN spheres s ON s.id = ip.sphere
             WHERE ${invoiceDateColumn} BETWEEN ? AND ?
               AND i.status IN (${invoiceStatusPlaceholders})
-              ${costCentreId ? 'AND ip.cost_centre = ?' : ''}
+              ${hasCostCentreFilter ? `AND ip.cost_centre IN (${costCentrePlaceholders})` : ''}
             GROUP BY s.id, s.code, s.name, month_key, i.status
           ) breakdown
           ORDER BY breakdown.group_type, breakdown.group_code, breakdown.group_name, breakdown.month_key, breakdown.status
@@ -275,6 +378,7 @@ export default defineEventHandler(async (event): Promise<FinanceAnalysisResponse
     const receipts: FinanceAnalysisReceiptItem[] = receiptRows.map(row => ({
       id: Number(row.id),
       receipt_date: String(row.receipt_date),
+      reimbursement_submitted_at: row.reimbursement_submitted_at ? String(row.reimbursement_submitted_at) : null,
       receipt_number: row.receipt_number ? String(row.receipt_number) : null,
       company_name: row.company_name ? String(row.company_name) : null,
       status: row.status as ReceiptStatus,
@@ -292,10 +396,15 @@ export default defineEventHandler(async (event): Promise<FinanceAnalysisResponse
       total_amount: Number(row.total_amount || 0),
     }))
 
+    const cashCountCostCentresByEventId = await loadCashCountCostCentreSplits(
+      cashCountRows.map(row => Number(row.event_id)),
+    )
+
     const cashCounts: FinanceAnalysisCashCountItem[] = cashCountRows.map(row => ({
       id: Number(row.id),
       event_id: Number(row.event_id),
       event_name: String(row.event_name || ''),
+      cost_centres: cashCountCostCentresByEventId.get(Number(row.event_id)) ?? [],
       counted_before_at: String(row.counted_before_at),
       counted_after_at: String(row.counted_after_at),
       counted_by_first_name: String(row.counted_by_first_name || ''),
@@ -306,6 +415,8 @@ export default defineEventHandler(async (event): Promise<FinanceAnalysisResponse
       total_after_amount: Number(row.total_after_amount || 0),
       total_difference: Number(row.total_difference || 0),
     }))
+
+    const cashCountRegisterTotal = Number(cashCountRegisterSummaryRows[0]?.register_total || 0)
 
     const invoices: FinanceAnalysisInvoiceItem[] = invoiceRows.map(row => ({
       id: Number(row.id),
@@ -366,13 +477,11 @@ export default defineEventHandler(async (event): Promise<FinanceAnalysisResponse
     })
 
     const cashCountSummary = cashCounts.reduce((summary, cashCount) => {
-      summary.cash_count_register_total += cashCount.register_count
       summary.cash_count_total_before += cashCount.total_before_amount
       summary.cash_count_total_after += cashCount.total_after_amount
       summary.cash_count_total_difference += cashCount.total_difference
       return summary
     }, {
-      cash_count_register_total: 0,
       cash_count_total_before: 0,
       cash_count_total_after: 0,
       cash_count_total_difference: 0,
@@ -402,7 +511,7 @@ export default defineEventHandler(async (event): Promise<FinanceAnalysisResponse
           receipt_cancelled_count: receiptSummary.receipt_cancelled_count,
           receipt_cancelled_total: Number(receiptSummary.receipt_cancelled_total.toFixed(2)),
           cash_count_count: cashCounts.length,
-          cash_count_register_total: cashCountSummary.cash_count_register_total,
+          cash_count_register_total: cashCountRegisterTotal,
           cash_count_total_before: Number(cashCountSummary.cash_count_total_before.toFixed(2)),
           cash_count_total_after: Number(cashCountSummary.cash_count_total_after.toFixed(2)),
           cash_count_total_difference: Number(cashCountSummary.cash_count_total_difference.toFixed(2)),
