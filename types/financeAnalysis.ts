@@ -38,6 +38,9 @@ export interface FinanceAnalysisCashCountItem {
   event_id: number
   event_name: string
   cost_centres: {
+    sphere_id: number
+    sphere_code: string
+    sphere_name: string
     cost_centre_id: number
     code: string
     name: string

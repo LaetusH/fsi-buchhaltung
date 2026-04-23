@@ -284,22 +284,24 @@ CREATE TABLE IF NOT EXISTS event_subdivision_organizers (
   FOREIGN KEY (subdivision_id) REFERENCES subdivisions(id)
 );
 
-CREATE TABLE IF NOT EXISTS event_cost_centre_splits (
-  id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-  event_id BIGINT UNSIGNED NOT NULL,
-  cost_centre_id MEDIUMINT UNSIGNED NOT NULL,
-  allocation_percentage DECIMAL(7,2) NOT NULL,
-  UNIQUE KEY unique_event_cost_centre_split (event_id, cost_centre_id),
-  FOREIGN KEY (event_id) REFERENCES events(id) ON DELETE CASCADE,
-  FOREIGN KEY (cost_centre_id) REFERENCES cost_centres(id)
-);
-
 CREATE TABLE IF NOT EXISTS spheres (
   id TINYINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
   code VARCHAR(32) NOT NULL UNIQUE,
   name VARCHAR(127) NOT NULL,
   is_active TINYINT(1) NOT NULL DEFAULT 1,
   description TEXT
+);
+
+CREATE TABLE IF NOT EXISTS event_cost_centre_splits (
+  id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  event_id BIGINT UNSIGNED NOT NULL,
+  sphere_id TINYINT UNSIGNED NOT NULL,
+  cost_centre_id MEDIUMINT UNSIGNED NOT NULL,
+  allocation_percentage DECIMAL(7,2) NOT NULL,
+  UNIQUE KEY unique_event_cost_centre_split (event_id, cost_centre_id),
+  FOREIGN KEY (event_id) REFERENCES events(id) ON DELETE CASCADE,
+  FOREIGN KEY (sphere_id) REFERENCES spheres(id),
+  FOREIGN KEY (cost_centre_id) REFERENCES cost_centres(id)
 );
 
 CREATE TABLE IF NOT EXISTS invoice_positions (

@@ -185,7 +185,9 @@ function costCentreSummary(entry: Event) {
 
   if (entry.cost_centre_splits.length === 1) {
     const split = entry.cost_centre_splits[0]
-    return split ? `${split.code} - ${split.name} (${Number(split.allocation_percentage).toFixed(2)}%)` : t('event.noCostCentresShort')
+    return split
+      ? `${split.code} - ${split.name} (${Number(split.allocation_percentage).toFixed(2)}%)`
+      : t('event.noCostCentresShort')
   }
 
   const sortedSplits = [...entry.cost_centre_splits].sort((left, right) => {

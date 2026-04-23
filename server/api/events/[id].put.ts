@@ -50,8 +50,8 @@ export default defineEventHandler(async (event): Promise<UpdateEventResponse> =>
       const existing = existingRows[0]
       if (!existing) return { ok: false, error: 'Event not found' }
 
-      const existingSplitRows = await query<{ id: number, cost_centre_id: number, allocation_percentage: number }[]>(
-        `SELECT id, cost_centre_id, allocation_percentage
+      const existingSplitRows = await query<{ id: number, sphere_id: number, cost_centre_id: number, allocation_percentage: number }[]>(
+        `SELECT id, sphere_id, cost_centre_id, allocation_percentage
          FROM event_cost_centre_splits
          WHERE event_id = ?`,
         [eventId],
@@ -79,7 +79,11 @@ export default defineEventHandler(async (event): Promise<UpdateEventResponse> =>
         body,
         conn,
         subdivisionRows.map(row => Number(row.subdivision_id)),
-        existingSplitRows.map(row => Number(row.cost_centre_id)),
+        existingSplitRows.map(row => ({
+          itemId: Number(row.id),
+          sphereId: Number(row.sphere_id),
+          costCentreId: Number(row.cost_centre_id),
+        })),
       )
       if (relationError) return { ok: false, error: relationError }
 
@@ -114,6 +118,7 @@ export default defineEventHandler(async (event): Promise<UpdateEventResponse> =>
         eventId,
         existingRows: existingSplitRows.map(row => ({
           id: Number(row.id),
+          sphere_id: Number(row.sphere_id),
           cost_centre_id: Number(row.cost_centre_id),
           allocation_percentage: Number(row.allocation_percentage),
         })),

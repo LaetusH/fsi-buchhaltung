@@ -7,6 +7,7 @@
           :members="members"
           :subdivisions="subdivisions"
           :cost-centres="costCentres"
+          :spheres="spheres"
           :disabled="!canEdit"
           @submit="submit"
           @cancel="cancel"
@@ -24,7 +25,7 @@ import { useReturnTarget } from '~/composables/useReturnTarget'
 import { useToast } from '~/composables/useToast'
 import type { GetEventResponse } from '~/server/api/events/[id].get'
 import type { GetEventOptionsResponse } from '~/server/api/events/options.get'
-import type { EventCostCentreOption, EventMemberOption, EventSubdivisionOption, SaveEventBody } from '~/types/event'
+import type { EventCostCentreOption, EventMemberOption, EventSphereOption, EventSubdivisionOption, SaveEventBody } from '~/types/event'
 import PageEventsForm from './Form.vue'
 
 const emit = defineEmits<{
@@ -44,6 +45,7 @@ const eventId = ref<number | null>(null)
 const members = ref<EventMemberOption[]>([])
 const subdivisions = ref<EventSubdivisionOption[]>([])
 const costCentres = ref<EventCostCentreOption[]>([])
+const spheres = ref<EventSphereOption[]>([])
 
 const form = ref<SaveEventBody>({
   name: '',
@@ -79,6 +81,7 @@ onMounted(async () => {
     member_organizer_ids: res.event.member_organizers.map(organizer => organizer.id),
     subdivision_organizer_ids: res.event.subdivision_organizers.map(organizer => organizer.id),
     cost_centre_splits: res.event.cost_centre_splits.map(split => ({
+      sphere_id: split.sphere_id,
       cost_centre_id: split.cost_centre_id,
       allocation_percentage: Number(split.allocation_percentage),
     })),
@@ -92,6 +95,7 @@ async function loadOptions() {
   members.value = res.members
   subdivisions.value = res.subdivisions
   costCentres.value = res.costCentres
+  spheres.value = res.spheres
 }
 
 async function submit() {

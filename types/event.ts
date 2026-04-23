@@ -1,4 +1,5 @@
 export interface SaveEventCostCentreSplit {
+  sphere_id: number
   cost_centre_id: number
   allocation_percentage: number
 }
@@ -35,6 +36,8 @@ export interface EventSubdivisionOrganizer {
 }
 
 export interface EventCostCentreSplit extends SaveEventCostCentreSplit {
+  sphere_code: string
+  sphere_name: string
   code: string
   name: string
 }
@@ -58,6 +61,13 @@ export interface EventSubdivisionOption {
 }
 
 export interface EventCostCentreOption {
+  id: number
+  code: string
+  name: string
+  is_active: boolean
+}
+
+export interface EventSphereOption {
   id: number
   code: string
   name: string

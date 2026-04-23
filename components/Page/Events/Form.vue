@@ -1,6 +1,6 @@
 <template>
   <div class="space-y-6">
-    <section class="bg-white rounded-xl shadow-lg p-4 space-y-4">
+    <section class="space-y-4 rounded-xl bg-white p-4 shadow-lg">
       <h2 class="text-lg font-semibold">{{ t('event.masterData') }}</h2>
 
       <div class="grid gap-4 md:grid-cols-2">
@@ -38,7 +38,7 @@
       </div>
     </section>
 
-    <section class="bg-white rounded-xl shadow-lg p-4 space-y-4">
+    <section class="space-y-4 rounded-xl bg-white p-4 shadow-lg">
       <h2 class="text-lg font-semibold">{{ t('event.organizers') }}</h2>
 
       <div class="grid gap-4 lg:grid-cols-2">
@@ -80,8 +80,8 @@
       </div>
     </section>
 
-    <section class="bg-white rounded-xl shadow-lg p-4 space-y-4">
-      <div class="flex items-center justify-between gap-3 flex-wrap">
+    <section class="space-y-4 rounded-xl bg-white p-4 shadow-lg">
+      <div class="flex flex-wrap items-center justify-between gap-3">
         <h2 class="text-lg font-semibold">{{ t('event.costCentres') }}</h2>
         <p
           class="text-sm font-medium"
@@ -91,22 +91,102 @@
         </p>
       </div>
 
-      <CommonAllocationListField
-        :query="costCentreQuery"
-        :options="costCentreOptions"
-        :items="selectedCostCentreSplits"
-        :placeholder="t('event.costCentrePlaceholder')"
-        :empty-text="t('event.noMatchingCostCentres')"
-        :empty-selection-text="t('event.noCostCentresAssigned')"
-        :remove-label="t('actions.remove')"
-        :allocation-label="t('event.allocationPercentage')"
-        :disabled="disabled"
-        @update:query="costCentreQuery = $event"
-        @select="addCostCentreSplit($event)"
-        @clear-selection="clearCostCentreSelection"
-        @remove="removeCostCentreSplit($event)"
-        @update:allocation="updateCostCentreAllocation"
-      />
+      <div class="space-y-3">
+        <CommonSearchSelect
+          v-if="!disabled"
+          :model-value="costCentreQuery"
+          :options="costCentreOptions"
+          :placeholder="t('event.costCentrePlaceholder')"
+          :empty-text="t('event.noMatchingCostCentres')"
+          @update:model-value="costCentreQuery = $event"
+          @select="addCostCentreSplit($event)"
+          @clear-selection="clearCostCentreSelection"
+        />
+
+        <div v-if="selectedCostCentreSplits.length" class="min-h-0 rounded-lg border border-slate-200 bg-slate-50">
+          <div class="selection-scroll max-h-[min(38vh,24rem)] overflow-y-auto p-2">
+            <div
+              v-for="split in selectedCostCentreSplits"
+              :key="split.id"
+              class="mb-2 rounded-lg border border-slate-200 bg-white px-3 py-3 last:mb-0"
+            >
+              <div class="flex items-start justify-between gap-3">
+                <div class="min-w-0">
+                  <p class="truncate text-sm font-medium text-slate-800">
+                    {{ split.label }}
+                  </p>
+                  <p v-if="split.meta" class="text-xs text-slate-500">
+                    {{ split.meta }}
+                  </p>
+                </div>
+
+                <button
+                  v-if="!disabled"
+                  type="button"
+                  class="shrink-0 cursor-pointer text-sm text-red-500 hover:underline"
+                  @click="removeCostCentreSplit(split.id)"
+                >
+                  {{ t('actions.remove') }}
+                </button>
+              </div>
+
+              <div class="mt-3 grid gap-3 md:grid-cols-[minmax(0,1fr)_auto] md:items-end">
+                <div>
+                  <label class="text-sm text-slate-600">{{ t('event.sphere') }}</label>
+                  <MenuDropdown
+                    v-model="openSphereDropdownId"
+                    :id="split.id"
+                    :disabled="disabled"
+                  >
+                    <template #trigger>
+                      <button
+                        type="button"
+                        class="input mt-1 flex w-full items-center justify-between text-left cursor-pointer"
+                        :disabled="disabled"
+                      >
+                        <span class="truncate">
+                          {{ selectedSphereLabel(split.sphere_id) || t('event.spherePlaceholder') }}
+                        </span>
+                        <Icon v-if="!disabled" name="material-symbols:keyboard-arrow-down-rounded" class="text-lg" />
+                      </button>
+                    </template>
+
+                    <button
+                      v-for="sphere in availableSpheres(split.sphere_id)"
+                      :key="sphere.id"
+                      type="button"
+                      class="flex w-full cursor-pointer px-3 py-2 text-left text-sm hover:bg-gray-100"
+                      @click="updateCostCentreSphere(split.id, sphere.id)"
+                    >
+                      {{ sphereOptionLabel(sphere) }}
+                    </button>
+                  </MenuDropdown>
+                </div>
+
+                <div>
+                  <label class="text-sm text-slate-600">{{ t('event.allocationPercentage') }}</label>
+                  <div class="mt-1 flex items-center gap-2">
+                    <input
+                      :value="split.allocation"
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      class="input w-28 text-right"
+                      :disabled="disabled"
+                      @input="updateCostCentreAllocation(split.id, ($event.target as HTMLInputElement).value)"
+                    >
+                    <span class="text-sm text-slate-500">%</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div v-else class="rounded-lg border border-dashed border-slate-300 px-3 py-4 text-sm text-slate-500">
+          {{ t('event.noCostCentresAssigned') }}
+        </div>
+      </div>
     </section>
 
     <CommonFormActions
@@ -125,16 +205,22 @@
 
 <script setup lang="ts">
 import type { SearchSelectOption } from '~/components/Common/SearchSelect.vue'
-import type { AllocationListItem } from '~/components/Common/AllocationListField.vue'
 import type { SelectionListItem } from '~/components/Common/SelectionListField.vue'
 import { useI18n } from '~/composables/useI18n'
-import type { EventCostCentreOption, EventMemberOption, EventSubdivisionOption, SaveEventBody } from '~/types/event'
+import type {
+  EventCostCentreOption,
+  EventMemberOption,
+  EventSphereOption,
+  EventSubdivisionOption,
+  SaveEventBody,
+} from '~/types/event'
 
 const props = defineProps<{
   modelValue: SaveEventBody
   members: EventMemberOption[]
   subdivisions: EventSubdivisionOption[]
   costCentres: EventCostCentreOption[]
+  spheres: EventSphereOption[]
   disabled?: boolean
 }>()
 
@@ -175,6 +261,7 @@ const disabled = computed(() => Boolean(props.disabled))
 const memberOrganizerQuery = ref('')
 const subdivisionOrganizerQuery = ref('')
 const costCentreQuery = ref('')
+const openSphereDropdownId = ref<number | null>(null)
 
 const memberOrganizerOptions = computed<SearchSelectOption<EventMemberOption>[]>(() => props.members
   .filter(member => !form.value.member_organizer_ids.includes(member.id))
@@ -214,6 +301,10 @@ function findCostCentre(id: number) {
   return props.costCentres.find(costCentre => costCentre.id === id)
 }
 
+function findSphere(id: number) {
+  return props.spheres.find(sphere => sphere.id === id)
+}
+
 const selectedMemberOrganizers = computed<SelectionListItem[]>(() => form.value.member_organizer_ids.map((id) => {
   const member = findMember(id)
   return {
@@ -231,12 +322,19 @@ const selectedSubdivisionOrganizers = computed<SelectionListItem[]>(() => form.v
   }
 }))
 
-const selectedCostCentreSplits = computed<AllocationListItem[]>(() => form.value.cost_centre_splits.map((split) => {
+const selectedCostCentreSplits = computed(() => form.value.cost_centre_splits.map((split) => {
   const costCentre = findCostCentre(split.cost_centre_id)
+  const sphere = findSphere(split.sphere_id)
+  const meta = [
+    costCentre?.is_active === false ? t('event.inactiveCostCentre') : null,
+    sphere?.is_active === false ? t('event.inactiveSphere') : null,
+  ].filter(Boolean).join(' | ')
+
   return {
     id: split.cost_centre_id,
+    sphere_id: split.sphere_id,
     label: costCentre ? `${costCentre.code} - ${costCentre.name}` : String(split.cost_centre_id),
-    meta: costCentre?.is_active === false ? t('event.inactiveCostCentre') : null,
+    meta: meta || null,
     allocation: Number(split.allocation_percentage).toFixed(2),
   }
 }))
@@ -267,6 +365,10 @@ const validationErrors = computed(() => {
 
   if (!form.value.cost_centre_splits.length) {
     errors.push(t('event.required.costCentres'))
+  }
+
+  if (form.value.cost_centre_splits.some(split => !Number.isInteger(Number(split.sphere_id)) || Number(split.sphere_id) <= 0)) {
+    errors.push(t('event.required.spheres'))
   }
 
   if (form.value.cost_centre_splits.some(split => Number(split.allocation_percentage) <= 0)) {
@@ -332,41 +434,44 @@ function removeSubdivisionOrganizer(value: string | number) {
   }
 }
 
-function buildEvenAllocation(ids: number[]) {
-  if (!ids.length) return []
+function rebalanceCostCentreSplits(splits: SaveEventBody['cost_centre_splits']) {
+  if (!splits.length) return []
 
-  const base = Math.floor((10000 / ids.length)) / 100
-  const entries = ids.map((id, index) => ({
-    cost_centre_id: id,
-    allocation_percentage: index === ids.length - 1
-      ? Number((100 - base * (ids.length - 1)).toFixed(2))
+  const base = Math.floor(10000 / splits.length) / 100
+
+  return splits.map((split, index) => ({
+    ...split,
+    allocation_percentage: index === splits.length - 1
+      ? Number((100 - base * (splits.length - 1)).toFixed(2))
       : Number(base.toFixed(2)),
   }))
-
-  return entries
 }
 
 function addCostCentreSplit(value: unknown) {
   const costCentre = value as EventCostCentreOption
   if (!costCentre?.id || form.value.cost_centre_splits.some(split => split.cost_centre_id === costCentre.id)) return
 
-  const ids = [...form.value.cost_centre_splits.map(split => split.cost_centre_id), costCentre.id]
   form.value = {
     ...form.value,
-    cost_centre_splits: buildEvenAllocation(ids),
+    cost_centre_splits: rebalanceCostCentreSplits([
+      ...form.value.cost_centre_splits,
+      {
+        sphere_id: 0,
+        cost_centre_id: costCentre.id,
+        allocation_percentage: 0,
+      },
+    ]),
   }
   costCentreQuery.value = ''
 }
 
 function removeCostCentreSplit(value: string | number) {
   const costCentreId = Number(value)
-  const ids = form.value.cost_centre_splits
-    .map(split => split.cost_centre_id)
-    .filter(id => id !== costCentreId)
-
   form.value = {
     ...form.value,
-    cost_centre_splits: buildEvenAllocation(ids),
+    cost_centre_splits: rebalanceCostCentreSplits(
+      form.value.cost_centre_splits.filter(split => split.cost_centre_id !== costCentreId),
+    ),
   }
 }
 
@@ -386,4 +491,58 @@ function updateCostCentreAllocation(value: string | number, allocation: string) 
     }),
   }
 }
+
+function updateCostCentreSphere(value: string | number, sphereValue: number) {
+  const costCentreId = Number(value)
+  const sphereId = Number(sphereValue || 0)
+
+  form.value = {
+    ...form.value,
+    cost_centre_splits: form.value.cost_centre_splits.map((split) => {
+      if (split.cost_centre_id !== costCentreId) return split
+      return {
+        ...split,
+        sphere_id: Number.isInteger(sphereId) ? sphereId : 0,
+      }
+    }),
+  }
+
+  openSphereDropdownId.value = null
+}
+
+function availableSpheres(selectedSphereId: number) {
+  return props.spheres.filter(sphere => Boolean(sphere.is_active) || sphere.id === selectedSphereId)
+}
+
+function sphereOptionLabel(sphere: EventSphereOption) {
+  const baseLabel = `${sphere.code} - ${sphere.name}`
+  return Boolean(sphere.is_active) ? baseLabel : `${baseLabel} (${t('common.inactive')})`
+}
+
+function selectedSphereLabel(sphereId: number) {
+  const sphere = findSphere(sphereId)
+  return sphere ? sphereOptionLabel(sphere) : ''
+}
 </script>
+
+<style scoped>
+.selection-scroll {
+  scrollbar-width: auto;
+  scrollbar-color: #94a3b8 #e2e8f0;
+}
+
+.selection-scroll::-webkit-scrollbar {
+  width: 12px;
+}
+
+.selection-scroll::-webkit-scrollbar-track {
+  background: #e2e8f0;
+  border-radius: 9999px;
+}
+
+.selection-scroll::-webkit-scrollbar-thumb {
+  background: #94a3b8;
+  border-radius: 9999px;
+  border: 2px solid #e2e8f0;
+}
+</style>

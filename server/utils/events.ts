@@ -3,11 +3,13 @@ import { syncScalarCollection } from '~/server/utils/syncScalarCollection'
 import { validateSimpleCostCentreSelection } from '~/server/utils/costCentres'
 import { query } from '~/server/utils/db'
 import { normalizeRelationIds, validateSubdivisionSelection } from '~/server/utils/subdivisions'
+import { validateSphereSelection } from '~/server/utils/spheres'
 import type {
   EventCostCentreOption,
   EventCostCentreSplit,
   EventMemberOption,
   EventMemberOrganizer,
+  EventSphereOption,
   EventSubdivisionOption,
   EventSubdivisionOrganizer,
   SaveEventBody,
@@ -30,6 +32,9 @@ interface EventSubdivisionOrganizerRow {
 interface EventCostCentreSplitRow {
   id: number
   event_id: number
+  sphere_id: number
+  sphere_code: string
+  sphere_name: string
   cost_centre_id: number
   code: string
   name: string
@@ -38,6 +43,7 @@ interface EventCostCentreSplitRow {
 
 interface EventCostCentreSplitLogRow {
   id: number
+  sphere_id: number
   cost_centre_id: number
   allocation_percentage: number
 }
@@ -76,15 +82,18 @@ export function normalizeEventCostCentreSplits(value: unknown): SaveEventCostCen
     if (!entry || typeof entry !== 'object') return null
 
     const raw = entry as Record<string, unknown>
+    const sphereId = Number(raw.sphere_id)
     const costCentreId = Number(raw.cost_centre_id)
     const allocationPercentage = Number(raw.allocation_percentage)
 
+    if (!Number.isInteger(sphereId) || sphereId <= 0) return null
     if (!Number.isInteger(costCentreId) || costCentreId <= 0) return null
     if (!Number.isFinite(allocationPercentage) || allocationPercentage <= 0) return null
     if (seen.has(costCentreId)) return null
 
     seen.add(costCentreId)
     normalized.push({
+      sphere_id: sphereId,
       cost_centre_id: costCentreId,
       allocation_percentage: Number(allocationPercentage.toFixed(2)),
     })
@@ -137,7 +146,7 @@ export async function validateEventRelations(
   body: SaveEventBody,
   conn: mariadb.PoolConnection,
   existingSubdivisionIds: number[] = [],
-  existingCostCentreIds: number[] = [],
+  existingCostCentreSplits: Array<{ itemId: number, costCentreId: number, sphereId: number }> = [],
 ) {
   if (body.member_organizer_ids.length) {
     const rows = await query<{ id: number }[]>(
@@ -169,6 +178,7 @@ export async function validateEventRelations(
   }
 
   const costCentreIds = body.cost_centre_splits.map(split => split.cost_centre_id)
+  const sphereIds = Array.from(new Set(body.cost_centre_splits.map(split => split.sphere_id)))
   const rows = await query<{ id: number }[]>(
     `SELECT id
      FROM cost_centres
@@ -181,7 +191,35 @@ export async function validateEventRelations(
     return 'At least one selected cost centre does not exist'
   }
 
-  return validateSimpleCostCentreSelection(costCentreIds, existingCostCentreIds, conn)
+  const sphereRows = await query<{ id: number }[]>(
+    `SELECT id
+     FROM spheres
+     WHERE id IN (${sphereIds.map(() => '?').join(',')})`,
+    sphereIds,
+    conn,
+  )
+  if (sphereRows.length !== sphereIds.length) {
+    return 'At least one selected sphere does not exist'
+  }
+
+  const costCentreValidationError = await validateSimpleCostCentreSelection(
+    costCentreIds,
+    existingCostCentreSplits.map(split => split.costCentreId),
+    conn,
+  )
+  if (costCentreValidationError) return costCentreValidationError
+
+  return validateSphereSelection(
+    body.cost_centre_splits.map(split => ({
+      itemId: existingCostCentreSplits.find(entry => entry.costCentreId === split.cost_centre_id)?.itemId ?? null,
+      sphereId: split.sphere_id,
+    })),
+    existingCostCentreSplits.map(split => ({
+      itemId: split.itemId,
+      sphereId: split.sphereId,
+    })),
+    conn,
+  )
 }
 
 export async function syncEventMemberOrganizers({
@@ -280,9 +318,9 @@ export async function syncEventCostCentreSplits({
 
     if (!existing) {
       await query(
-        `INSERT INTO event_cost_centre_splits (event_id, cost_centre_id, allocation_percentage)
-         VALUES (?, ?, ?)`,
-        [eventId, split.cost_centre_id, split.allocation_percentage],
+        `INSERT INTO event_cost_centre_splits (event_id, sphere_id, cost_centre_id, allocation_percentage)
+         VALUES (?, ?, ?, ?)`,
+        [eventId, split.sphere_id, split.cost_centre_id, split.allocation_percentage],
         conn,
       )
       continue
@@ -290,9 +328,9 @@ export async function syncEventCostCentreSplits({
 
     await query(
       `UPDATE event_cost_centre_splits
-       SET allocation_percentage = ?
+       SET sphere_id = ?, allocation_percentage = ?
        WHERE id = ?`,
-      [split.allocation_percentage, existing.id],
+      [split.sphere_id, split.allocation_percentage, existing.id],
       conn,
     )
   }
@@ -359,14 +397,18 @@ export async function loadEventRelations(
     `SELECT
        eccs.id,
        eccs.event_id,
+       eccs.sphere_id,
+       s.code AS sphere_code,
+       s.name AS sphere_name,
        eccs.cost_centre_id,
        cc.code,
        cc.name,
        eccs.allocation_percentage
      FROM event_cost_centre_splits eccs
+     JOIN spheres s ON s.id = eccs.sphere_id
      JOIN cost_centres cc ON cc.id = eccs.cost_centre_id
      WHERE eccs.event_id IN (${placeholders})
-     ORDER BY cc.code ASC, cc.name ASC`,
+     ORDER BY s.code ASC, s.name ASC, cc.code ASC, cc.name ASC`,
     eventIds,
     conn,
   )
@@ -382,6 +424,9 @@ export async function loadEventRelations(
       name: String(row.name),
     })),
     costCentreSplits: groupByEventId(splitRows, row => ({
+      sphere_id: Number(row.sphere_id),
+      sphere_code: String(row.sphere_code),
+      sphere_name: String(row.sphere_name),
       cost_centre_id: Number(row.cost_centre_id),
       code: String(row.code),
       name: String(row.name),
@@ -391,7 +436,7 @@ export async function loadEventRelations(
 }
 
 export async function loadEventOptions(conn?: mariadb.PoolConnection) {
-  const [members, subdivisions, costCentres] = await Promise.all([
+  const [members, subdivisions, costCentres, spheres] = await Promise.all([
     query<EventMemberOption[]>(
       `SELECT
          id,
@@ -415,6 +460,13 @@ export async function loadEventOptions(conn?: mariadb.PoolConnection) {
       undefined,
       conn,
     ),
+    query<EventSphereOption[]>(
+      `SELECT id, code, name, is_active
+       FROM spheres
+       ORDER BY is_active DESC, code ASC, name ASC`,
+      undefined,
+      conn,
+    ),
   ])
 
   return {
@@ -433,6 +485,12 @@ export async function loadEventOptions(conn?: mariadb.PoolConnection) {
       code: String(costCentre.code),
       name: String(costCentre.name),
       is_active: Boolean(costCentre.is_active),
+    })),
+    spheres: spheres.map(sphere => ({
+      id: Number(sphere.id),
+      code: String(sphere.code),
+      name: String(sphere.name),
+      is_active: Boolean(sphere.is_active),
     })),
   }
 }

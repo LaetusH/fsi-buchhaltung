@@ -224,7 +224,10 @@ function formatCashCountCostCentres(costCentres: FinanceAnalysisCashCountItem['c
 
   return costCentres
     .map(costCentre => {
-      const label = [costCentre.code, costCentre.name].filter(Boolean).join(' - ')
+      const costCentreLabel = [costCentre.code, costCentre.name].filter(Boolean).join(' - ')
+      const label = [costCentre.sphere_code, costCentre.sphere_name].filter(Boolean).join(' - ')
+        ? `${[costCentre.sphere_code, costCentre.sphere_name].filter(Boolean).join(' - ')} / ${costCentreLabel}`
+        : costCentreLabel
       return costCentres.length > 1
         ? `${label} (${costCentre.allocation_percentage.toFixed(2)}%)`
         : label
@@ -444,7 +447,7 @@ function buildCashCountExportRows(options: FinanceAnalysisReportOptions) {
       return {
         countedAfterAt: cashCount.counted_after_at,
         eventName: cashCount.event_name,
-        costCentreLabel: [costCentre.code, costCentre.name].filter(Boolean).join(' - '),
+        costCentreLabel: `${costCentre.sphere_code}/${costCentre.code} - ${costCentre.name}`,
         countedByFirstName: cashCount.counted_by_first_name,
         countedBySecondName: cashCount.counted_by_second_name,
         checkedByName: cashCount.checked_by_name,
