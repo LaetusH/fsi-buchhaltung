@@ -19,7 +19,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed } from 'vue'
 import { useAuth } from '~/composables/useAuth'
 import { useI18n } from '~/composables/useI18n'
 import { usePage } from '~/composables/usePage'
@@ -38,9 +38,9 @@ defineEmits<{
 
 const { t } = useI18n()
 const { hasPermission } = useAuth()
-const { pageMeta } = usePage()
+const { pageMeta, setPage } = usePage()
 
-const currentTab = ref<FinancesTab>('receipts')
+const currentTab = useState<FinancesTab>('finances-overview-current-tab', () => 'receipts')
 
 const tabs = computed(() => {
   const list = [
@@ -84,4 +84,9 @@ watch([tabs, () => pageMeta.value?.tab], ([availableTabs, requestedTab]) => {
     if (availableTabs[0]?.key) currentTab.value = availableTabs[0].key
   }
 }, { immediate: true })
+
+watch(currentTab, (tab) => {
+  if (pageMeta.value?.tab === tab) return
+  setPage('Finances', { tab })
+})
 </script>

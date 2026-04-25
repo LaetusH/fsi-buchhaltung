@@ -1,6 +1,11 @@
 <template>
   <div class="w-full">
-    <component v-if="loaded" :is="currentComponent" @open-menu="$emit('openMenu')"/>
+    <component
+      v-if="loaded"
+      :is="currentComponent"
+      :key="`${currentPage}:${refreshKey}`"
+      @open-menu="$emit('openMenu')"
+    />
   </div>
 </template>
 
@@ -17,6 +22,7 @@ const emit = defineEmits<{
 
 const { currentPage } = usePage()
 const { user, fetchSession, hasPermission, hasAllPermissions } = useAuth()
+const { refreshKey } = useAppRefresh()
 
 const loaded = ref(false)
 
