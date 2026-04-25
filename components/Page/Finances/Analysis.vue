@@ -276,7 +276,11 @@
                 <span>{{ isExporting ? t('financeAnalysis.exportingReport') : t('financeAnalysis.exportReport') }}</span>
               </button>
 
-              <div v-if="isExportMenuOpen && canExportAnalysis" class="absolute right-0 top-full z-20 mt-2 w-100 rounded-xl border border-slate-200 bg-white p-3 shadow-xl space-y-3">
+              <div
+                v-if="isExportMenuOpen && canExportAnalysis"
+                class="absolute top-full z-20 mt-2 w-[calc(100vw-4rem)] max-w-[20rem] rounded-xl border border-slate-200 bg-white p-3 shadow-xl space-y-3 sm:right-0 sm:left-auto sm:w-100 sm:max-w-none"
+                :style="exportMenuPositionStyle"
+              >
                 <div class="space-y-0.5">
                   <div class="text-sm font-semibold text-slate-900">{{ t('financeAnalysis.exportOptionsTitle') }}</div>
                   <p class="text-xs text-slate-500">{{ t('financeAnalysis.exportOptionsHint') }}</p>
@@ -334,10 +338,10 @@
 
                   <div class="space-y-1.5 rounded-lg bg-slate-50 p-2">
                     <div class="text-[11px] font-semibold uppercase tracking-wide text-slate-500">{{ t('financeAnalysis.exportGroupingLabel') }}</div>
-                    <div :class="['grid gap-2', showCostCentreGroupingOption ? 'grid-cols-3' : 'grid-cols-2']">
+                    <div :class="['grid grid-cols-2 gap-2', showCostCentreGroupingOption ? 'sm:grid-cols-3' : 'sm:grid-cols-2']">
                       <button
                         type="button"
-                        :class="exportGroupingButtonClass('none')"
+                        :class="[exportGroupingButtonClass('none'), 'col-span-2 sm:col-span-1']"
                         @click="setExportGrouping('none')"
                       >
                         {{ t('financeAnalysis.exportGroupingNone') }}
@@ -352,7 +356,7 @@
                       </button>
                       <button
                         type="button"
-                        :class="exportGroupingButtonClass('spheres')"
+                        :class="[exportGroupingButtonClass('spheres'), showCostCentreGroupingOption ? '' : 'col-span-2 sm:col-span-1']"
                         @click="setExportGrouping('spheres')"
                       >
                         {{ t('financeAnalysis.exportGroupingSpheres') }}
@@ -870,6 +874,8 @@ const costCentreQuery = ref('')
 const selectedCostCentre = ref<CostCentreRow | null>(null)
 const includeChildCostCentres = ref(false)
 const exportMenuWrapper = ref<HTMLElement | null>(null)
+const exportMenuAlignment = ref<'left' | 'right'>('left')
+const isExportMenuMobile = ref(false)
 const isExportMenuOpen = ref(false)
 const exportGrouping = ref<FinanceAnalysisExportGrouping>('none')
 const exportSplitByMonth = ref(false)
@@ -907,6 +913,12 @@ const hasSingleSelectedCostCentre = computed(() => {
 })
 const showReportPagesExportOptions = computed(() => !hasSingleSelectedCostCentre.value)
 const showCostCentreGroupingOption = computed(() => !hasSingleSelectedCostCentre.value)
+const exportMenuPositionStyle = computed(() => {
+  if (!isExportMenuMobile.value) return undefined
+  return exportMenuAlignment.value === 'right'
+    ? { right: '0', left: 'auto' }
+    : { left: '0', right: 'auto' }
+})
 
 function addOneDay(dateString: string) {
   const parts = dateString.split('-').map(Number)
@@ -1440,7 +1452,30 @@ function closeExportMenu() {
 
 function toggleExportMenu() {
   if (!canExportAnalysis.value) return
+  updateExportMenuPosition()
   isExportMenuOpen.value = !isExportMenuOpen.value
+}
+
+function updateExportMenuPosition() {
+  if (!import.meta.client) return
+
+  isExportMenuMobile.value = window.innerWidth < 640
+  if (!isExportMenuMobile.value) return
+
+  const wrapperRect = exportMenuWrapper.value?.getBoundingClientRect()
+  if (!wrapperRect) return
+
+  const viewportPadding = 16
+  const menuWidth = Math.min(window.innerWidth - 64, 320)
+  const hasRoomFromLeftEdge = wrapperRect.left + menuWidth <= window.innerWidth - viewportPadding
+  const hasRoomFromRightEdge = wrapperRect.right - menuWidth >= viewportPadding
+
+  if (hasRoomFromLeftEdge && hasRoomFromRightEdge) {
+    exportMenuAlignment.value = wrapperRect.left < window.innerWidth / 2 ? 'left' : 'right'
+    return
+  }
+
+  exportMenuAlignment.value = hasRoomFromLeftEdge ? 'left' : 'right'
 }
 
 function formatComparisonValue(value: number, type: ComparisonValueType) {
@@ -1890,8 +1925,14 @@ watch(showCostCentreGroupingOption, (value) => {
   if (!value && exportGrouping.value === 'costCentres') exportGrouping.value = 'none'
 })
 
+watch(isExportMenuOpen, (value) => {
+  if (value) nextTick(updateExportMenuPosition)
+})
+
 onMounted(async () => {
   document.addEventListener('mousedown', handleExportMenuClickOutside)
+  window.addEventListener('resize', updateExportMenuPosition)
+  window.visualViewport?.addEventListener('resize', updateExportMenuPosition)
   await loadCostCentres()
   await loadBudgets()
   restoreStoredAnalysisState()
@@ -1902,5 +1943,7 @@ onMounted(async () => {
 
 onBeforeUnmount(() => {
   document.removeEventListener('mousedown', handleExportMenuClickOutside)
+  window.removeEventListener('resize', updateExportMenuPosition)
+  window.visualViewport?.removeEventListener('resize', updateExportMenuPosition)
 })
 </script>

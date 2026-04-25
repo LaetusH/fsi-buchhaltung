@@ -16,6 +16,7 @@
           ref="menuRef"
           class="absolute z-100 rounded-md border bg-white shadow-lg max-h-50 overflow-y-auto"
           :style="dropdownStyle"
+          @mousedown.stop
           @click.stop
         >
           <slot styling="flex w-full text-left px-3 py-2 text-sm hover:bg-gray-100 rounded-md cursor-pointer whitespace-nowrap" />
