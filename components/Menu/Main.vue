@@ -31,7 +31,7 @@
               : 'bg-gray-800 text-gray-400'
           ]"
         >
-          <Icon :name="page.icon" class="w-10 h-10" aria-hidden="true" />
+          <Icon :name="page.icon" size="30" class="shrink-0" aria-hidden="true" />
         </div>
 
         <span v-if="!collapsed" class="mt-2 text-sm text-gray-300 font-medium text-center">

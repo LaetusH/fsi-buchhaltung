@@ -21,9 +21,9 @@ import SettingsPage from '~/components/Page/Settings/Overview.vue'
 
 // Do not display more than 8 pages at once
 export const PAGES: Record<string, AppPage> = {
-  Login: { main: true, labelKey: 'pages.login', component: LoginPage, icon: '', permissions: [], allowGuest: true },
-  Home: { main: true, labelKey: 'pages.home', component: HomePage, icon: '', permissions: ['pages.home.view'] },
-  Finances: { main: true, labelKey: 'pages.finances', component: FinancesPage, icon: '', permissions: ['receipts.view', 'invoices.view', 'reimbursements.view', 'cash_counts.view', 'budgets.view'] },
+  Login: { main: true, labelKey: 'pages.login', component: LoginPage, icon: 'material-symbols:login-rounded', permissions: [], allowGuest: true },
+  Home: { main: true, labelKey: 'pages.home', component: HomePage, icon: 'material-symbols:home-rounded', permissions: ['pages.home.view'] },
+  Finances: { main: true, labelKey: 'pages.finances', component: FinancesPage, icon: 'ri:money-euro-circle-fill', permissions: ['receipts.view', 'invoices.view', 'reimbursements.view', 'cash_counts.view', 'budgets.view'] },
   ReceiptList: { main: false, labelKey: 'pages.receipts', component: ReceiptListPage, permissions: ['receipts.view'] },
   ReceiptCreate: { main: false, labelKey: 'pages.createReceipt', component: ReceiptCreatePage, permissions: ['receipts.view'] },
   InvoiceList: { main: false, labelKey: 'pages.invoices', component: InvoiceListPage, permissions: ['invoices.view'] },
@@ -34,10 +34,10 @@ export const PAGES: Record<string, AppPage> = {
   CashCountCreate: { main: false, labelKey: 'pages.createCashCount', component: CashCountCreatePage, permissions: ['cash_counts.view'] },
   BudgetList: { main: false, labelKey: 'pages.budgets', component: BudgetListPage, permissions: ['budgets.view'] },
   BudgetCreate: { main: false, labelKey: 'pages.createBudget', component: BudgetCreatePage, permissions: ['budgets.view'] },
-  FinanceAnalysis: { main: true, labelKey: 'pages.financeAnalysis', component: FinanceAnalysisPage, icon: '', permissions: ['receipts.view', 'cash_counts.view', 'invoices.view'], requireAllPermissions: true },
-  Events: { main: true, labelKey: 'pages.events', component: EventListPage, icon: '', permissions: ['events.view'] },
+  FinanceAnalysis: { main: true, labelKey: 'pages.financeAnalysis', component: FinanceAnalysisPage, icon: 'material-symbols:query-stats-rounded', permissions: ['receipts.view', 'cash_counts.view', 'invoices.view'], requireAllPermissions: true },
+  Events: { main: true, labelKey: 'pages.events', component: EventListPage, icon: 'material-symbols:event-rounded', permissions: ['events.view'] },
   EventCreate: { main: false, labelKey: 'pages.createEvent', component: EventCreatePage, permissions: ['events.view'] },
-  MemberList: { main: true, labelKey: 'pages.members', component: MemberListPage, icon: '', permissions: ['members.view'] },
+  MemberList: { main: true, labelKey: 'pages.members', component: MemberListPage, icon: 'material-symbols:groups-rounded', permissions: ['members.view'] },
   MemberCreate: { main: false, labelKey: 'pages.createMember', component: MemberCreatePage, permissions: ['members.view'] },
-  Settings: { main: true, labelKey: 'pages.settings', component: SettingsPage, icon: '', permissions: ['settings.access'] },
+  Settings: { main: true, labelKey: 'pages.settings', component: SettingsPage, icon: 'material-symbols:settings-rounded', permissions: ['settings.access'] },
 }
