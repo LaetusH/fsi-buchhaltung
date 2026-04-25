@@ -126,7 +126,7 @@ const menuStyle = ref<Record<string, string>>({
 })
 let positionFrame: number | null = null
 
-const currentQuery = computed(() => props.modelValue || '')
+const currentQuery = computed(() => props.modelValue || props.selectedLabel || '')
 const normalizedQuery = computed(() => currentQuery.value.trim().toLowerCase())
 const filteredOptions = computed(() => {
   if (!normalizedQuery.value) return props.options
@@ -184,8 +184,8 @@ function scheduleMenuPositionUpdate() {
 
 function onInput(event: Event) {
   const value = (event.target as HTMLInputElement).value
-  emit('update:modelValue', value)
   if (props.selectedLabel && value !== props.selectedLabel) emit('clear-selection')
+  emit('update:modelValue', value)
   open.value = true
 }
 
