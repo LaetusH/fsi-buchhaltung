@@ -466,7 +466,7 @@ function onFocus(e: FocusEvent, i: number) {
 }
 
 function onInput(e: Event, i: number) {
-  const value = sanitizeCurrencyInput((e.target as HTMLInputElement).value)
+  const value = sanitizeCurrencyInput((e.target as HTMLInputElement).value, { allowNegative: true })
   const parsed = parseFloat(value)
   if (!form.value.positions[i]) return
   form.value.positions[i].amount = Number.isNaN(parsed) ? 0 : parsed
