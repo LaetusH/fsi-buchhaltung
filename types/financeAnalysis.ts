@@ -68,6 +68,24 @@ export interface FinanceAnalysisInvoiceItem {
   total_amount: number
 }
 
+export type FinanceAnalysisBalanceEventType = 'opening' | 'receipt' | 'invoice' | 'cashCount'
+
+export interface FinanceAnalysisBalanceEvent {
+  id: string
+  type: FinanceAnalysisBalanceEventType
+  source_id: number | null
+  date: string
+  label: string
+  reference: string | null
+  delta_amount: number
+  balance_amount: number
+  cash_before_amount: number | null
+  cash_after_amount: number | null
+  discrepancy_amount: number | null
+  has_discrepancy: boolean
+  note: string | null
+}
+
 export interface FinanceAnalysisSummary {
   start_date: string
   end_date: string
@@ -98,4 +116,5 @@ export interface FinanceAnalysisData {
   invoiceBreakdown: FinanceAnalysisInvoiceBreakdownItem[]
   cashCounts: FinanceAnalysisCashCountItem[]
   invoices: FinanceAnalysisInvoiceItem[]
+  balanceEvents: FinanceAnalysisBalanceEvent[]
 }

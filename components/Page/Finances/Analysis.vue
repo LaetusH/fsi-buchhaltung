@@ -332,6 +332,21 @@
 
                 <section class="space-y-2 rounded-xl border border-slate-200 p-2.5">
                   <div>
+                    <div class="text-sm font-semibold text-slate-900">{{ t('financeAnalysis.balance.exportInclude') }}</div>
+                    <p class="text-[11px] text-slate-500">{{ t('financeAnalysis.balance.exportHint') }}</p>
+                  </div>
+
+                  <button
+                    type="button"
+                    :class="exportToggleButtonClass(includeBalanceSheet)"
+                    @click="includeBalanceSheet = !includeBalanceSheet"
+                  >
+                    {{ includeBalanceSheet ? t('common.yes') : t('common.no') }}
+                  </button>
+                </section>
+
+                <section class="space-y-2 rounded-xl border border-slate-200 p-2.5">
+                  <div>
                     <div class="text-sm font-semibold text-slate-900">{{ t('financeAnalysis.exportOverviewSheetsTitle') }}</div>
                     <p class="text-[11px] text-slate-500">{{ t('financeAnalysis.exportOverviewSheetsHint') }}</p>
                   </div>
@@ -830,6 +845,7 @@ interface PersistedFinanceAnalysisExportState {
   exportSplitByMonth?: boolean
   exportSplitByPaymentStatus?: boolean
   reportPagesExportMode?: ReportPagesExportMode
+  includeBalanceSheet?: boolean
 }
 
 const emit = defineEmits<{
@@ -880,6 +896,7 @@ const isExportMenuOpen = ref(false)
 const exportGrouping = ref<FinanceAnalysisExportGrouping>('none')
 const exportSplitByMonth = ref(false)
 const exportSplitByPaymentStatus = ref(false)
+const includeBalanceSheet = ref(false)
 const reportPagesExportMode = ref<ReportPagesExportMode>('none')
 const openFilterDropdown = ref<number | null>(null)
 const hasCostCentreAccess = computed(() => hasPermission('cost_centres.view'))
@@ -1219,6 +1236,7 @@ function restoreStoredExportState() {
   if (state.reportPagesExportMode === 'none' || state.reportPagesExportMode === 'reportOnly' || state.reportPagesExportMode === 'comparisonOnly' || state.reportPagesExportMode === 'both') {
     reportPagesExportMode.value = state.reportPagesExportMode
   }
+  if (typeof state.includeBalanceSheet === 'boolean') includeBalanceSheet.value = state.includeBalanceSheet
 }
 
 function persistAnalysisState() {
@@ -1251,6 +1269,7 @@ function persistExportState() {
     exportSplitByMonth: exportSplitByMonth.value,
     exportSplitByPaymentStatus: exportSplitByPaymentStatus.value,
     reportPagesExportMode: reportPagesExportMode.value,
+    includeBalanceSheet: includeBalanceSheet.value,
   } satisfies PersistedFinanceAnalysisExportState
 }
 
@@ -1668,6 +1687,7 @@ async function exportAnalysisReport() {
       exportGrouping: exportGrouping.value,
       exportSplitByMonth: exportSplitByMonth.value,
       exportSplitByPaymentStatus: exportSplitByPaymentStatus.value,
+      includeBalanceSheet: includeBalanceSheet.value,
       logo,
       formatCurrency,
       formatDate,
@@ -1903,6 +1923,7 @@ watch(() => ({
   exportSplitByMonth: exportSplitByMonth.value,
   exportSplitByPaymentStatus: exportSplitByPaymentStatus.value,
   reportPagesExportMode: reportPagesExportMode.value,
+  includeBalanceSheet: includeBalanceSheet.value,
 }), () => {
   persistExportState()
 }, { deep: true })

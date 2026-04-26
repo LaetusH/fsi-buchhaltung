@@ -1,6 +1,7 @@
 ﻿import type { CostCentreRow } from '~/types/costCentre'
 import type { BudgetCostCentreLine } from '~/types/budget'
 import type {
+  FinanceAnalysisBalanceEvent,
   FinanceAnalysisCashCountItem,
   FinanceAnalysisData,
   FinanceAnalysisInvoiceBreakdownItem,
@@ -67,6 +68,7 @@ export interface FinanceAnalysisReportOptions extends FinanceAnalysisReportForma
   exportGrouping: FinanceAnalysisExportGrouping
   exportSplitByMonth: boolean
   exportSplitByPaymentStatus: boolean
+  includeBalanceSheet: boolean
   logo?: FinanceAnalysisReportLogo | null
 }
 
@@ -180,6 +182,7 @@ function hasExportOptionsSummary(options: FinanceAnalysisReportOptions) {
     || options.exportSplitByPaymentStatus
     || options.annualClosing
     || options.compareToBudget
+    || options.includeBalanceSheet
 }
 
 function hasReceiptOverviewExport(options: FinanceAnalysisReportOptions) {
@@ -605,6 +608,10 @@ function buildOverviewRows(options: FinanceAnalysisReportOptions) {
         { value: t('financeAnalysis.exportSplitByPaymentStatus'), styleId: 'Label' },
         { value: exportSplitByPaymentStatus ? t('common.yes') : t('common.no'), styleId: 'Body', mergeAcross: valueMergeAcross },
       ]),
+      createSpreadsheetRow([
+        { value: t('financeAnalysis.balance.exportInclude'), styleId: 'Label' },
+        { value: options.includeBalanceSheet ? t('common.yes') : t('common.no'), styleId: 'Body', mergeAcross: valueMergeAcross },
+      ]),
     )
   }
 
@@ -844,6 +851,71 @@ function getInvoiceDateValue(invoice: FinanceAnalysisInvoiceItem, invoiceDateFie
   if (invoiceDateField === 'due_date') return invoice.due_date
   if (invoiceDateField === 'service_date') return invoice.service_date
   return invoice.invoice_date
+}
+
+function balanceEventLabel(event: FinanceAnalysisBalanceEvent, t: TranslateFunction) {
+  if (event.type === 'opening') return t('financeAnalysis.balance.openingBalance')
+
+  const labelByType: Record<FinanceAnalysisBalanceEvent['type'], string> = {
+    opening: t('financeAnalysis.balance.openingBalance'),
+    receipt: t('financeAnalysis.balance.paidReceipt'),
+    invoice: t('financeAnalysis.balance.paidInvoice'),
+    cashCount: t('financeAnalysis.balance.cashCount'),
+  }
+  const baseLabel = labelByType[event.type]
+  return event.label ? `${baseLabel}: ${event.label}` : baseLabel
+}
+
+function balanceEventNote(event: FinanceAnalysisBalanceEvent, t: TranslateFunction) {
+  if (event.has_discrepancy) return t('financeAnalysis.balance.discrepancyFound')
+  if (event.note === 'latestCashCountBeforePeriod') return t('financeAnalysis.balance.latestCashCountBeforePeriodNote')
+  if (event.note === 'reimbursement') return t('financeAnalysis.balance.reimbursementNote')
+  if (event.note === 'initialCashCount') return t('financeAnalysis.balance.initialCashCountNote')
+  return ''
+}
+
+function buildBalanceRows(options: FinanceAnalysisReportOptions) {
+  const { t, analysis, startDate, endDate, formatDate } = options
+  const totalColumns = 9
+  const mergeAcross = totalColumns - 1
+  const events = analysis.balanceEvents ?? []
+  const eventCount = Math.max(events.length - (events.some(event => event.type === 'opening') ? 1 : 0), 0)
+
+  const rows = [
+    createBandRow(totalColumns, t('financeAnalysis.balance.title'), 'Title', 20),
+    createBandRow(totalColumns, t('financeAnalysis.periodLabel', { start: formatDate(startDate), end: formatDate(endDate) }), 'Subtitle'),
+    createBandRow(totalColumns, t('financeAnalysis.countLabel', { count: eventCount }), 'BodyMuted'),
+    createSpreadsheetRow([
+      { value: t('financeAnalysis.balance.date'), styleId: 'Header' },
+      { value: t('financeAnalysis.balance.event'), styleId: 'Header' },
+      { value: t('financeAnalysis.balance.reference'), styleId: 'Header' },
+      { value: t('financeAnalysis.balance.change'), styleId: 'Header' },
+      { value: t('financeAnalysis.balance.balance'), styleId: 'Header' },
+      { value: t('financeAnalysis.balance.cashBefore'), styleId: 'Header' },
+      { value: t('financeAnalysis.balance.cashAfter'), styleId: 'Header' },
+      { value: t('financeAnalysis.balance.discrepancy'), styleId: 'Header' },
+      { value: t('financeAnalysis.balance.note'), styleId: 'Header' },
+    ]),
+  ]
+
+  if (events.length === 0) {
+    rows.push(createSpreadsheetRow([{ value: t('financeAnalysis.balance.noEvents'), styleId: 'Body', mergeAcross }]))
+    return rows
+  }
+
+  rows.push(...events.map(event => createSpreadsheetRow([
+    { value: formatDate(event.date), styleId: 'TextCell' },
+    { value: balanceEventLabel(event, t), styleId: 'TextCell' },
+    { value: event.reference || '', styleId: 'TextCell' },
+    currencyCell(event.delta_amount, signedCurrencyStyle(event.delta_amount)),
+    currencyCell(event.balance_amount, signedCurrencyStyle(event.balance_amount)),
+    event.cash_before_amount === null ? { value: '', styleId: 'TextCell' } : currencyCell(event.cash_before_amount),
+    event.cash_after_amount === null ? { value: '', styleId: 'TextCell' } : currencyCell(event.cash_after_amount),
+    event.discrepancy_amount === null ? { value: '', styleId: 'TextCell' } : currencyCell(event.discrepancy_amount, signedCurrencyStyle(event.discrepancy_amount)),
+    { value: balanceEventNote(event, t), styleId: 'TextCell' },
+  ])))
+
+  return rows
 }
 
 function buildReceiptOverviewAggregates(options: FinanceAnalysisReportOptions) {
@@ -1509,6 +1581,7 @@ function buildWorkbook(options: FinanceAnalysisReportOptions) {
   const invoiceColumnWidths = options.includeComparison
     ? [86, 132, 186, 94, 70, 70]
     : [86, 132, 186, 94, 82]
+  const balanceColumnWidths = [86, 210, 116, 82, 92, 82, 82, 92, 170]
   const annualClosingColumnWidths = buildAnnualClosingColumnWidths(options)
   const receiptOverviewColumnWidths = buildReceiptOverviewColumnWidths(options)
   const cashCountOverviewColumnWidths = buildCashCountOverviewColumnWidths(options)
@@ -1520,6 +1593,7 @@ function buildWorkbook(options: FinanceAnalysisReportOptions) {
     receiptColumnWidths.reduce((sum, width) => sum + width, 0),
     cashCountColumnWidths.reduce((sum, width) => sum + width, 0),
     invoiceColumnWidths.reduce((sum, width) => sum + width, 0),
+    balanceColumnWidths.reduce((sum, width) => sum + width, 0),
     receiptOverviewColumnWidths.reduce((sum, width) => sum + width, 0),
     cashCountOverviewColumnWidths.reduce((sum, width) => sum + width, 0),
   )
@@ -1568,6 +1642,15 @@ function buildWorkbook(options: FinanceAnalysisReportOptions) {
       name: options.t('financeAnalysis.cashCountOverviewExportTitle'),
       columnWidths: scaleColumnWidthsToTotal(cashCountOverviewColumnWidths, detailSheetWidth),
       rows: buildCashCountOverviewRows(options),
+      orientation: 'landscape',
+    })
+  }
+
+  if (options.includeBalanceSheet) {
+    sheets.push({
+      name: options.t('financeAnalysis.balance.title'),
+      columnWidths: scaleColumnWidthsToTotal(balanceColumnWidths, detailSheetWidth),
+      rows: buildBalanceRows(options),
       orientation: 'landscape',
     })
   }
