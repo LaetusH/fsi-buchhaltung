@@ -530,7 +530,7 @@ const receiptsTotal = computed(() => form.value.positions.reduce((sum, _, index)
   return sum + Number(receipt?.total_amount || 0)
 }, 0))
 
-const payoutTotal = computed(() => Math.max(0, receiptsTotal.value - Number(form.value.advance || 0)))
+const payoutTotal = computed(() => receiptsTotal.value - Number(form.value.advance || 0))
 
 watch([members, () => form.value.paid_by, () => form.value.checked_by, () => form.value.disbursed_by], () => {
   paidByQuery.value = selectedMemberLabel(form.value.paid_by)
