@@ -31,6 +31,7 @@ function normalizeInvoiceLogRow(invoice: any) {
     is_kleinunternehmer: Boolean(invoice.is_kleinunternehmer),
     invoice_date: String(invoice.invoice_date || ''),
     due_date: String(invoice.due_date || ''),
+    paid_at: invoice.paid_at ? String(invoice.paid_at) : null,
     contact_person: invoice.contact_person ? String(invoice.contact_person).trim() : null,
     service_date: invoice.service_date ? String(invoice.service_date) : null,
     invoice_number: String(invoice.invoice_number || '').trim(),
@@ -73,6 +74,7 @@ function buildGeneratedInvoiceComparable(invoice: Record<string, any>, positions
     is_kleinunternehmer: Boolean(invoice.is_kleinunternehmer),
     invoice_date: String(invoice.invoice_date || ''),
     due_date: String(invoice.due_date || ''),
+    paid_at: invoice.paid_at ? String(invoice.paid_at) : null,
     contact_person: invoice.contact_person ? String(invoice.contact_person).trim() : null,
     service_date: invoice.service_date ? String(invoice.service_date) : null,
     invoice_number: String(invoice.invoice_number || '').trim(),
@@ -115,6 +117,7 @@ export default defineEventHandler(async (event): Promise<UpdateInvoiceResponse> 
           is_kleinunternehmer,
           invoice_date,
           due_date,
+          paid_at,
           contact_person,
           service_date,
           invoice_number,
@@ -204,12 +207,12 @@ export default defineEventHandler(async (event): Promise<UpdateInvoiceResponse> 
           return { ok: false, error: 'Only the status of finalized invoices can be changed' }
         }
 
-        if (existing.status !== parsed.status) {
+        if (existing.status !== parsed.status || existing.paid_at !== parsed.paid_at) {
           await query(
             `UPDATE invoices
-             SET status = ?
+             SET status = ?, paid_at = ?
              WHERE id = ?`,
-            [parsed.status, invoiceId],
+            [parsed.status, parsed.paid_at, invoiceId],
             conn,
           )
         }
@@ -244,7 +247,7 @@ export default defineEventHandler(async (event): Promise<UpdateInvoiceResponse> 
 
       await query(
         `UPDATE invoices
-         SET company_id = ?, source_type = ?, is_kleinunternehmer = ?, invoice_date = ?, due_date = ?, contact_person = ?, service_date = ?, invoice_number = ?, subject = ?, intro_text = ?, notes = ?, status = ?
+         SET company_id = ?, source_type = ?, is_kleinunternehmer = ?, invoice_date = ?, due_date = ?, paid_at = ?, contact_person = ?, service_date = ?, invoice_number = ?, subject = ?, intro_text = ?, notes = ?, status = ?
          WHERE id = ?`,
         [
           parsed.company_id,
@@ -252,6 +255,7 @@ export default defineEventHandler(async (event): Promise<UpdateInvoiceResponse> 
           parsed.is_kleinunternehmer,
           parsed.invoice_date,
           parsed.due_date,
+          parsed.paid_at,
           parsed.contact_person,
           parsed.service_date,
           parsed.invoice_number,
@@ -271,7 +275,6 @@ export default defineEventHandler(async (event): Promise<UpdateInvoiceResponse> 
           await query(`DELETE FROM invoice_positions WHERE id = ?`, [existingPosition.id], conn)
         }
       }
-      const existingPositionMap = new Map(existingPositions.map(position => [Number(position.id), position]))
 
       for (const position of parsed.positions) {
         if (position.id) {

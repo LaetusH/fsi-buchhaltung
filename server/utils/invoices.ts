@@ -15,6 +15,8 @@ export function validateInvoicePayload(invoice: any) {
   if (!invoice.invoice_number || String(invoice.invoice_number).trim().length < 1) return 'An invoice number is required'
   if (!Object.values(InvoiceSourceType).includes(invoice.source_type)) return 'Invalid invoice source'
   if (!Object.values(InvoiceStatus).includes(invoice.status)) return 'Invalid invoice status'
+  if (invoice.status === InvoiceStatus.Paid && !invoice.paid_at) return 'Paid invoices require a payment date'
+  if (invoice.status !== InvoiceStatus.Paid && invoice.paid_at) return 'Only paid invoices can have a payment date'
   if (!Array.isArray(invoice.positions) || invoice.positions.length === 0) return 'At least one invoice position is required'
 
   for (const position of invoice.positions) {
@@ -61,6 +63,7 @@ export function normalizeInvoicePayload(invoice: CreateInvoiceBody): CreateInvoi
     is_kleinunternehmer: Boolean(invoice.is_kleinunternehmer),
     invoice_date: String(invoice.invoice_date || ''),
     due_date: String(invoice.due_date || ''),
+    paid_at: invoice.paid_at ? String(invoice.paid_at) : null,
     contact_person: invoice.contact_person?.trim() || null,
     service_date: invoice.service_date ? String(invoice.service_date) : null,
     invoice_number: String(invoice.invoice_number || '').trim(),

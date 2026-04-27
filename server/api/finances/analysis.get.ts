@@ -61,6 +61,7 @@ function getRequestedInvoiceStatuses(value: unknown) {
 function getInvoiceDateColumn(value: unknown) {
   if (value === 'due_date') return 'i.due_date'
   if (value === 'service_date') return 'i.service_date'
+  if (value === 'paid_at') return 'i.paid_at'
   return 'i.invoice_date'
 }
 
@@ -210,7 +211,7 @@ async function loadBalanceEvents(
     `
     SELECT
       i.id,
-      i.due_date AS effective_date,
+      COALESCE(i.paid_at, i.due_date) AS effective_date,
       i.invoice_number,
       c.name AS company_name,
       IFNULL(SUM(ip.quantity * ip.unit_price * (1 + (ip.tax / 100))), 0) AS total_amount
@@ -218,10 +219,10 @@ async function loadBalanceEvents(
     INNER JOIN invoice_positions ip ON ip.invoice_id = i.id
     LEFT JOIN companies c ON c.id = i.company_id
     WHERE i.status = ?
-      AND i.due_date <= ?
+      AND COALESCE(i.paid_at, i.due_date) <= ?
       ${hasCostCentreFilter ? `AND ip.cost_centre IN (${costCentrePlaceholders})` : ''}
-    GROUP BY i.id, i.due_date, i.invoice_number, c.name
-    ORDER BY i.due_date ASC, i.id ASC
+    GROUP BY i.id, effective_date, i.invoice_number, c.name
+    ORDER BY effective_date ASC, i.id ASC
     `,
     hasCostCentreFilter
       ? [InvoiceStatus.Paid, endDate, ...selectedCostCentreIds]
@@ -652,6 +653,7 @@ export default defineEventHandler(async (event): Promise<FinanceAnalysisResponse
             i.id,
             i.invoice_date,
             i.due_date,
+            i.paid_at,
             i.service_date,
             i.invoice_number,
             i.status,
@@ -763,6 +765,7 @@ export default defineEventHandler(async (event): Promise<FinanceAnalysisResponse
       id: Number(row.id),
       invoice_date: String(row.invoice_date),
       due_date: row.due_date ? String(row.due_date) : null,
+      paid_at: row.paid_at ? String(row.paid_at) : null,
       service_date: row.service_date ? String(row.service_date) : null,
       invoice_number: String(row.invoice_number || ''),
       company_name: row.company_name ? String(row.company_name) : null,

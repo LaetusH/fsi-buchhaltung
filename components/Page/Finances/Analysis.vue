@@ -798,7 +798,7 @@ type QuickSemester = '' | 'summer' | 'winter'
 type ManualDateField = 'start' | 'end'
 type ComparisonValueType = 'currency' | 'count'
 type ReceiptDateField = 'receipt_date' | 'reimbursement_submitted_at'
-type InvoiceDateField = 'invoice_date' | 'due_date' | 'service_date'
+type InvoiceDateField = 'invoice_date' | 'due_date' | 'service_date' | 'paid_at'
 type ReportPagesExportMode = 'none' | 'reportOnly' | 'comparisonOnly' | 'both'
 type FinanceAnalysisExportLogo = {
   data: Uint8Array
@@ -1065,6 +1065,7 @@ const invoiceDateFieldOptions = computed<Array<{ value: InvoiceDateField, label:
   { value: 'invoice_date', label: t('financeAnalysis.invoiceDateFieldOptions.invoiceDate') },
   { value: 'due_date', label: t('financeAnalysis.invoiceDateFieldOptions.dueDate') },
   { value: 'service_date', label: t('financeAnalysis.invoiceDateFieldOptions.serviceDate') },
+  { value: 'paid_at', label: t('financeAnalysis.invoiceDateFieldOptions.paidAt') },
 ])
 
 const selectedInvoiceDateFieldLabel = computed(() => {
@@ -1206,7 +1207,7 @@ function applyAnalysisState(state?: PersistedFinanceAnalysisState | null) {
   if (Array.isArray(state.selectedInvoiceStatuses)) {
     selectedInvoiceStatuses.value = state.selectedInvoiceStatuses.filter((status): status is InvoiceStatus => invoiceStatusOrder.includes(status as InvoiceStatus))
   }
-  if (state.invoiceDateField === 'invoice_date' || state.invoiceDateField === 'due_date' || state.invoiceDateField === 'service_date') {
+  if (state.invoiceDateField === 'invoice_date' || state.invoiceDateField === 'due_date' || state.invoiceDateField === 'service_date' || state.invoiceDateField === 'paid_at') {
     invoiceDateField.value = state.invoiceDateField
   }
   if (typeof state.periodFiltersExpanded === 'boolean') periodFiltersExpanded.value = state.periodFiltersExpanded
@@ -1514,6 +1515,10 @@ function formatInvoiceDateByBasis(invoice: FinanceAnalysisData['invoices'][numbe
 
   if (invoiceDateField.value === 'service_date') {
     return invoice.service_date ? formatDate(invoice.service_date) : t('common.notAvailable')
+  }
+
+  if (invoiceDateField.value === 'paid_at') {
+    return invoice.paid_at ? formatDate(invoice.paid_at) : t('common.notAvailable')
   }
 
   return formatDate(invoice.invoice_date)

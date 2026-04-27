@@ -33,7 +33,7 @@ interface FinanceAnalysisReportFormatters {
 
 export type FinanceAnalysisExportGrouping = 'none' | 'costCentres' | 'spheres'
 export type FinanceAnalysisReceiptDateField = 'receipt_date' | 'reimbursement_submitted_at'
-export type FinanceAnalysisInvoiceDateField = 'invoice_date' | 'due_date' | 'service_date'
+export type FinanceAnalysisInvoiceDateField = 'invoice_date' | 'due_date' | 'service_date' | 'paid_at'
 export type FinanceAnalysisBudgetComparisonExportMode = 'comparisonOnly' | 'annualAndComparison'
 
 interface FinanceAnalysisReportLogo {
@@ -562,7 +562,9 @@ function buildOverviewRows(options: FinanceAnalysisReportOptions) {
           ? t('financeAnalysis.invoiceDateFieldOptions.dueDate')
           : options.invoiceDateField === 'service_date'
             ? t('financeAnalysis.invoiceDateFieldOptions.serviceDate')
-            : t('financeAnalysis.invoiceDateFieldOptions.invoiceDate'),
+            : options.invoiceDateField === 'paid_at'
+              ? t('financeAnalysis.invoiceDateFieldOptions.paidAt')
+              : t('financeAnalysis.invoiceDateFieldOptions.invoiceDate'),
         styleId: 'Body',
         mergeAcross: valueMergeAcross,
       },
@@ -808,6 +810,7 @@ function buildInvoiceRows(options: FinanceAnalysisReportOptions) {
     invoice_date: t('financeAnalysis.invoiceDateFieldOptions.invoiceDate'),
     due_date: t('financeAnalysis.invoiceDateFieldOptions.dueDate'),
     service_date: t('financeAnalysis.invoiceDateFieldOptions.serviceDate'),
+    paid_at: t('financeAnalysis.invoiceDateFieldOptions.paidAt'),
   }
   const useExpandedAmountColumn = options.includeComparison
   const totalColumns = useExpandedAmountColumn ? 6 : 5
@@ -850,6 +853,7 @@ function getReceiptDateValue(receipt: FinanceAnalysisReceiptItem, receiptDateFie
 function getInvoiceDateValue(invoice: FinanceAnalysisInvoiceItem, invoiceDateField: FinanceAnalysisInvoiceDateField) {
   if (invoiceDateField === 'due_date') return invoice.due_date
   if (invoiceDateField === 'service_date') return invoice.service_date
+  if (invoiceDateField === 'paid_at') return invoice.paid_at
   return invoice.invoice_date
 }
 

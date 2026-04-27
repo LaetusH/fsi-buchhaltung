@@ -201,6 +201,7 @@ CREATE TABLE IF NOT EXISTS invoices (
   is_kleinunternehmer BOOLEAN NOT NULL DEFAULT FALSE,
   invoice_date DATE NOT NULL,
   due_date DATE NOT NULL,
+  paid_at DATE NULL,
   contact_person VARCHAR(255) NULL,
   service_date DATE NULL,
   invoice_number VARCHAR(127) NOT NULL UNIQUE,

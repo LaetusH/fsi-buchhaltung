@@ -8,6 +8,7 @@
     "generate": "nuxt generate",
     "preview": "nuxt preview",
     "setup:migrate": "node --env-file=.env scripts/migrate-event-cost-centre-splits.mjs",
+    "setup:migrate:invoice-paid-at": "node --env-file=.env scripts/migrate-invoice-paid-at.mjs",
     "setup:seed-admin": "node --env-file=.env scripts/seed-admin.mjs",
     "setup:audit": "node --env-file=.env scripts/ensure-audit-infrastructure.mjs",
     "postinstall": "nuxt prepare"

@@ -88,6 +88,18 @@
                 @reset-filter="resetFilter('status')"
               />
             </th>
+            <th class="py-2">
+              <CommonTableColumnControl
+                :label="t('invoice.paidAt')"
+                filter-type="date"
+                :sort-direction="columnSortDirection('paid_at')"
+                :is-filter-active="isFilterActive('paid_at')"
+                :filter="getFilter('paid_at')"
+                @toggle-sort="toggleSort('paid_at')"
+                @apply-range-filter="setRangeFilter('paid_at', $event.min, $event.max)"
+                @reset-filter="resetFilter('paid_at')"
+              />
+            </th>
             <th class="py-2 text-right">{{ t('common.actions') }}</th>
           </tr>
         </thead>
@@ -102,6 +114,7 @@
             <td class="py-2 text-center">
               <CommonStatusBadge :label="statusLabels[invoice.status]" :tone="statusTone(invoice.status)" />
             </td>
+            <td class="py-2">{{ invoice.paid_at ? formatDate(invoice.paid_at) : '-' }}</td>
             <td class="py-2 text-right">
               <button class="text-blue-600 hover:underline cursor-pointer" @click="openInvoice(invoice.id)">
                 {{ t('actions.open') }}
@@ -110,7 +123,7 @@
           </tr>
 
           <tr v-if="processedRows.length === 0">
-            <td colspan="7" class="py-6 text-center text-slate-500">{{ t('invoice.none') }}</td>
+            <td colspan="8" class="py-6 text-center text-slate-500">{{ t('invoice.none') }}</td>
           </tr>
         </tbody>
       </table>
@@ -139,7 +152,7 @@ const { hasPermission } = useAuth()
 const { setPage } = usePage()
 
 const invoices = ref<InvoiceRow[]>([])
-type InvoiceColumnKey = 'invoice_date' | 'invoice_number' | 'company_name' | 'source_type' | 'total_amount' | 'status'
+type InvoiceColumnKey = 'invoice_date' | 'invoice_number' | 'company_name' | 'source_type' | 'total_amount' | 'status' | 'paid_at'
 const canEdit = computed(() => hasPermission('invoices.edit'))
 const resolvedReturnTarget = computed(() => cloneReturnTarget(props.returnTarget) ?? buildReturnTarget('InvoiceList'))
 
@@ -174,6 +187,7 @@ const {
   { key: 'source_type', filterType: 'text', globalSearchable: true, getValue: row => sourceLabels.value[row.source_type] },
   { key: 'total_amount', filterType: 'number', getValue: row => row.total_amount },
   { key: 'status', filterType: 'text', globalSearchable: true, getValue: row => statusLabels.value[row.status] },
+  { key: 'paid_at', filterType: 'date', globalSearchable: true, getValue: row => row.paid_at ?? '' },
 ])
 
 onMounted(async () => {

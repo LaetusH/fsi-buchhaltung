@@ -61,6 +61,7 @@ export interface FinanceAnalysisInvoiceItem {
   id: number
   invoice_date: string
   due_date: string | null
+  paid_at: string | null
   service_date: string | null
   invoice_number: string
   company_name: string | null

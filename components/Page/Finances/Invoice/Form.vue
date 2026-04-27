@@ -1,37 +1,37 @@
 <template>
   <div class="space-y-6">
     <section class="bg-white rounded-xl shadow-lg p-4 space-y-4">
-      <div class="grid gap-4 md:grid-cols-2">
-        <div class="field">
-          <label>{{ t('invoice.sourceType') }}</label>
-          <div class="grid grid-cols-2 gap-2">
-            <button
-              type="button"
-              class="rounded-lg border px-3 py-2 text-sm transition"
-              :class="[
-                form.source_type === InvoiceSourceType.Upload ? 'border-orange-500 bg-orange-50 text-orange-700' : 'border-slate-200',
-                disabled ? 'opacity-70' : '',
-              ]"
-              :disabled="disabled"
-              @click="setSourceType(InvoiceSourceType.Upload)"
-            >
-              {{ t('invoice.sources.upload') }}
-            </button>
-            <button
-              type="button"
-              class="rounded-lg border px-3 py-2 text-sm transition"
-              :class="[
-                form.source_type === InvoiceSourceType.Generated ? 'border-orange-500 bg-orange-50 text-orange-700' : 'border-slate-200',
-                disabled ? 'opacity-70' : '',
-              ]"
-              :disabled="disabled"
-              @click="setSourceType(InvoiceSourceType.Generated)"
-            >
-              {{ t('invoice.sources.generated') }}
-            </button>
-          </div>
+      <div class="field">
+        <label>{{ t('invoice.sourceType') }}</label>
+        <div class="grid grid-cols-2 gap-2">
+          <button
+            type="button"
+            class="rounded-lg border px-3 py-2 text-sm transition"
+            :class="[
+              form.source_type === InvoiceSourceType.Upload ? 'border-orange-500 bg-orange-50 text-orange-700' : 'border-slate-200',
+              disabled ? 'opacity-70' : '',
+            ]"
+            :disabled="disabled"
+            @click="setSourceType(InvoiceSourceType.Upload)"
+          >
+            {{ t('invoice.sources.upload') }}
+          </button>
+          <button
+            type="button"
+            class="rounded-lg border px-3 py-2 text-sm transition"
+            :class="[
+              form.source_type === InvoiceSourceType.Generated ? 'border-orange-500 bg-orange-50 text-orange-700' : 'border-slate-200',
+              disabled ? 'opacity-70' : '',
+            ]"
+            :disabled="disabled"
+            @click="setSourceType(InvoiceSourceType.Generated)"
+          >
+            {{ t('invoice.sources.generated') }}
+          </button>
         </div>
+      </div>
 
+      <div class="grid gap-4" :class="form.status === InvoiceStatus.Paid ? 'md:grid-cols-2' : ''">
         <div class="field">
           <label>{{ t('invoice.paymentStatus') }}</label>
           <PageFinancesPaymentStatus
@@ -40,6 +40,14 @@
             :disabled="statusDisabled"
             :allowed-targets="statusTargets"
             class="h-10"
+          />
+        </div>
+        <div v-if="form.status === InvoiceStatus.Paid" class="field">
+          <label>{{ t('invoice.paidAt') }}</label>
+          <CommonDateInput
+            v-model="form.paid_at"
+            :disabled="paidAtDisabled"
+            :empty-value="null"
           />
         </div>
       </div>
@@ -353,7 +361,7 @@ import { useI18n } from '~/composables/useI18n'
 import { useLocaleFormatters } from '~/composables/useLocaleFormatters'
 import type { Company, CompanyRow } from '~/types/company'
 import type { CostCentreRow } from '~/types/costCentre'
-import { InvoiceSourceType, type CreateInvoiceBody, type InvoiceStatus } from '~/types/invoice'
+import { InvoiceSourceType, InvoiceStatus, type CreateInvoiceBody } from '~/types/invoice'
 import type { SphereRow } from '~/types/sphere'
 import CompanyForm from '../CompanyForm.vue'
 
@@ -384,6 +392,9 @@ const disabled = computed(() => Boolean(props.disabled))
 const statusDisabled = computed(() => Boolean(props.statusDisabled))
 const statusTargets = computed(() => props.statusTargets)
 const canEditCompany = computed(() => props.canEditCompany === true)
+const paidAtDisabled = computed(() => {
+  return (disabled.value && statusDisabled.value) || form.value.status !== InvoiceStatus.Paid
+})
 const companyQuery = ref('')
 const companies = ref<CompanyRow[]>([])
 const selectedCompany = ref<Company | null>(null)
@@ -413,6 +424,8 @@ const validationErrors = computed(() => {
   if (!form.value.invoice_number.trim()) errors.push(t('invoice.required.invoiceNumber'))
   if (!form.value.invoice_date) errors.push(t('invoice.required.invoiceDate'))
   if (!form.value.due_date) errors.push(t('invoice.required.dueDate'))
+  if (form.value.status === InvoiceStatus.Paid && !form.value.paid_at) errors.push(t('invoice.required.paidAt'))
+  if (form.value.status !== InvoiceStatus.Paid && form.value.paid_at) errors.push(t('invoice.required.paidAtOnlyPaid'))
   if (form.value.source_type === InvoiceSourceType.Upload && !props.hasFile) errors.push(t('invoice.required.file'))
   if (!form.value.positions.length) errors.push(t('invoice.required.positions'))
   if (form.value.positions.some(position =>
@@ -427,6 +440,12 @@ const validationErrors = computed(() => {
     errors.push(t('invoice.required.completePosition'))
   }
   return errors
+})
+
+watch(() => form.value.status, (status) => {
+  if (status !== InvoiceStatus.Paid && form.value.paid_at) {
+    form.value.paid_at = null
+  }
 })
 
 const netTotal = computed(() => form.value.positions.reduce((sum, position) => sum + (position.quantity * position.unit_price), 0))

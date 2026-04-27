@@ -30,6 +30,7 @@ export interface Invoice {
   is_kleinunternehmer: boolean
   invoice_date: string
   due_date: string
+  paid_at: string | null
   contact_person: string | null
   service_date: string | null
   invoice_number: string
@@ -48,6 +49,7 @@ export interface InvoiceRow {
   is_kleinunternehmer: boolean
   invoice_date: string
   due_date: string
+  paid_at: string | null
   contact_person: string | null
   service_date: string | null
   invoice_number: string
@@ -75,6 +77,7 @@ export interface CreateInvoiceBody {
   is_kleinunternehmer: boolean
   invoice_date: string
   due_date: string
+  paid_at: string | null
   contact_person: string | null
   service_date: string | null
   invoice_number: string
