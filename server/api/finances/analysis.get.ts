@@ -366,6 +366,7 @@ async function loadBalanceEvents(
     ? roundCurrency(firstCashCountAmountBefore - movementBeforeFirstCashCount)
     : 0
   let openingBalanceNote: FinanceAnalysisBalanceEvent['note'] = null
+  const latestCashCountAmountByRegisterNumber = new Map<number, number>()
 
   const latestCashCountBeforeStartIndex = rawEvents.reduce((latestIndex, event, index) => {
     if (event.type !== 'cashCount' || event.date >= startDate) return latestIndex
@@ -415,17 +416,27 @@ async function loadBalanceEvents(
     const cashAfterAmount = cashCountAmountAfter(rawEvent)
     const cashCountSaldo = roundCurrency(cashAfterAmount - cashBeforeAmount)
     const balanceBeforeCashCount = runningBalance
+    const registerDiscrepancy = rawEvent.registers.reduce((sum, register) => {
+      const latestAmount = latestCashCountAmountByRegisterNumber.get(register.registerNumber)
+      if (latestAmount === undefined) return sum
+      return roundCurrency(sum + register.amountBefore - latestAmount)
+    }, 0)
+    const initialRegisterBeforeAmount = rawEvent.registers.reduce((sum, register) => {
+      if (latestCashCountAmountByRegisterNumber.has(register.registerNumber)) return sum
+      return roundCurrency(sum + register.amountBefore)
+    }, 0)
     const calculatedBalance = isFirstCashCount
       ? cashAfterAmount
-      : roundCurrency(balanceBeforeCashCount + cashCountSaldo)
-    const discrepancy = isFirstCashCount
-      ? 0
-      : roundCurrency(cashAfterAmount - calculatedBalance)
+      : roundCurrency(balanceBeforeCashCount + cashCountSaldo + initialRegisterBeforeAmount)
+    const discrepancy = isFirstCashCount ? 0 : roundCurrency(registerDiscrepancy)
     const hasInitialRegister = rawEvent.registers.some(register => (
       firstCountedAtByRegisterNumber.get(register.registerNumber) === rawEvent.date
     ))
 
-    runningBalance = cashAfterAmount
+    for (const register of rawEvent.registers) {
+      latestCashCountAmountByRegisterNumber.set(register.registerNumber, register.amountAfter)
+    }
+    runningBalance = isFirstCashCount ? cashAfterAmount : roundCurrency(calculatedBalance + discrepancy)
     return {
       type: 'cashCount',
       source_id: rawEvent.source_id,
@@ -443,19 +454,12 @@ async function loadBalanceEvents(
   }
 
   if (latestCashCountBeforeStartIndex >= 0) {
-    const latestCashCountBeforeStart = rawEvents[latestCashCountBeforeStartIndex] as Extract<RawLedgerEvent, { type: 'cashCount' }>
-    const movementSinceLatestCashCount = rawEvents
-      .slice(latestCashCountBeforeStartIndex + 1)
-      .filter(event => event.date < startDate)
-      .reduce((sum, event) => roundCurrency(sum + transactionDelta(event)), 0)
-
-    runningBalance = roundCurrency(cashCountAmountAfter(latestCashCountBeforeStart) + movementSinceLatestCashCount)
     openingBalanceNote = 'latestCashCountBeforePeriod'
-  } else {
-    for (const [index, rawEvent] of rawEvents.entries()) {
-      if (rawEvent.date >= startDate) break
-      applyRawEvent(rawEvent, index === firstCashCountIndex)
-    }
+  }
+
+  for (const [index, rawEvent] of rawEvents.entries()) {
+    if (rawEvent.date >= startDate) break
+    applyRawEvent(rawEvent, index === firstCashCountIndex)
   }
 
   const openingBalance = runningBalance
