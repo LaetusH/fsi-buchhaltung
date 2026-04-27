@@ -106,7 +106,7 @@
           {{ t('actions.cancel') }}
         </button>
 
-        <button class="btn-primary" @click="createUser">
+        <button class="btn-primary" :disabled="isCreatingUser" :class="{ 'opacity-50 cursor-not-allowed': isCreatingUser }" @click="createUser">
           {{ t('actions.createNew') }}
         </button>
       </div>
@@ -138,7 +138,7 @@
           {{ t('actions.cancel') }}
         </button>
 
-        <button class="btn-primary" @click="saveMemberLink">
+        <button class="btn-primary" :disabled="isSavingMemberLink" :class="{ 'opacity-50 cursor-not-allowed': isSavingMemberLink }" @click="saveMemberLink">
           {{ t('actions.save') }}
         </button>
       </div>
@@ -185,6 +185,8 @@ const form = ref({
   member_id: null as number | null,
 })
 const editingMemberId = ref<number | null>(null)
+const isCreatingUser = ref(false)
+const isSavingMemberLink = ref(false)
 
 const createMemberOptions = computed<SearchSelectOption<MemberOptionRow>[]>(() => memberOptions.value
   .filter(member => member.account === null)
@@ -267,6 +269,8 @@ async function loadMemberOptions() {
 }
 
 async function createUser() {
+  if (isCreatingUser.value) return
+
   const payload = {
     username: form.value.username.trim(),
     password: form.value.password,
@@ -279,60 +283,70 @@ async function createUser() {
     return
   }
 
-  const res = await $fetch<{ ok: boolean, error?: string }>('/api/auth/register', {
-    method: 'POST',
-    body: payload,
-  })
+  try {
+    isCreatingUser.value = true
+    const res = await $fetch<{ ok: boolean, error?: string }>('/api/auth/register', {
+      method: 'POST',
+      body: payload,
+    })
 
-  if (!res.ok) {
-    if (res.error === 'Username already exists') {
-      toast.error(t('settings.users.usernameExists'))
+    if (!res.ok) {
+      if (res.error === 'Username already exists') {
+        toast.error(t('settings.users.usernameExists'))
+        return
+      }
+      if (res.error === 'Member already linked to another user') {
+        toast.error(t('settings.users.memberAlreadyLinked'))
+        return
+      }
+      if (res.error === 'Member not found') {
+        toast.error(t('settings.users.memberNotFound'))
+        return
+      }
+      toast.error(`${t('settings.users.createFailed')}: ${res.error}`)
       return
     }
-    if (res.error === 'Member already linked to another user') {
-      toast.error(t('settings.users.memberAlreadyLinked'))
-      return
-    }
-    if (res.error === 'Member not found') {
-      toast.error(t('settings.users.memberNotFound'))
-      return
-    }
-    toast.error(`${t('settings.users.createFailed')}: ${res.error}`)
-    return
+
+    toast.success(t('settings.users.created'))
+    closeCreateModal()
+    await Promise.all([loadUsers(), loadMemberOptions()])
+  } finally {
+    isCreatingUser.value = false
   }
-
-  toast.success(t('settings.users.created'))
-  closeCreateModal()
-  await Promise.all([loadUsers(), loadMemberOptions()])
 }
 
 async function saveMemberLink() {
-  if (!editingUser.value) return
+  if (!editingUser.value || isSavingMemberLink.value) return
 
-  const res = await $fetch<{ ok: boolean, error?: string }>('/api/auth/link-member', {
-    method: 'POST',
-    body: {
-      user_id: editingUser.value.id,
-      member_id: editingMemberId.value,
-    },
-  })
+  try {
+    isSavingMemberLink.value = true
+    const res = await $fetch<{ ok: boolean, error?: string }>('/api/auth/link-member', {
+      method: 'POST',
+      body: {
+        user_id: editingUser.value.id,
+        member_id: editingMemberId.value,
+      },
+    })
 
-  if (!res.ok) {
-    if (res.error === 'Member already linked to another user') {
-      toast.error(t('settings.users.memberAlreadyLinked'))
+    if (!res.ok) {
+      if (res.error === 'Member already linked to another user') {
+        toast.error(t('settings.users.memberAlreadyLinked'))
+        return
+      }
+      if (res.error === 'Member not found') {
+        toast.error(t('settings.users.memberNotFound'))
+        return
+      }
+      toast.error(`${t('settings.users.memberSaveFailed')}: ${res.error}`)
       return
     }
-    if (res.error === 'Member not found') {
-      toast.error(t('settings.users.memberNotFound'))
-      return
-    }
-    toast.error(`${t('settings.users.memberSaveFailed')}: ${res.error}`)
-    return
+
+    toast.success(t('settings.users.memberSaved'))
+    closeMemberModal()
+    await Promise.all([loadUsers(), loadMemberOptions()])
+  } finally {
+    isSavingMemberLink.value = false
   }
-
-  toast.success(t('settings.users.memberSaved'))
-  closeMemberModal()
-  await Promise.all([loadUsers(), loadMemberOptions()])
 }
 
 async function toggleUserActive(user: UserListRow) {

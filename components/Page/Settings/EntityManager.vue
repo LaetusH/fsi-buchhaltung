@@ -145,7 +145,7 @@
           {{ t('actions.cancel') }}
         </button>
 
-        <button class="btn-primary" @click="saveItem">
+        <button class="btn-primary" :disabled="isSaving" :class="{ 'opacity-50 cursor-not-allowed': isSaving }" @click="saveItem">
           {{ t('actions.save') }}
         </button>
       </div>
@@ -260,6 +260,7 @@ const displayItems = computed(() => props.transformItems(items.value))
 const showModal = ref(false)
 const editingItem = ref<SaveSettingsEntityBody | null>(null)
 const isNewItem = ref(false)
+const isSaving = ref(false)
 
 function reportError(phase: EntityManagerErrorContext['phase'], message?: string, error?: unknown) {
   if (props.onError) {
@@ -309,9 +310,10 @@ function closeModal() {
 }
 
 async function saveItem() {
-  if (!editingItem.value) return
+  if (!editingItem.value || isSaving.value) return
 
   try {
+    isSaving.value = true
     const res = await $fetch<{ ok: boolean, error?: string }>(props.saveEndpoint, {
       method: 'POST',
       body: editingItem.value,
@@ -325,6 +327,8 @@ async function saveItem() {
     await loadItems()
   } catch (error) {
     reportError('save', undefined, error)
+  } finally {
+    isSaving.value = false
   }
 }
 

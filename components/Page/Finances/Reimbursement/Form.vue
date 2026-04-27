@@ -222,6 +222,7 @@ type MemberField = 'paid_by' | 'checked_by' | 'disbursed_by'
 const props = defineProps<{
   modelValue: CreateReimbursementBody
   disabled?: boolean
+  saving?: boolean
   hasFile?: boolean
   canCreateReceipt?: boolean
   canEditReceipt?: boolean
@@ -289,7 +290,7 @@ const validationErrors = computed(() => {
   return errors
 })
 
-const saveDisabled = computed(() => disabled.value || validationErrors.value.length > 0)
+const saveDisabled = computed(() => disabled.value || Boolean(props.saving) || validationErrors.value.length > 0)
 const members = ref<MemberListItem[]>([])
 const receipts = ref<ReceiptRow[]>([])
 const receiptAssignments = ref<{ receipt_id: number, reimbursement_id: number }[]>([])

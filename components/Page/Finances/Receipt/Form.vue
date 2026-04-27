@@ -223,6 +223,7 @@ import CompanyForm from '../CompanyForm.vue'
 const props = defineProps<{
   modelValue: CreateReceiptBody
   disabled?: boolean
+  saving?: boolean
   statusDisabled?: boolean
   hasFile?: boolean
   canEditCompany?: boolean
@@ -263,7 +264,7 @@ const validationErrors = computed(() => {
   return errors
 })
 
-const saveDisabled = computed(() => Boolean(props.disabled) || validationErrors.value.length > 0)
+const saveDisabled = computed(() => Boolean(props.disabled) || Boolean(props.saving) || validationErrors.value.length > 0)
 const companies = ref<CompanyRow[]>([])
 const companyQuery = ref('')
 const selectedCompany = ref<Company | null>(null)

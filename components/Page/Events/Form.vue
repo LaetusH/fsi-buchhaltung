@@ -222,6 +222,7 @@ const props = defineProps<{
   costCentres: EventCostCentreOption[]
   spheres: EventSphereOption[]
   disabled?: boolean
+  saving?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -382,7 +383,7 @@ const validationErrors = computed(() => {
   return errors
 })
 
-const saveDisabled = computed(() => disabled.value || validationErrors.value.length > 0)
+const saveDisabled = computed(() => disabled.value || Boolean(props.saving) || validationErrors.value.length > 0)
 
 function clearMemberOrganizerSelection() {
   memberOrganizerQuery.value = ''

@@ -16,6 +16,7 @@
       :can-create-receipt="canCreateReceipt"
       :can-edit-receipt="canCreateReceipt"
       :external-validation-errors="externalValidationErrors"
+      :saving="isSaving"
       @submit="submit"
       @cancel="cancel"
     />
@@ -53,6 +54,7 @@ const file = ref<File | null>(null)
 const existingFile = ref<{ id: number, url: string, name: string, mime_type: string, size: number } | null>(null)
 const removeExistingFile = ref(false)
 const receipts = ref<ReceiptRow[]>([])
+const isSaving = ref(false)
 
 const form = ref<CreateReimbursementBody>({
   paid_by: 0,
@@ -195,6 +197,7 @@ function onRemoveFile() {
 }
 
 async function submit() {
+  if (isSaving.value) return
   if (!canEdit.value) {
     toast.error(t('common.notAuthorized'))
     return
@@ -263,6 +266,7 @@ async function submit() {
   body.append('reimbursement', JSON.stringify(payload))
 
   try {
+    isSaving.value = true
     if (isEditMode.value) {
       body.append('removeExistingFile', String(removeExistingFile.value))
       const updateRes = await $fetch<{ ok: boolean, error?: string }>(`/api/reimbursements/${reimbursementId.value}`, {
@@ -282,6 +286,8 @@ async function submit() {
     goToReturnTarget()
   } catch (err: any) {
     toast.error(err?.message || t('reimbursement.saved.failedSave'))
+  } finally {
+    isSaving.value = false
   }
 }
 

@@ -29,6 +29,7 @@
       :status-targets="statusTargets"
       :has-file="!!file || (!!existingFile && !removeExistingFile)"
       :can-edit-company="canEditCompany"
+      :saving="isSaving"
       @submit="submit"
       @cancel="cancel"
     />
@@ -54,7 +55,7 @@
           <button class="btn-secondary" type="button" @click="showFinalizeConfirmModal = false">
             {{ t('actions.cancel') }}
           </button>
-          <button class="btn-primary" type="button" @click="confirmFinalizeSave">
+          <button class="btn-primary" type="button" :disabled="isSaving" :class="{ 'opacity-50 cursor-not-allowed': isSaving }" @click="confirmFinalizeSave">
             {{ t('invoice.finalizeConfirm.continue') }}
           </button>
         </div>
@@ -100,6 +101,7 @@ const existingFile = ref<{ id: number, url: string, name: string, mime_type: str
 const removeExistingFile = ref(false)
 const canViewFiles = computed(() => hasPermission('files.view') && (canEdit.value || existingFile.value !== null))
 const showFinalizeConfirmModal = ref(false)
+const isSaving = ref(false)
 
 const form = ref<CreateInvoiceBody>({
   company_id: null,
@@ -138,6 +140,7 @@ function onRemoveFile() {
 }
 
 async function submit() {
+  if (isSaving.value) return
   if (!canEditStatus.value) {
     toast.error(t('common.notAuthorized'))
     return
@@ -155,11 +158,14 @@ async function submit() {
 }
 
 async function confirmFinalizeSave() {
+  if (isSaving.value) return
   showFinalizeConfirmModal.value = false
   await saveInvoice()
 }
 
 async function saveInvoice() {
+  if (isSaving.value) return
+  isSaving.value = true
   const body = new FormData()
   if (file.value) body.append('file', file.value)
   body.append('invoice', JSON.stringify(form.value))
@@ -186,6 +192,8 @@ async function saveInvoice() {
     goToReturnTarget()
   } catch (err: any) {
     toast.error(err?.message || t('invoice.saved.failedSave'))
+  } finally {
+    isSaving.value = false
   }
 }
 

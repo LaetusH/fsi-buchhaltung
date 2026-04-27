@@ -4,7 +4,8 @@
       <div class="col-span-12 xl:col-span-8 xl:col-start-3">
         <MembersForm
           v-model="form"
-          :disabled="!canEdit || isSaving"
+          :disabled="!canEdit"
+          :saving="isSaving"
           :can-edit-subjects="canEditSubjects"
           :can-manage-users="canManageUsers"
           :can-manage-subdivisions="canManageSubdivisions"
@@ -438,6 +439,7 @@ async function loadSubdivisionCatalog() {
 }
 
 async function submit() {
+  if (isSaving.value) return
   if (!canEdit.value) {
     toast.error(t('common.notAuthorized'))
     return
@@ -452,11 +454,13 @@ async function submit() {
 }
 
 async function confirmLeftStatusSave() {
+  if (isSaving.value) return
   showLeftStatusConfirmModal.value = false
   await persistMember(true)
 }
 
 async function persistMember(showStatusActionsModal: boolean) {
+  if (isSaving.value) return
   isSaving.value = true
 
   try {

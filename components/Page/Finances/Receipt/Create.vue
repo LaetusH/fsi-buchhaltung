@@ -16,6 +16,7 @@
       :status-disabled="statusLocked"
       :can-edit-company="canEditCompany"
       :external-validation-errors="externalValidationErrors"
+      :saving="isSaving"
       @submit="submit"
       @cancel="cancel"
     />
@@ -53,6 +54,7 @@ const file = ref<File | null>(null)
 const existingFile = ref<{ id: number, url: string, name: string, mime_type: string, size: number } | null>(null)
 const removeExistingFile = ref(false)
 const statusLockedFromAssociation = ref(false)
+const isSaving = ref(false)
 
 const form = ref<CreateReceiptBody>({
   receipt_date: '',
@@ -128,6 +130,7 @@ function onRemoveFile() {
 }
 
 async function submit() {
+  if (isSaving.value) return
   if (!canEdit.value) {
     toast.error(t('common.notAuthorized'))
     return
@@ -171,6 +174,7 @@ async function submit() {
   body.append('receipt', JSON.stringify(form.value))
 
   try {
+    isSaving.value = true
     let createdReceiptId: number | null = null
     if (isEditMode.value) {
       body.append('removeExistingFile', String(removeExistingFile.value))
@@ -197,6 +201,8 @@ async function submit() {
     goToReturnTarget()
   } catch (err: any) {
     toast.error(err?.message || t('receipt.saved.failedUpload'))
+  } finally {
+    isSaving.value = false
   }
 }
 

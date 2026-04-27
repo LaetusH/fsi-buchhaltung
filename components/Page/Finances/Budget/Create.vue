@@ -658,6 +658,7 @@ async function loadBudget(budgetId: number) {
 }
 
 async function saveBudget() {
+  if (isSaving.value) return
   if (!canEdit.value) {
     toast.error(t('common.notAuthorized'))
     return

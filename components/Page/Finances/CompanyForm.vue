@@ -113,6 +113,8 @@
         type="button"
         @click="save"
         class="btn-primary"
+        :disabled="isSaving"
+        :class="{ 'opacity-50 cursor-not-allowed': isSaving }"
       >
         {{ t('actions.save') }}
       </button>
@@ -135,6 +137,7 @@ const emit = defineEmits<{
 }>()
 
 const { t } = useI18n()
+const isSaving = ref(false)
 
 const form = reactive<UpdateCompanyBody>({
   id: props.modelValue.id,
@@ -180,11 +183,18 @@ function updateModelValueFromForm() {
 }
 
 async function save() {
-  const res = await $fetch(`/api/companies/${form.id}`, {
-    method: 'PUT',
-    body: form
-  })
-  if (res.ok) updateModelValueFromForm()
-  emit('save')
+  if (isSaving.value) return
+
+  isSaving.value = true
+  try {
+    const res = await $fetch(`/api/companies/${form.id}`, {
+      method: 'PUT',
+      body: form
+    })
+    if (res.ok) updateModelValueFromForm()
+    emit('save')
+  } finally {
+    isSaving.value = false
+  }
 }
 </script>

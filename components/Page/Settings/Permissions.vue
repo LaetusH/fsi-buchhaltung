@@ -153,7 +153,7 @@
 
         <div class="flex justify-end gap-3 pt-4">
           <button class="btn-secondary" @click="closeRoleModal">{{ t('actions.cancel') }}</button>
-          <button class="btn-primary" @click="saveRole">{{ t('actions.save') }}</button>
+          <button class="btn-primary" :disabled="savingRole" :class="{ 'opacity-50 cursor-not-allowed': savingRole }" @click="saveRole">{{ t('actions.save') }}</button>
         </div>
       </div>
     </div>
@@ -187,7 +187,7 @@
 
         <div class="flex justify-end gap-3 pt-4">
           <button class="btn-secondary" @click="permissionModal = null">{{ t('actions.cancel') }}</button>
-          <button class="btn-primary" @click="savePermissionModal">{{ t('actions.save') }}</button>
+          <button class="btn-primary" :disabled="savingPermissions" :class="{ 'opacity-50 cursor-not-allowed': savingPermissions }" @click="savePermissionModal">{{ t('actions.save') }}</button>
         </div>
       </div>
     </div>
@@ -237,7 +237,7 @@
 
         <div class="flex justify-end gap-3 pt-4">
           <button class="btn-secondary" @click="userModal = null">{{ t('actions.cancel') }}</button>
-          <button class="btn-primary" @click="saveUserAccess">{{ t('actions.save') }}</button>
+          <button class="btn-primary" :disabled="savingUserAccess" :class="{ 'opacity-50 cursor-not-allowed': savingUserAccess }" @click="saveUserAccess">{{ t('actions.save') }}</button>
         </div>
       </div>
     </div>
@@ -284,6 +284,9 @@ const roles = ref<RoleRow[]>([])
 const positions = ref<PositionRow[]>([])
 const users = ref<UserRow[]>([])
 const hasAccess = ref(true)
+const savingRole = ref(false)
+const savingPermissions = ref(false)
+const savingUserAccess = ref(false)
 
 const showRoleModal = ref(false)
 const roleForm = ref({
@@ -393,6 +396,7 @@ function closeRoleModal() {
 }
 
 async function saveRole() {
+  if (savingRole.value) return
   const payload = {
     id: roleForm.value.id,
     code: roleForm.value.code,
@@ -401,16 +405,21 @@ async function saveRole() {
     is_active: roleForm.value.is_active,
     is_default: roleForm.value.is_default,
   }
-  const res = await $fetch('/api/permissions/roles.save', {
-    method: 'POST',
-    body: payload,
-  })
-  if (!res.ok) {
-    toast.error(`${t('settings.permissions.saveFailed')}: ${res.error}`)
-    return
+  try {
+    savingRole.value = true
+    const res = await $fetch('/api/permissions/roles.save', {
+      method: 'POST',
+      body: payload,
+    })
+    if (!res.ok) {
+      toast.error(`${t('settings.permissions.saveFailed')}: ${res.error}`)
+      return
+    }
+    showRoleModal.value = false
+    await loadRoles()
+  } finally {
+    savingRole.value = false
   }
-  showRoleModal.value = false
-  await loadRoles()
 }
 
 function openRolePermissions(role: RoleRow) {
@@ -432,7 +441,7 @@ function openPositionPermissions(position: PositionRow) {
 }
 
 async function savePermissionModal() {
-  if (!permissionModal.value) return
+  if (!permissionModal.value || savingPermissions.value) return
   const modal = permissionModal.value
   const payload = { permissions: modal.selected }
   const endpoint = modal.type === 'role'
@@ -443,16 +452,21 @@ async function savePermissionModal() {
     ? { ...payload, role_id: modal.roleId }
     : { ...payload, position_id: modal.positionId }
 
-  const res = await $fetch(endpoint, {
-    method: 'POST',
-    body,
-  })
-  if (!res.ok) {
-    toast.error(`${t('settings.permissions.saveFailed')}: ${res.error}`)
-    return
+  try {
+    savingPermissions.value = true
+    const res = await $fetch(endpoint, {
+      method: 'POST',
+      body,
+    })
+    if (!res.ok) {
+      toast.error(`${t('settings.permissions.saveFailed')}: ${res.error}`)
+      return
+    }
+    permissionModal.value = null
+    await Promise.all([loadRoles(), loadPositions()])
+  } finally {
+    savingPermissions.value = false
   }
-  permissionModal.value = null
-  await Promise.all([loadRoles(), loadPositions()])
 }
 
 function openUserAccess(user: UserRow) {
@@ -465,22 +479,27 @@ function openUserAccess(user: UserRow) {
 }
 
 async function saveUserAccess() {
-  if (!userModal.value) return
+  if (!userModal.value || savingUserAccess.value) return
   const payload = {
     user_id: userModal.value.id,
     roles: userModal.value.roles,
     permissions: userModal.value.permissions,
   }
-  const res = await $fetch<{ ok: boolean, error?: string }>('/api/permissions/users.update', {
-    method: 'POST',
-    body: payload,
-  })
-  if (!res.ok) {
-    toast.error(`${t('settings.permissions.saveFailed')}: ${res.error}`)
-    return
+  try {
+    savingUserAccess.value = true
+    const res = await $fetch<{ ok: boolean, error?: string }>('/api/permissions/users.update', {
+      method: 'POST',
+      body: payload,
+    })
+    if (!res.ok) {
+      toast.error(`${t('settings.permissions.saveFailed')}: ${res.error}`)
+      return
+    }
+    userModal.value = null
+    await loadUsers()
+  } finally {
+    savingUserAccess.value = false
   }
-  userModal.value = null
-  await loadUsers()
 }
 
 onMounted(async () => {

@@ -9,6 +9,7 @@
           :cost-centres="costCentres"
           :spheres="spheres"
           :disabled="!canEdit"
+          :saving="isSaving"
           @submit="submit"
           @cancel="cancel"
         />
@@ -46,6 +47,7 @@ const members = ref<EventMemberOption[]>([])
 const subdivisions = ref<EventSubdivisionOption[]>([])
 const costCentres = ref<EventCostCentreOption[]>([])
 const spheres = ref<EventSphereOption[]>([])
+const isSaving = ref(false)
 
 const form = ref<SaveEventBody>({
   name: '',
@@ -99,12 +101,14 @@ async function loadOptions() {
 }
 
 async function submit() {
+  if (isSaving.value) return
   if (!canEdit.value) {
     toast.error(t('common.notAuthorized'))
     return
   }
 
   try {
+    isSaving.value = true
     if (isEditMode.value && eventId.value) {
       const res = await $fetch(`/api/events/${eventId.value}`, {
         method: 'PUT',
@@ -123,6 +127,8 @@ async function submit() {
     goToReturnTarget()
   } catch (err: any) {
     toast.error(err?.message || t('event.saved.failedSave'))
+  } finally {
+    isSaving.value = false
   }
 }
 

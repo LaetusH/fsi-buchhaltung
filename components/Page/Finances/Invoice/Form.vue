@@ -313,7 +313,7 @@
 
     <CommonFormActions
       :disabled="Boolean(disabled) && statusDisabled"
-      :save-disabled="validationErrors.length > 0"
+      :save-disabled="Boolean(props.saving) || validationErrors.length > 0"
       :cancel-label="t('actions.cancel')"
       :submit-label="t('actions.save')"
       :close-label="t('actions.close')"
@@ -372,6 +372,7 @@ const props = defineProps<{
   statusTargets?: InvoiceStatus[]
   hasFile?: boolean
   canEditCompany?: boolean
+  saving?: boolean
 }>()
 
 const emit = defineEmits<{

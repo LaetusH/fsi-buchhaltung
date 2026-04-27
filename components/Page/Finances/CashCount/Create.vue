@@ -13,6 +13,7 @@
       v-model="form"
       :has-file="!!file || (!!existingFile && !removeExistingFile)"
       :disabled="!canEdit"
+      :saving="isSaving"
       @submit="submit"
       @cancel="cancel"
     />
@@ -47,6 +48,7 @@ const cashCountId = ref<number | null>(null)
 const file = ref<File | null>(null)
 const existingFile = ref<{ id: number, url: string, name: string, mime_type: string, size: number } | null>(null)
 const removeExistingFile = ref(false)
+const isSaving = ref(false)
 
 const form = ref<CreateCashCountBody>({
   event_id: 0,
@@ -131,6 +133,7 @@ function hasUniqueRegisterNumbers() {
 }
 
 async function submit() {
+  if (isSaving.value) return
   if (!canEdit.value) {
     toast.error(t('common.notAuthorized'))
     return
@@ -189,6 +192,7 @@ async function submit() {
   body.append('cashCount', JSON.stringify(form.value))
 
   try {
+    isSaving.value = true
     if (isEditMode.value) {
       body.append('removeExistingFile', String(removeExistingFile.value))
       const updateRes = await $fetch<{ ok: boolean, error?: string }>(`/api/cash_counts/${cashCountId.value}`, {
@@ -208,6 +212,8 @@ async function submit() {
     goToReturnTarget()
   } catch (err: any) {
     toast.error(err?.message || t('cashCount.saved.failedSave'))
+  } finally {
+    isSaving.value = false
   }
 }
 

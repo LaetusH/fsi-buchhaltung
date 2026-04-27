@@ -242,6 +242,7 @@ type AmountField = 'amount_before' | 'amount_after'
 const props = defineProps<{
   modelValue: CreateCashCountBody
   disabled?: boolean
+  saving?: boolean
   hasFile?: boolean
 }>()
 
@@ -309,7 +310,7 @@ const validationErrors = computed(() => {
   return errors
 })
 
-const saveDisabled = computed(() => disabled.value || validationErrors.value.length > 0)
+const saveDisabled = computed(() => disabled.value || Boolean(props.saving) || validationErrors.value.length > 0)
 const countedBeforeAtInput = computed({
   get: () => form.value.counted_before_at,
   set: (value: string | null) => {

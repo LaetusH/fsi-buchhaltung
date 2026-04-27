@@ -273,6 +273,7 @@ import type { SubjectRow } from '~/types/subject'
 const props = defineProps<{
   modelValue: SaveMemberBody
   disabled?: boolean
+  saving?: boolean
   canEditSubjects?: boolean
   canManageUsers?: boolean
   canManageSubdivisions?: boolean
@@ -448,7 +449,7 @@ const validationErrors = computed(() => {
   return errors
 })
 
-const saveDisabled = computed(() => Boolean(props.disabled) || validationErrors.value.length > 0)
+const saveDisabled = computed(() => Boolean(props.disabled) || Boolean(props.saving) || validationErrors.value.length > 0)
 
 onMounted(() => {
   loadSubjects()
