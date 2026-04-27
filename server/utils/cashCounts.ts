@@ -35,9 +35,6 @@ export function validateCashCountBody(body: ReturnType<typeof normalizeCashCount
   if (!body.event_id) return 'event_id is required'
   if (!body.counted_by_first || !body.counted_by_second || !body.checked_by) return 'All member references are required'
   if (!body.counted_before_at || !body.counted_after_at) return 'Both timestamps are required'
-  if (new Set([body.counted_by_first, body.counted_by_second, body.checked_by]).size !== 3) {
-    return 'All three member references must be distinct'
-  }
   if (!body.positions.length) return 'At least one register is required'
   if (body.positions.some(position => !Number.isInteger(position.register_number) || position.register_number < 1)) {
     return 'Each position requires a valid register number'
@@ -71,7 +68,7 @@ export async function validateCashCountRelations(
   )
   if (!eventRows.length) return 'The selected event does not exist'
 
-  const memberIds = [body.counted_by_first, body.counted_by_second, body.checked_by]
+  const memberIds = Array.from(new Set([body.counted_by_first, body.counted_by_second, body.checked_by]))
   const memberRows = await query<{ id: number }[]>(
     `SELECT id
      FROM members

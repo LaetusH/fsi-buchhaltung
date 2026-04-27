@@ -289,7 +289,6 @@ const validationErrors = computed(() => {
   if (!form.value.counted_by_first) errors.push(t('cashCount.required.countedByFirst'))
   if (!form.value.counted_by_second) errors.push(t('cashCount.required.countedBySecond'))
   if (!form.value.checked_by) errors.push(t('cashCount.required.checkedBy'))
-  if (hasAllMembers() && !hasDistinctMembers()) errors.push(t('cashCount.required.distinctMembers'))
   if (!form.value.counted_before_at) errors.push(t('cashCount.required.countedBeforeAt'))
   if (!form.value.counted_after_at) errors.push(t('cashCount.required.countedAfterAt'))
   if (form.value.counted_before_at && form.value.counted_after_at && !hasValidDateOrder()) {
@@ -340,18 +339,6 @@ function hasValidRegisterNumber(value: unknown) {
 function hasDuplicateRegisterNumbers() {
   const registerNumbers = form.value.positions.map(position => Number(position.register_number))
   return new Set(registerNumbers).size !== registerNumbers.length
-}
-
-function hasAllMembers() {
-  return Boolean(form.value.counted_by_first && form.value.counted_by_second && form.value.checked_by)
-}
-
-function hasDistinctMembers() {
-  return new Set([
-    Number(form.value.counted_by_first || 0),
-    Number(form.value.counted_by_second || 0),
-    Number(form.value.checked_by || 0),
-  ]).size === 3
 }
 
 function hasValidDateOrder() {

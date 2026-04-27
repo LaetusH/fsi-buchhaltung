@@ -104,14 +104,6 @@ function onRemoveFile() {
   removeExistingFile.value = true
 }
 
-function hasDistinctMembers() {
-  return new Set([
-    Number(form.value.counted_by_first || 0),
-    Number(form.value.counted_by_second || 0),
-    Number(form.value.checked_by || 0),
-  ]).size === 3
-}
-
 function hasValidDateOrder() {
   const beforeTs = Date.parse(form.value.counted_before_at)
   const afterTs = Date.parse(form.value.counted_after_at)
@@ -152,10 +144,6 @@ async function submit() {
   }
   if (!form.value.checked_by) {
     toast.error(t('cashCount.required.checkedBy'))
-    return
-  }
-  if (!hasDistinctMembers()) {
-    toast.error(t('cashCount.required.distinctMembers'))
     return
   }
   if (!form.value.counted_before_at) {
