@@ -115,6 +115,8 @@ interface StatementSummary {
   totalSaldo: number
 }
 
+type StatementAmountMap = Map<number, { expense: number, income: number }>
+
 const receiptStatusOrder: ReceiptStatus[] = [
   ReceiptStatus.Draft,
   ReceiptStatus.Open,
@@ -252,33 +254,38 @@ function addOneDay(dateString: string) {
   return `${next.getFullYear()}-${String(next.getMonth() + 1).padStart(2, '0')}-${String(next.getDate()).padStart(2, '0')}`
 }
 
-function buildVisibleStatementCostCentres(options: FinanceAnalysisReportOptions, ownAmountsByCostCentreId: Map<number, { expense: number, income: number }>) {
-  const { costCentres, selectedCostCentre, includeChildCostCentres, comparisonBudgetLines } = options
+function buildVisibleStatementCostCentres(
+  options: FinanceAnalysisReportOptions,
+  actualOwnAmountsByCostCentreId: StatementAmountMap,
+  budgetOwnAmountsByCostCentreId: StatementAmountMap = new Map(),
+) {
+  const { costCentres, selectedCostCentre, includeChildCostCentres } = options
   const lineMap = new Map(costCentres.map(item => [item.id, item]))
   const childrenByParent = new Map<number | null, CostCentreRow[]>()
+  const parentById = new Map<number, number | null>()
 
   for (const item of costCentres) {
     const parentId = item.parent_id !== null && item.parent_id !== item.id && lineMap.has(item.parent_id)
       ? item.parent_id
       : null
+    parentById.set(item.id, parentId)
     const bucket = childrenByParent.get(parentId) ?? []
     bucket.push(item)
     childrenByParent.set(parentId, bucket)
   }
 
-  const budgetLineIds = new Set((comparisonBudgetLines ?? []).map(line => Number(line.cost_centre_id)))
-  const hasOwnContent = (costCentreId: number) => {
-    const own = ownAmountsByCostCentreId.get(costCentreId)
-    if (own && (own.expense !== 0 || own.income !== 0)) return true
-    return budgetLineIds.has(costCentreId)
+  const hasDirectValues = (costCentreId: number) => {
+    const actual = actualOwnAmountsByCostCentreId.get(costCentreId)
+    if (actual && (actual.expense !== 0 || actual.income !== 0)) return true
+    const budget = budgetOwnAmountsByCostCentreId.get(costCentreId)
+    return Boolean(budget && (budget.expense !== 0 || budget.income !== 0))
   }
 
   const shouldDisplay = (costCentreId: number): boolean => {
     const costCentre = lineMap.get(costCentreId)
     if (!costCentre) return false
-    if (costCentre.is_active) return true
-    if (hasOwnContent(costCentreId)) return true
-    return (childrenByParent.get(costCentreId) ?? []).some(child => shouldDisplay(child.id))
+    if ((parentById.get(costCentreId) ?? null) === null) return true
+    return hasDirectValues(costCentreId)
   }
 
   const ordered: StatementCostCentreRow[] = []
@@ -290,16 +297,26 @@ function buildVisibleStatementCostCentres(options: FinanceAnalysisReportOptions,
     ))
 
     for (const child of children) {
-      if (visited.has(child.id) || !shouldDisplay(child.id)) continue
-      visited.add(child.id)
-      ordered.push({
-        ...child,
-        depth,
-        hasChildren: (childrenByParent.get(child.id) ?? []).some(grandChild => shouldDisplay(grandChild.id)),
-      })
+      if (visited.has(child.id)) continue
+
+      const displayChild = shouldDisplay(child.id)
+      if (displayChild) {
+        visited.add(child.id)
+        ordered.push({
+          ...child,
+          depth,
+          hasChildren: false,
+        })
+      }
 
       if (includeChildCostCentres || !selectedCostCentre || child.id !== selectedCostCentre.id) {
-        visit(child.id, depth + 1)
+        const beforeChildCount = ordered.length
+        visit(child.id, displayChild ? depth + 1 : depth)
+        if (displayChild) {
+          ordered[beforeChildCount - 1].hasChildren = ordered
+            .slice(beforeChildCount)
+            .some(row => row.depth === depth + 1)
+        }
       }
     }
   }
@@ -307,12 +324,20 @@ function buildVisibleStatementCostCentres(options: FinanceAnalysisReportOptions,
   if (selectedCostCentre) {
     const selected = lineMap.get(selectedCostCentre.id)
     if (selected && shouldDisplay(selected.id)) {
+      const selectedIndex = ordered.length
       ordered.push({
         ...selected,
         depth: 0,
-        hasChildren: (childrenByParent.get(selected.id) ?? []).some(child => shouldDisplay(child.id)),
+        hasChildren: false,
       })
-      if (includeChildCostCentres) visit(selected.id, 1)
+      if (includeChildCostCentres) {
+        visit(selected.id, 1)
+        ordered[selectedIndex].hasChildren = ordered
+          .slice(selectedIndex + 1)
+          .some(row => row.depth === 1)
+      }
+    } else if (selected && includeChildCostCentres) {
+      visit(selected.id, 0)
     }
     return ordered
   }
@@ -322,16 +347,23 @@ function buildVisibleStatementCostCentres(options: FinanceAnalysisReportOptions,
 }
 
 function buildStatementSummaryMap(
-  costCentres: CostCentreRow[],
   visibleCostCentres: StatementCostCentreRow[],
   ownAmountsByCostCentreId: Map<number, { expense: number, income: number }>,
 ) {
-  const visibleIds = new Set(visibleCostCentres.map(item => item.id))
   const childrenByParent = new Map<number | null, number[]>()
-  for (const costCentre of costCentres) {
-    const bucket = childrenByParent.get(costCentre.parent_id ?? null) ?? []
+  const parentStack: StatementCostCentreRow[] = []
+
+  for (const costCentre of visibleCostCentres) {
+    while (parentStack.length && parentStack[parentStack.length - 1].depth >= costCentre.depth) {
+      parentStack.pop()
+    }
+
+    const parent = parentStack[parentStack.length - 1] ?? null
+    const parentId = parent?.id ?? null
+    const bucket = childrenByParent.get(parentId) ?? []
     bucket.push(costCentre.id)
-    childrenByParent.set(costCentre.parent_id ?? null, bucket)
+    childrenByParent.set(parentId, bucket)
+    parentStack.push(costCentre)
   }
 
   const cache = new Map<number, StatementSummary>()
@@ -343,7 +375,6 @@ function buildStatementSummaryMap(
     let childIncome = 0
 
     for (const childId of childrenByParent.get(costCentreId) ?? []) {
-      if (!visibleIds.has(childId)) continue
       const childSummary = compute(childId)
       childExpense += childSummary.totalExpense
       childIncome += childSummary.totalIncome
@@ -1248,10 +1279,14 @@ function buildAnnualClosingRows(options: FinanceAnalysisReportOptions, includeBu
   const { t, startDate, endDate, formatDate, costCentres, comparisonBudgetLines, comparisonBudgetLabel } = options
   const actualOwnAmounts = buildActualOwnAmountsByCostCentreId(options)
   const budgetOwnAmounts = buildBudgetOwnAmountsByCostCentreId(comparisonBudgetLines)
-  const visibleCostCentres = buildVisibleStatementCostCentres(options, actualOwnAmounts)
-  const actualSummaryByCostCentre = buildStatementSummaryMap(costCentres, visibleCostCentres, actualOwnAmounts)
-  const budgetSummaryByCostCentre = buildStatementSummaryMap(costCentres, visibleCostCentres, budgetOwnAmounts)
   const compareBudget = includeBudgetComparison && options.compareToBudget && Boolean(comparisonBudgetLines?.length)
+  const visibleCostCentres = buildVisibleStatementCostCentres(
+    options,
+    actualOwnAmounts,
+    compareBudget ? budgetOwnAmounts : undefined,
+  )
+  const actualSummaryByCostCentre = buildStatementSummaryMap(visibleCostCentres, actualOwnAmounts)
+  const budgetSummaryByCostCentre = buildStatementSummaryMap(visibleCostCentres, budgetOwnAmounts)
 
   const actualTotals = visibleCostCentres
     .filter(row => row.depth === 0)
