@@ -56,6 +56,8 @@ const ALL_PERMISSION_KEYS = [
   'settings.cost_centres.manage',
   'settings.subdivisions.manage',
   'settings.positions.manage',
+  'settings.app.access',
+  'settings.app.snapshots.manage',
   'permissions.manage',
   'files.view',
   'users.view',

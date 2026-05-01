@@ -26,13 +26,14 @@ import SettingsSubdivisions from './Subdivisions.vue'
 import SettingsPositions from './Positions.vue'
 import SettingsPermissions from './Permissions.vue'
 import SettingsUsers from './Users.vue'
+import SettingsApp from './App.vue'
 import { useAuth } from '~/composables/useAuth'
 
 defineEmits<{
   (e: 'openMenu'): void
 }>()
 
-type SettingsTab = 'general' | 'association' | 'spheres' | 'costCentres' | 'subdivisions' | 'positions' | 'users' | 'permissions'
+type SettingsTab = 'general' | 'association' | 'spheres' | 'costCentres' | 'subdivisions' | 'positions' | 'users' | 'permissions' | 'app'
 
 const currentTab = useState<SettingsTab>('settings-overview-current-tab', () => 'general')
 const { t } = useI18n()
@@ -48,6 +49,7 @@ const tabs = computed(() => {
     { key: 'positions', label: t('settings.tabs.positions'), show: hasPermission('settings.positions.manage') },
     { key: 'users', label: t('settings.tabs.users'), show: hasPermission('users.manage') },
     { key: 'permissions', label: t('settings.tabs.permissions'), show: hasPermission('permissions.manage') },
+    { key: 'app', label: t('settings.tabs.app'), show: hasPermission('settings.app.access') },
   ] as const
   return list.filter(tab => tab.show).map(({ show, ...rest }) => rest)
 })
@@ -70,6 +72,8 @@ const activeComponent = computed(() => {
       return SettingsUsers
     case 'permissions':
       return SettingsPermissions
+    case 'app':
+      return SettingsApp
     default:
       return SettingsGeneral
   }

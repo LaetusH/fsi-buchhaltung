@@ -13,6 +13,10 @@ const pool = mariadb.createPool({
   dateStrings: true
 })
 
+export async function getDbConnection() {
+  return await pool.getConnection()
+}
+
 export async function query<T = any>(sql: string, params?: unknown[], conn?: mariadb.PoolConnection): Promise<T> {
   let connection = conn
   let shouldRelease = false
