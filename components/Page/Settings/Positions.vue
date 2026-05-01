@@ -673,6 +673,11 @@ onMounted(async () => {
   await loadMemberOptions()
 })
 
+useAppRefresh().onRefresh(async () => {
+  if (!hasAccess.value) return
+  await loadMemberOptions()
+})
+
 onBeforeUnmount(() => {
   cleanupAssignmentListObservers()
 })

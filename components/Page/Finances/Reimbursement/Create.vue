@@ -129,8 +129,7 @@ function applyDraft(draft: Partial<CreateReimbursementBody>) {
 }
 
 onMounted(async () => {
-  const receiptsRes = await $fetch('/api/receipts', { method: 'GET' })
-  if (receiptsRes.ok) receipts.value = receiptsRes.receipts
+  await loadReceipts()
 
   reimbursementId.value = pageMeta.value?.reimbursementId || null
 
@@ -190,6 +189,13 @@ onMounted(async () => {
   file.value = null
   removeExistingFile.value = false
 })
+
+useAppRefresh().onRefresh(loadReceipts)
+
+async function loadReceipts() {
+  const receiptsRes = await $fetch('/api/receipts', { method: 'GET' })
+  if (receiptsRes.ok) receipts.value = receiptsRes.receipts
+}
 
 function onRemoveFile() {
   existingFile.value = null

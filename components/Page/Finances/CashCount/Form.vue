@@ -411,6 +411,10 @@ async function loadEvents() {
   if (res.ok) events.value = res.events
 }
 
+async function loadSupportData() {
+  await Promise.all([loadEvents(), loadMembers()])
+}
+
 function addPosition() {
   form.value.positions.push({
     register_number: nextRegisterNumber(),
@@ -523,7 +527,8 @@ watch([events, () => form.value.event_id], () => {
 
 onMounted(() => {
   if (!form.value.positions.length) addPosition()
-  loadEvents()
-  loadMembers()
+  loadSupportData()
 })
+
+useAppRefresh().onRefresh(loadSupportData)
 </script>

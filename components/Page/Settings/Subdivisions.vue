@@ -326,4 +326,9 @@ onMounted(async () => {
   if (!hasAccess.value) return
   await loadMemberOptions()
 })
+
+useAppRefresh().onRefresh(async () => {
+  if (!hasAccess.value) return
+  await loadMemberOptions()
+})
 </script>

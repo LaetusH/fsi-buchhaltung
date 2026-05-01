@@ -452,10 +452,18 @@ const validationErrors = computed(() => {
 const saveDisabled = computed(() => Boolean(props.disabled) || Boolean(props.saving) || validationErrors.value.length > 0)
 
 onMounted(() => {
-  loadSubjects()
-  loadPositions()
-  if (canManageSubdivisions.value) loadSubdivisions()
+  loadSupportData()
 })
+
+useAppRefresh().onRefresh(loadSupportData)
+
+async function loadSupportData() {
+  await Promise.all([
+    loadSubjects(),
+    loadPositions(),
+    canManageSubdivisions.value ? loadSubdivisions() : Promise.resolve(),
+  ])
+}
 
 watch(
   () => form.value.subject_name,
@@ -657,4 +665,3 @@ watch(
   { immediate: true },
 )
 </script>
-

@@ -12,6 +12,7 @@ interface MainPage {
   permissions: PermissionKey[]
   requireAllPermissions?: boolean
   allowGuest?: boolean
+  preserveOnRefresh?: boolean
 }
 
 interface SubPage {
@@ -21,6 +22,7 @@ interface SubPage {
   permissions: PermissionKey[]
   requireAllPermissions?: boolean
   allowGuest?: boolean
+  preserveOnRefresh?: boolean
 }
 
 export type PageName = keyof typeof PAGES

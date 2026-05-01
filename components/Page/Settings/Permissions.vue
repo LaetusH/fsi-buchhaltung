@@ -503,6 +503,12 @@ async function saveUserAccess() {
 }
 
 onMounted(async () => {
-  await Promise.all([loadDefinitions(), loadRoles(), loadPositions(), loadUsers()])
+  await loadSupportData()
 })
+
+useAppRefresh().onRefresh(loadSupportData)
+
+async function loadSupportData() {
+  await Promise.all([loadDefinitions(), loadRoles(), loadPositions(), loadUsers()])
+}
 </script>

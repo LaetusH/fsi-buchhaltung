@@ -495,9 +495,13 @@ watch(
   { immediate: true },
 )
 
-onMounted(async () => {
+onMounted(loadSupportData)
+
+useAppRefresh().onRefresh(loadSupportData)
+
+async function loadSupportData() {
   await Promise.all([loadCompanies(), loadSpheres(), loadCostCentres()])
-})
+}
 
 async function loadCompanies() {
   const res = await $fetch<{ ok: boolean, companies?: CompanyRow[] }>('/api/companies')

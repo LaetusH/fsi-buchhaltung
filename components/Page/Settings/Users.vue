@@ -368,6 +368,15 @@ async function toggleUserActive(user: UserListRow) {
 
 onMounted(async () => {
   if (!hasAccess.value) return
-  await Promise.all([loadUsers(), loadMemberOptions()])
+  await loadSupportData()
 })
+
+useAppRefresh().onRefresh(async () => {
+  if (!hasAccess.value) return
+  await loadSupportData()
+})
+
+async function loadSupportData() {
+  await Promise.all([loadUsers(), loadMemberOptions()])
+}
 </script>

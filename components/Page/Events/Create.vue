@@ -90,6 +90,8 @@ onMounted(async () => {
   }
 })
 
+useAppRefresh().onRefresh(loadOptions)
+
 async function loadOptions() {
   const res = await $fetch<GetEventOptionsResponse>('/api/events/options')
   if (!res.ok) return

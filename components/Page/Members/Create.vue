@@ -237,6 +237,12 @@ const emit = defineEmits<{
   (e: 'openMenu'): void
 }>()
 
+type MemberSaveResponse = {
+  ok: boolean
+  error?: string
+  status_actions?: MemberStatusActionSummary | null
+}
+
 const { setPage, pageMeta } = usePage()
 const { t } = useI18n()
 const { formatDate } = useLocaleFormatters()
@@ -314,10 +320,7 @@ const form = ref<SaveMemberBody>({
 })
 
 onMounted(async () => {
-  await Promise.all([
-    loadPositionCatalog(),
-    canManageSubdivisions.value ? loadSubdivisionCatalog() : Promise.resolve(),
-  ])
+  await loadSupportData()
 
   memberId.value = pageMeta.value?.memberId || null
   if (!memberId.value) return
@@ -354,6 +357,15 @@ onMounted(async () => {
     subdivision_ids: res.member.subdivisions?.map(subdivision => subdivision.id) || [],
   }
 })
+
+useAppRefresh().onRefresh(loadSupportData)
+
+async function loadSupportData() {
+  await Promise.all([
+    loadPositionCatalog(),
+    canManageSubdivisions.value ? loadSubdivisionCatalog() : Promise.resolve(),
+  ])
+}
 
 const isLeftStatusTransition = computed(() => {
   if (form.value.status !== MemberStatus.Left) return false
@@ -464,17 +476,17 @@ async function persistMember(showStatusActionsModal: boolean) {
   isSaving.value = true
 
   try {
-    let response: { ok: boolean, error?: string, status_actions?: MemberStatusActionSummary | null }
+    let response: MemberSaveResponse
 
     if (isEditMode.value && memberId.value) {
-      response = await $fetch(`/api/members/${memberId.value}`, {
+      response = await $fetch<MemberSaveResponse>(String(`/api/members/${memberId.value}`), {
         method: 'PUT',
         body: form.value,
       })
 
       if (!response.ok) throw new Error(response.error || t('member.saved.failedUpdate'))
     } else {
-      response = await $fetch('/api/members/create', {
+      response = await $fetch<MemberSaveResponse>('/api/members/create', {
         method: 'POST',
         body: form.value,
       })

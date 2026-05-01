@@ -348,6 +348,10 @@ async function loadReceiptAssignments() {
   if (res.ok) receiptAssignments.value = res.assignments
 }
 
+async function loadSupportData() {
+  await Promise.all([loadMembers(), loadReceipts(), loadReceiptAssignments()])
+}
+
 function memberLabel(member: MemberListItem) {
   return `${member.first_name} ${member.last_name}`
 }
@@ -548,8 +552,8 @@ watch([receipts, () => form.value.positions], () => {
 onMounted(() => {
   if (!form.value.submitted_at) form.value.submitted_at = new Date().toISOString().slice(0, 10)
   if (!form.value.positions.length) form.value.positions.push({ receipt_id: 0 })
-  loadMembers()
-  loadReceipts()
-  loadReceiptAssignments()
+  loadSupportData()
 })
+
+useAppRefresh().onRefresh(loadSupportData)
 </script>

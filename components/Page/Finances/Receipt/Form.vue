@@ -296,6 +296,10 @@ async function loadCompanies() {
   if (res.ok) companies.value = res.companies
 }
 
+async function loadSupportData() {
+  await Promise.all([loadCompanies(), loadSpheres(), loadCostCentres()])
+}
+
 async function submit() {
   const newCompanyName = companyQuery.value.trim()
   if (!selectedCompany.value && newCompanyName.length > 0) await createCompanyFromQuery()
@@ -318,11 +322,9 @@ async function createCompanyFromQuery() {
   await loadCompanies()
 }
 
-onMounted(() => {
-  loadCompanies()
-  loadSpheres()
-  loadCostCentres()
-})
+onMounted(loadSupportData)
+
+useAppRefresh().onRefresh(loadSupportData)
 
 watch([companies, () => form.value.company_id], () => {
   if (!form.value.company_id) return

@@ -3,7 +3,7 @@
     <component
       v-if="loaded"
       :is="currentComponent"
-      :key="`${currentPage}:${refreshKey}`"
+      :key="componentKey"
       @open-menu="$emit('openMenu')"
     />
   </div>
@@ -46,5 +46,12 @@ const currentComponent = computed(() => {
   }
   
   return LoginPage
+})
+
+const componentKey = computed(() => {
+  const page = PAGES[currentPage.value]
+  if (page?.preserveOnRefresh) return currentPage.value
+
+  return `${currentPage.value}:${refreshKey.value}`
 })
 </script>

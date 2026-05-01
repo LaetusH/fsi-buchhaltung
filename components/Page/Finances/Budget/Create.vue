@@ -508,6 +508,8 @@ onMounted(async () => {
   resizeAllNotes()
 })
 
+useAppRefresh().onRefresh(loadCostCentres)
+
 function resolveDefaultPeriod() {
   const now = new Date()
   const month = now.getMonth() + 1
