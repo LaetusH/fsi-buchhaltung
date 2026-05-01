@@ -29,7 +29,7 @@ services:
       - APP_BASE_URL=${APP_BASE_URL:-/}
     ports:
       - "3002:3002"
-    command: sh -c "npm ci && node scripts/migrate-event-cost-centre-splits.mjs && npm run setup:audit && node scripts/seed-admin.mjs && npm run build && node .output/server/index.mjs"
+    command: sh -c "npm ci && node scripts/migrate-event-cost-centre-splits.mjs && node scripts/migrate-invoice-paid-at.mjs && npm run setup:audit && node scripts/seed-admin.mjs && npm run build && node .output/server/index.mjs"
     depends_on:
       db:
         condition: service_healthy
