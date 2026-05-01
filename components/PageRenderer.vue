@@ -31,7 +31,7 @@ onMounted(async () => {
   loaded.value = true
 
   watch(currentPage, async () => {
-    if (user.value) await $fetch('/api/auth/session')
+    if (user.value) await fetchSession()
   })
 })
 

@@ -6,6 +6,15 @@ import type { PermissionKey } from '~/config/permissions'
 export const useAuth = () => {
   const user = useState<User | null>('auth_user', () => null)
 
+  function redirectToLogin() {
+    user.value = null
+
+    if (!import.meta.client) return
+
+    const { currentPage, setPage } = usePage()
+    if (currentPage.value !== 'Login') setPage('Login')
+  }
+
   async function fetchSession() {
     try {
       const data = await $fetch<SessionResponse>('/api/auth/session')
@@ -13,11 +22,11 @@ export const useAuth = () => {
         user.value = data.user
         return user.value
       } else {
-        user.value = null
+        redirectToLogin()
         return null
       }
     } catch (err: any) {
-      user.value = null
+      redirectToLogin()
       return null
     }
   }
@@ -38,7 +47,7 @@ export const useAuth = () => {
 
   async function logout() {
     await $fetch('/api/auth/logout', { method: 'POST' })
-    user.value = null
+    redirectToLogin()
   }
 
   function hasPermission(permissions: PermissionKey[] | PermissionKey) {
@@ -52,5 +61,5 @@ export const useAuth = () => {
     return permissions.every(p => user.value!.permissions.includes(p))
   }
 
-  return { user, fetchSession, login, logout, hasPermission, hasAllPermissions }
+  return { user, fetchSession, login, logout, redirectToLogin, hasPermission, hasAllPermissions }
 }
