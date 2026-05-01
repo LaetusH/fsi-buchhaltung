@@ -40,7 +40,7 @@ export default defineEventHandler(async (event): Promise<GetCashCountResponse> =
         cc.counted_before_at,
         cc.counted_after_at
       FROM cash_counts cc
-      INNER JOIN events e ON e.id = cc.event_id
+      LEFT JOIN events e ON e.id = cc.event_id
       WHERE cc.id = ?
       LIMIT 1
       `,
@@ -77,12 +77,12 @@ export default defineEventHandler(async (event): Promise<GetCashCountResponse> =
       ok: true,
       cashCount: {
         id: Number(cashCount.id),
-        event_id: Number(cashCount.event_id),
-        event_name: String(cashCount.event_name),
+        event_id: cashCount.event_id === null ? null : Number(cashCount.event_id),
+        event_name: cashCount.event_name === null ? null : String(cashCount.event_name),
         counted_by_first: Number(cashCount.counted_by_first),
         counted_by_second: Number(cashCount.counted_by_second),
         checked_by: Number(cashCount.checked_by),
-        counted_before_at: String(cashCount.counted_before_at),
+        counted_before_at: cashCount.counted_before_at === null ? null : String(cashCount.counted_before_at),
         counted_after_at: String(cashCount.counted_after_at),
         positions,
       },

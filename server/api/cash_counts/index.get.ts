@@ -34,9 +34,12 @@ export default defineEventHandler(async (event): Promise<GetCashCountsResponse> 
         COUNT(DISTINCT ccp.id) AS register_count,
         IFNULL(SUM(ccp.amount_before), 0) AS total_before_amount,
         IFNULL(SUM(ccp.amount_after), 0) AS total_after_amount,
-        IFNULL(SUM(ccp.amount_after - ccp.amount_before), 0) AS total_difference
+        CASE
+          WHEN cc.event_id IS NULL THEN 0
+          ELSE IFNULL(SUM(ccp.amount_after - ccp.amount_before), 0)
+        END AS total_difference
       FROM cash_counts cc
-      INNER JOIN events e ON e.id = cc.event_id
+      LEFT JOIN events e ON e.id = cc.event_id
       LEFT JOIN members m1 ON m1.id = cc.counted_by_first
       LEFT JOIN members m2 ON m2.id = cc.counted_by_second
       LEFT JOIN members m3 ON m3.id = cc.checked_by
@@ -50,9 +53,9 @@ export default defineEventHandler(async (event): Promise<GetCashCountsResponse> 
       ok: true,
       cashCounts: rows.map(row => ({
         id: Number(row.id),
-        event_id: Number(row.event_id),
-        event_name: String(row.event_name),
-        counted_before_at: String(row.counted_before_at),
+        event_id: row.event_id === null ? null : Number(row.event_id),
+        event_name: row.event_name === null ? null : String(row.event_name),
+        counted_before_at: row.counted_before_at === null ? null : String(row.counted_before_at),
         counted_after_at: String(row.counted_after_at),
         counted_by_first_name: String(row.counted_by_first_name || ''),
         counted_by_second_name: String(row.counted_by_second_name || ''),

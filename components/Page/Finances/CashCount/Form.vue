@@ -3,12 +3,17 @@
     <section class="bg-white rounded-xl shadow-lg p-4 space-y-4">
       <h2 class="text-lg font-semibold">{{ t('cashCount.countData') }}</h2>
 
-      <div>
+      <label class="flex items-center gap-2 text-sm font-medium text-slate-700 cursor-pointer">
+        <input v-model="isRegisterCheck" type="checkbox" class="checkbox" :disabled="disabled">
+        {{ t('cashCount.registerCheck') }}
+      </label>
+
+      <div v-if="!isRegisterCheck">
         <label class="text-sm font-medium text-slate-600">{{ t('cashCount.event') }}</label>
         <CommonSearchSelect
           v-model="eventQuery"
           :options="eventOptions"
-          :selected-label="selectedEventLabel(form.event_id)"
+          :selected-label="selectedEventLabel(form.event_id || 0)"
           :placeholder="t('cashCount.eventPlaceholder')"
           :empty-text="t('cashCount.noMatchingEvents')"
           :disabled="disabled"
@@ -60,7 +65,7 @@
           />
         </div>
 
-        <div>
+        <div v-if="!isRegisterCheck">
           <label class="text-sm font-medium text-slate-600">{{ t('cashCount.countedBeforeAt') }}</label>
           <CommonDateInput
             v-model="countedBeforeAtInput"
@@ -69,8 +74,8 @@
           />
         </div>
 
-        <div>
-          <label class="text-sm font-medium text-slate-600">{{ t('cashCount.countedAfterAt') }}</label>
+        <div :class="isRegisterCheck ? 'md:col-span-2' : ''">
+          <label class="text-sm font-medium text-slate-600">{{ isRegisterCheck ? t('cashCount.countedAt') : t('cashCount.countedAfterAt') }}</label>
           <CommonDateInput
             v-model="countedAfterAtInput"
             mode="datetime"
@@ -96,13 +101,13 @@
       <div
         class="hidden 2xl:grid gap-3 text-sm font-medium text-slate-500"
         :class="!disabled && form.positions.length > 1
-          ? '2xl:grid-cols-[7rem_1fr_1fr_1fr_2fr_auto]'
-          : '2xl:grid-cols-[7rem_1fr_1fr_1fr_2fr]'"
+          ? positionGridWithActionsClass
+          : positionGridClass"
       >
         <div>{{ t('cashCount.register') }}</div>
-        <div>{{ t('cashCount.amountBefore') }}</div>
-        <div>{{ t('cashCount.amountAfter') }}</div>
-        <div>{{ t('cashCount.difference') }}</div>
+        <div v-if="!isRegisterCheck">{{ t('cashCount.amountBefore') }}</div>
+        <div>{{ isRegisterCheck ? t('cashCount.amount') : t('cashCount.amountAfter') }}</div>
+        <div v-if="!isRegisterCheck">{{ t('cashCount.difference') }}</div>
         <div>{{ t('cashCount.notes') }}</div>
         <div v-if="!disabled && form.positions.length > 1" />
       </div>
@@ -115,8 +120,8 @@
         <div
           class="grid grid-cols-1 gap-3 items-start md:grid-cols-8"
           :class="!disabled && form.positions.length > 1
-            ? '2xl:grid-cols-[7rem_1fr_1fr_1fr_2fr_auto]'
-            : '2xl:grid-cols-[7rem_1fr_1fr_1fr_2fr]'"
+            ? positionGridWithActionsClass
+            : positionGridClass"
         >
           <div class="field md:col-span-2 2xl:col-span-1">
             <label class="2xl:hidden">{{ t('cashCount.register') }}</label>
@@ -131,7 +136,7 @@
             >
           </div>
 
-          <div class="field md:col-span-2 2xl:col-span-1">
+          <div v-if="!isRegisterCheck" class="field md:col-span-2 2xl:col-span-1">
             <label class="2xl:hidden">{{ t('cashCount.amountBefore') }}</label>
             <input
               type="text"
@@ -146,7 +151,7 @@
           </div>
 
           <div class="field md:col-span-2 2xl:col-span-1">
-            <label class="2xl:hidden">{{ t('cashCount.amountAfter') }}</label>
+            <label class="2xl:hidden">{{ isRegisterCheck ? t('cashCount.amount') : t('cashCount.amountAfter') }}</label>
             <input
               type="text"
               class="input text-right"
@@ -159,7 +164,7 @@
             >
           </div>
 
-          <div class="field md:col-span-2 2xl:col-span-1">
+          <div v-if="!isRegisterCheck" class="field md:col-span-2 2xl:col-span-1">
             <label class="2xl:hidden">{{ t('cashCount.difference') }}</label>
             <div class="input bg-slate-50 text-right font-medium">
               {{ formatCurrency(positionDifference(position)) }}
@@ -169,8 +174,8 @@
           <div
             class="field min-w-0"
             :class="!disabled && form.positions.length > 1
-              ? 'md:col-span-7 2xl:col-span-1'
-              : 'md:col-span-8 2xl:col-span-1'"
+              ? notesWithActionsClass
+              : notesClass"
           >
             <label class="2xl:hidden">{{ t('cashCount.notes') }}</label>
             <input
@@ -196,16 +201,19 @@
       <div class="flex items-center justify-between gap-4 flex-wrap">
         <h3 class="font-semibold">{{ t('cashCount.overview') }}</h3>
 
-        <div class="grid grid-cols-2 lg:grid-cols-3 gap-3 text-sm min-w-full lg:min-w-0 lg:w-auto">
-          <div class="rounded-xl bg-slate-100 px-4 py-3">
+        <div
+          class="grid gap-3 text-sm min-w-full"
+          :class="isRegisterCheck ? 'grid-cols-1' : 'grid-cols-2 lg:grid-cols-3 lg:min-w-0 lg:w-auto'"
+        >
+          <div v-if="!isRegisterCheck" class="rounded-xl bg-slate-100 px-4 py-3">
             <div class="text-slate-500">{{ t('cashCount.totalBefore') }}</div>
             <div class="text-lg font-semibold">{{ formatCurrency(totalBefore) }}</div>
           </div>
-          <div class="rounded-xl bg-slate-100 px-4 py-3">
-            <div class="text-slate-500">{{ t('cashCount.totalAfter') }}</div>
+          <div class="rounded-xl bg-slate-100 px-4 py-3" :class="isRegisterCheck ? 'w-full' : ''">
+            <div class="text-slate-500">{{ isRegisterCheck ? t('cashCount.totalAmount') : t('cashCount.totalAfter') }}</div>
             <div class="text-lg font-semibold">{{ formatCurrency(totalAfter) }}</div>
           </div>
-          <div class="rounded-xl bg-emerald-100 px-4 py-3">
+          <div v-if="!isRegisterCheck" class="rounded-xl bg-emerald-100 px-4 py-3">
             <div class="text-emerald-700">{{ t('cashCount.totalDifference') }}</div>
             <div class="text-lg font-semibold text-emerald-800">{{ formatCurrency(totalDifference) }}</div>
           </div>
@@ -261,6 +269,22 @@ const form = computed({
 })
 
 const disabled = computed(() => Boolean(props.disabled))
+const isRegisterCheck = computed({
+  get: () => form.value.event_id === null,
+  set: (value: boolean) => {
+    if (value) {
+      form.value.event_id = null
+      form.value.counted_before_at = null
+      form.value.positions.forEach(position => {
+        position.amount_before = position.amount_after
+      })
+      return
+    }
+
+    form.value.event_id = 0
+    form.value.counted_before_at = ''
+  },
+})
 const members = ref<MemberListItem[]>([])
 const events = ref<EventRow[]>([])
 const eventQuery = ref('')
@@ -268,6 +292,17 @@ const countedByFirstQuery = ref('')
 const countedBySecondQuery = ref('')
 const checkedByQuery = ref('')
 const focusedAmountField = ref<{ index: number, field: AmountField } | null>(null)
+
+const positionGridClass = computed(() => isRegisterCheck.value
+  ? '2xl:grid-cols-[7rem_1fr_2fr]'
+  : '2xl:grid-cols-[7rem_1fr_1fr_1fr_2fr]'
+)
+const positionGridWithActionsClass = computed(() => isRegisterCheck.value
+  ? '2xl:grid-cols-[7rem_1fr_2fr_auto]'
+  : '2xl:grid-cols-[7rem_1fr_1fr_1fr_2fr_auto]'
+)
+const notesClass = computed(() => isRegisterCheck.value ? 'md:col-span-8 2xl:col-span-1' : 'md:col-span-8 2xl:col-span-1')
+const notesWithActionsClass = computed(() => isRegisterCheck.value ? 'md:col-span-7 2xl:col-span-1' : 'md:col-span-7 2xl:col-span-1')
 
 const eventOptions = computed<SearchSelectOption<EventRow>[]>(() => events.value.map(event => ({
   key: event.id,
@@ -285,13 +320,15 @@ const memberOptions = computed<SearchSelectOption<MemberListItem>[]>(() => membe
 const validationErrors = computed(() => {
   const errors: string[] = []
 
-  if (!form.value.event_id) errors.push(t('cashCount.required.event'))
+  if (!isRegisterCheck.value && !form.value.event_id) errors.push(t('cashCount.required.event'))
   if (!form.value.counted_by_first) errors.push(t('cashCount.required.countedByFirst'))
   if (!form.value.counted_by_second) errors.push(t('cashCount.required.countedBySecond'))
   if (!form.value.checked_by) errors.push(t('cashCount.required.checkedBy'))
-  if (!form.value.counted_before_at) errors.push(t('cashCount.required.countedBeforeAt'))
-  if (!form.value.counted_after_at) errors.push(t('cashCount.required.countedAfterAt'))
-  if (form.value.counted_before_at && form.value.counted_after_at && !hasValidDateOrder()) {
+  if (!isRegisterCheck.value && !form.value.counted_before_at) errors.push(t('cashCount.required.countedBeforeAt'))
+  if (!form.value.counted_after_at) {
+    errors.push(isRegisterCheck.value ? t('cashCount.required.countedAt') : t('cashCount.required.countedAfterAt'))
+  }
+  if (!isRegisterCheck.value && form.value.counted_before_at && form.value.counted_after_at && !hasValidDateOrder()) {
     errors.push(t('cashCount.required.order'))
   }
   if (!Array.isArray(form.value.positions) || form.value.positions.length === 0) errors.push(t('cashCount.required.positions'))
@@ -301,17 +338,19 @@ const validationErrors = computed(() => {
   if (hasDuplicateRegisterNumbers()) {
     errors.push(t('cashCount.required.uniqueRegister'))
   }
-  if (form.value.positions.some(position => !hasValidAmount(position.amount_before) || !hasValidAmount(position.amount_after))) {
-    errors.push(t('cashCount.required.completePosition'))
+  if (form.value.positions.some(position => (!isRegisterCheck.value && !hasValidAmount(position.amount_before)) || !hasValidAmount(position.amount_after))) {
+    errors.push(isRegisterCheck.value ? t('cashCount.required.completeRegisterCheckPosition') : t('cashCount.required.completePosition'))
   }
-  if (!props.hasFile) errors.push(t('cashCount.required.file'))
+  if (!props.hasFile) {
+    errors.push(isRegisterCheck.value ? t('cashCount.required.registerCheckFile') : t('cashCount.required.file'))
+  }
 
   return errors
 })
 
 const saveDisabled = computed(() => disabled.value || Boolean(props.saving) || validationErrors.value.length > 0)
 const countedBeforeAtInput = computed({
-  get: () => form.value.counted_before_at,
+  get: () => form.value.counted_before_at || '',
   set: (value: string | null) => {
     form.value.counted_before_at = value || ''
   },
@@ -342,6 +381,7 @@ function hasDuplicateRegisterNumbers() {
 }
 
 function hasValidDateOrder() {
+  if (!form.value.counted_before_at) return true
   const beforeTs = Date.parse(form.value.counted_before_at)
   const afterTs = Date.parse(form.value.counted_after_at)
   return Number.isFinite(beforeTs) && Number.isFinite(afterTs) && afterTs > beforeTs
@@ -500,6 +540,7 @@ function onAmountInput(event: Event, index: number, field: AmountField) {
   if (!position) return
 
   position[field] = Number.isNaN(parsed) ? 0 : parsed
+  if (isRegisterCheck.value) position.amount_before = position.amount_after
   ;(event.target as HTMLInputElement).value = value
 }
 
@@ -513,6 +554,7 @@ function onAmountBlur(index: number, field: AmountField) {
   if (value !== null && value !== undefined) {
     position[field] = Number(Number(value).toFixed(2))
   }
+  if (isRegisterCheck.value) position.amount_before = position.amount_after
 }
 
 watch([members, () => form.value.counted_by_first, () => form.value.counted_by_second, () => form.value.checked_by], () => {

@@ -66,7 +66,7 @@ onMounted(async () => {
 
   isEditMode.value = true
 
-  const res = await $fetch<GetCashCountResponse>(`/api/cash_counts/${cashCountId.value}`, { method: 'GET' })
+  const res = await $fetch<GetCashCountResponse>(String(`/api/cash_counts/${cashCountId.value}`), { method: 'GET' })
   if (!res.ok) {
     isEditMode.value = false
     return
@@ -105,6 +105,8 @@ function onRemoveFile() {
 }
 
 function hasValidDateOrder() {
+  if (form.value.event_id === null) return true
+  if (!form.value.counted_before_at) return false
   const beforeTs = Date.parse(form.value.counted_before_at)
   const afterTs = Date.parse(form.value.counted_after_at)
   return Number.isFinite(beforeTs) && Number.isFinite(afterTs) && afterTs > beforeTs
@@ -115,7 +117,10 @@ function hasCompletePositions() {
     const registerNumber = Number(position.register_number)
     const beforeAmount = Number(position.amount_before)
     const afterAmount = Number(position.amount_after)
-    return Number.isInteger(registerNumber) && registerNumber > 0 && Number.isFinite(beforeAmount) && Number.isFinite(afterAmount)
+    return Number.isInteger(registerNumber)
+      && registerNumber > 0
+      && (form.value.event_id === null || Number.isFinite(beforeAmount))
+      && Number.isFinite(afterAmount)
   })
 }
 
@@ -130,7 +135,7 @@ async function submit() {
     toast.error(t('common.notAuthorized'))
     return
   }
-  if (!form.value.event_id) {
+  if (form.value.event_id !== null && !form.value.event_id) {
     toast.error(t('cashCount.required.event'))
     return
   }
@@ -146,7 +151,7 @@ async function submit() {
     toast.error(t('cashCount.required.checkedBy'))
     return
   }
-  if (!form.value.counted_before_at) {
+  if (form.value.event_id !== null && !form.value.counted_before_at) {
     toast.error(t('cashCount.required.countedBeforeAt'))
     return
   }
@@ -177,13 +182,19 @@ async function submit() {
 
   const body = new FormData()
   if (file.value) body.append('file', file.value)
+  if (form.value.event_id === null) {
+    form.value.counted_before_at = null
+    form.value.positions.forEach(position => {
+      position.amount_before = position.amount_after
+    })
+  }
   body.append('cashCount', JSON.stringify(form.value))
 
   try {
     isSaving.value = true
     if (isEditMode.value) {
       body.append('removeExistingFile', String(removeExistingFile.value))
-      const updateRes = await $fetch<{ ok: boolean, error?: string }>(`/api/cash_counts/${cashCountId.value}`, {
+      const updateRes = await $fetch<{ ok: boolean, error?: string }>(String(`/api/cash_counts/${cashCountId.value}`), {
         method: 'PUT',
         body,
       })

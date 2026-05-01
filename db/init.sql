@@ -372,11 +372,11 @@ CREATE TABLE IF NOT EXISTS reimbursement_positions (
 
 CREATE TABLE IF NOT EXISTS cash_counts (
   id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-  event_id BIGINT UNSIGNED NOT NULL,
+  event_id BIGINT UNSIGNED NULL,
   counted_by_first BIGINT UNSIGNED NOT NULL,
   counted_by_second BIGINT UNSIGNED NOT NULL,
   checked_by BIGINT UNSIGNED NOT NULL,
-  counted_before_at TIMESTAMP NOT NULL,
+  counted_before_at TIMESTAMP NULL,
   counted_after_at TIMESTAMP NOT NULL,
   FOREIGN KEY (event_id) REFERENCES events(id),
   FOREIGN KEY (counted_by_first) REFERENCES members(id),

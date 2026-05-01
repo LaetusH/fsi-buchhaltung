@@ -109,9 +109,17 @@
             :key="cashCount.id"
             class="border-b last:border-b-0 transition"
           >
-            <td class="py-2">{{ formatDateTime(cashCount.counted_before_at) }}</td>
+            <td class="py-2">{{ cashCount.counted_before_at ? formatDateTime(cashCount.counted_before_at) : '-' }}</td>
             <td class="py-2">{{ formatDateTime(cashCount.counted_after_at) }}</td>
-            <td class="py-2">{{ cashCount.event_name }}</td>
+            <td class="py-2">
+              <span
+                v-if="!cashCount.event_name"
+                class="inline-flex rounded-md bg-slate-100 px-2 py-1 text-xs font-medium text-slate-700"
+              >
+                {{ t('cashCount.registerCheck') }}
+              </span>
+              <span v-else>{{ cashCount.event_name }}</span>
+            </td>
             <td class="py-2">{{ cashCount.counters_label }}</td>
             <td class="py-2">{{ cashCount.checked_by_name || t('common.notAvailable') }}</td>
             <td class="py-2 text-right font-medium">{{ cashCount.register_count }}</td>
@@ -184,9 +192,9 @@ const {
   setRangeFilter,
   resetFilter,
 } = useAdvancedTable<CashCountListRow, CashCountColumnKey>(cashCounts, [
-  { key: 'counted_before_at', filterType: 'date', globalSearchable: true, getValue: row => row.counted_before_at },
+  { key: 'counted_before_at', filterType: 'date', globalSearchable: true, getValue: row => row.counted_before_at || '' },
   { key: 'counted_after_at', filterType: 'date', globalSearchable: true, getValue: row => row.counted_after_at },
-  { key: 'event_name', filterType: 'text', globalSearchable: true, getValue: row => row.event_name },
+  { key: 'event_name', filterType: 'text', globalSearchable: true, getValue: row => row.event_name || t('cashCount.registerCheck') },
   { key: 'counters_label', filterType: 'text', globalSearchable: true, getValue: row => row.counters_label },
   { key: 'checked_by_name', filterType: 'text', globalSearchable: true, getValue: row => row.checked_by_name },
   { key: 'register_count', filterType: 'number', getValue: row => row.register_count },
