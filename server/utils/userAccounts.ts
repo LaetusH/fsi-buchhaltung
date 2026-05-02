@@ -7,6 +7,7 @@ export interface CreateUserAccountInput {
   username: string
   password: string
   is_active?: boolean
+  must_change_password?: boolean
 }
 
 interface MysqlError extends Error {
@@ -38,6 +39,7 @@ export async function createUserAccount(input: CreateUserAccountInput, conn?: ma
   const username = input.username.trim()
   const password = input.password
   const isActive = input.is_active !== false
+  const mustChangePassword = input.must_change_password === true
 
   if (!username || !password) throw new Error('Missing fields')
 
@@ -45,8 +47,8 @@ export async function createUserAccount(input: CreateUserAccountInput, conn?: ma
 
   try {
     const result = await query<any>(
-      `INSERT INTO users (username, password_hash, is_active) VALUES (?, ?, ?)`,
-      [username, passwordHash, isActive ? 1 : 0],
+      `INSERT INTO users (username, password_hash, is_active, must_change_password) VALUES (?, ?, ?, ?)`,
+      [username, passwordHash, isActive ? 1 : 0, mustChangePassword ? 1 : 0],
       conn
     )
 

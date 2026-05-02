@@ -6,6 +6,7 @@ export interface User {
   roles: number[]
   permissions: PermissionKey[]
   is_active: boolean
+  must_change_password: boolean
 }
 
 export interface UserRow {
@@ -13,4 +14,5 @@ export interface UserRow {
   username: string
   password_hash: string
   is_active: number
+  must_change_password: number
 }

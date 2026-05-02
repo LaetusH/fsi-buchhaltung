@@ -28,7 +28,7 @@ export default defineEventHandler(async (event): Promise<LoginResponse> => {
   const { username, password } = body
 
   const rows = await query(
-    'SELECT id, username, password_hash, is_active FROM users WHERE username = ? LIMIT 1', 
+    'SELECT id, username, password_hash, is_active, must_change_password FROM users WHERE username = ? LIMIT 1',
     [username]
   ) as UserRow[]
 
@@ -66,7 +66,8 @@ export default defineEventHandler(async (event): Promise<LoginResponse> => {
       username: user.username,
       roles,
       permissions,
-      is_active: user.is_active === 1
+      is_active: user.is_active === 1,
+      must_change_password: user.must_change_password === 1
     }
   }
 })

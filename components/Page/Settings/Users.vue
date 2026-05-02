@@ -19,12 +19,30 @@
         </thead>
         <tbody>
           <tr v-for="user in users" :key="user.id" class="border-b last:border-b-0">
-            <td class="py-2">{{ user.username }}</td>
+            <td class="py-2">
+              <div class="flex flex-col gap-1">
+                <span>{{ user.username }}</span>
+                <span
+                  v-if="user.must_change_password"
+                  class="w-fit rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-800"
+                >
+                  {{ t('settings.users.passwordChangeRequired') }}
+                </span>
+              </div>
+            </td>
             <td class="py-2">{{ user.member_name || t('settings.users.noLinkedMember') }}</td>
             <td class="py-2">
               <div class="flex justify-end gap-3">
                 <button class="text-blue-600 hover:underline cursor-pointer" @click="openMemberModal(user)">
                   {{ user.member_id ? t('actions.edit') : t('settings.users.assignMember') }}
+                </button>
+
+                <button
+                  v-if="!user.must_change_password"
+                  class="text-amber-700 hover:underline cursor-pointer"
+                  @click="requirePasswordChange(user)"
+                >
+                  {{ t('settings.users.requirePasswordChange') }}
                 </button>
 
                 <button
@@ -96,10 +114,17 @@
         </div>
       </div>
 
-      <label class="inline-flex items-center gap-2 text-sm text-slate-700">
-        <input v-model="form.is_active" type="checkbox" class="checkbox">
-        {{ t('settings.users.active') }}
-      </label>
+      <div class="flex gap-3">
+        <label class="inline-flex items-center gap-2 text-sm text-slate-700 cursor-pointer">
+          <input v-model="form.is_active" type="checkbox" class="checkbox">
+          {{ t('settings.users.active') }}
+        </label>
+
+        <label class="inline-flex items-center gap-2 text-sm text-slate-700 cursor-pointer">
+          <input v-model="form.must_change_password" type="checkbox" class="checkbox">
+          {{ t('settings.users.mustChangePassword') }}
+        </label>
+      </div>
 
       <div class="relative z-10 flex justify-end gap-3 bg-white pt-2">
         <button class="btn-secondary" @click="closeCreateModal">
@@ -156,6 +181,7 @@ interface UserListRow {
   id: number
   username: string
   is_active: number | boolean
+  must_change_password: number | boolean
   member_id: number | null
   member_name: string | null
 }
@@ -169,7 +195,7 @@ interface MemberOptionRow {
 
 const { t } = useI18n()
 const toast = useToast()
-const { hasPermission } = useAuth()
+const { hasPermission, user: currentUser, fetchSession } = useAuth()
 
 const hasAccess = computed(() => hasPermission('users.manage'))
 const users = ref<UserListRow[]>([])
@@ -182,6 +208,7 @@ const form = ref({
   username: '',
   password: '',
   is_active: true,
+  must_change_password: true,
   member_id: null as number | null,
 })
 const editingMemberId = ref<number | null>(null)
@@ -219,6 +246,7 @@ function resetForm() {
     username: '',
     password: '',
     is_active: true,
+    must_change_password: true,
     member_id: null,
   }
   createMemberQuery.value = ''
@@ -275,6 +303,7 @@ async function createUser() {
     username: form.value.username.trim(),
     password: form.value.password,
     is_active: form.value.is_active,
+    must_change_password: form.value.must_change_password,
     member_id: form.value.member_id,
   }
 
@@ -363,6 +392,27 @@ async function toggleUserActive(user: UserListRow) {
     return
   }
 
+  await loadUsers()
+}
+
+async function requirePasswordChange(user: UserListRow) {
+  const res = await $fetch<{ ok: boolean, error?: string }>('/api/auth/require-password-change', {
+    method: 'POST',
+    body: {
+      user_id: user.id,
+    },
+  })
+
+  if (!res.ok) {
+    toast.error(`${t('settings.users.requirePasswordChangeFailed')}: ${res.error}`)
+    return
+  }
+
+  toast.success(t('settings.users.requirePasswordChangeSaved'))
+  if (currentUser.value?.id === user.id) {
+    await fetchSession()
+    return
+  }
   await loadUsers()
 }
 

@@ -241,10 +241,17 @@
         </div>
       </div>
 
-      <label v-if="accountCreationEnabled" class="inline-flex items-center gap-2 text-sm text-slate-700 cursor-pointer">
-        <input v-model="form.new_account!.is_active" type="checkbox" class="checkbox" :disabled="disabled">
-        {{ t('member.accountActive') }}
-      </label>
+      <div class="flex gap-3">
+        <label v-if="accountCreationEnabled" class="inline-flex items-center gap-2 text-sm text-slate-700 cursor-pointer">
+          <input v-model="form.new_account!.is_active" type="checkbox" class="checkbox" :disabled="disabled">
+          {{ t('member.accountActive') }}
+        </label>
+
+        <label v-if="accountCreationEnabled" class="inline-flex items-center gap-2 text-sm text-slate-700 cursor-pointer">
+          <input v-model="form.new_account!.must_change_password" type="checkbox" class="checkbox" :disabled="disabled">
+          {{ t('member.accountMustChangePassword') }}
+        </label>
+      </div>
     </section>
 
     <CommonFormActions
@@ -314,6 +321,7 @@ const accountCreationEnabled = computed({
           username: buildDefaultAccountUsername(form.value.first_name, form.value.last_name),
           password: '',
           is_active: true,
+          must_change_password: true,
         }
       : null
   },

@@ -1,6 +1,6 @@
 import { defineEventHandler, createError, sendStream, setHeader } from 'h3'
 import { query } from '~/server/utils/db'
-import { getCurrentUserFromEvent } from '~/server/utils/sessionGuard'
+import { requirePermission } from '~/server/utils/api/guards'
 import fs from 'fs'
 import path from 'path'
 
@@ -18,9 +18,8 @@ interface GetFileError {
 export type GetFileResponse = Promise<void> | GetFileError
 
 export default defineEventHandler(async (event): Promise<GetFileResponse> => {
-  const current = await getCurrentUserFromEvent(event, true )
-  if (!current.ok) return { ok: false, error: 'Not authenticated' }
-  if (!current.user.permissions.includes('files.view')) return { ok: false, error: 'Not authorized' }
+  const current = await requirePermission(event, 'files.view')
+  if (!current.ok) return current
 
   const idParam = event.context.params?.id
 

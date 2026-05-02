@@ -10,6 +10,7 @@
     "setup:migrate": "node --env-file=.env scripts/migrate-event-cost-centre-splits.mjs",
     "setup:migrate:invoice-paid-at": "node --env-file=.env scripts/migrate-invoice-paid-at.mjs",
     "setup:migrate:cash-count-register-checks": "node --env-file=.env scripts/migrate-cash-count-register-checks.mjs",
+    "setup:migrate:password-change-required": "node --env-file=.env scripts/migrate-user-password-change-required.mjs",
     "setup:seed-admin": "node --env-file=.env scripts/seed-admin.mjs",
     "setup:audit": "node --env-file=.env scripts/ensure-audit-infrastructure.mjs",
     "postinstall": "nuxt prepare"

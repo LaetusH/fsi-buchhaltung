@@ -30,6 +30,7 @@ export async function getCurrentUserFromEvent(event: any, touch: boolean): Promi
     await deleteSessionByToken(token)
     return { ok: false, error: "user inactive" }
   }
+  const mustChangePassword = session.must_change_password === 1 || session.must_change_password === '1'
 
   const now = new Date()
   if (session.expires_at && new Date(session.expires_at + 'Z') < now) {
@@ -57,7 +58,8 @@ export async function getCurrentUserFromEvent(event: any, touch: boolean): Promi
       username: session.username,
       roles,
       permissions,
-      is_active: isActive
+      is_active: isActive,
+      must_change_password: mustChangePassword
     }
   }
 }

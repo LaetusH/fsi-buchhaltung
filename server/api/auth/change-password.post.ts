@@ -61,7 +61,7 @@ export default defineEventHandler(async (event): Promise<ChangePasswordResponse>
   try {
     await withAuditTransaction(current.user, async (conn) => {
       await query(
-        'UPDATE users SET password_hash = ? WHERE id = ?',
+        'UPDATE users SET password_hash = ?, must_change_password = 0 WHERE id = ?',
         [newPasswordHash, current.user.id],
         conn,
       )

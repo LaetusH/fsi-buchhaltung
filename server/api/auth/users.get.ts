@@ -7,6 +7,7 @@ interface UserRow {
   id: number
   username: string
   is_active: number
+  must_change_password: number
   member_id: number | null
   member_name: string | null
 }
@@ -32,6 +33,7 @@ export default defineEventHandler(async (event): Promise<GetUsersResponse> => {
       u.id,
       u.username,
       u.is_active,
+      u.must_change_password,
       m.id AS member_id,
       CASE
         WHEN m.id IS NULL THEN NULL

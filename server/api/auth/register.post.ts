@@ -13,6 +13,7 @@ interface RegisterBody {
   username: string
   password: string
   is_active?: boolean
+  must_change_password?: boolean
   member_id?: number | null
 }
 

@@ -15,6 +15,7 @@ import { useAuth } from '~/composables/useAuth'
 import { PAGES } from '~/config/pages'
 
 import LoginPage from '~/components/Page/Login.vue'
+import ChangePasswordRequiredPage from '~/components/Page/ChangePasswordRequired.vue'
 
 const emit = defineEmits<{
   (e: 'openMenu'): void
@@ -40,6 +41,7 @@ const currentComponent = computed(() => {
   if (!page) return LoginPage
   if (page.allowGuest) return page.component
   if (!user.value) return LoginPage
+  if (user.value.must_change_password) return ChangePasswordRequiredPage
   if (!page.permissions.length) return page.component
   if (page.requireAllPermissions ? hasAllPermissions(page.permissions) : hasPermission(page.permissions)) {
     return page.component
