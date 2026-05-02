@@ -17,6 +17,17 @@
 
     <section class="rounded-xl border border-slate-200 p-4 space-y-3">
       <div>
+        <h3 class="font-semibold">{{ t('settings.general.passwordTitle') }}</h3>
+        <p class="text-sm text-slate-600">{{ t('settings.general.passwordText') }}</p>
+      </div>
+
+      <button class="btn-secondary" @click="openPasswordModal">
+        {{ t('settings.general.passwordOpen') }}
+      </button>
+    </section>
+
+    <section class="rounded-xl border border-slate-200 p-4 space-y-3">
+      <div>
         <h3 class="font-semibold">{{ t('settings.general.logoutTitle') }}</h3>
         <p class="text-sm text-slate-600">{{ t('settings.general.logoutText') }}</p>
       </div>
@@ -26,19 +37,176 @@
       </button>
     </section>
   </div>
+
+  <div
+    v-if="showPasswordModal"
+    class="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4"
+    @click.self="closePasswordModal"
+  >
+    <div class="bg-white rounded-xl w-full max-w-md p-6 space-y-4">
+      <div>
+        <h3 class="text-lg font-semibold">{{ t('settings.general.passwordTitle') }}</h3>
+        <p class="mt-1 text-sm text-slate-600">{{ t('settings.general.passwordSessionText') }}</p>
+      </div>
+
+      <form class="grid gap-4" @submit.prevent="changePassword">
+        <div class="field">
+          <label for="current-password">{{ t('settings.general.currentPassword') }}</label>
+          <input
+            id="current-password"
+            v-model="passwordForm.currentPassword"
+            type="password"
+            class="input"
+            autocomplete="current-password"
+            :disabled="isChangingPassword"
+          >
+        </div>
+
+        <div class="field">
+          <label for="new-password">{{ t('settings.general.newPassword') }}</label>
+          <input
+            id="new-password"
+            v-model="passwordForm.newPassword"
+            type="password"
+            class="input"
+            autocomplete="new-password"
+            :disabled="isChangingPassword"
+          >
+        </div>
+
+        <div class="field">
+          <label for="confirm-password">{{ t('settings.general.confirmPassword') }}</label>
+          <input
+            id="confirm-password"
+            v-model="passwordForm.confirmPassword"
+            type="password"
+            class="input"
+            autocomplete="new-password"
+            :disabled="isChangingPassword"
+          >
+        </div>
+
+        <p class="text-xs text-slate-500">{{ t('settings.general.passwordHelp') }}</p>
+
+        <div class="flex justify-end gap-3 bg-white pt-2">
+          <button
+            type="button"
+            class="btn-secondary"
+            :disabled="isChangingPassword"
+            :class="{ 'opacity-50 cursor-not-allowed': isChangingPassword }"
+            @click="closePasswordModal"
+          >
+            {{ t('actions.cancel') }}
+          </button>
+
+          <button
+            type="submit"
+            class="btn-primary"
+            :disabled="isChangingPassword"
+            :class="{ 'opacity-50 cursor-not-allowed': isChangingPassword }"
+          >
+            {{ isChangingPassword ? t('settings.general.passwordSaving') : t('settings.general.passwordSave') }}
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
 </template>
 
 <script setup lang="ts">
 import { useAuth } from '~/composables/useAuth'
 import { useI18n } from '~/composables/useI18n'
 import { usePage } from '~/composables/usePage'
+import { useToast } from '~/composables/useToast'
+import type { ChangePasswordResponse } from '~/server/api/auth/change-password.post'
 
 const { logout } = useAuth()
 const { setPage } = usePage()
 const { language, t, toggleLanguage } = useI18n()
+const toast = useToast()
+
+const showPasswordModal = ref(false)
+const isChangingPassword = ref(false)
+const passwordForm = ref({
+  currentPassword: '',
+  newPassword: '',
+  confirmPassword: '',
+})
 
 async function handleLogout() {
   await logout()
   setPage('Login')
+}
+
+function resetPasswordForm() {
+  passwordForm.value = {
+    currentPassword: '',
+    newPassword: '',
+    confirmPassword: '',
+  }
+}
+
+function openPasswordModal() {
+  resetPasswordForm()
+  showPasswordModal.value = true
+}
+
+function closePasswordModal() {
+  if (isChangingPassword.value) return
+  showPasswordModal.value = false
+  resetPasswordForm()
+}
+
+function translatePasswordError(error?: string) {
+  if (error === 'Missing fields') return t('settings.general.passwordMissingFields')
+  if (error === 'Password too short') return t('settings.general.passwordTooShort')
+  if (error === 'Passwords do not match') return t('settings.general.passwordMismatch')
+  if (error === 'Invalid current password') return t('settings.general.currentPasswordInvalid')
+  if (error === 'Not authenticated') return t('errors.notAuthenticated')
+  return error || t('settings.general.passwordFailed')
+}
+
+async function changePassword() {
+  if (isChangingPassword.value) return
+
+  if (!passwordForm.value.currentPassword || !passwordForm.value.newPassword || !passwordForm.value.confirmPassword) {
+    toast.error(t('settings.general.passwordMissingFields'))
+    return
+  }
+
+  if (passwordForm.value.newPassword.length < 8) {
+    toast.error(t('settings.general.passwordTooShort'))
+    return
+  }
+
+  if (passwordForm.value.newPassword !== passwordForm.value.confirmPassword) {
+    toast.error(t('settings.general.passwordMismatch'))
+    return
+  }
+
+  isChangingPassword.value = true
+  try {
+    const res = await $fetch<ChangePasswordResponse>('/api/auth/change-password', {
+      method: 'POST',
+      body: {
+        currentPassword: passwordForm.value.currentPassword,
+        newPassword: passwordForm.value.newPassword,
+        confirmPassword: passwordForm.value.confirmPassword,
+      },
+    })
+
+    if (!res.ok) {
+      toast.error(translatePasswordError(res.error))
+      return
+    }
+
+    resetPasswordForm()
+    showPasswordModal.value = false
+    toast.success(t('settings.general.passwordSaved'))
+  } catch {
+    toast.error(t('settings.general.passwordFailed'))
+  } finally {
+    isChangingPassword.value = false
+  }
 }
 </script>
