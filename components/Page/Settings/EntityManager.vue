@@ -127,63 +127,58 @@
     </div>
   </CommonPageTableCard>
 
-  <div
-    v-if="showModal && editingItem"
-    class="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4"
+  <CommonModal
+    v-if="editingItem"
+    v-model="showModal"
+    :title="isNewItem ? t('settings.entities.newItem', { label: singularLabel }) : t('settings.entities.editItem', { label: singularLabel })"
+    :width-class="modalWidthClass"
+    @close="closeModal"
   >
-    <div :class="['bg-white rounded-xl w-full p-6 space-y-4 max-h-[calc(100vh-2rem)] overflow-hidden', modalWidthClass]">
-      <h3 class="text-lg font-semibold">
-        {{ isNewItem ? t('settings.entities.newItem', { label: singularLabel }) : t('settings.entities.editItem', { label: singularLabel }) }}
-      </h3>
-
-      <div class="space-y-3">
-        <div class="field">
-          <label>{{ t('common.code') }}</label>
-          <input v-model="editingItem.code" class="input" />
-        </div>
-
-        <div class="field">
-          <label>{{ t('common.name') }}</label>
-          <input v-model="editingItem.name" class="input" />
-        </div>
-
-        <slot
-          name="modal-fields-before-description"
-          :editing-item="editingItem"
-          :is-new-item="isNewItem"
-          :items="items"
-          :display-items="displayItems"
-        />
-
-        <div v-if="showDescriptionField" class="field">
-          <label>{{ t('common.description') }}</label>
-          <textarea
-            v-model="editingItem.description"
-            rows="3"
-            class="input resize-none"
-          />
-        </div>
-
-        <slot
-          name="modal-fields-after-description"
-          :editing-item="editingItem"
-          :is-new-item="isNewItem"
-          :items="items"
-          :display-items="displayItems"
-        />
-      </div>
-
-      <div class="flex justify-end gap-3 pt-4">
-        <button class="btn-secondary" @click="closeModal">
-          {{ t('actions.cancel') }}
-        </button>
-
-        <button class="btn-primary" :disabled="isSaving" :class="{ 'opacity-50 cursor-not-allowed': isSaving }" @click="saveItem">
-          {{ t('actions.save') }}
-        </button>
-      </div>
+    <div class="field">
+      <label>{{ t('common.code') }}</label>
+      <input v-model="editingItem.code" class="input" />
     </div>
-  </div>
+
+    <div class="field">
+      <label>{{ t('common.name') }}</label>
+      <input v-model="editingItem.name" class="input" />
+    </div>
+
+    <slot
+      name="modal-fields-before-description"
+      :editing-item="editingItem"
+      :is-new-item="isNewItem"
+      :items="items"
+      :display-items="displayItems"
+    />
+
+    <div v-if="showDescriptionField" class="field">
+      <label>{{ t('common.description') }}</label>
+      <textarea
+        v-model="editingItem.description"
+        rows="3"
+        class="input resize-none"
+      />
+    </div>
+
+    <slot
+      name="modal-fields-after-description"
+      :editing-item="editingItem"
+      :is-new-item="isNewItem"
+      :items="items"
+      :display-items="displayItems"
+    />
+
+    <template #footer>
+      <button class="btn-secondary" @click="closeModal">
+        {{ t('actions.cancel') }}
+      </button>
+
+      <button class="btn-primary" :disabled="isSaving" :class="{ 'opacity-50 cursor-not-allowed': isSaving }" @click="saveItem">
+        {{ t('actions.save') }}
+      </button>
+    </template>
+  </CommonModal>
 </template>
 
 <script setup lang="ts">

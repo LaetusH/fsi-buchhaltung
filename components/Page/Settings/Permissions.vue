@@ -216,127 +216,122 @@
       </section>
     </div>
 
-    <div v-if="showRoleModal" class="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-      <div class="bg-white rounded-xl w-full max-w-lg p-6 space-y-4">
-        <h3 class="text-lg font-semibold">
-          {{ roleForm.isNew ? t('settings.permissions.newRole') : t('settings.permissions.editRole') }}
-        </h3>
+    <CommonModal
+      v-model="showRoleModal"
+      :title="roleForm.isNew ? t('settings.permissions.newRole') : t('settings.permissions.editRole')"
+      width-class="max-w-lg"
+      @close="closeRoleModal"
+    >
+      <div class="field">
+        <label>{{ t('common.code') }}</label>
+        <input v-model="roleForm.code" class="input" />
+      </div>
+      <div class="field">
+        <label>{{ t('common.name') }}</label>
+        <input v-model="roleForm.name" class="input" />
+      </div>
+      <div class="field">
+        <label>{{ t('common.description') }}</label>
+        <textarea v-model="roleForm.description" rows="3" class="input resize-none" />
+      </div>
+      <div class="flex gap-4">
+        <label class="inline-flex items-center gap-2 text-sm text-slate-700 cursor-pointer">
+          <input v-model="roleForm.is_active" type="checkbox" class="checkbox" />
+          {{ t('settings.permissions.roleActive') }}
+        </label>
+        <label class="inline-flex items-center gap-2 text-sm text-slate-700 cursor-pointer">
+          <input v-model="roleForm.is_default" type="checkbox" class="checkbox" />
+          {{ t('settings.permissions.defaultRole') }}
+        </label>
+      </div>
 
-        <div class="space-y-3">
-          <div class="field">
-            <label>{{ t('common.code') }}</label>
-            <input v-model="roleForm.code" class="input" />
-          </div>
-          <div class="field">
-            <label>{{ t('common.name') }}</label>
-            <input v-model="roleForm.name" class="input" />
-          </div>
-          <div class="field">
-            <label>{{ t('common.description') }}</label>
-            <textarea v-model="roleForm.description" rows="3" class="input resize-none" />
-          </div>
-          <div class="flex gap-4">
-            <label class="inline-flex items-center gap-2 text-sm text-slate-700 cursor-pointer">
-              <input v-model="roleForm.is_active" type="checkbox" class="checkbox" />
-              {{ t('settings.permissions.roleActive') }}
-            </label>
-            <label class="inline-flex items-center gap-2 text-sm text-slate-700 cursor-pointer">
-              <input v-model="roleForm.is_default" type="checkbox" class="checkbox" />
-              {{ t('settings.permissions.defaultRole') }}
-            </label>
-          </div>
-        </div>
+      <template #footer>
+        <button class="btn-secondary" @click="closeRoleModal">{{ t('actions.cancel') }}</button>
+        <button class="btn-primary" :disabled="savingRole" :class="{ 'opacity-50 cursor-not-allowed': savingRole }" @click="saveRole">{{ t('actions.save') }}</button>
+      </template>
+    </CommonModal>
 
-        <div class="flex justify-end gap-3 pt-4">
-          <button class="btn-secondary" @click="closeRoleModal">{{ t('actions.cancel') }}</button>
-          <button class="btn-primary" :disabled="savingRole" :class="{ 'opacity-50 cursor-not-allowed': savingRole }" @click="saveRole">{{ t('actions.save') }}</button>
+    <CommonModal
+      v-if="permissionModal"
+      :model-value="!!permissionModal"
+      :title="t('settings.permissions.permissionsFor', { name: permissionModal.title })"
+      width-class="max-w-2xl"
+      body-class="mt-4 max-h-[60vh] space-y-4 overflow-y-auto pr-2"
+      @update:model-value="permissionModal = null"
+    >
+      <div
+        v-for="group in permissionGroups"
+        :key="group.categoryKey"
+        class="border rounded-lg p-4"
+      >
+        <h4 class="font-semibold mb-2">{{ group.categoryLabel }}</h4>
+        <div class="grid md:grid-cols-2 gap-2">
+          <label v-for="perm in group.permissions" :key="perm.key" class="inline-flex items-center gap-2 text-sm cursor-pointer">
+            <input
+              type="checkbox"
+              class="checkbox"
+              :value="perm.key"
+              v-model="permissionModal.selected"
+            />
+            <span>{{ t(perm.labelKey) }}</span>
+          </label>
         </div>
       </div>
-    </div>
 
-    <div v-if="permissionModal" class="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-      <div class="bg-white rounded-xl w-full max-w-2xl p-6 space-y-4">
-        <h3 class="text-lg font-semibold">
-          {{ t('settings.permissions.permissionsFor', { name: permissionModal.title }) }}
-        </h3>
+      <template #footer>
+        <button class="btn-secondary" @click="permissionModal = null">{{ t('actions.cancel') }}</button>
+        <button class="btn-primary" :disabled="savingPermissions" :class="{ 'opacity-50 cursor-not-allowed': savingPermissions }" @click="savePermissionModal">{{ t('actions.save') }}</button>
+      </template>
+    </CommonModal>
 
-        <div class="space-y-4 max-h-[60vh] overflow-y-auto pr-2">
-          <div
-            v-for="group in permissionGroups"
-            :key="group.categoryKey"
-            class="border rounded-lg p-4"
-          >
-            <h4 class="font-semibold mb-2">{{ group.categoryLabel }}</h4>
-            <div class="grid md:grid-cols-2 gap-2">
-              <label v-for="perm in group.permissions" :key="perm.key" class="inline-flex items-center gap-2 text-sm cursor-pointer">
-                <input
-                  type="checkbox"
-                  class="checkbox"
-                  :value="perm.key"
-                  v-model="permissionModal.selected"
-                />
-                <span>{{ t(perm.labelKey) }}</span>
-              </label>
-            </div>
-          </div>
-        </div>
-
-        <div class="flex justify-end gap-3 pt-4">
-          <button class="btn-secondary" @click="permissionModal = null">{{ t('actions.cancel') }}</button>
-          <button class="btn-primary" :disabled="savingPermissions" :class="{ 'opacity-50 cursor-not-allowed': savingPermissions }" @click="savePermissionModal">{{ t('actions.save') }}</button>
+    <CommonModal
+      v-if="userModal"
+      :model-value="!!userModal"
+      :title="t('settings.permissions.accessFor', { name: userModal.username })"
+      width-class="max-w-2xl"
+      body-class="mt-4 max-h-[60vh] space-y-4 overflow-y-auto pr-2"
+      @update:model-value="userModal = null"
+    >
+      <div class="border rounded-lg p-4">
+        <h4 class="font-semibold mb-2">{{ t('settings.permissions.roles') }}</h4>
+        <div class="grid md:grid-cols-2 gap-2">
+          <label v-for="role in roles" :key="role.id" class="inline-flex items-center gap-2 text-sm cursor-pointer">
+            <input
+              type="checkbox"
+              class="checkbox"
+              :value="role.id"
+              :disabled="!role.is_active && !userModal.roles.includes(role.id)"
+              v-model="userModal.roles"
+            />
+            <span>{{ formatRoleOptionLabel(role) }}</span>
+          </label>
         </div>
       </div>
-    </div>
 
-    <div v-if="userModal" class="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-      <div class="bg-white rounded-xl w-full max-w-2xl p-6 space-y-4">
-        <h3 class="text-lg font-semibold">
-          {{ t('settings.permissions.accessFor', { name: userModal.username }) }}
-        </h3>
-
-        <div class="space-y-4 max-h-[60vh] overflow-y-auto pr-2">
-          <div class="border rounded-lg p-4">
-            <h4 class="font-semibold mb-2">{{ t('settings.permissions.roles') }}</h4>
-            <div class="grid md:grid-cols-2 gap-2">
-              <label v-for="role in roles" :key="role.id" class="inline-flex items-center gap-2 text-sm cursor-pointer">
-                <input
-                  type="checkbox"
-                  class="checkbox"
-                  :value="role.id"
-                  :disabled="!role.is_active && !userModal.roles.includes(role.id)"
-                  v-model="userModal.roles"
-                />
-                <span>{{ formatRoleOptionLabel(role) }}</span>
-              </label>
-            </div>
-          </div>
-
-          <div
-            v-for="group in permissionGroups"
-            :key="group.categoryKey"
-            class="border rounded-lg p-4"
-          >
-            <h4 class="font-semibold mb-2">{{ group.categoryLabel }}</h4>
-            <div class="grid md:grid-cols-2 gap-2">
-              <label v-for="perm in group.permissions" :key="perm.key" class="inline-flex items-center gap-2 text-sm cursor-pointer">
-                <input
-                  type="checkbox"
-                  class="checkbox"
-                  :value="perm.key"
-                  v-model="userModal.permissions"
-                />
-                <span>{{ t(perm.labelKey) }}</span>
-              </label>
-            </div>
-          </div>
-        </div>
-
-        <div class="flex justify-end gap-3 pt-4">
-          <button class="btn-secondary" @click="userModal = null">{{ t('actions.cancel') }}</button>
-          <button class="btn-primary" :disabled="savingUserAccess" :class="{ 'opacity-50 cursor-not-allowed': savingUserAccess }" @click="saveUserAccess">{{ t('actions.save') }}</button>
+      <div
+        v-for="group in permissionGroups"
+        :key="group.categoryKey"
+        class="border rounded-lg p-4"
+      >
+        <h4 class="font-semibold mb-2">{{ group.categoryLabel }}</h4>
+        <div class="grid md:grid-cols-2 gap-2">
+          <label v-for="perm in group.permissions" :key="perm.key" class="inline-flex items-center gap-2 text-sm cursor-pointer">
+            <input
+              type="checkbox"
+              class="checkbox"
+              :value="perm.key"
+              v-model="userModal.permissions"
+            />
+            <span>{{ t(perm.labelKey) }}</span>
+          </label>
         </div>
       </div>
-    </div>
+
+      <template #footer>
+        <button class="btn-secondary" @click="userModal = null">{{ t('actions.cancel') }}</button>
+        <button class="btn-primary" :disabled="savingUserAccess" :class="{ 'opacity-50 cursor-not-allowed': savingUserAccess }" @click="saveUserAccess">{{ t('actions.save') }}</button>
+      </template>
+    </CommonModal>
   </div>
 </template>
 

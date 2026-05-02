@@ -125,89 +125,87 @@
     </template>
   </PageSettingsEntityManager>
 
-  <div
+  <CommonModal
     v-if="showDeactivateModal && deactivatePosition"
-    class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+    v-model="showDeactivateModal"
+    :title="t('settings.positions.deactivateConfirm.title')"
+    width-class="max-w-2xl"
+    @close="closeDeactivateModal"
   >
-    <div class="w-full max-w-2xl rounded-xl bg-white p-6 shadow-xl">
-      <h3 class="text-lg font-semibold text-slate-900">
-        {{ t('settings.positions.deactivateConfirm.title') }}
-      </h3>
-      <p class="mt-3 text-sm text-slate-700">
-        {{ t('settings.positions.deactivateConfirm.intro', { position: deactivatePositionLabel }) }}
-      </p>
-      <p class="mt-2 text-sm text-slate-600">
-        {{ t('settings.positions.deactivateConfirm.reviewHint') }}
-      </p>
+    <p class="text-sm text-slate-700">
+      {{ t('settings.positions.deactivateConfirm.intro', { position: deactivatePositionLabel }) }}
+    </p>
+    <p class="text-sm text-slate-600">
+      {{ t('settings.positions.deactivateConfirm.reviewHint') }}
+    </p>
 
-      <div class="mt-4 space-y-4">
-        <div class="rounded-lg border border-slate-200 bg-slate-50 p-4">
-          <label class="text-sm font-medium text-slate-700">{{ t('settings.positions.deactivateConfirm.untilDate') }}</label>
-          <CommonDateInput v-model="deactivateForm.assignment_until" class="mt-2" />
-          <p class="mt-2 text-sm text-slate-600">
-            {{ t('settings.positions.deactivateConfirm.untilDateHint') }}
-          </p>
-        </div>
-
-        <label class="inline-flex items-center gap-2 text-sm text-slate-700 cursor-pointer">
-          <input v-model="deactivateForm.delete_future_assignments" type="checkbox" class="checkbox">
-          {{ t('settings.positions.deactivateConfirm.deleteFuture') }}
-        </label>
-
-        <section
-          v-if="deactivatePreview.closedAssignments.length"
-          class="rounded-lg border border-slate-200 bg-slate-50 p-4"
-        >
-          <p class="text-sm font-medium text-slate-900">
-            {{ t('settings.positions.deactivateConfirm.closedAssignmentsTitle') }}
-          </p>
-          <ul class="mt-2 list-disc space-y-1 pl-5 text-sm text-slate-700">
-            <li
-              v-for="assignment in deactivatePreview.closedAssignments"
-              :key="assignment.key"
-            >
-              <span class="font-medium text-slate-900">{{ assignment.label }}</span>
-              <span class="text-slate-600">{{ ` ${assignment.detail}` }}</span>
-            </li>
-          </ul>
-        </section>
-
-        <section
-          v-if="deactivatePreview.removedAssignments.length"
-          class="rounded-lg border border-slate-200 bg-slate-50 p-4"
-        >
-          <p class="text-sm font-medium text-slate-900">
-            {{ t('settings.positions.deactivateConfirm.removedAssignmentsTitle') }}
-          </p>
-          <ul class="mt-2 list-disc space-y-1 pl-5 text-sm text-slate-700">
-            <li
-              v-for="assignment in deactivatePreview.removedAssignments"
-              :key="assignment.key"
-            >
-              <span class="font-medium text-slate-900">{{ assignment.label }}</span>
-              <span class="text-slate-600">{{ ` ${assignment.detail}` }}</span>
-            </li>
-          </ul>
-        </section>
-
-        <p
-          v-if="!deactivatePreview.hasConsequences"
-          class="rounded-lg border border-slate-200 bg-slate-50 p-4 text-sm text-slate-700"
-        >
-          {{ t('settings.positions.deactivateConfirm.none') }}
+    <div class="space-y-4">
+      <div class="rounded-lg border border-slate-200 bg-slate-50 p-4">
+        <label class="text-sm font-medium text-slate-700">{{ t('settings.positions.deactivateConfirm.untilDate') }}</label>
+        <CommonDateInput v-model="deactivateForm.assignment_until" class="mt-2" />
+        <p class="mt-2 text-sm text-slate-600">
+          {{ t('settings.positions.deactivateConfirm.untilDateHint') }}
         </p>
       </div>
 
-      <div class="mt-6 flex justify-end gap-3">
-        <button class="btn-secondary" type="button" @click="closeDeactivateModal">
-          {{ t('actions.cancel') }}
-        </button>
-        <button class="btn-primary" type="button" @click="confirmDeactivate">
-          {{ t('actions.deactivate') }}
-        </button>
-      </div>
+      <label class="inline-flex items-center gap-2 text-sm text-slate-700 cursor-pointer">
+        <input v-model="deactivateForm.delete_future_assignments" type="checkbox" class="checkbox">
+        {{ t('settings.positions.deactivateConfirm.deleteFuture') }}
+      </label>
+
+      <section
+        v-if="deactivatePreview.closedAssignments.length"
+        class="rounded-lg border border-slate-200 bg-slate-50 p-4"
+      >
+        <p class="text-sm font-medium text-slate-900">
+          {{ t('settings.positions.deactivateConfirm.closedAssignmentsTitle') }}
+        </p>
+        <ul class="mt-2 list-disc space-y-1 pl-5 text-sm text-slate-700">
+          <li
+            v-for="assignment in deactivatePreview.closedAssignments"
+            :key="assignment.key"
+          >
+            <span class="font-medium text-slate-900">{{ assignment.label }}</span>
+            <span class="text-slate-600">{{ ` ${assignment.detail}` }}</span>
+          </li>
+        </ul>
+      </section>
+
+      <section
+        v-if="deactivatePreview.removedAssignments.length"
+        class="rounded-lg border border-slate-200 bg-slate-50 p-4"
+      >
+        <p class="text-sm font-medium text-slate-900">
+          {{ t('settings.positions.deactivateConfirm.removedAssignmentsTitle') }}
+        </p>
+        <ul class="mt-2 list-disc space-y-1 pl-5 text-sm text-slate-700">
+          <li
+            v-for="assignment in deactivatePreview.removedAssignments"
+            :key="assignment.key"
+          >
+            <span class="font-medium text-slate-900">{{ assignment.label }}</span>
+            <span class="text-slate-600">{{ ` ${assignment.detail}` }}</span>
+          </li>
+        </ul>
+      </section>
+
+      <p
+        v-if="!deactivatePreview.hasConsequences"
+        class="rounded-lg border border-slate-200 bg-slate-50 p-4 text-sm text-slate-700"
+      >
+        {{ t('settings.positions.deactivateConfirm.none') }}
+      </p>
     </div>
-  </div>
+
+    <template #footer>
+      <button class="btn-secondary" type="button" @click="closeDeactivateModal">
+        {{ t('actions.cancel') }}
+      </button>
+      <button class="btn-primary" type="button" @click="confirmDeactivate">
+        {{ t('actions.deactivate') }}
+      </button>
+    </template>
+  </CommonModal>
 </template>
 
 <script setup lang="ts">

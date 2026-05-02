@@ -35,33 +35,27 @@
     />
   </PageFinancesEditorLayout>
 
-  <Teleport to="body">
-    <div
-      v-if="showFinalizeConfirmModal"
-      class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
-    >
-      <div class="w-full max-w-xl rounded-xl bg-white p-6 shadow-xl">
-        <h3 class="text-lg font-semibold text-slate-900">
-          {{ t('invoice.finalizeConfirm.title') }}
-        </h3>
-        <p class="mt-3 text-sm text-slate-700">
-          {{ t('invoice.finalizeConfirm.intro', { status: t(`invoice.states.${form.status}`) }) }}
-        </p>
-        <p class="mt-2 text-sm text-slate-600">
-          {{ t('invoice.finalizeConfirm.reviewHint') }}
-        </p>
+  <CommonModal
+    v-model="showFinalizeConfirmModal"
+    :title="t('invoice.finalizeConfirm.title')"
+    width-class="max-w-xl"
+  >
+    <p class="text-sm text-slate-700">
+      {{ t('invoice.finalizeConfirm.intro', { status: t(`invoice.states.${form.status}`) }) }}
+    </p>
+    <p class="text-sm text-slate-600">
+      {{ t('invoice.finalizeConfirm.reviewHint') }}
+    </p>
 
-        <div class="mt-6 flex justify-end gap-3">
-          <button class="btn-secondary" type="button" @click="showFinalizeConfirmModal = false">
-            {{ t('actions.cancel') }}
-          </button>
-          <button class="btn-primary" type="button" :disabled="isSaving" :class="{ 'opacity-50 cursor-not-allowed': isSaving }" @click="confirmFinalizeSave">
-            {{ t('invoice.finalizeConfirm.continue') }}
-          </button>
-        </div>
-      </div>
-    </div>
-  </Teleport>
+    <template #footer>
+      <button class="btn-secondary" type="button" @click="showFinalizeConfirmModal = false">
+        {{ t('actions.cancel') }}
+      </button>
+      <button class="btn-primary" type="button" :disabled="isSaving" :class="{ 'opacity-50 cursor-not-allowed': isSaving }" @click="confirmFinalizeSave">
+        {{ t('invoice.finalizeConfirm.continue') }}
+      </button>
+    </template>
+  </CommonModal>
 </template>
 
 <script setup lang="ts">

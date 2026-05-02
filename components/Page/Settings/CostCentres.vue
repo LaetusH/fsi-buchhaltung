@@ -60,60 +60,56 @@
     </template>
   </PageSettingsEntityManager>
 
-  <teleport to="body">
-    <div
-      v-if="deactivateModalOpen && deactivateTarget"
-      class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
-    >
-      <div class="w-full max-w-xl rounded-xl bg-white p-6 shadow-xl space-y-4">
-        <div class="space-y-1">
-          <h3 class="text-lg font-semibold">{{ t('settings.costCentres.deactivateConfirm.title') }}</h3>
-          <p class="text-sm text-slate-600">
-            {{ t('settings.costCentres.deactivateConfirm.intro', { costCentre: `${deactivateTarget.code} - ${deactivateTarget.name}` }) }}
-          </p>
-        </div>
+  <CommonModal
+    v-if="deactivateTarget"
+    v-model="deactivateModalOpen"
+    :title="t('settings.costCentres.deactivateConfirm.title')"
+    width-class="max-w-xl"
+    @close="closeDeactivateModal"
+  >
+    <p class="text-sm text-slate-600">
+      {{ t('settings.costCentres.deactivateConfirm.intro', { costCentre: `${deactivateTarget.code} - ${deactivateTarget.name}` }) }}
+    </p>
 
-        <label class="flex items-start gap-3 rounded-lg border border-slate-200 p-3">
-          <input
-            v-model="removeAsParent"
-            type="checkbox"
-            class="checkbox mt-0.5"
-          >
-          <span class="text-sm text-slate-700 cursor-pointer">
-            {{ t('settings.costCentres.deactivateConfirm.removeParentAssignments') }}
-          </span>
-        </label>
+    <label class="flex items-start gap-3 rounded-lg border border-slate-200 p-3">
+      <input
+        v-model="removeAsParent"
+        type="checkbox"
+        class="checkbox mt-0.5"
+      >
+      <span class="text-sm text-slate-700 cursor-pointer">
+        {{ t('settings.costCentres.deactivateConfirm.removeParentAssignments') }}
+      </span>
+    </label>
 
-        <div v-if="deactivateChildCostCentres.length" class="space-y-2">
-          <div class="text-sm font-medium text-slate-700">
-            {{ t('settings.costCentres.deactivateConfirm.childCostCentresTitle') }}
-          </div>
-          <div class="max-h-48 overflow-y-auto rounded-lg border border-slate-200 bg-slate-50 p-3">
-            <div
-              v-for="child in deactivateChildCostCentres"
-              :key="child.id"
-              class="text-sm text-slate-700"
-            >
-              {{ child.code }} - {{ child.name }}
-            </div>
-          </div>
-        </div>
-
-        <p v-else class="text-sm text-slate-500">
-          {{ t('settings.costCentres.deactivateConfirm.noChildCostCentres') }}
-        </p>
-
-        <div class="flex justify-end gap-3 pt-2">
-          <button class="btn-secondary" @click="closeDeactivateModal">
-            {{ t('actions.cancel') }}
-          </button>
-          <button class="btn-primary" @click="confirmDeactivate">
-            {{ t('actions.deactivate') }}
-          </button>
+    <div v-if="deactivateChildCostCentres.length" class="space-y-2">
+      <div class="text-sm font-medium text-slate-700">
+        {{ t('settings.costCentres.deactivateConfirm.childCostCentresTitle') }}
+      </div>
+      <div class="max-h-48 overflow-y-auto rounded-lg border border-slate-200 bg-slate-50 p-3">
+        <div
+          v-for="child in deactivateChildCostCentres"
+          :key="child.id"
+          class="text-sm text-slate-700"
+        >
+          {{ child.code }} - {{ child.name }}
         </div>
       </div>
     </div>
-  </teleport>
+
+    <p v-else class="text-sm text-slate-500">
+      {{ t('settings.costCentres.deactivateConfirm.noChildCostCentres') }}
+    </p>
+
+    <template #footer>
+      <button class="btn-secondary" @click="closeDeactivateModal">
+        {{ t('actions.cancel') }}
+      </button>
+      <button class="btn-primary" @click="confirmDeactivate">
+        {{ t('actions.deactivate') }}
+      </button>
+    </template>
+  </CommonModal>
 </template>
 
 <script setup lang="ts">

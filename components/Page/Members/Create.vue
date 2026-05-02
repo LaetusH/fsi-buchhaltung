@@ -17,209 +17,201 @@
     </template>
   </Page>
 
-  <Teleport to="body">
-    <div
-      v-if="showLeftStatusConfirmModal"
-      class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
-    >
-      <div class="w-full max-w-2xl rounded-xl bg-white p-6 shadow-xl">
-          <h3 class="text-lg font-semibold text-slate-900">
-            {{ t('member.leftStatusConfirm.title') }}
-          </h3>
-          <p class="mt-3 text-sm text-slate-700">
-            {{ t('member.leftStatusConfirm.introUpdate') }}
-          </p>
-          <p class="mt-2 text-sm text-slate-600">
-            {{ t('member.leftStatusConfirm.reviewHint') }}
-          </p>
+  <CommonModal
+    v-model="showLeftStatusConfirmModal"
+    :title="t('member.leftStatusConfirm.title')"
+    width-class="max-w-2xl"
+  >
+    <p class="text-sm text-slate-700">
+      {{ t('member.leftStatusConfirm.introUpdate') }}
+    </p>
+    <p class="text-sm text-slate-600">
+      {{ t('member.leftStatusConfirm.reviewHint') }}
+    </p>
 
-          <div class="mt-4 max-h-[60vh] space-y-4 overflow-y-auto pr-1">
-            <section
-              v-if="leftStatusPreview.accountWillBeDeactivated"
-              class="rounded-lg border border-slate-200 bg-slate-50 p-4"
-            >
-              <p class="text-sm font-medium text-slate-900">
-                {{ t('member.leftStatusConfirm.accountDeactivate') }}
-              </p>
-            </section>
+    <div class="max-h-[60vh] space-y-4 overflow-y-auto pr-1">
+      <section
+        v-if="leftStatusPreview.accountWillBeDeactivated"
+        class="rounded-lg border border-slate-200 bg-slate-50 p-4"
+      >
+        <p class="text-sm font-medium text-slate-900">
+          {{ t('member.leftStatusConfirm.accountDeactivate') }}
+        </p>
+      </section>
 
-            <section
-              v-if="leftStatusPreview.showSubdivisionSection"
-              class="rounded-lg border border-slate-200 bg-slate-50 p-4"
-            >
-              <p class="text-sm font-medium text-slate-900">
-                {{ t('member.leftStatusConfirm.subdivisionsTitle') }}
-              </p>
-              <ul
-                v-if="leftStatusPreview.removedSubdivisionLabels.length"
-                class="mt-2 list-disc space-y-1 pl-5 text-sm text-slate-700"
-              >
-                <li
-                  v-for="label in leftStatusPreview.removedSubdivisionLabels"
-                  :key="label"
-                >
-                  {{ label }}
-                </li>
-              </ul>
-              <p v-else class="mt-2 text-sm text-slate-700">
-                {{ t('member.leftStatusConfirm.subdivisionsFallback') }}
-              </p>
-            </section>
+      <section
+        v-if="leftStatusPreview.showSubdivisionSection"
+        class="rounded-lg border border-slate-200 bg-slate-50 p-4"
+      >
+        <p class="text-sm font-medium text-slate-900">
+          {{ t('member.leftStatusConfirm.subdivisionsTitle') }}
+        </p>
+        <ul
+          v-if="leftStatusPreview.removedSubdivisionLabels.length"
+          class="mt-2 list-disc space-y-1 pl-5 text-sm text-slate-700"
+        >
+          <li
+            v-for="label in leftStatusPreview.removedSubdivisionLabels"
+            :key="label"
+          >
+            {{ label }}
+          </li>
+        </ul>
+        <p v-else class="mt-2 text-sm text-slate-700">
+          {{ t('member.leftStatusConfirm.subdivisionsFallback') }}
+        </p>
+      </section>
 
-            <section
-              v-if="leftStatusPreview.closedPositions.length"
-              class="rounded-lg border border-slate-200 bg-slate-50 p-4"
-            >
-              <p class="text-sm font-medium text-slate-900">
-                {{ t('member.leftStatusConfirm.positionsClosedTitle') }}
-              </p>
-              <ul class="mt-2 list-disc space-y-1 pl-5 text-sm text-slate-700">
-                <li
-                  v-for="position in leftStatusPreview.closedPositions"
-                  :key="position.key"
-                >
-                  <span class="font-medium text-slate-900">{{ position.label }}</span>
-                  <span class="text-slate-600"> {{ position.detail }}</span>
-                </li>
-              </ul>
-            </section>
+      <section
+        v-if="leftStatusPreview.closedPositions.length"
+        class="rounded-lg border border-slate-200 bg-slate-50 p-4"
+      >
+        <p class="text-sm font-medium text-slate-900">
+          {{ t('member.leftStatusConfirm.positionsClosedTitle') }}
+        </p>
+        <ul class="mt-2 list-disc space-y-1 pl-5 text-sm text-slate-700">
+          <li
+            v-for="position in leftStatusPreview.closedPositions"
+            :key="position.key"
+          >
+            <span class="font-medium text-slate-900">{{ position.label }}</span>
+            <span class="text-slate-600"> {{ position.detail }}</span>
+          </li>
+        </ul>
+      </section>
 
-            <section
-              v-if="leftStatusPreview.removedPositions.length"
-              class="rounded-lg border border-slate-200 bg-slate-50 p-4"
-            >
-              <p class="text-sm font-medium text-slate-900">
-                {{ t('member.leftStatusConfirm.positionsRemovedTitle') }}
-              </p>
-              <ul class="mt-2 list-disc space-y-1 pl-5 text-sm text-slate-700">
-                <li
-                  v-for="position in leftStatusPreview.removedPositions"
-                  :key="position.key"
-                >
-                  <span class="font-medium text-slate-900">{{ position.label }}</span>
-                  <span class="text-slate-600"> {{ position.detail }}</span>
-                </li>
-              </ul>
-            </section>
+      <section
+        v-if="leftStatusPreview.removedPositions.length"
+        class="rounded-lg border border-slate-200 bg-slate-50 p-4"
+      >
+        <p class="text-sm font-medium text-slate-900">
+          {{ t('member.leftStatusConfirm.positionsRemovedTitle') }}
+        </p>
+        <ul class="mt-2 list-disc space-y-1 pl-5 text-sm text-slate-700">
+          <li
+            v-for="position in leftStatusPreview.removedPositions"
+            :key="position.key"
+          >
+            <span class="font-medium text-slate-900">{{ position.label }}</span>
+            <span class="text-slate-600"> {{ position.detail }}</span>
+          </li>
+        </ul>
+      </section>
 
-            <p
-              v-if="!leftStatusPreview.hasConsequences"
-              class="rounded-lg border border-slate-200 bg-slate-50 p-4 text-sm text-slate-700"
-            >
-              {{ t('member.leftStatusConfirm.none') }}
-            </p>
-          </div>
-
-          <div class="mt-6 flex justify-end gap-3">
-            <button class="btn-secondary" type="button" @click="showLeftStatusConfirmModal = false">
-              {{ t('actions.cancel') }}
-            </button>
-            <button class="btn-primary" :disabled="isSaving" type="button" @click="confirmLeftStatusSave">
-              {{ t('member.leftStatusConfirm.continue') }}
-            </button>
-          </div>
-      </div>
+      <p
+        v-if="!leftStatusPreview.hasConsequences"
+        class="rounded-lg border border-slate-200 bg-slate-50 p-4 text-sm text-slate-700"
+      >
+        {{ t('member.leftStatusConfirm.none') }}
+      </p>
     </div>
 
-    <div
-      v-if="showLeftStatusResultModal && leftStatusResult"
-      class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
-    >
-      <div class="w-full max-w-2xl rounded-xl bg-white p-6 shadow-xl">
-          <h3 class="text-lg font-semibold text-slate-900">
-            {{ t('member.leftStatusResult.title') }}
-          </h3>
-          <p class="mt-3 text-sm text-slate-700">
-            {{ t('member.leftStatusResult.intro') }}
-          </p>
-          <p class="mt-2 text-sm text-slate-600">
-            {{ t('member.leftStatusResult.closeHint') }}
-          </p>
+    <template #footer>
+      <button class="btn-secondary" type="button" @click="showLeftStatusConfirmModal = false">
+        {{ t('actions.cancel') }}
+      </button>
+      <button class="btn-primary" :disabled="isSaving" type="button" @click="confirmLeftStatusSave">
+        {{ t('member.leftStatusConfirm.continue') }}
+      </button>
+    </template>
+  </CommonModal>
 
-          <div class="mt-4 max-h-[60vh] space-y-4 overflow-y-auto pr-1">
-            <section
-              v-if="leftStatusResult.account_deactivated"
-              class="rounded-lg border border-slate-200 bg-slate-50 p-4"
-            >
-              <p class="text-sm font-medium text-slate-900">
-                {{ t('member.leftStatusResult.accountTitle') }}
-              </p>
-              <p class="mt-2 text-sm text-slate-700">
-                {{ leftStatusResult.account_deactivated.username }}
-              </p>
-            </section>
+  <CommonModal
+    v-if="showLeftStatusResultModal && leftStatusResult"
+    v-model="showLeftStatusResultModal"
+    :title="t('member.leftStatusResult.title')"
+    width-class="max-w-2xl"
+    @close="closeLeftStatusResultModal"
+  >
+    <p class="text-sm text-slate-700">
+      {{ t('member.leftStatusResult.intro') }}
+    </p>
+    <p class="text-sm text-slate-600">
+      {{ t('member.leftStatusResult.closeHint') }}
+    </p>
 
-            <section
-              v-if="leftStatusResult.removed_subdivisions.length"
-              class="rounded-lg border border-slate-200 bg-slate-50 p-4"
-            >
-              <p class="text-sm font-medium text-slate-900">
-                {{ t('member.leftStatusResult.subdivisionsTitle') }}
-              </p>
-              <ul class="mt-2 list-disc space-y-1 pl-5 text-sm text-slate-700">
-                <li
-                  v-for="subdivision in leftStatusResult.removed_subdivisions"
-                  :key="subdivision.id"
-                >
-                  {{ subdivision.label }}
-                </li>
-              </ul>
-            </section>
+    <div class="max-h-[60vh] space-y-4 overflow-y-auto pr-1">
+      <section
+        v-if="leftStatusResult.account_deactivated"
+        class="rounded-lg border border-slate-200 bg-slate-50 p-4"
+      >
+        <p class="text-sm font-medium text-slate-900">
+          {{ t('member.leftStatusResult.accountTitle') }}
+        </p>
+        <p class="mt-2 text-sm text-slate-700">
+          {{ leftStatusResult.account_deactivated.username }}
+        </p>
+      </section>
 
-            <section
-              v-if="leftStatusResult.closed_positions.length"
-              class="rounded-lg border border-slate-200 bg-slate-50 p-4"
-            >
-              <p class="text-sm font-medium text-slate-900">
-                {{ t('member.leftStatusResult.positionsClosedTitle') }}
-              </p>
-              <ul class="mt-2 list-disc space-y-1 pl-5 text-sm text-slate-700">
-                <li
-                  v-for="position in leftStatusResult.closed_positions"
-                  :key="position.id"
-                >
-                  <span class="font-medium text-slate-900">{{ position.label }}</span>
-                  <span class="text-slate-600">
-                    {{ formatClosedPositionResult(position) }}
-                  </span>
-                </li>
-              </ul>
-            </section>
+      <section
+        v-if="leftStatusResult.removed_subdivisions.length"
+        class="rounded-lg border border-slate-200 bg-slate-50 p-4"
+      >
+        <p class="text-sm font-medium text-slate-900">
+          {{ t('member.leftStatusResult.subdivisionsTitle') }}
+        </p>
+        <ul class="mt-2 list-disc space-y-1 pl-5 text-sm text-slate-700">
+          <li
+            v-for="subdivision in leftStatusResult.removed_subdivisions"
+            :key="subdivision.id"
+          >
+            {{ subdivision.label }}
+          </li>
+        </ul>
+      </section>
 
-            <section
-              v-if="leftStatusResult.removed_positions.length"
-              class="rounded-lg border border-slate-200 bg-slate-50 p-4"
-            >
-              <p class="text-sm font-medium text-slate-900">
-                {{ t('member.leftStatusResult.positionsRemovedTitle') }}
-              </p>
-              <ul class="mt-2 list-disc space-y-1 pl-5 text-sm text-slate-700">
-                <li
-                  v-for="position in leftStatusResult.removed_positions"
-                  :key="position.id"
-                >
-                  <span class="font-medium text-slate-900">{{ position.label }}</span>
-                  <span class="text-slate-600"> {{ formatRemovedPositionResult(position) }}</span>
-                </li>
-              </ul>
-            </section>
+      <section
+        v-if="leftStatusResult.closed_positions.length"
+        class="rounded-lg border border-slate-200 bg-slate-50 p-4"
+      >
+        <p class="text-sm font-medium text-slate-900">
+          {{ t('member.leftStatusResult.positionsClosedTitle') }}
+        </p>
+        <ul class="mt-2 list-disc space-y-1 pl-5 text-sm text-slate-700">
+          <li
+            v-for="position in leftStatusResult.closed_positions"
+            :key="position.id"
+          >
+            <span class="font-medium text-slate-900">{{ position.label }}</span>
+            <span class="text-slate-600">
+              {{ formatClosedPositionResult(position) }}
+            </span>
+          </li>
+        </ul>
+      </section>
 
-            <p
-              v-if="!leftStatusResultHasChanges"
-              class="rounded-lg border border-slate-200 bg-slate-50 p-4 text-sm text-slate-700"
-            >
-              {{ t('member.leftStatusResult.none') }}
-            </p>
-          </div>
+      <section
+        v-if="leftStatusResult.removed_positions.length"
+        class="rounded-lg border border-slate-200 bg-slate-50 p-4"
+      >
+        <p class="text-sm font-medium text-slate-900">
+          {{ t('member.leftStatusResult.positionsRemovedTitle') }}
+        </p>
+        <ul class="mt-2 list-disc space-y-1 pl-5 text-sm text-slate-700">
+          <li
+            v-for="position in leftStatusResult.removed_positions"
+            :key="position.id"
+          >
+            <span class="font-medium text-slate-900">{{ position.label }}</span>
+            <span class="text-slate-600"> {{ formatRemovedPositionResult(position) }}</span>
+          </li>
+        </ul>
+      </section>
 
-          <div class="mt-6 flex justify-end">
-            <button class="btn-primary" type="button" @click="closeLeftStatusResultModal">
-              {{ t('actions.close') }}
-            </button>
-          </div>
-      </div>
+      <p
+        v-if="!leftStatusResultHasChanges"
+        class="rounded-lg border border-slate-200 bg-slate-50 p-4 text-sm text-slate-700"
+      >
+        {{ t('member.leftStatusResult.none') }}
+      </p>
     </div>
-  </Teleport>
+
+    <template #footer>
+      <button class="btn-primary" type="button" @click="closeLeftStatusResultModal">
+        {{ t('actions.close') }}
+      </button>
+    </template>
+  </CommonModal>
 </template>
 
 <script setup lang="ts">

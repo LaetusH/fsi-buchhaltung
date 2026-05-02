@@ -79,110 +79,108 @@
     </div>
   </CommonPageTableCard>
 
-  <div
-    v-if="showCreateModal"
-    class="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4"
+  <CommonModal
+    v-model="showCreateModal"
+    :title="t('settings.users.createTitle')"
+    footer-class="relative z-10 mt-4 flex justify-end gap-3 bg-white pt-2"
+    @close="closeCreateModal"
   >
-    <div class="bg-white rounded-xl w-full max-w-md p-6 space-y-4">
-      <h3 class="text-lg font-semibold">{{ t('settings.users.createTitle') }}</h3>
-
-      <div class="grid gap-4">
-        <div class="field">
-          <label>{{ t('login.username') }}</label>
-          <input
-            v-model="form.username"
-            class="input"
-            name="settings-user-username"
-            autocomplete="off"
-            autocapitalize="off"
-            spellcheck="false"
-            data-lpignore="true"
-          >
-        </div>
-
-        <div class="field">
-          <label>{{ t('login.password') }}</label>
-          <input
-            v-model="form.password"
-            type="password"
-            class="input"
-            name="settings-user-password"
-            autocomplete="new-password"
-            autocapitalize="off"
-            spellcheck="false"
-            data-lpignore="true"
-          >
-        </div>
-
-        <div class="field relative z-20">
-          <label>{{ t('settings.users.linkedMember') }}</label>
-          <CommonSearchSelect
-            v-model="createMemberQuery"
-            :options="createMemberOptions"
-            :selected-label="selectedCreateMemberLabel"
-            :placeholder="t('settings.users.memberPlaceholder')"
-            :empty-text="t('settings.users.noAvailableMembers')"
-            @select="selectCreateMember"
-            @clear-selection="form.member_id = null"
-          />
-        </div>
+    <div class="grid gap-4">
+      <div class="field">
+        <label>{{ t('login.username') }}</label>
+        <input
+          v-model="form.username"
+          class="input"
+          name="settings-user-username"
+          autocomplete="off"
+          autocapitalize="off"
+          spellcheck="false"
+          data-lpignore="true"
+        >
       </div>
 
-      <div class="flex gap-3">
-        <label class="inline-flex items-center gap-2 text-sm text-slate-700 cursor-pointer">
-          <input v-model="form.is_active" type="checkbox" class="checkbox">
-          {{ t('settings.users.active') }}
-        </label>
-
-        <label class="inline-flex items-center gap-2 text-sm text-slate-700 cursor-pointer">
-          <input v-model="form.must_change_password" type="checkbox" class="checkbox">
-          {{ t('settings.users.mustChangePassword') }}
-        </label>
+      <div class="field">
+        <label>{{ t('login.password') }}</label>
+        <input
+          v-model="form.password"
+          type="password"
+          class="input"
+          name="settings-user-password"
+          autocomplete="new-password"
+          autocapitalize="off"
+          spellcheck="false"
+          data-lpignore="true"
+        >
       </div>
-
-      <div class="relative z-10 flex justify-end gap-3 bg-white pt-2">
-        <button class="btn-secondary" @click="closeCreateModal">
-          {{ t('actions.cancel') }}
-        </button>
-
-        <button class="btn-primary" :disabled="isCreatingUser" :class="{ 'opacity-50 cursor-not-allowed': isCreatingUser }" @click="createUser">
-          {{ t('actions.createNew') }}
-        </button>
-      </div>
-    </div>
-  </div>
-
-  <div
-    v-if="editingUser"
-    class="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4"
-  >
-    <div class="bg-white rounded-xl w-full max-w-md p-6 space-y-4">
-      <h3 class="text-lg font-semibold">{{ t('settings.users.memberTitle', { username: editingUser.username }) }}</h3>
 
       <div class="field relative z-20">
         <label>{{ t('settings.users.linkedMember') }}</label>
         <CommonSearchSelect
-          v-model="editMemberQuery"
-          :options="editMemberOptions"
-          :selected-label="selectedEditMemberLabel"
+          v-model="createMemberQuery"
+          :options="createMemberOptions"
+          :selected-label="selectedCreateMemberLabel"
           :placeholder="t('settings.users.memberPlaceholder')"
           :empty-text="t('settings.users.noAvailableMembers')"
-          @select="selectEditMember"
-          @clear-selection="editingMemberId = null"
+          @select="selectCreateMember"
+          @clear-selection="form.member_id = null"
         />
       </div>
-
-      <div class="relative z-10 flex justify-end gap-3 bg-white pt-2">
-        <button class="btn-secondary" @click="closeMemberModal">
-          {{ t('actions.cancel') }}
-        </button>
-
-        <button class="btn-primary" :disabled="isSavingMemberLink" :class="{ 'opacity-50 cursor-not-allowed': isSavingMemberLink }" @click="saveMemberLink">
-          {{ t('actions.save') }}
-        </button>
-      </div>
     </div>
-  </div>
+
+    <div class="flex gap-3">
+      <label class="inline-flex items-center gap-2 text-sm text-slate-700 cursor-pointer">
+        <input v-model="form.is_active" type="checkbox" class="checkbox">
+        {{ t('settings.users.active') }}
+      </label>
+
+      <label class="inline-flex items-center gap-2 text-sm text-slate-700 cursor-pointer">
+        <input v-model="form.must_change_password" type="checkbox" class="checkbox">
+        {{ t('settings.users.mustChangePassword') }}
+      </label>
+    </div>
+
+    <template #footer>
+      <button class="btn-secondary" @click="closeCreateModal">
+        {{ t('actions.cancel') }}
+      </button>
+
+      <button class="btn-primary" :disabled="isCreatingUser" :class="{ 'opacity-50 cursor-not-allowed': isCreatingUser }" @click="createUser">
+        {{ t('actions.createNew') }}
+      </button>
+    </template>
+  </CommonModal>
+
+  <CommonModal
+    v-if="editingUser"
+    :model-value="!!editingUser"
+    :title="t('settings.users.memberTitle', { username: editingUser.username })"
+    footer-class="relative z-10 mt-4 flex justify-end gap-3 bg-white pt-2"
+    @update:model-value="!$event && closeMemberModal()"
+    @close="closeMemberModal"
+  >
+    <div class="field relative z-20">
+      <label>{{ t('settings.users.linkedMember') }}</label>
+      <CommonSearchSelect
+        v-model="editMemberQuery"
+        :options="editMemberOptions"
+        :selected-label="selectedEditMemberLabel"
+        :placeholder="t('settings.users.memberPlaceholder')"
+        :empty-text="t('settings.users.noAvailableMembers')"
+        @select="selectEditMember"
+        @clear-selection="editingMemberId = null"
+      />
+    </div>
+
+    <template #footer>
+      <button class="btn-secondary" @click="closeMemberModal">
+        {{ t('actions.cancel') }}
+      </button>
+
+      <button class="btn-primary" :disabled="isSavingMemberLink" :class="{ 'opacity-50 cursor-not-allowed': isSavingMemberLink }" @click="saveMemberLink">
+        {{ t('actions.save') }}
+      </button>
+    </template>
+  </CommonModal>
 </template>
 
 <script setup lang="ts">

@@ -49,135 +49,120 @@
     </section>
   </div>
 
-  <div
-    v-if="showPasswordModal"
-    class="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4"
-    @click.self="closePasswordModal"
+  <CommonModal
+    v-model="showPasswordModal"
+    :title="t('settings.general.passwordTitle')"
+    @close="closePasswordModal"
   >
-    <div class="bg-white rounded-xl w-full max-w-md p-6 space-y-4">
-      <div>
-        <h3 class="text-lg font-semibold">{{ t('settings.general.passwordTitle') }}</h3>
-        <p class="mt-1 text-sm text-slate-600">{{ t('settings.general.passwordSessionText') }}</p>
-      </div>
-
-      <form class="grid gap-4" @submit.prevent="changePassword">
-        <div class="field">
-          <label for="current-password">{{ t('settings.general.currentPassword') }}</label>
-          <input
-            id="current-password"
-            v-model="passwordForm.currentPassword"
-            type="password"
-            class="input"
-            autocomplete="current-password"
-            :disabled="isChangingPassword"
-          >
-        </div>
-
-        <div class="field">
-          <label for="new-password">{{ t('settings.general.newPassword') }}</label>
-          <input
-            id="new-password"
-            v-model="passwordForm.newPassword"
-            type="password"
-            class="input"
-            autocomplete="new-password"
-            :disabled="isChangingPassword"
-          >
-        </div>
-
-        <div class="field">
-          <label for="confirm-password">{{ t('settings.general.confirmPassword') }}</label>
-          <input
-            id="confirm-password"
-            v-model="passwordForm.confirmPassword"
-            type="password"
-            class="input"
-            autocomplete="new-password"
-            :disabled="isChangingPassword"
-          >
-        </div>
-
-        <p class="text-xs text-slate-500">{{ t('settings.general.passwordHelp') }}</p>
-
-        <div class="flex justify-end gap-3 bg-white pt-2">
-          <button
-            type="button"
-            class="btn-secondary"
-            :disabled="isChangingPassword"
-            :class="{ 'opacity-50 cursor-not-allowed': isChangingPassword }"
-            @click="closePasswordModal"
-          >
-            {{ t('actions.cancel') }}
-          </button>
-
-          <button
-            type="submit"
-            class="btn-primary"
-            :disabled="isChangingPassword"
-            :class="{ 'opacity-50 cursor-not-allowed': isChangingPassword }"
-          >
-            {{ isChangingPassword ? t('settings.general.passwordSaving') : t('settings.general.passwordSave') }}
-          </button>
-        </div>
-      </form>
-    </div>
-  </div>
-
-  <div
-    v-if="showLogoutModal"
-    class="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4"
-    @click.self="closeLogoutModal"
-  >
-    <div class="bg-white rounded-xl w-full max-w-md p-6 space-y-4">
-      <div>
-        <h3 class="text-lg font-semibold">{{ t('settings.general.logoutConfirmTitle') }}</h3>
-        <p class="mt-1 text-sm text-slate-600">{{ t('settings.general.logoutConfirmText') }}</p>
-      </div>
-
-      <div class="flex justify-end gap-3 bg-white pt-2">
-        <button class="btn-secondary" @click="closeLogoutModal">
-          {{ t('actions.cancel') }}
-        </button>
-
-        <button class="btn-primary" @click="handleLogout">
-          {{ t('settings.general.logoutConfirmButton') }}
-        </button>
-      </div>
-    </div>
-  </div>
-
-  <div
-    v-if="showLogoutAllModal"
-    class="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4"
-    @click.self="closeLogoutAllModal"
-  >
-    <div class="bg-white rounded-xl w-full max-w-md p-6 space-y-4">
-      <div>
-        <h3 class="text-lg font-semibold">{{ t('settings.general.logoutAllConfirmTitle') }}</h3>
-        <p class="mt-1 text-sm text-slate-600">{{ t('settings.general.logoutAllConfirmText') }}</p>
-      </div>
-
-      <div class="flex justify-end gap-3 bg-white pt-2">
-        <button
-          class="btn-secondary"
-          :disabled="isLoggingOutAll"
-          :class="{ 'opacity-50 cursor-not-allowed': isLoggingOutAll }"
-          @click="closeLogoutAllModal"
+    <p class="text-sm text-slate-600">{{ t('settings.general.passwordSessionText') }}</p>
+    <form class="grid gap-4" @submit.prevent="changePassword">
+      <div class="field">
+        <label for="current-password">{{ t('settings.general.currentPassword') }}</label>
+        <input
+          id="current-password"
+          v-model="passwordForm.currentPassword"
+          type="password"
+          class="input"
+          autocomplete="current-password"
+          :disabled="isChangingPassword"
         >
-          {{ t('actions.cancel') }}
-        </button>
-
-        <button
-          class="btn-primary"
-          :disabled="isLoggingOutAll"
-          :class="{ 'opacity-50 cursor-not-allowed': isLoggingOutAll }"
-          @click="handleLogoutAll"
-        >
-          {{ isLoggingOutAll ? t('settings.general.logoutAllLoading') : t('settings.general.logoutAllConfirmButton') }}
-        </button>
       </div>
-    </div>
-  </div>
+
+      <div class="field">
+        <label for="new-password">{{ t('settings.general.newPassword') }}</label>
+        <input
+          id="new-password"
+          v-model="passwordForm.newPassword"
+          type="password"
+          class="input"
+          autocomplete="new-password"
+          :disabled="isChangingPassword"
+        >
+      </div>
+
+      <div class="field">
+        <label for="confirm-password">{{ t('settings.general.confirmPassword') }}</label>
+        <input
+          id="confirm-password"
+          v-model="passwordForm.confirmPassword"
+          type="password"
+          class="input"
+          autocomplete="new-password"
+          :disabled="isChangingPassword"
+        >
+      </div>
+
+      <p class="text-xs text-slate-500">{{ t('settings.general.passwordHelp') }}</p>
+    </form>
+
+    <template #footer>
+      <button
+        type="button"
+        class="btn-secondary"
+        :disabled="isChangingPassword"
+        :class="{ 'opacity-50 cursor-not-allowed': isChangingPassword }"
+        @click="closePasswordModal"
+      >
+        {{ t('actions.cancel') }}
+      </button>
+
+      <button
+        type="button"
+        class="btn-primary"
+        :disabled="isChangingPassword"
+        :class="{ 'opacity-50 cursor-not-allowed': isChangingPassword }"
+        @click="changePassword"
+      >
+        {{ isChangingPassword ? t('settings.general.passwordSaving') : t('settings.general.passwordSave') }}
+      </button>
+    </template>
+  </CommonModal>
+
+  <CommonModal
+    v-model="showLogoutModal"
+    :title="t('settings.general.logoutConfirmTitle')"
+    @close="closeLogoutModal"
+  >
+    <p class="text-sm text-slate-600">{{ t('settings.general.logoutConfirmText') }}</p>
+
+    <template #footer>
+      <button class="btn-secondary" @click="closeLogoutModal">
+        {{ t('actions.cancel') }}
+      </button>
+
+      <button class="btn-primary" @click="handleLogout">
+        {{ t('settings.general.logoutConfirmButton') }}
+      </button>
+    </template>
+  </CommonModal>
+
+  <CommonModal
+    v-model="showLogoutAllModal"
+    :title="t('settings.general.logoutAllConfirmTitle')"
+    @close="closeLogoutAllModal"
+  >
+    <p class="text-sm text-slate-600">{{ t('settings.general.logoutAllConfirmText') }}</p>
+
+    <template #footer>
+      <button
+        class="btn-secondary"
+        :disabled="isLoggingOutAll"
+        :class="{ 'opacity-50 cursor-not-allowed': isLoggingOutAll }"
+        @click="closeLogoutAllModal"
+      >
+        {{ t('actions.cancel') }}
+      </button>
+
+      <button
+        class="btn-primary"
+        :disabled="isLoggingOutAll"
+        :class="{ 'opacity-50 cursor-not-allowed': isLoggingOutAll }"
+        @click="handleLogoutAll"
+      >
+        {{ isLoggingOutAll ? t('settings.general.logoutAllLoading') : t('settings.general.logoutAllConfirmButton') }}
+      </button>
+    </template>
+  </CommonModal>
 </template>
 
 <script setup lang="ts">

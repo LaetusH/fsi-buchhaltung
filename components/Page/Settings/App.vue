@@ -94,81 +94,79 @@
       <p class="text-sm text-slate-600">{{ t('settings.app.noSnapshotPermission') }}</p>
     </section>
 
-    <div
+    <CommonModal
       v-if="restorePreview"
-      class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+      :model-value="!!restorePreview"
+      :title="t('settings.app.restorePreviewTitle')"
+      width-class="max-w-2xl"
+      @update:model-value="closeRestorePreview"
     >
-      <div class="w-full max-w-2xl rounded-xl bg-white p-6 shadow-xl space-y-5">
-        <div>
-          <h3 class="text-lg font-semibold">{{ t('settings.app.restorePreviewTitle') }}</h3>
-          <p class="mt-1 text-sm text-slate-600">{{ t('settings.app.restorePreviewText') }}</p>
-        </div>
+      <p class="text-sm text-slate-600">{{ t('settings.app.restorePreviewText') }}</p>
 
-        <div class="grid md:grid-cols-2 gap-3 text-sm">
-          <div class="rounded-lg border border-slate-200 p-3">
-            <p class="text-xs text-slate-500">{{ t('settings.app.previewCreatedAt') }}</p>
-            <p class="font-medium">{{ previewCreatedAtLabel }}</p>
-          </div>
-          <div class="rounded-lg border border-slate-200 p-3">
-            <p class="text-xs text-slate-500">{{ t('settings.app.previewDatabase') }}</p>
-            <p class="font-medium">{{ restorePreview.database || t('settings.app.previewUnknown') }}</p>
-          </div>
-          <div class="rounded-lg border border-slate-200 p-3">
-            <p class="text-xs text-slate-500">{{ t('settings.app.previewApp') }}</p>
-            <p class="font-medium">{{ previewAppLabel }}</p>
-          </div>
-          <div class="rounded-lg border border-slate-200 p-3">
-            <p class="text-xs text-slate-500">{{ t('settings.app.previewSchema') }}</p>
-            <p class="font-medium">{{ restorePreview.schemaVersion || t('settings.app.previewUnknown') }}</p>
-          </div>
-          <div class="rounded-lg border border-slate-200 p-3">
-            <p class="text-xs text-slate-500">{{ t('settings.app.previewTables') }}</p>
-            <p class="font-medium">{{ restorePreview.tables }}</p>
-          </div>
-          <div class="rounded-lg border border-slate-200 p-3">
-            <p class="text-xs text-slate-500">{{ t('settings.app.previewRows') }}</p>
-            <p class="font-medium">{{ restorePreview.rows }}</p>
-          </div>
-          <div class="rounded-lg border border-slate-200 p-3 md:col-span-2">
-            <p class="text-xs text-slate-500">{{ t('settings.app.previewIntegrity') }}</p>
-            <p class="font-medium">{{ integrityLabel }}</p>
-          </div>
-          <div class="rounded-lg border border-slate-200 p-3 md:col-span-2">
-            <p class="text-xs text-slate-500">{{ t('settings.app.previewFilesArchive') }}</p>
-            <p class="font-medium">{{ filesArchiveLabel }}</p>
-          </div>
+      <div class="grid md:grid-cols-2 gap-3 text-sm">
+        <div class="rounded-lg border border-slate-200 p-3">
+          <p class="text-xs text-slate-500">{{ t('settings.app.previewCreatedAt') }}</p>
+          <p class="font-medium">{{ previewCreatedAtLabel }}</p>
         </div>
-
-        <div class="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-800 space-y-2">
-          <p>{{ t('settings.app.restoreSessionsWarning') }}</p>
-          <div v-if="isRestoring && uploadProgress !== null" class="space-y-1">
-            <div class="h-2 overflow-hidden rounded-full bg-red-100">
-              <div class="h-full bg-orange-500" :style="{ width: `${uploadProgress}%` }" />
-            </div>
-            <p class="text-xs text-red-800">{{ t('settings.app.uploadProgress', { progress: String(uploadProgress) }) }}</p>
-          </div>
-          <label class="block">
-            <span class="text-xs font-medium text-red-900">{{ t('settings.app.restoreConfirmLabel') }}</span>
-            <input v-model="restoreConfirmation" class="input mt-1 bg-white" autocomplete="off">
-          </label>
+        <div class="rounded-lg border border-slate-200 p-3">
+          <p class="text-xs text-slate-500">{{ t('settings.app.previewDatabase') }}</p>
+          <p class="font-medium">{{ restorePreview.database || t('settings.app.previewUnknown') }}</p>
         </div>
-
-        <div class="flex justify-end gap-2">
-          <button class="btn-secondary" type="button" @click="closeRestorePreview">
-            {{ t('actions.cancel') }}
-          </button>
-          <button
-            class="btn-primary"
-            type="button"
-            :disabled="isRestoring || restoreConfirmation !== 'RESTORE'"
-            :class="{ 'opacity-50 cursor-not-allowed': isRestoring || restoreConfirmation !== 'RESTORE' }"
-            @click="restoreSnapshot"
-          >
-            {{ isRestoring ? t('settings.app.restoring') : t('settings.app.restore') }}
-          </button>
+        <div class="rounded-lg border border-slate-200 p-3">
+          <p class="text-xs text-slate-500">{{ t('settings.app.previewApp') }}</p>
+          <p class="font-medium">{{ previewAppLabel }}</p>
+        </div>
+        <div class="rounded-lg border border-slate-200 p-3">
+          <p class="text-xs text-slate-500">{{ t('settings.app.previewSchema') }}</p>
+          <p class="font-medium">{{ restorePreview.schemaVersion || t('settings.app.previewUnknown') }}</p>
+        </div>
+        <div class="rounded-lg border border-slate-200 p-3">
+          <p class="text-xs text-slate-500">{{ t('settings.app.previewTables') }}</p>
+          <p class="font-medium">{{ restorePreview.tables }}</p>
+        </div>
+        <div class="rounded-lg border border-slate-200 p-3">
+          <p class="text-xs text-slate-500">{{ t('settings.app.previewRows') }}</p>
+          <p class="font-medium">{{ restorePreview.rows }}</p>
+        </div>
+        <div class="rounded-lg border border-slate-200 p-3 md:col-span-2">
+          <p class="text-xs text-slate-500">{{ t('settings.app.previewIntegrity') }}</p>
+          <p class="font-medium">{{ integrityLabel }}</p>
+        </div>
+        <div class="rounded-lg border border-slate-200 p-3 md:col-span-2">
+          <p class="text-xs text-slate-500">{{ t('settings.app.previewFilesArchive') }}</p>
+          <p class="font-medium">{{ filesArchiveLabel }}</p>
         </div>
       </div>
-    </div>
+
+      <div class="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-800 space-y-2">
+        <p>{{ t('settings.app.restoreSessionsWarning') }}</p>
+        <div v-if="isRestoring && uploadProgress !== null" class="space-y-1">
+          <div class="h-2 overflow-hidden rounded-full bg-red-100">
+            <div class="h-full bg-orange-500" :style="{ width: `${uploadProgress}%` }" />
+          </div>
+          <p class="text-xs text-red-800">{{ t('settings.app.uploadProgress', { progress: String(uploadProgress) }) }}</p>
+        </div>
+        <label class="block">
+          <span class="text-xs font-medium text-red-900">{{ t('settings.app.restoreConfirmLabel') }}</span>
+          <input v-model="restoreConfirmation" class="input mt-1 bg-white" autocomplete="off">
+        </label>
+      </div>
+
+      <template #footer>
+        <button class="btn-secondary" type="button" @click="closeRestorePreview">
+          {{ t('actions.cancel') }}
+        </button>
+        <button
+          class="btn-primary"
+          type="button"
+          :disabled="isRestoring || restoreConfirmation !== 'RESTORE'"
+          :class="{ 'opacity-50 cursor-not-allowed': isRestoring || restoreConfirmation !== 'RESTORE' }"
+          @click="restoreSnapshot"
+        >
+          {{ isRestoring ? t('settings.app.restoring') : t('settings.app.restore') }}
+        </button>
+      </template>
+    </CommonModal>
   </div>
 </template>
 
