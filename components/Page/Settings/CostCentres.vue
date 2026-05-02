@@ -150,6 +150,8 @@ const tableColumns = computed<EntityManagerColumn[]>(() => [
   {
     key: 'parent',
     label: t('common.parent'),
+    filterable: false,
+    getValue: (item, items) => parentLabel(itemParentId(item), items),
   },
 ])
 

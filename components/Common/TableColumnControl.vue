@@ -10,6 +10,7 @@
     </button>
 
     <button
+      v-if="filterable"
       ref="triggerRef"
       type="button"
       class="pt-1 pr-1 pl-1 rounded-lg border hover:bg-slate-50 cursor-pointer"
@@ -21,7 +22,7 @@
 
     <Teleport defer to="#page-root">
       <div
-        v-if="menuOpen"
+        v-if="filterable && menuOpen"
         ref="menuRef"
         class="fixed z-100 w-72 rounded-lg border border-slate-200 bg-white shadow-xl overflow-hidden"
         :style="{ top: `${menuPosition.top}px`, left: `${menuPosition.left}px` }"
@@ -117,14 +118,20 @@ import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue'
 import { useI18n } from '~/composables/useI18n'
 import type { ColumnFilter, SortDirection, TableFilterType } from '~/composables/useAdvancedTable'
 
-const props = defineProps<{
+const props = withDefaults(defineProps<{
   label: string
-  filterType: TableFilterType
   sortDirection: SortDirection
-  isFilterActive: boolean
-  filter: ColumnFilter
+  filterType?: TableFilterType
+  isFilterActive?: boolean
+  filter?: ColumnFilter
+  filterable?: boolean
   textOptions?: string[]
-}>()
+}>(), {
+  filterType: 'text',
+  isFilterActive: false,
+  filter: () => ({ type: 'text', selected: [] }),
+  filterable: true,
+})
 
 const emit = defineEmits<{
   (e: 'toggle-sort'): void
@@ -217,6 +224,7 @@ function onWindowChange() {
 }
 
 async function toggleMenu() {
+  if (!props.filterable) return
   menuOpen.value = !menuOpen.value
   if (!menuOpen.value) return
   syncFromFilter()

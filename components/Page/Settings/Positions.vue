@@ -300,6 +300,8 @@ const tableColumns = computed<EntityManagerColumn[]>(() => [
   {
     key: 'members',
     label: t('settings.positions.members'),
+    filterable: false,
+    getValue: item => currentMemberSummary(item),
   },
 ])
 

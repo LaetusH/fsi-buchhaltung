@@ -140,10 +140,14 @@ const tableColumns = computed<EntityManagerColumn[]>(() => [
   {
     key: 'members',
     label: t('settings.subdivisions.members'),
+    filterable: false,
+    getValue: item => memberSummary(item),
   },
   {
     key: 'count',
     label: t('common.count'),
+    filterType: 'number',
+    getValue: item => memberCount(item),
   },
 ])
 

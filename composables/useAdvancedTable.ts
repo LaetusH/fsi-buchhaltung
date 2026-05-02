@@ -5,9 +5,10 @@ export type TableFilterType = 'text' | 'number' | 'date'
 
 export interface TableColumnConfig<T, K extends string = string> {
   key: K
-  filterType: TableFilterType
+  filterType?: TableFilterType
   getValue: (row: T) => unknown
   sortable?: boolean
+  filterable?: boolean
   globalSearchable?: boolean
 }
 
@@ -78,7 +79,7 @@ function toDateSearchTokens(value: unknown): string[] {
 }
 
 export function useAdvancedTable<T, K extends string>(
-  rows: Ref<T[]>,
+  rows: Readonly<Ref<T[]>>,
   columns: TableColumnConfig<T, K>[],
 ) {
   const sortKey = ref<K | null>(null)
@@ -95,10 +96,11 @@ export function useAdvancedTable<T, K extends string>(
 
   const filters = ref<Record<string, ColumnFilter>>(
     columns.reduce<Record<string, ColumnFilter>>((acc, column) => {
-      if (column.filterType === 'text') {
+      const filterType = column.filterType ?? 'text'
+      if (filterType === 'text') {
         acc[column.key] = { type: 'text', selected: [] }
       } else {
-        acc[column.key] = { type: column.filterType, min: '', max: '' }
+        acc[column.key] = { type: filterType, min: '', max: '' }
       }
       return acc
     }, {}),
@@ -107,7 +109,7 @@ export function useAdvancedTable<T, K extends string>(
   const textOptionsByColumn = computed<Record<string, string[]>>(() => {
     const result: Record<string, string[]> = {}
     for (const column of columns) {
-      if (column.filterType !== 'text') continue
+      if (column.filterable === false || (column.filterType ?? 'text') !== 'text') continue
       const values = new Set<string>()
       for (const row of rows.value) {
         const value = column.getValue(row)
@@ -150,11 +152,12 @@ export function useAdvancedTable<T, K extends string>(
   function resetFilter(key: K) {
     const column = columnByKey.value[key]
     if (!column) return
-    if (column.filterType === 'text') {
+    const filterType = column.filterType ?? 'text'
+    if (filterType === 'text') {
       filters.value[key] = { type: 'text', selected: [] }
     } else {
       filters.value[key] = {
-        type: column.filterType,
+        type: filterType,
         min: '',
         max: '',
       }
@@ -196,6 +199,8 @@ export function useAdvancedTable<T, K extends string>(
   const processedRows = computed<T[]>(() => {
     const filtered = rows.value.filter((row) => {
       for (const column of columns) {
+        if (column.filterable === false) continue
+
         const filter = filters.value[column.key]
         const value = column.getValue(row)
 
@@ -240,8 +245,9 @@ export function useAdvancedTable<T, K extends string>(
 
     const factor = sortDirection.value === 'asc' ? 1 : -1
     sorted.sort((a, b) => {
-      const left = toComparableValue(activeColumn.filterType, activeColumn.getValue(a))
-      const right = toComparableValue(activeColumn.filterType, activeColumn.getValue(b))
+      const filterType = activeColumn.filterType ?? 'text'
+      const left = toComparableValue(filterType, activeColumn.getValue(a))
+      const right = toComparableValue(filterType, activeColumn.getValue(b))
 
       if (left === null && right === null) return 0
       if (left === null) return 1

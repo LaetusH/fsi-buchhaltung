@@ -1,24 +1,38 @@
 <template>
-  <div v-if="hasAccess" class="bg-white rounded-xl shadow-lg p-6 space-y-6 col-span-12">
-    <div class="flex justify-between items-center gap-3 flex-wrap">
-      <h2 class="text-lg font-semibold">{{ t('settings.users.title') }}</h2>
-
-      <button class="btn-primary" @click="openCreateModal">
-        + {{ t('settings.users.newUser') }}
-      </button>
-    </div>
-
+  <CommonPageTableCard
+    v-if="hasAccess"
+    :title="t('settings.users.title')"
+    :search-value="globalSearchInput"
+    :can-create="true"
+    :create-label="`+ ${t('settings.users.newUser')}`"
+    @update:search-value="globalSearchInput = $event"
+    @create="openCreateModal"
+  >
     <div class="overflow-x-auto">
       <table class="w-full text-sm border-collapse">
         <thead>
           <tr class="text-left border-b">
-            <th class="py-2">{{ t('login.username') }}</th>
-            <th class="py-2">{{ t('settings.users.linkedMember') }}</th>
+            <th class="py-2">
+              <CommonTableColumnControl
+                :label="t('login.username')"
+                :sort-direction="columnSortDirection('username')"
+                :filterable="false"
+                @toggle-sort="toggleSort('username')"
+              />
+            </th>
+            <th class="py-2">
+              <CommonTableColumnControl
+                :label="t('settings.users.linkedMember')"
+                :sort-direction="columnSortDirection('member')"
+                :filterable="false"
+                @toggle-sort="toggleSort('member')"
+              />
+            </th>
             <th class="py-2 text-right">{{ t('common.actions') }}</th>
           </tr>
         </thead>
         <tbody>
-          <tr v-for="user in users" :key="user.id" class="border-b last:border-b-0">
+          <tr v-for="user in processedRows" :key="user.id" class="border-b last:border-b-0">
             <td class="py-2">
               <div class="flex flex-col gap-1">
                 <span>{{ user.username }}</span>
@@ -55,15 +69,15 @@
               </div>
             </td>
           </tr>
-          <tr v-if="users.length === 0">
-            <td colspan="5" class="py-6 text-center text-slate-500">
+          <tr v-if="processedRows.length === 0">
+            <td colspan="3" class="py-6 text-center text-slate-500">
               {{ t('settings.permissions.noUsers') }}
             </td>
           </tr>
         </tbody>
       </table>
     </div>
-  </div>
+  </CommonPageTableCard>
 
   <div
     v-if="showCreateModal"
@@ -173,6 +187,7 @@
 
 <script setup lang="ts">
 import type { SearchSelectOption } from '~/components/Common/SearchSelect.vue'
+import { useAdvancedTable } from '~/composables/useAdvancedTable'
 import { useI18n } from '~/composables/useI18n'
 import { useToast } from '~/composables/useToast'
 import { useAuth } from '~/composables/useAuth'
@@ -214,6 +229,22 @@ const form = ref({
 const editingMemberId = ref<number | null>(null)
 const isCreatingUser = ref(false)
 const isSavingMemberLink = ref(false)
+type UserColumnKey = 'username' | 'member'
+
+const {
+  sortKey,
+  sortDirection,
+  globalSearchInput,
+  processedRows,
+  toggleSort,
+} = useAdvancedTable<UserListRow, UserColumnKey>(users, [
+  { key: 'username', filterable: false, globalSearchable: true, getValue: user => user.username },
+  { key: 'member', filterable: false, globalSearchable: true, getValue: user => user.member_name || t('settings.users.noLinkedMember') },
+])
+
+function columnSortDirection(key: UserColumnKey) {
+  return sortKey.value === key ? sortDirection.value : null
+}
 
 const createMemberOptions = computed<SearchSelectOption<MemberOptionRow>[]>(() => memberOptions.value
   .filter(member => member.account === null)
