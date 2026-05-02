@@ -32,9 +32,20 @@
         <p class="text-sm text-slate-600">{{ t('settings.general.logoutText') }}</p>
       </div>
 
-      <button class="btn-primary" @click="handleLogout">
-        {{ t('actions.logout') }}
-      </button>
+      <div class="flex flex-col gap-3 sm:flex-row">
+        <button class="btn-primary" @click="openLogoutModal">
+          {{ t('actions.logout') }}
+        </button>
+
+        <button
+          class="btn-secondary"
+          :disabled="isLoggingOutAll"
+          :class="{ 'opacity-50 cursor-not-allowed': isLoggingOutAll }"
+          @click="openLogoutAllModal"
+        >
+          {{ isLoggingOutAll ? t('settings.general.logoutAllLoading') : t('settings.general.logoutAll') }}
+        </button>
+      </div>
     </section>
   </div>
 
@@ -111,6 +122,62 @@
       </form>
     </div>
   </div>
+
+  <div
+    v-if="showLogoutModal"
+    class="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4"
+    @click.self="closeLogoutModal"
+  >
+    <div class="bg-white rounded-xl w-full max-w-md p-6 space-y-4">
+      <div>
+        <h3 class="text-lg font-semibold">{{ t('settings.general.logoutConfirmTitle') }}</h3>
+        <p class="mt-1 text-sm text-slate-600">{{ t('settings.general.logoutConfirmText') }}</p>
+      </div>
+
+      <div class="flex justify-end gap-3 bg-white pt-2">
+        <button class="btn-secondary" @click="closeLogoutModal">
+          {{ t('actions.cancel') }}
+        </button>
+
+        <button class="btn-primary" @click="handleLogout">
+          {{ t('settings.general.logoutConfirmButton') }}
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div
+    v-if="showLogoutAllModal"
+    class="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4"
+    @click.self="closeLogoutAllModal"
+  >
+    <div class="bg-white rounded-xl w-full max-w-md p-6 space-y-4">
+      <div>
+        <h3 class="text-lg font-semibold">{{ t('settings.general.logoutAllConfirmTitle') }}</h3>
+        <p class="mt-1 text-sm text-slate-600">{{ t('settings.general.logoutAllConfirmText') }}</p>
+      </div>
+
+      <div class="flex justify-end gap-3 bg-white pt-2">
+        <button
+          class="btn-secondary"
+          :disabled="isLoggingOutAll"
+          :class="{ 'opacity-50 cursor-not-allowed': isLoggingOutAll }"
+          @click="closeLogoutAllModal"
+        >
+          {{ t('actions.cancel') }}
+        </button>
+
+        <button
+          class="btn-primary"
+          :disabled="isLoggingOutAll"
+          :class="{ 'opacity-50 cursor-not-allowed': isLoggingOutAll }"
+          @click="handleLogoutAll"
+        >
+          {{ isLoggingOutAll ? t('settings.general.logoutAllLoading') : t('settings.general.logoutAllConfirmButton') }}
+        </button>
+      </div>
+    </div>
+  </div>
 </template>
 
 <script setup lang="ts">
@@ -119,14 +186,18 @@ import { useI18n } from '~/composables/useI18n'
 import { usePage } from '~/composables/usePage'
 import { useToast } from '~/composables/useToast'
 import type { ChangePasswordResponse } from '~/server/api/auth/change-password.post'
+import type { LogoutAllResponse } from '~/server/api/auth/logout-all.post'
 
-const { logout } = useAuth()
+const { logout, redirectToLogin } = useAuth()
 const { setPage } = usePage()
 const { language, t, toggleLanguage } = useI18n()
 const toast = useToast()
 
 const showPasswordModal = ref(false)
+const showLogoutModal = ref(false)
+const showLogoutAllModal = ref(false)
 const isChangingPassword = ref(false)
+const isLoggingOutAll = ref(false)
 const passwordForm = ref({
   currentPassword: '',
   newPassword: '',
@@ -134,8 +205,47 @@ const passwordForm = ref({
 })
 
 async function handleLogout() {
+  showLogoutModal.value = false
   await logout()
   setPage('Login')
+}
+
+async function handleLogoutAll() {
+  if (isLoggingOutAll.value) return
+
+  isLoggingOutAll.value = true
+  try {
+    const res = await $fetch<LogoutAllResponse>('/api/auth/logout-all', { method: 'POST' })
+    if (!res.ok) {
+      toast.error(res.error || t('settings.general.logoutAllFailed'))
+      return
+    }
+
+    showLogoutAllModal.value = false
+    redirectToLogin()
+  } catch {
+    toast.error(t('settings.general.logoutAllFailed'))
+  } finally {
+    isLoggingOutAll.value = false
+  }
+}
+
+function openLogoutModal() {
+  showLogoutModal.value = true
+}
+
+function closeLogoutModal() {
+  showLogoutModal.value = false
+}
+
+function openLogoutAllModal() {
+  if (isLoggingOutAll.value) return
+  showLogoutAllModal.value = true
+}
+
+function closeLogoutAllModal() {
+  if (isLoggingOutAll.value) return
+  showLogoutAllModal.value = false
 }
 
 function resetPasswordForm() {
