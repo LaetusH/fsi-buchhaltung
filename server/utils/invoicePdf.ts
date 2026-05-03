@@ -736,9 +736,10 @@ export function buildInvoicePdf(params: {
   let totalsY = totalsStartY - 18
   if (taxEntries.length) {
     for (const [tax, amount] of taxEntries) {
+      const taxPrefix = isKleinunternehmer && Number(tax) === 0 ? '*' : ''
       const taxLabel = hasMixedTaxRates
-        ? `${isKleinunternehmer ? '*' : ''}zzgl. ${formatRate(tax)} USt. auf ${formatMoney(netByTax.get(tax) || 0)}`
-        : `${isKleinunternehmer ? '*' : ''}zzgl. ${formatRate(tax)} USt.`
+        ? `${taxPrefix}zzgl. ${formatRate(tax)} USt. auf ${formatMoney(netByTax.get(tax) || 0)}`
+        : `${taxPrefix}zzgl. ${formatRate(tax)} USt.`
       const vatRowTop = totalsY + 9
       const vatRowBottom = totalsY - 9
       texts.push(
