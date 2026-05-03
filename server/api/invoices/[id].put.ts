@@ -47,7 +47,7 @@ function normalizeComparablePosition(position: any) {
   return {
     id: position.id ? Number(position.id) : undefined,
     name: String(position.name || '').trim(),
-    description: String(position.description || '').trim(),
+    description: String(position.description || '').trim() || null,
     sphere: Number(position.sphere),
     cost_centre: Number(position.cost_centre),
     quantity: Number(position.quantity),
@@ -60,7 +60,7 @@ function normalizeComparablePosition(position: any) {
 function normalizeDisplayedInvoicePosition(position: any) {
   return {
     name: String(position.name || '').trim(),
-    description: String(position.description || '').trim(),
+    description: String(position.description || '').trim() || null,
     quantity: Number(position.quantity),
     unit: position.unit ? String(position.unit).trim() : null,
     unit_price: Number(position.unit_price),

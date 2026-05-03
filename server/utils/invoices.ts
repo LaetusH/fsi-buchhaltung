@@ -26,10 +26,6 @@ export function validateInvoicePayload(invoice: any) {
       return 'Each position requires a name'
     }
 
-    if (!position?.description || String(position.description).trim().length < 1) {
-      return 'Each position requires a description'
-    }
-
     if (!Number.isInteger(Number(position.sphere)) || Number(position.sphere) <= 0) {
       return 'Each position requires a sphere'
     }
@@ -76,7 +72,7 @@ export function normalizeInvoicePayload(invoice: CreateInvoiceBody): CreateInvoi
     positions: invoice.positions.map(position => ({
       id: position.id ? Number(position.id) : undefined,
       name: String(position.name || '').trim(),
-      description: String(position.description || '').trim(),
+      description: String(position.description || '').trim() || null,
       sphere: Number(position.sphere),
       cost_centre: Number(position.cost_centre),
       quantity: Number(position.quantity),

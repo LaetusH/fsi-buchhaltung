@@ -9,6 +9,7 @@
     "preview": "nuxt preview",
     "setup:migrate": "node --env-file=.env scripts/migrate-event-cost-centre-splits.mjs",
     "setup:migrate:invoice-paid-at": "node --env-file=.env scripts/migrate-invoice-paid-at.mjs",
+    "setup:migrate:invoice-position-description": "node --env-file=.env scripts/migrate-invoice-position-description-nullable.mjs",
     "setup:migrate:app-settings": "node --env-file=.env scripts/migrate-app-settings.mjs",
     "setup:migrate:cash-count-register-checks": "node --env-file=.env scripts/migrate-cash-count-register-checks.mjs",
     "setup:migrate:password-change-required": "node --env-file=.env scripts/migrate-user-password-change-required.mjs",

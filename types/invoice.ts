@@ -13,7 +13,7 @@ export enum InvoiceSourceType {
 export interface InvoicePosition {
   id: number
   name: string
-  description: string
+  description: string | null
   sphere: number
   cost_centre: number
   quantity: number
@@ -62,7 +62,7 @@ export interface InvoiceRow {
 export interface CreateInvoicePositionBody {
   id?: number
   name: string
-  description: string
+  description: string | null
   sphere: number
   cost_centre: number
   quantity: number

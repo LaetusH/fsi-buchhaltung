@@ -445,7 +445,6 @@ const validationErrors = computed(() => {
   if (!form.value.positions.length) errors.push(t('invoice.required.positions'))
   if (form.value.positions.some(position =>
     !position.name.trim()
-    || !position.description.trim()
     || !position.sphere
     || !position.cost_centre
     || position.quantity <= 0
@@ -554,7 +553,7 @@ function addPosition() {
     ...form.value,
     positions: [
       ...form.value.positions,
-      { name: '', description: '', sphere: 0, cost_centre: 0, quantity: 1, unit: null, unit_price: 0, tax: form.value.is_kleinunternehmer ? 0 : 19 },
+      { name: '', description: null, sphere: 0, cost_centre: 0, quantity: 1, unit: null, unit_price: 0, tax: form.value.is_kleinunternehmer ? 0 : 19 },
     ],
   }
 }

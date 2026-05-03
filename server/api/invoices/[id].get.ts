@@ -84,7 +84,7 @@ export default defineEventHandler(async (event): Promise<GetInvoiceResponse> => 
         positions: positions.map(position => ({
           id: Number(position.id),
           name: String(position.name),
-          description: String(position.description),
+          description: position.description ? String(position.description) : null,
           sphere: Number(position.sphere),
           cost_centre: Number(position.cost_centre),
           quantity: Number(position.quantity),

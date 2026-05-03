@@ -680,7 +680,7 @@ export function buildInvoicePdf(params: {
   let rowY = tableTop - 31
   invoice.positions.forEach((position, index) => {
     const nameLines = wrapText(position.name, 56)
-    const detailLines = wrapText(position.description, descriptionMaxChars)
+    const detailLines = position.description ? wrapText(position.description, descriptionMaxChars) : []
     const netLineTotal = position.quantity * position.unit_price
 
     texts.push(
@@ -702,18 +702,22 @@ export function buildInvoicePdf(params: {
       })
     })
 
-    const descriptionStartY = rowY - (nameLines.length * 12) - 4
-    detailLines.forEach((line, lineIndex) => {
-      texts.push({
-        x: colDescription,
-        y: descriptionStartY - (lineIndex * 12),
-        size: 9.5,
-        text: line,
-        gray: 0.35,
+    if (detailLines.length) {
+      const descriptionStartY = rowY - (nameLines.length * 12) - 4
+      detailLines.forEach((line, lineIndex) => {
+        texts.push({
+          x: colDescription,
+          y: descriptionStartY - (lineIndex * 12),
+          size: 9.5,
+          text: line,
+          gray: 0.35,
+        })
       })
-    })
+    }
 
-    rowY -= Math.max(30, (nameLines.length * 12) + (detailLines.length * 12) + 8)
+    const nameHeight = nameLines.length * 12
+    const descriptionHeight = detailLines.length ? (detailLines.length * 12) + 4 : 0
+    rowY -= Math.max(20, nameHeight + descriptionHeight + 8)
   })
   const isKleinunternehmer = invoice.is_kleinunternehmer
   const netByTax = new Map<number, number>()
