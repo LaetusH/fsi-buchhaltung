@@ -197,7 +197,9 @@ function parseDateDraft(rawValue: string): DateDraft {
     const monthDigits = (segments[1] ?? '').replace(/\D/g, '').slice(0, 2)
     const yearDigits = (segments[2] ?? '').replace(/\D/g, '').slice(0, 4)
     const dayValue = Number(dayDigits)
-    const completeDay = dayDigits.length === 2 || (dayDigits.length === 1 && dayValue >= 4)
+    const hasMonthSegment = Boolean(monthDigits)
+    const completeDay = dayDigits.length === 2
+      || (dayDigits.length === 1 && (dayValue >= 4 || hasMonthSegment || normalized.endsWith('.')))
     const monthValue = Number(monthDigits)
     const completeMonth = monthDigits.length === 2 || (monthDigits.length === 1 && monthValue >= 2)
 
