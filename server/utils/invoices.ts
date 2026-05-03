@@ -2,10 +2,12 @@ import fs from 'fs/promises'
 import path from 'path'
 import { query } from '~/server/utils/db'
 import { getAttachedFile } from '~/server/utils/files'
+import type { InvoiceTextSettings } from '~/types/appSettings'
 import { InvoiceSourceType, InvoiceStatus, type CreateInvoiceBody } from '~/types/invoice'
 import type { AssociationProfileRow } from '~/types/association'
 import type { CompanyRow } from '~/types/company'
 import type { FileRow } from '~/types/file'
+import { renderInvoiceTextTemplate } from '~/utils/invoiceTextTemplates'
 
 export function validateInvoicePayload(invoice: any) {
   if (!invoice || typeof invoice !== 'object') return 'Missing invoice data'
@@ -82,6 +84,30 @@ export function normalizeInvoicePayload(invoice: CreateInvoiceBody): CreateInvoi
       unit_price: Number(position.unit_price),
       tax: Number(position.tax),
     })),
+  }
+}
+
+export function materializeFinalInvoiceTexts(
+  invoice: CreateInvoiceBody,
+  settings: InvoiceTextSettings,
+  association: AssociationProfileRow | null,
+): CreateInvoiceBody {
+  if (invoice.status === InvoiceStatus.Draft) return invoice
+
+  const context = {
+    invoice_number: invoice.invoice_number,
+    association_name: association?.name ?? null,
+    contact_person: invoice.contact_person,
+    invoice_date: invoice.invoice_date,
+    service_date: invoice.service_date,
+    due_date: invoice.due_date,
+  }
+
+  return {
+    ...invoice,
+    subject: renderInvoiceTextTemplate(invoice.subject || settings.subject, context).trim() || null,
+    intro_text: renderInvoiceTextTemplate(invoice.intro_text || settings.intro_text, context).trim() || null,
+    notes: renderInvoiceTextTemplate(invoice.notes || settings.notes, context).trim() || null,
   }
 }
 

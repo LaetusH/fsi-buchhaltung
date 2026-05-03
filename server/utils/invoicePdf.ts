@@ -1,8 +1,11 @@
 import { deflateSync, inflateSync } from 'zlib'
 import { calculateInvoicePositionTotals } from '~/server/utils/invoices'
+import { DEFAULT_INVOICE_TEXT_SETTINGS } from '~/server/utils/appSettings'
 import type { AssociationProfileRow } from '~/types/association'
+import type { InvoiceTextSettings } from '~/types/appSettings'
 import type { CompanyRow } from '~/types/company'
 import type { CreateInvoiceBody } from '~/types/invoice'
+import { renderInvoiceTextTemplate } from '~/utils/invoiceTextTemplates'
 
 interface PdfText {
   x: number
@@ -496,8 +499,9 @@ export function buildInvoicePdf(params: {
   invoice: CreateInvoiceBody
   logo?: { mimeType: string, data: Buffer } | null
   boardLine?: string | null
+  invoiceTextSettings?: InvoiceTextSettings
 }) {
-  const { association, company, invoice, logo = null, boardLine = null } = params
+  const { association, company, invoice, logo = null, boardLine = null, invoiceTextSettings = DEFAULT_INVOICE_TEXT_SETTINGS } = params
   const { netTotal, grossTotal, taxBreakdown } = calculateInvoicePositionTotals(invoice.positions)
   const backgroundTexts: PdfText[] = []
   const texts: PdfText[] = []
@@ -512,6 +516,17 @@ export function buildInvoicePdf(params: {
   const logoWidth = imageObject ? 120 : 0
   const logoHeight = imageObject ? (logoWidth * imageObject.height) / imageObject.width : 0
   const headingCenterX = pageWidth / 2
+  const templateContext = {
+    invoice_number: invoice.invoice_number,
+    association_name: association.name,
+    contact_person: invoice.contact_person,
+    invoice_date: invoice.invoice_date,
+    service_date: invoice.service_date,
+    due_date: invoice.due_date,
+  }
+  const renderedSubject = renderInvoiceTextTemplate(invoice.subject?.trim() || invoiceTextSettings.subject, templateContext)
+  const renderedIntroText = renderInvoiceTextTemplate(invoice.intro_text?.trim() || invoiceTextSettings.intro_text, templateContext)
+  const renderedNotes = renderInvoiceTextTemplate(invoice.notes?.trim() || invoiceTextSettings.notes, templateContext)
 
   if (invoice.status === 'draft') {
     const draftText = 'ENTWURF'
@@ -586,7 +601,7 @@ export function buildInvoicePdf(params: {
   })
 
   let bodyY = 560
-  const displaySubject = invoice.subject?.trim() || `Rechnung ${invoice.invoice_number}`
+  const displaySubject = renderedSubject || `Rechnung ${invoice.invoice_number}`
   if (displaySubject) {
     const subjectLines = wrapTextByWidth(displaySubject, contentRight - contentLeft, 12)
     for (const line of subjectLines) {
@@ -600,13 +615,7 @@ export function buildInvoicePdf(params: {
     bodyY -= 6
   }
 
-  const introLines = invoice.intro_text
-    ? wrapTextByWidth(invoice.intro_text, contentRight - contentLeft, 10)
-    : wrapTextByWidth(
-        'Für die vereinbarten Leistungen stellen wir Ihnen wie vereinbart den folgenden Betrag in Rechnung:',
-        contentRight - contentLeft,
-        10,
-      )
+  const introLines = wrapTextByWidth(renderedIntroText, contentRight - contentLeft, 10)
   for (const line of introLines) {
     if (!line) {
       bodyY -= 10
@@ -788,8 +797,8 @@ export function buildInvoicePdf(params: {
   }
   notesY -= 24
 
-  if (invoice.notes) {
-    for (const line of wrapTextByWidth(invoice.notes, contentRight - contentLeft, 10)) {
+  if (renderedNotes) {
+    for (const line of wrapTextByWidth(renderedNotes, contentRight - contentLeft, 10)) {
       if (!line) {
         notesY -= 10
         continue
@@ -798,11 +807,6 @@ export function buildInvoicePdf(params: {
       notesY -= 12
     }
     notesY -= 8
-  } else {
-    texts.push(
-      { x: tableLeft, y: notesY, size: 10, text: 'Mit freundlichen Grüßen' },
-      { x: tableLeft, y: notesY - 18, size: 10, text: invoice.contact_person || association.name },
-    )
   }
 
   lines.push(

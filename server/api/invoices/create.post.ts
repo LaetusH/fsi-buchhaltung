@@ -2,12 +2,13 @@ import { defineEventHandler } from 'h3'
 import { query, withAuditTransaction } from '~/server/utils/db'
 import { readMultipart } from '~/server/utils/api/request'
 import { requirePermission } from '~/server/utils/api/guards'
+import { getInvoiceTextSettings, reserveNextDefaultInvoiceNumber } from '~/server/utils/appSettings'
 import { validateCostCentreSelection } from '~/server/utils/costCentres'
 import { buildInvoicePdf } from '~/server/utils/invoicePdf'
-import { getAssociationBoardLineForInvoice, getAssociationLogoForInvoice, getAssociationProfileForInvoice, getInvoiceCompany, invoiceNeedsUploadedFile, invoiceNumberExists, normalizeInvoicePayload, validateInvoicePayload } from '~/server/utils/invoices'
+import { getAssociationBoardLineForInvoice, getAssociationLogoForInvoice, getAssociationProfileForInvoice, getInvoiceCompany, invoiceNeedsUploadedFile, invoiceNumberExists, materializeFinalInvoiceTexts, normalizeInvoicePayload, validateInvoicePayload } from '~/server/utils/invoices'
 import { storeAndAttachUploadedFile, validateUploadedFile } from '~/server/utils/files'
 import { validateSphereSelection } from '~/server/utils/spheres'
-import { InvoiceSourceType } from '~/types/invoice'
+import { InvoiceSourceType, InvoiceStatus } from '~/types/invoice'
 
 interface CreateInvoiceSuccess {
   ok: true
@@ -35,9 +36,9 @@ export default defineEventHandler(async (event): Promise<CreateInvoiceResponse> 
   const invoiceJson = multipart.getField('invoice')
   if (!invoiceJson) return { ok: false, error: 'Missing invoice data' }
 
-  const parsed = normalizeInvoicePayload(JSON.parse(invoiceJson))
-  const validationError = validateInvoicePayload(parsed)
-  if (validationError) return { ok: false, error: validationError }
+  let parsed = normalizeInvoicePayload(JSON.parse(invoiceJson))
+  const preValidationError = validateInvoicePayload(parsed.invoice_number ? parsed : { ...parsed, invoice_number: 'DEFAULT' })
+  if (preValidationError) return { ok: false, error: preValidationError }
 
   const fileError = validateUploadedFile(
     multipart.file,
@@ -49,10 +50,6 @@ export default defineEventHandler(async (event): Promise<CreateInvoiceResponse> 
 
   try {
     return await withAuditTransaction(current.user, async (conn) => {
-      if (await invoiceNumberExists(parsed.invoice_number, null, conn)) {
-        return { ok: false, error: 'Invoice number already exists' }
-      }
-
       const sphereValidationError = await validateSphereSelection(
         parsed.positions.map(position => ({
           sphereId: Number(position.sphere),
@@ -70,6 +67,31 @@ export default defineEventHandler(async (event): Promise<CreateInvoiceResponse> 
         conn,
       )
       if (costCentreValidationError) return { ok: false, error: costCentreValidationError }
+
+      const invoiceTextSettings = await getInvoiceTextSettings(conn)
+      if (!parsed.invoice_number || invoiceTextSettings.invoice_number_manual_edit_disabled) {
+        parsed = {
+          ...parsed,
+          invoice_number: await reserveNextDefaultInvoiceNumber(parsed.invoice_date, conn),
+        }
+      }
+
+      const validationError = validateInvoicePayload(parsed)
+      if (validationError) return { ok: false, error: validationError }
+
+      if (await invoiceNumberExists(parsed.invoice_number, null, conn)) {
+        return { ok: false, error: 'Invoice number already exists' }
+      }
+
+      const shouldLoadInvoiceTextContext = parsed.status !== InvoiceStatus.Draft || parsed.source_type === InvoiceSourceType.Generated
+      const association = shouldLoadInvoiceTextContext ? await getAssociationProfileForInvoice(conn) : null
+      if (parsed.source_type === InvoiceSourceType.Generated && !association) {
+        return { ok: false, error: 'Association details are required to generate invoices' }
+      }
+
+      if (parsed.status !== InvoiceStatus.Draft) {
+        parsed = materializeFinalInvoiceTexts(parsed, invoiceTextSettings, association)
+      }
 
       const result: any = await query(
         `INSERT INTO invoices
@@ -120,7 +142,6 @@ export default defineEventHandler(async (event): Promise<CreateInvoiceResponse> 
       }
 
       if (parsed.source_type === InvoiceSourceType.Generated) {
-        const association = await getAssociationProfileForInvoice(conn)
         if (!association) return { ok: false, error: 'Association details are required to generate invoices' }
 
         const company = await getInvoiceCompany(Number(parsed.company_id), conn)
@@ -131,7 +152,7 @@ export default defineEventHandler(async (event): Promise<CreateInvoiceResponse> 
         const pdfBuffer = buildInvoicePdf({ association, company, invoice: parsed, logo: logo ? {
           mimeType: logo.file.mime_type,
           data: logo.data,
-        } : null, boardLine })
+        } : null, boardLine, invoiceTextSettings: invoiceTextSettings ?? undefined })
         await storeAndAttachUploadedFile({
           filename: `${parsed.invoice_number}.pdf`,
           type: 'application/pdf',

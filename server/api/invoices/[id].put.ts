@@ -2,10 +2,11 @@ import { defineEventHandler } from 'h3'
 import { query, withAuditTransaction } from '~/server/utils/db'
 import { getNumericRouteParam, readMultipart } from '~/server/utils/api/request'
 import { requirePermission } from '~/server/utils/api/guards'
+import { getInvoiceTextSettings } from '~/server/utils/appSettings'
 import { validateCostCentreSelection } from '~/server/utils/costCentres'
 import { buildInvoicePdf } from '~/server/utils/invoicePdf'
 import { detachFileAttachment, getActiveFileAttachment, storeAndAttachUploadedFile, validateUploadedFile } from '~/server/utils/files'
-import { getAssociationBoardLineForInvoice, getAssociationLogoForInvoice, getAssociationProfileForInvoice, getInvoiceCompany, invoiceNeedsUploadedFile, invoiceNumberExists, normalizeInvoicePayload, validateInvoicePayload } from '~/server/utils/invoices'
+import { getAssociationBoardLineForInvoice, getAssociationLogoForInvoice, getAssociationProfileForInvoice, getInvoiceCompany, invoiceNeedsUploadedFile, invoiceNumberExists, materializeFinalInvoiceTexts, normalizeInvoicePayload, validateInvoicePayload } from '~/server/utils/invoices'
 import { validateSphereSelection } from '~/server/utils/spheres'
 import { InvoiceSourceType, InvoiceStatus, type InvoicePosition } from '~/types/invoice'
 
@@ -100,7 +101,7 @@ export default defineEventHandler(async (event): Promise<UpdateInvoiceResponse> 
   const removeExistingFile = multipart.getField('removeExistingFile') === 'true'
   if (!invoiceJson) return { ok: false, error: 'Missing invoice data' }
 
-  const parsed = normalizeInvoicePayload(JSON.parse(invoiceJson))
+  let parsed = normalizeInvoicePayload(JSON.parse(invoiceJson))
   const validationError = validateInvoicePayload(parsed)
   if (validationError) return { ok: false, error: validationError }
 
@@ -232,6 +233,20 @@ export default defineEventHandler(async (event): Promise<UpdateInvoiceResponse> 
       const hasFileAfterSave = Boolean(multipart.file) || canReuseExistingUpload || parsed.source_type === InvoiceSourceType.Generated
       if (mustUploadFile && !hasFileAfterSave) return { ok: false, error: 'A file is required for uploaded invoices' }
 
+      const shouldLoadInvoiceTextContext = parsed.status !== InvoiceStatus.Draft || parsed.source_type === InvoiceSourceType.Generated
+      const association = shouldLoadInvoiceTextContext ? await getAssociationProfileForInvoice(conn) : null
+      if (parsed.source_type === InvoiceSourceType.Generated && !association) {
+        return { ok: false, error: 'Association details are required to generate invoices' }
+      }
+
+      const invoiceTextSettings = await getInvoiceTextSettings(conn)
+      if (invoiceTextSettings.invoice_number_manual_edit_disabled && existing.invoice_number !== parsed.invoice_number) {
+        return { ok: false, error: 'Invoice number cannot be changed manually' }
+      }
+      if (parsed.status !== InvoiceStatus.Draft) {
+        parsed = materializeFinalInvoiceTexts(parsed, invoiceTextSettings, association)
+      }
+
       const generatedComparableChanged = JSON.stringify(
         buildGeneratedInvoiceComparable(existing, existingPositions),
       ) !== JSON.stringify(
@@ -340,7 +355,6 @@ export default defineEventHandler(async (event): Promise<UpdateInvoiceResponse> 
       }
 
       if (shouldRegenerateGeneratedPdf) {
-        const association = await getAssociationProfileForInvoice(conn)
         if (!association) return { ok: false, error: 'Association details are required to generate invoices' }
 
         const company = await getInvoiceCompany(Number(parsed.company_id), conn)
@@ -351,7 +365,7 @@ export default defineEventHandler(async (event): Promise<UpdateInvoiceResponse> 
         const pdfBuffer = buildInvoicePdf({ association, company, invoice: parsed, logo: logo ? {
           mimeType: logo.file.mime_type,
           data: logo.data,
-        } : null, boardLine })
+        } : null, boardLine, invoiceTextSettings: invoiceTextSettings ?? undefined })
         await storeAndAttachUploadedFile({
           filename: `${parsed.invoice_number}.pdf`,
           type: 'application/pdf',

@@ -2,6 +2,96 @@
   <div class="bg-white rounded-xl shadow-lg p-6 space-y-6 col-span-12">
     <h2 class="text-lg font-semibold">{{ t('settings.app.title') }}</h2>
 
+    <section class="rounded-xl border border-slate-200 p-4 space-y-4">
+      <div>
+        <h3 class="font-semibold">{{ t('settings.app.invoiceTextsTitle') }}</h3>
+        <p class="text-sm text-slate-600">{{ t('settings.app.invoiceTextsText') }}</p>
+      </div>
+
+      <div class="flex flex-wrap gap-2">
+        <span
+          v-for="variable in invoiceTextVariables"
+          :key="variable.key"
+          class="rounded-md border border-slate-200 bg-slate-50 px-2 py-1 text-xs font-medium text-slate-700"
+          :title="variable.label"
+        >
+          {{ variableToken(variable.key) }}
+        </span>
+      </div>
+
+      <div class="grid gap-4">
+        <div class="grid gap-4 md:grid-cols-[1fr_auto_auto] md:items-end">
+          <div class="field">
+            <label>{{ t('settings.app.invoiceNumberTemplate') }}</label>
+            <input v-model="invoiceTextForm.invoice_number_template" class="input" :disabled="isSavingInvoiceTexts">
+          </div>
+          <div class="field">
+            <label>{{ t('settings.app.invoiceNumberNextIncrement') }}</label>
+            <input
+              v-model.number="invoiceTextForm.invoice_number_next_increment"
+              type="number"
+              min="1"
+              step="1"
+              class="input md:w-36"
+              :disabled="isSavingInvoiceTexts"
+            >
+          </div>
+          <div class="field">
+            <label>{{ t('settings.app.invoiceNumberIncrementDigits') }}</label>
+            <input
+              v-model.number="invoiceTextForm.invoice_number_increment_digits"
+              type="number"
+              min="1"
+              step="1"
+              class="input md:w-36"
+              :disabled="isSavingInvoiceTexts"
+            >
+          </div>
+        </div>
+        <label class="inline-flex items-center gap-3 text-sm text-slate-700 select-none cursor-pointer">
+          <input
+            v-model="invoiceTextForm.invoice_number_manual_edit_disabled"
+            type="checkbox"
+            class="checkbox"
+            :disabled="isSavingInvoiceTexts"
+          >
+          <span>{{ t('settings.app.invoiceNumberManualEditDisabled') }}</span>
+        </label>
+        <div class="field">
+          <label>{{ t('settings.app.invoiceSubject') }}</label>
+          <input v-model="invoiceTextForm.subject" class="input" :disabled="isSavingInvoiceTexts">
+        </div>
+        <div class="field">
+          <label>{{ t('settings.app.invoiceIntroText') }}</label>
+          <textarea v-model="invoiceTextForm.intro_text" rows="3" class="input resize-y" :disabled="isSavingInvoiceTexts" />
+        </div>
+        <div class="field">
+          <label>{{ t('settings.app.invoiceNotes') }}</label>
+          <textarea v-model="invoiceTextForm.notes" rows="4" class="input resize-y" :disabled="isSavingInvoiceTexts" />
+        </div>
+        <label class="inline-flex items-center gap-3 text-sm text-slate-700 select-none cursor-pointer">
+          <input
+            v-model="invoiceTextForm.is_kleinunternehmer_default"
+            type="checkbox"
+            class="checkbox"
+            :disabled="isSavingInvoiceTexts"
+          >
+          <span>{{ t('settings.app.invoiceKleinunternehmerDefault') }}</span>
+        </label>
+      </div>
+
+      <div class="flex justify-end">
+        <button
+          class="btn-primary"
+          :disabled="isSavingInvoiceTexts"
+          :class="{ 'opacity-50 cursor-not-allowed': isSavingInvoiceTexts }"
+          @click="saveInvoiceTexts"
+        >
+          {{ isSavingInvoiceTexts ? t('settings.app.invoiceTextsSaving') : t('settings.app.invoiceTextsSave') }}
+        </button>
+      </div>
+    </section>
+
     <section v-if="canManageSnapshots" class="rounded-xl border border-slate-200 p-4 space-y-3">
       <div>
         <h3 class="font-semibold">{{ t('settings.app.snapshotTitle') }}</h3>
@@ -178,6 +268,7 @@ import { useLocaleFormatters } from '~/composables/useLocaleFormatters'
 import { useToast } from '~/composables/useToast'
 import type { PreviewSnapshotResponse } from '~/server/api/settings/app/snapshot.preview.post'
 import type { RestoreSnapshotResponse } from '~/server/api/settings/app/snapshot.restore.post'
+import type { InvoiceTextSettings, InvoiceTextVariable } from '~/types/appSettings'
 
 const { t } = useI18n()
 const { formatDateTime } = useLocaleFormatters()
@@ -199,6 +290,18 @@ const restorePreview = ref<Extract<PreviewSnapshotResponse, { ok: true }> | null
 const restoreConfirmation = ref('')
 const fileInput = ref<HTMLInputElement | null>(null)
 const archiveInput = ref<HTMLInputElement | null>(null)
+const isSavingInvoiceTexts = ref(false)
+const invoiceTextForm = ref<InvoiceTextSettings>({
+  invoice_number_template: '',
+  invoice_number_next_increment: 1,
+  invoice_number_increment_digits: 1,
+  invoice_number_manual_edit_disabled: false,
+  subject: '',
+  intro_text: '',
+  notes: '',
+  is_kleinunternehmer_default: false,
+})
+const invoiceTextVariables = ref<InvoiceTextVariable[]>([])
 
 const previewAppLabel = computed(() => {
   if (!restorePreview.value) return ''
@@ -228,6 +331,44 @@ const filesArchiveLabel = computed(() => {
     archived: String(restorePreview.value.filesArchive.archiveFileCount),
   })
 })
+
+onMounted(loadInvoiceTexts)
+
+async function loadInvoiceTexts() {
+  const res = await $fetch<{ ok: boolean, settings?: InvoiceTextSettings, variables?: InvoiceTextVariable[], error?: string }>('/api/settings/app/invoice-texts')
+  if (!res.ok || !res.settings) {
+    toast.error(res.error || t('settings.app.invoiceTextsLoadFailed'))
+    return
+  }
+
+  invoiceTextForm.value = { ...res.settings }
+  invoiceTextVariables.value = res.variables ?? []
+}
+
+async function saveInvoiceTexts() {
+  isSavingInvoiceTexts.value = true
+  try {
+    const res = await $fetch<{ ok: boolean, settings?: InvoiceTextSettings, error?: string }>('/api/settings/app/invoice-texts.save', {
+      method: 'POST',
+      body: invoiceTextForm.value,
+    })
+    if (!res.ok || !res.settings) {
+      toast.error(res.error || t('settings.app.invoiceTextsSaveFailed'))
+      return
+    }
+
+    invoiceTextForm.value = { ...res.settings }
+    toast.success(t('settings.app.invoiceTextsSaved'))
+  } catch (err) {
+    toast.error(t('settings.app.invoiceTextsSaveFailed'))
+  } finally {
+    isSavingInvoiceTexts.value = false
+  }
+}
+
+function variableToken(key: string) {
+  return `{${key}}`
+}
 
 function handleFileChange(event: Event) {
   selectedFile.value = (event.target as HTMLInputElement).files?.[0] ?? null

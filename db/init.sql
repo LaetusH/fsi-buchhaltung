@@ -64,6 +64,11 @@ CREATE TABLE IF NOT EXISTS entity_versions (
   INDEX idx_entity_versions_changed_by (changed_by)
 );
 
+CREATE TABLE IF NOT EXISTS app_settings (
+  setting_key VARCHAR(127) NOT NULL PRIMARY KEY,
+  setting_value TEXT NULL
+);
+
 CREATE TABLE IF NOT EXISTS subjects (
   id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
   name VARCHAR(63) NOT NULL

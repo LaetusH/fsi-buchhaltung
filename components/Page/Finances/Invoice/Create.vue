@@ -27,6 +27,7 @@
       :disabled="!canEdit"
       :status-disabled="!canEditStatus"
       :status-targets="statusTargets"
+      :invoice-number-optional="!isEditMode"
       :has-file="!!file || (!!existingFile && !removeExistingFile)"
       :can-edit-company="canEditCompany"
       :saving="isSaving"
@@ -65,6 +66,7 @@ import { usePage } from '~/composables/usePage'
 import { useReturnTarget } from '~/composables/useReturnTarget'
 import { useToast } from '~/composables/useToast'
 import type { GetInvoiceResponse } from '~/server/api/invoices/[id].get'
+import type { InvoiceTextSettings } from '~/types/appSettings'
 import { InvoiceSourceType, InvoiceStatus, type CreateInvoiceBody } from '~/types/invoice'
 import InvoiceForm from './Form.vue'
 
@@ -122,11 +124,25 @@ const sidebarMode = computed<'file' | 'custom'>(() => {
 
 onMounted(async () => {
   invoiceId.value = pageMeta.value?.invoiceId
-  if (!invoiceId.value) return
+  if (!invoiceId.value) {
+    await applyInvoiceDefaults()
+    return
+  }
 
   isEditMode.value = true
   await loadInvoice(invoiceId.value)
 })
+
+async function applyInvoiceDefaults() {
+  const res = await $fetch<{ ok: boolean, settings?: InvoiceTextSettings }>('/api/settings/app/invoice-texts')
+  if (!res.ok || !res.settings?.is_kleinunternehmer_default) return
+
+  form.value = {
+    ...form.value,
+    is_kleinunternehmer: true,
+    positions: form.value.positions.map(position => ({ ...position, tax: 0 })),
+  }
+}
 
 function onRemoveFile() {
   existingFile.value = null

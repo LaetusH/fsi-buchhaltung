@@ -85,7 +85,7 @@
     <section class="bg-white rounded-xl shadow-lg p-4 grid grid-cols-1 md:grid-cols-2 gap-4">
       <div class="field">
         <label>{{ t('invoice.invoiceNumber') }}</label>
-        <input v-model="form.invoice_number" class="input" :disabled="disabled">
+        <input v-model="form.invoice_number" class="input" :placeholder="invoiceNumberPlaceholder" :disabled="invoiceNumberDisabled">
       </div>
       <div class="field">
         <label>{{ t('invoice.subject') }}</label>
@@ -359,10 +359,12 @@ import type { SearchSelectOption } from '~/components/Common/SearchSelect.vue'
 import { focusAndSelectInput, sanitizeCurrencyInput } from '~/composables/useCurrencyInput'
 import { useI18n } from '~/composables/useI18n'
 import { useLocaleFormatters } from '~/composables/useLocaleFormatters'
+import type { InvoiceTextSettings } from '~/types/appSettings'
 import type { Company, CompanyRow } from '~/types/company'
 import type { CostCentreRow } from '~/types/costCentre'
 import { InvoiceSourceType, InvoiceStatus, type CreateInvoiceBody } from '~/types/invoice'
 import type { SphereRow } from '~/types/sphere'
+import { renderInvoiceNumberTemplate, renderInvoiceTextSettings } from '~/utils/invoiceTextTemplates'
 import CompanyForm from '../CompanyForm.vue'
 
 const props = defineProps<{
@@ -370,6 +372,7 @@ const props = defineProps<{
   disabled?: boolean
   statusDisabled?: boolean
   statusTargets?: InvoiceStatus[]
+  invoiceNumberOptional?: boolean
   hasFile?: boolean
   canEditCompany?: boolean
   saving?: boolean
@@ -393,6 +396,7 @@ const disabled = computed(() => Boolean(props.disabled))
 const statusDisabled = computed(() => Boolean(props.statusDisabled))
 const statusTargets = computed(() => props.statusTargets)
 const canEditCompany = computed(() => props.canEditCompany === true)
+const invoiceNumberDisabled = computed(() => disabled.value || invoiceTextSettings.value.invoice_number_manual_edit_disabled)
 const paidAtDisabled = computed(() => {
   return (disabled.value && statusDisabled.value) || form.value.status !== InvoiceStatus.Paid
 })
@@ -406,6 +410,16 @@ const costCentreQueries = ref<Record<number, string>>({})
 const openSphereIndex = ref<number | null>(null)
 const descriptionRefs = ref<Record<number, HTMLTextAreaElement | null>>({})
 const focusedField = ref<string | null>(null)
+const invoiceTextSettings = ref<InvoiceTextSettings>({
+  invoice_number_template: 'RE-{year}-{increment}',
+  invoice_number_next_increment: 1,
+  invoice_number_increment_digits: 1,
+  invoice_number_manual_edit_disabled: false,
+  subject: 'Rechnung {invoice_number}',
+  intro_text: 'Für die vereinbarten Leistungen stellen wir Ihnen wie vereinbart den folgenden Betrag in Rechnung:',
+  notes: 'Mit freundlichen Grüßen\n{contact_person}',
+  is_kleinunternehmer_default: false,
+})
 
 const companyOptions = computed<SearchSelectOption<number>[]>(() => {
   const query = companyQuery.value.trim().toLowerCase()
@@ -422,7 +436,7 @@ const companyOptions = computed<SearchSelectOption<number>[]>(() => {
 const validationErrors = computed(() => {
   const errors: string[] = []
   if (!form.value.company_id) errors.push(t('invoice.required.company'))
-  if (!form.value.invoice_number.trim()) errors.push(t('invoice.required.invoiceNumber'))
+  if (!props.invoiceNumberOptional && !form.value.invoice_number.trim()) errors.push(t('invoice.required.invoiceNumber'))
   if (!form.value.invoice_date) errors.push(t('invoice.required.invoiceDate'))
   if (!form.value.due_date) errors.push(t('invoice.required.dueDate'))
   if (form.value.status === InvoiceStatus.Paid && !form.value.paid_at) errors.push(t('invoice.required.paidAt'))
@@ -458,16 +472,28 @@ const taxBreakdown = computed<Record<string, number>>(() => {
   }, {})
 })
 const grossTotal = computed(() => netTotal.value + Object.values(taxBreakdown.value).reduce((sum, value) => sum + value, 0))
-const subjectPlaceholder = computed(() => {
-  const invoiceNumber = form.value.invoice_number.trim()
-  return invoiceNumber ? `Standard: Rechnung ${invoiceNumber}` : 'Standard: Rechnung'
+const invoiceNumberPlaceholder = computed(() => {
+  const rendered = renderInvoiceNumberTemplate(
+    invoiceTextSettings.value.invoice_number_template,
+    form.value.invoice_date,
+    invoiceTextSettings.value.invoice_number_next_increment,
+    invoiceTextSettings.value.invoice_number_increment_digits,
+  )
+  if (!rendered) return ''
+  return invoiceTextSettings.value.invoice_number_manual_edit_disabled ? rendered : `Standard: ${rendered}`
 })
-const introTextPlaceholder = computed(() =>
-  'Standard:\nFür die vereinbarten Leistungen stellen wir Ihnen wie vereinbart den folgenden Betrag in Rechnung:'
-)
-const notesPlaceholder = computed(() =>
-  `Standard:\nMit freundlichen Grüßen\n${form.value.contact_person?.trim() || 'Vereinsname'}`
-)
+const renderedInvoiceTextDefaults = computed(() => {
+  return renderInvoiceTextSettings(invoiceTextSettings.value, {
+    invoice_number: form.value.invoice_number,
+    contact_person: form.value.contact_person,
+    invoice_date: form.value.invoice_date,
+    service_date: form.value.service_date,
+    due_date: form.value.due_date,
+  })
+})
+const subjectPlaceholder = computed(() => `Standard: ${renderedInvoiceTextDefaults.value.subject}`)
+const introTextPlaceholder = computed(() => `Standard:\n${renderedInvoiceTextDefaults.value.intro_text}`)
+const notesPlaceholder = computed(() => `Standard:\n${renderedInvoiceTextDefaults.value.notes}`)
 
 watch(
   () => form.value.company_id,
@@ -500,7 +526,7 @@ onMounted(loadSupportData)
 useAppRefresh().onRefresh(loadSupportData)
 
 async function loadSupportData() {
-  await Promise.all([loadCompanies(), loadSpheres(), loadCostCentres()])
+  await Promise.all([loadCompanies(), loadSpheres(), loadCostCentres(), loadInvoiceTextSettings()])
 }
 
 async function loadCompanies() {
@@ -518,12 +544,17 @@ async function loadCostCentres() {
   if (res.ok && res.costCentres) costCentres.value = res.costCentres
 }
 
+async function loadInvoiceTextSettings() {
+  const res = await $fetch<{ ok: boolean, settings?: InvoiceTextSettings }>('/api/settings/app/invoice-texts')
+  if (res.ok && res.settings) invoiceTextSettings.value = res.settings
+}
+
 function addPosition() {
   form.value = {
     ...form.value,
     positions: [
       ...form.value.positions,
-      { name: '', description: '', sphere: 0, cost_centre: 0, quantity: 1, unit: null, unit_price: 0, tax: 19 },
+      { name: '', description: '', sphere: 0, cost_centre: 0, quantity: 1, unit: null, unit_price: 0, tax: form.value.is_kleinunternehmer ? 0 : 19 },
     ],
   }
 }
