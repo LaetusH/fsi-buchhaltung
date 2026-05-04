@@ -17,6 +17,7 @@
               :model-value="logoFile"
               :existing-file="existingLogo"
               :can-edit="!isSaving"
+              :normalize-images="false"
               :allowed-file-types="['png', 'jpg', 'jpeg']"
               @update:model-value="logoFile = $event"
               @remove-existing="removeExistingLogo"

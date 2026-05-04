@@ -145,6 +145,7 @@ const FILE_TYPE_LABEL_MAP: Record<SupportedFileType, string> = {
 const props = withDefaults(defineProps<{
   modelValue: File | null
   canEdit?: boolean
+  normalizeImages?: boolean
   allowedFileTypes?: SupportedFileType[]
   existingFile?: {
     id: number
@@ -154,6 +155,7 @@ const props = withDefaults(defineProps<{
     size: number
   } | null
 }>(), {
+  normalizeImages: true,
   allowedFileTypes: () => ['pdf', 'png', 'jpg', 'jpeg'],
 })
 
@@ -183,6 +185,10 @@ const toast = useToast()
 const MIN_ZOOM = 0.5
 const MAX_ZOOM = 4.0
 const ZOOM_STEP = 0.25
+const MAX_IMAGE_LONG_EDGE = 2200
+const NORMALIZED_IMAGE_TYPE = 'image/jpeg'
+const NORMALIZED_IMAGE_EXTENSION = 'jpg'
+const NORMALIZED_IMAGE_QUALITY = 0.85
 
 const computedWidth = computed<number>(() => {
   return containerWidth.value * zoomLevel.value
@@ -402,6 +408,11 @@ function sanitizeFileNamePart(name: string) {
   return name.replace(/\.[^/.]+$/, '').replace(/[^a-zA-Z0-9-_]+/g, '-').replace(/^-+|-+$/g, '') || 'upload'
 }
 
+function normalizedImageFileName(file: File) {
+  const baseName = sanitizeFileNamePart(file.name)
+  return `${baseName}.${NORMALIZED_IMAGE_EXTENSION}`
+}
+
 function readFileAsDataUrl(file: File) {
   return new Promise<string>((resolve, reject) => {
     const reader = new FileReader()
@@ -418,6 +429,66 @@ function loadImageDimensions(dataUrl: string) {
     image.onerror = () => reject(new Error('Failed to load image'))
     image.src = dataUrl
   })
+}
+
+function loadImageElement(file: File) {
+  return new Promise<HTMLImageElement>((resolve, reject) => {
+    const image = new Image()
+    const objectUrl = URL.createObjectURL(file)
+
+    image.onload = () => {
+      URL.revokeObjectURL(objectUrl)
+      resolve(image)
+    }
+    image.onerror = () => {
+      URL.revokeObjectURL(objectUrl)
+      reject(new Error('Failed to load image'))
+    }
+    image.src = objectUrl
+  })
+}
+
+function canvasToBlob(canvas: HTMLCanvasElement, type: string, quality?: number) {
+  return new Promise<Blob>((resolve, reject) => {
+    canvas.toBlob((blob) => {
+      if (blob) {
+        resolve(blob)
+        return
+      }
+
+      reject(new Error('Failed to encode image'))
+    }, type, quality)
+  })
+}
+
+async function normalizeImageFile(file: File) {
+  if (!props.normalizeImages || !isImageFile(file)) return file
+
+  const image = await loadImageElement(file)
+  const longEdge = Math.max(image.naturalWidth, image.naturalHeight)
+  const scale = longEdge > MAX_IMAGE_LONG_EDGE ? MAX_IMAGE_LONG_EDGE / longEdge : 1
+  const targetWidth = Math.max(1, Math.round(image.naturalWidth * scale))
+  const targetHeight = Math.max(1, Math.round(image.naturalHeight * scale))
+  const canvas = document.createElement('canvas')
+  canvas.width = targetWidth
+  canvas.height = targetHeight
+
+  const context = canvas.getContext('2d')
+  if (!context) throw new Error('Failed to prepare image')
+
+  context.fillStyle = '#ffffff'
+  context.fillRect(0, 0, targetWidth, targetHeight)
+  context.drawImage(image, 0, 0, targetWidth, targetHeight)
+
+  const blob = await canvasToBlob(canvas, NORMALIZED_IMAGE_TYPE, NORMALIZED_IMAGE_QUALITY)
+  return new File([blob], normalizedImageFileName(file), {
+    type: NORMALIZED_IMAGE_TYPE,
+    lastModified: file.lastModified,
+  })
+}
+
+async function normalizeFiles(files: File[]) {
+  return Promise.all(files.map(file => normalizeImageFile(file)))
 }
 
 async function createPdfFromImages(files: File[]) {
@@ -453,18 +524,26 @@ async function processFiles(files: File[]) {
     return
   }
 
-  if (files.length === 1) {
-    emit('update:modelValue', files[0] || null)
+  let normalizedFiles: File[]
+  try {
+    normalizedFiles = await normalizeFiles(files)
+  } catch {
+    toast.error(t('files.uploadError'))
     return
   }
 
-  if (!allowMultiImageUpload.value || !files.every(isImageFile)) {
+  if (files.length === 1) {
+    emit('update:modelValue', normalizedFiles[0] || null)
+    return
+  }
+
+  if (!allowMultiImageUpload.value || !normalizedFiles.every(isImageFile)) {
     toast.error(t('files.uploadError'))
     return
   }
 
   try {
-    const mergedPdf = await createPdfFromImages(files)
+    const mergedPdf = await createPdfFromImages(normalizedFiles)
     emit('update:modelValue', mergedPdf)
   } catch {
     toast.error(t('files.uploadError'))
