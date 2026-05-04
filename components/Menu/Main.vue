@@ -106,7 +106,7 @@ const mainPages = computed(() => {
 const collapsed = computed(() => props.collapsed === true)
 
 function handleClick(name: PageName) {
-  setPage(name)
+  setPage(name, name === currentPage.value ? { resetTabKey: Date.now() } : undefined)
   emit('close')
 }
 </script>

@@ -28,6 +28,7 @@ import SettingsPermissions from './Permissions.vue'
 import SettingsUsers from './Users.vue'
 import SettingsApp from './App.vue'
 import { useAuth } from '~/composables/useAuth'
+import { usePage } from '~/composables/usePage'
 
 defineEmits<{
   (e: 'openMenu'): void
@@ -38,6 +39,7 @@ type SettingsTab = 'general' | 'association' | 'spheres' | 'costCentres' | 'subd
 const currentTab = useState<SettingsTab>('settings-overview-current-tab', () => 'general')
 const { t } = useI18n()
 const { hasPermission } = useAuth()
+const { pageMeta } = usePage()
 
 const tabs = computed(() => {
   const list = [
@@ -79,7 +81,12 @@ const activeComponent = computed(() => {
   }
 })
 
-watch(tabs, (available) => {
+watch([tabs, () => pageMeta.value?.resetTabKey], ([available, resetTabKey]) => {
+  if (resetTabKey && available[0]?.key) {
+    currentTab.value = available[0].key
+    return
+  }
+
   if (!available.find(tab => tab.key === currentTab.value)) {
     currentTab.value = 'general'
   }

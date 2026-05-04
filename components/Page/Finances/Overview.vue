@@ -73,10 +73,15 @@ const activeComponent = computed(() => {
 
 const activeReturnTarget = computed(() => buildReturnTarget('Finances', { tab: currentTab.value }))
 
-watch([tabs, () => pageMeta.value?.tab], ([availableTabs, requestedTab]) => {
+watch([tabs, () => pageMeta.value?.tab, () => pageMeta.value?.resetTabKey], ([availableTabs, requestedTab, resetTabKey]) => {
   const requested = requestedTab as FinancesTab | undefined
   if (requested && availableTabs.find(tab => tab.key === requested)) {
     currentTab.value = requested
+    return
+  }
+
+  if (resetTabKey && availableTabs[0]?.key) {
+    currentTab.value = availableTabs[0].key
     return
   }
 
