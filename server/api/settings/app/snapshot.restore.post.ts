@@ -3,10 +3,11 @@ import { requirePermission } from '~/server/utils/api/guards'
 import { readMultipart } from '~/server/utils/api/request'
 import {
   decryptDatabaseSnapshotBuffer,
-  previewFilesArchiveForSnapshot,
+  prepareFilesArchiveRestoreForSnapshot,
   restoreDatabaseSnapshot,
-  restoreFilesArchiveForSnapshot,
+  restorePreparedFilesArchive,
 } from '~/server/utils/databaseSnapshots'
+import { consumeSnapshotRestoreSession } from '~/server/utils/snapshotRestoreSessions'
 
 interface RestoreSnapshotSuccess {
   ok: true
@@ -33,19 +34,29 @@ export default defineEventHandler(async (event): Promise<RestoreSnapshotResponse
       if (!multipart) throw new Error('Missing restore payload')
 
       const snapshotFile = multipart.formData.find(field => field.name === 'snapshotFile' && field.filename)
-      if (!snapshotFile) throw new Error('Missing encrypted snapshot')
+      const archiveFile = multipart.formData.find(field => field.name === 'archive' && field.filename)
+      const restoreToken = multipart.getField('restoreToken')
 
-      const password = multipart.getField('password')
-      const snapshot = JSON.parse(decryptDatabaseSnapshotBuffer(snapshotFile.data, password).toString('utf8'))
-      const archiveFile = multipart.formData.find(field => field.name === 'archive' && field.type && field.filename)
-      if (archiveFile) previewFilesArchiveForSnapshot(snapshot, archiveFile.data)
+      const snapshot = restoreToken
+        ? consumeSnapshotRestoreSession(restoreToken).snapshot
+        : (() => {
+            if (!snapshotFile) throw new Error('Missing encrypted snapshot')
+            const password = multipart.getField('password')
+            return JSON.parse(decryptDatabaseSnapshotBuffer(snapshotFile.data, password).toString('utf8'))
+          })()
 
-      const dbResult = await restoreDatabaseSnapshot(snapshot)
-      const filesResult = archiveFile
-        ? await restoreFilesArchiveForSnapshot(snapshot, archiveFile.data)
-        : { ok: true as const, files: 0 }
+      const filesToWrite = archiveFile
+        ? prepareFilesArchiveRestoreForSnapshot(snapshot, archiveFile.data)
+        : []
+      let restoredFiles = 0
 
-      return { ...dbResult, files: filesResult.files }
+      const dbResult = await restoreDatabaseSnapshot(snapshot, async () => {
+        if (!archiveFile) return
+        const filesResult = await restorePreparedFilesArchive(filesToWrite)
+        restoredFiles = filesResult.files
+      })
+
+      return { ...dbResult, files: restoredFiles }
     }
 
     throw new Error('Encrypted snapshot upload is required')

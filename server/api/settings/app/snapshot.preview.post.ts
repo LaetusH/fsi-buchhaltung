@@ -4,9 +4,9 @@ import { readMultipart } from '~/server/utils/api/request'
 import {
   decryptDatabaseSnapshotBuffer,
   previewDatabaseSnapshotForCurrentSchema,
-  previewFilesArchiveForSnapshot,
   type SnapshotPreview,
 } from '~/server/utils/databaseSnapshots'
+import { createSnapshotRestoreSession } from '~/server/utils/snapshotRestoreSessions'
 
 interface PreviewSnapshotError {
   ok: false
@@ -14,6 +14,7 @@ interface PreviewSnapshotError {
 }
 
 interface PreviewSnapshotSuccess extends SnapshotPreview {
+  restoreToken: string
   filesArchive: {
     provided: boolean
     fileCount: number
@@ -39,12 +40,9 @@ export default defineEventHandler(async (event): Promise<PreviewSnapshotResponse
       const password = multipart.getField('password')
       const snapshot = JSON.parse(decryptDatabaseSnapshotBuffer(snapshotFile.data, password).toString('utf8'))
       const preview = await previewDatabaseSnapshotForCurrentSchema(snapshot)
-      const archiveFile = multipart.formData.find(field => field.name === 'archive' && field.type && field.filename)
-      const filesArchive = archiveFile
-        ? { provided: true, ...previewFilesArchiveForSnapshot(snapshot, archiveFile.data) }
-        : { provided: false, fileCount: 0, archiveFileCount: 0 }
+      const restoreToken = createSnapshotRestoreSession(snapshot, preview)
 
-      return { ...preview, filesArchive }
+      return { ...preview, restoreToken, filesArchive: { provided: false, fileCount: 0, archiveFileCount: 0 } }
     }
 
     throw new Error('Encrypted snapshot upload is required')

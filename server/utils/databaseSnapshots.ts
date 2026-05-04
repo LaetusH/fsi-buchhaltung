@@ -380,17 +380,25 @@ function parseTarArchive(archive: Buffer) {
     const name = header.subarray(0, 100).toString('utf8').replace(/\0.*$/, '')
     const sizeText = header.subarray(124, 136).toString('ascii').replace(/\0.*$/, '').trim()
     const typeFlag = header.subarray(156, 157).toString('ascii') || '0'
-    const size = parseInt(sizeText || '0', 8)
+    if (!/^[0-7]*$/.test(sizeText)) throw new Error('Invalid file archive entry size')
 
+    const size = parseInt(sizeText || '0', 8)
     if (!Number.isFinite(size) || size < 0) throw new Error('Invalid file archive entry size')
+    if (offset + size > archive.length) throw new Error('Files archive is incomplete')
 
     const content = archive.subarray(offset, offset + size)
     const paddingSize = (512 - (size % 512)) % 512
     offset += size + paddingSize
 
+    if (offset > archive.length) throw new Error('Files archive is incomplete')
+
     if (typeFlag === '0' || typeFlag === '\0') {
       entries.set(name, content)
     }
+  }
+
+  if (offset + 512 > archive.length && !archive.subarray(offset).every(byte => byte === 0)) {
+    throw new Error('Files archive is incomplete')
   }
 
   return entries
@@ -605,7 +613,7 @@ export async function previewDatabaseSnapshotForCurrentSchema(value: unknown) {
   return preview
 }
 
-export async function restoreDatabaseSnapshot(value: unknown) {
+export async function restoreDatabaseSnapshot(value: unknown, beforeCommit?: () => Promise<void>) {
   const snapshot = validateSnapshot(value)
   const preview = previewDatabaseSnapshot(snapshot)
   if (preview.integrity.present && !preview.integrity.valid) {
@@ -643,6 +651,8 @@ export async function restoreDatabaseSnapshot(value: unknown) {
           await query(sql, table.columns.map(column => row[column] ?? null), conn)
         }
       }
+
+      if (beforeCommit) await beforeCommit()
     } finally {
       await query('SET FOREIGN_KEY_CHECKS = 1', [], conn)
     }
@@ -657,7 +667,7 @@ export async function restoreDatabaseSnapshot(value: unknown) {
   })
 }
 
-export async function restoreFilesArchiveForSnapshot(snapshotValue: unknown, archive: Buffer) {
+export function prepareFilesArchiveRestoreForSnapshot(snapshotValue: unknown, archive: Buffer) {
   const snapshot = validateSnapshot(snapshotValue)
   const snapshotFiles = getSnapshotFiles(snapshot)
   const { entries, manifest } = readFilesArchive(archive)
@@ -685,13 +695,43 @@ export async function restoreFilesArchiveForSnapshot(snapshotValue: unknown, arc
     filesToWrite.push({ name: absolutePath, content })
   }
 
-  for (const file of filesToWrite) {
-    await fs.mkdir(path.dirname(file.name), { recursive: true })
-    await fs.writeFile(file.name, file.content, { mode: 0o640 })
+  return filesToWrite
+}
+
+export async function restorePreparedFilesArchive(filesToWrite: TarEntry[]) {
+  const backups: Array<{ name: string, existed: boolean, content?: Buffer }> = []
+
+  try {
+    for (const file of filesToWrite) {
+      try {
+        backups.push({ name: file.name, existed: true, content: await fs.readFile(file.name) })
+      } catch (err: any) {
+        if (err?.code !== 'ENOENT') throw err
+        backups.push({ name: file.name, existed: false })
+      }
+
+      await fs.mkdir(path.dirname(file.name), { recursive: true })
+      await fs.writeFile(file.name, file.content, { mode: 0o640 })
+    }
+  } catch (err) {
+    for (const backup of backups.reverse()) {
+      if (backup.existed) {
+        await fs.mkdir(path.dirname(backup.name), { recursive: true })
+        await fs.writeFile(backup.name, backup.content!, { mode: 0o640 })
+      } else {
+        await fs.rm(backup.name, { force: true })
+      }
+    }
+
+    throw err
   }
 
   return {
     ok: true as const,
     files: filesToWrite.length,
   }
+}
+
+export async function restoreFilesArchiveForSnapshot(snapshotValue: unknown, archive: Buffer) {
+  return await restorePreparedFilesArchive(prepareFilesArchiveRestoreForSnapshot(snapshotValue, archive))
 }

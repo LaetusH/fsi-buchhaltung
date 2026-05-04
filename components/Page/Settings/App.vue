@@ -150,6 +150,7 @@
         type="password"
         autocomplete="new-password"
         :placeholder="t('settings.app.restorePasswordPlaceholder')"
+        @input="handleRestorePasswordInput"
       >
 
       <label class="block space-y-1">
@@ -249,8 +250,8 @@
         <button
           class="btn-primary"
           type="button"
-          :disabled="isRestoring || restoreConfirmation !== 'RESTORE'"
-          :class="{ 'opacity-50 cursor-not-allowed': isRestoring || restoreConfirmation !== 'RESTORE' }"
+          :disabled="isRestoring || restoreConfirmation !== 'RESTORE' || !canRestorePreview"
+          :class="{ 'opacity-50 cursor-not-allowed': isRestoring || restoreConfirmation !== 'RESTORE' || !canRestorePreview }"
           @click="restoreSnapshot"
         >
           {{ isRestoring ? t('settings.app.restoring') : t('settings.app.restore') }}
@@ -267,6 +268,7 @@ import { useI18n } from '~/composables/useI18n'
 import { useLocaleFormatters } from '~/composables/useLocaleFormatters'
 import { useToast } from '~/composables/useToast'
 import type { PreviewSnapshotResponse } from '~/server/api/settings/app/snapshot.preview.post'
+import type { PreviewFilesSnapshotResponse } from '~/server/api/settings/app/snapshot.files-preview.post'
 import type { RestoreSnapshotResponse } from '~/server/api/settings/app/snapshot.restore.post'
 import type { InvoiceTextSettings, InvoiceTextVariable } from '~/types/appSettings'
 
@@ -283,7 +285,7 @@ const isRestoring = ref(false)
 const uploadProgress = ref<number | null>(null)
 const selectedFile = ref<File | null>(null)
 const selectedArchive = ref<File | null>(null)
-const selectedSnapshot = ref<unknown | null>(null)
+const restoreToken = ref('')
 const snapshotPassword = ref('')
 const restorePassword = ref('')
 const restorePreview = ref<Extract<PreviewSnapshotResponse, { ok: true }> | null>(null)
@@ -332,6 +334,11 @@ const filesArchiveLabel = computed(() => {
   })
 })
 
+const canRestorePreview = computed(() => {
+  if (!restorePreview.value) return false
+  return !restorePreview.value.integrity.present || restorePreview.value.integrity.valid
+})
+
 onMounted(loadInvoiceTexts)
 
 async function loadInvoiceTexts() {
@@ -372,13 +379,19 @@ function variableToken(key: string) {
 
 function handleFileChange(event: Event) {
   selectedFile.value = (event.target as HTMLInputElement).files?.[0] ?? null
-  selectedSnapshot.value = null
+  restoreToken.value = ''
   restorePreview.value = null
   restoreConfirmation.value = ''
 }
 
 function handleArchiveChange(event: Event) {
   selectedArchive.value = (event.target as HTMLInputElement).files?.[0] ?? null
+  restorePreview.value = null
+  restoreConfirmation.value = ''
+}
+
+function handleRestorePasswordInput() {
+  restoreToken.value = ''
   restorePreview.value = null
   restoreConfirmation.value = ''
 }
@@ -476,7 +489,6 @@ async function openRestorePreview() {
     const body = new FormData()
     body.append('snapshotFile', selectedFile.value)
     body.append('password', restorePassword.value)
-    if (selectedArchive.value) body.append('archive', selectedArchive.value)
 
     const res = await sendFormData<PreviewSnapshotResponse>('/api/settings/app/snapshot.preview', body)
 
@@ -485,7 +497,22 @@ async function openRestorePreview() {
       return
     }
 
-    selectedSnapshot.value = selectedFile.value
+    const canRestoreSnapshotIntegrity = !res.integrity.present || res.integrity.valid
+    if (selectedArchive.value && canRestoreSnapshotIntegrity) {
+      const archiveBody = new FormData()
+      archiveBody.append('restoreToken', res.restoreToken)
+      archiveBody.append('archive', selectedArchive.value)
+
+      const archiveRes = await sendFormData<PreviewFilesSnapshotResponse>('/api/settings/app/snapshot.files-preview', archiveBody)
+      if (!archiveRes.ok) {
+        toast.error(archiveRes.error || t('settings.app.previewFailed'))
+        return
+      }
+
+      res.filesArchive = archiveRes.filesArchive
+    }
+
+    restoreToken.value = res.restoreToken
     restorePreview.value = res
     restoreConfirmation.value = ''
   } catch (err) {
@@ -502,7 +529,7 @@ function closeRestorePreview() {
 }
 
 async function restoreSnapshot() {
-  if (!selectedSnapshot.value || restoreConfirmation.value !== 'RESTORE') return
+  if (!restoreToken.value || restoreConfirmation.value !== 'RESTORE' || !canRestorePreview.value) return
 
   isRestoring.value = true
   try {
@@ -515,7 +542,7 @@ async function restoreSnapshot() {
 
     selectedFile.value = null
     selectedArchive.value = null
-    selectedSnapshot.value = null
+    restoreToken.value = ''
     closeRestorePreview()
     if (fileInput.value) fileInput.value.value = ''
     if (archiveInput.value) archiveInput.value.value = ''
@@ -531,8 +558,7 @@ async function restoreSnapshot() {
 
 function restoreBody() {
   const body = new FormData()
-  if (selectedFile.value) body.append('snapshotFile', selectedFile.value)
-  body.append('password', restorePassword.value)
+  body.append('restoreToken', restoreToken.value)
   if (selectedArchive.value) body.append('archive', selectedArchive.value)
   return body
 }
