@@ -70,6 +70,7 @@ body > #hiddenCopyElement,
 }
 
 .input[type="date"],
+.input[type="time"],
 .input[type="datetime-local"] {
     height: calc(1.25rem + 1rem + 2px);
     min-height: 0;
@@ -84,6 +85,9 @@ body > #hiddenCopyElement,
 .input[type="date"]::-webkit-datetime-edit,
 .input[type="date"]::-webkit-datetime-edit-fields-wrapper,
 .input[type="date"]::-webkit-date-and-time-value,
+.input[type="time"]::-webkit-datetime-edit,
+.input[type="time"]::-webkit-datetime-edit-fields-wrapper,
+.input[type="time"]::-webkit-date-and-time-value,
 .input[type="datetime-local"]::-webkit-datetime-edit,
 .input[type="datetime-local"]::-webkit-datetime-edit-fields-wrapper,
 .input[type="datetime-local"]::-webkit-date-and-time-value {
@@ -93,6 +97,7 @@ body > #hiddenCopyElement,
 }
 
 .input[type="date"]::-webkit-calendar-picker-indicator,
+.input[type="time"]::-webkit-calendar-picker-indicator,
 .input[type="datetime-local"]::-webkit-calendar-picker-indicator {
     margin: 0;
 }

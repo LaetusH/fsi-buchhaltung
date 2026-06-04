@@ -109,19 +109,23 @@ export function normalizeEventPayload(value: unknown): SaveEventBody | null {
   const memberOrganizerIds = normalizeRelationIds(input.member_organizer_ids)
   const subdivisionOrganizerIds = normalizeRelationIds(input.subdivision_organizer_ids)
   const costCentreSplits = normalizeEventCostCentreSplits(input.cost_centre_splits)
-  const expectedGuests = parsePositiveInteger(input.expected_guests)
   const startsAt = normalizeDateTime(input.starts_at)
   const endsAt = normalizeDateTime(input.ends_at)
 
-  if (memberOrganizerIds === null || subdivisionOrganizerIds === null || costCentreSplits === null || expectedGuests === null || startsAt === null || endsAt === null) {
+  const guestsRaw = String(input.expected_guests ?? '').trim()
+  const expectedGuests: number | null = guestsRaw === '' ? null : parsePositiveInteger(input.expected_guests)
+
+  if (memberOrganizerIds === null || subdivisionOrganizerIds === null || costCentreSplits === null || (guestsRaw !== '' && expectedGuests === null) || startsAt === null || endsAt === null) {
     return null
   }
+
+  const locationRaw = String(input.location ?? '').trim()
 
   return {
     name: String(input.name ?? '').trim(),
     starts_at: startsAt,
     ends_at: endsAt,
-    location: String(input.location ?? '').trim(),
+    location: locationRaw || null,
     expected_guests: expectedGuests,
     member_organizer_ids: memberOrganizerIds,
     subdivision_organizer_ids: subdivisionOrganizerIds,
@@ -130,10 +134,8 @@ export function normalizeEventPayload(value: unknown): SaveEventBody | null {
 }
 
 export function validateEventPayload(body: SaveEventBody) {
-  if (!body.name || !body.starts_at || !body.ends_at || !body.location) return 'Missing fields'
+  if (!body.name || !body.starts_at || !body.ends_at) return 'Missing fields'
   if (body.starts_at > body.ends_at) return 'The start time must be on or before the end time'
-  if (body.expected_guests < 0) return 'Expected guests must be zero or greater'
-  if (body.member_organizer_ids.length + body.subdivision_organizer_ids.length === 0) return 'At least one organizer is required'
   if (!body.cost_centre_splits.length) return 'At least one cost centre split is required'
 
   const totalAllocation = body.cost_centre_splits.reduce((sum, split) => sum + Number(split.allocation_percentage || 0), 0)

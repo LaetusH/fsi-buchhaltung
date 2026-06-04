@@ -11,7 +11,12 @@
 
         <div>
           <label class="text-sm font-medium text-slate-600">{{ t('event.location') }}</label>
-          <input v-model="form.location" class="input" :disabled="disabled">
+          <input
+            :value="form.location ?? ''"
+            class="input"
+            :disabled="disabled"
+            @input="form.location = ($event.target as HTMLInputElement).value || null"
+          >
         </div>
 
         <div>
@@ -27,12 +32,13 @@
         <div>
           <label class="text-sm font-medium text-slate-600">{{ t('event.expectedGuests') }}</label>
           <input
-            v-model.number="form.expected_guests"
+            :value="form.expected_guests ?? ''"
             type="number"
             min="0"
             step="1"
             class="input"
             :disabled="disabled"
+            @input="form.expected_guests = ($event.target as HTMLInputElement).value === '' ? null : Number(($event.target as HTMLInputElement).value)"
           >
         </div>
       </div>
@@ -55,7 +61,7 @@
             :disabled="disabled"
             @update:query="memberOrganizerQuery = $event"
             @select="addMemberOrganizer($event)"
-            @clear-selection="clearMemberOrganizerSelection"
+            @clear-selection="memberOrganizerQuery = ''"
             @remove="removeMemberOrganizer($event)"
           />
         </div>
@@ -73,7 +79,7 @@
             :disabled="disabled"
             @update:query="subdivisionOrganizerQuery = $event"
             @select="addSubdivisionOrganizer($event)"
-            @clear-selection="clearSubdivisionOrganizerSelection"
+            @clear-selection="subdivisionOrganizerQuery = ''"
             @remove="removeSubdivisionOrganizer($event)"
           />
         </div>
@@ -83,10 +89,7 @@
     <section class="space-y-4 rounded-xl bg-white p-4 shadow-lg">
       <div class="flex flex-wrap items-center justify-between gap-3">
         <h2 class="text-lg font-semibold">{{ t('event.costCentres') }}</h2>
-        <p
-          class="text-sm font-medium"
-          :class="allocationIsValid ? 'text-emerald-600' : 'text-amber-600'"
-        >
+        <p class="text-sm font-medium" :class="allocationIsValid ? 'text-emerald-600' : 'text-amber-600'">
           {{ t('event.allocationTotal', { value: allocationTotalLabel }) }}
         </p>
       </div>
@@ -100,7 +103,7 @@
           :empty-text="t('event.noMatchingCostCentres')"
           @update:model-value="costCentreQuery = $event"
           @select="addCostCentreSplit($event)"
-          @clear-selection="clearCostCentreSelection"
+          @clear-selection="costCentreQuery = ''"
         />
 
         <div v-if="selectedCostCentreSplits.length" class="min-h-0 rounded-lg border border-slate-200 bg-slate-50">
@@ -112,12 +115,8 @@
             >
               <div class="flex items-start justify-between gap-3">
                 <div class="min-w-0">
-                  <p class="truncate text-sm font-medium text-slate-800">
-                    {{ split.label }}
-                  </p>
-                  <p v-if="split.meta" class="text-xs text-slate-500">
-                    {{ split.meta }}
-                  </p>
+                  <p class="truncate text-sm font-medium text-slate-800">{{ split.label }}</p>
+                  <p v-if="split.meta" class="text-xs text-slate-500">{{ split.meta }}</p>
                 </div>
 
                 <button
@@ -133,11 +132,7 @@
               <div class="mt-3 grid gap-3 md:grid-cols-[minmax(0,1fr)_auto] md:items-end">
                 <div>
                   <label class="text-sm text-slate-600">{{ t('event.sphere') }}</label>
-                  <MenuDropdown
-                    v-model="openSphereDropdownId"
-                    :id="split.id"
-                    :disabled="disabled"
-                  >
+                  <MenuDropdown v-model="openSphereDropdownId" :id="split.id" :disabled="disabled">
                     <template #trigger>
                       <button
                         type="button"
@@ -189,15 +184,50 @@
       </div>
     </section>
 
-    <CommonFormActions
-      :disabled="disabled"
-      :save-disabled="saveDisabled"
-      :cancel-label="t('actions.cancel')"
-      :submit-label="t('actions.save')"
-      :close-label="t('actions.close')"
-      @cancel="emit('cancel')"
-      @submit="emit('submit')"
-    />
+    <div v-if="!disabled" class="grid grid-cols-2 gap-4">
+      <button
+        v-if="!eventId"
+        type="button"
+        class="btn-secondary"
+        @click="emit('cancel')"
+      >
+        {{ t('actions.cancel') }}
+      </button>
+      <button
+        v-else
+        type="button"
+        class="btn-secondary"
+        :disabled="!isDirty"
+        :class="{ 'opacity-50 cursor-not-allowed': !isDirty }"
+        @click="discard"
+      >
+        {{ t('actions.discard') }}
+      </button>
+
+      <span
+        v-if="!isDirty && !!eventId && !saving"
+        class="inline-flex items-center justify-center gap-1.5 rounded-md border border-slate-200 bg-white px-2.5 py-1.5 text-sm font-medium text-slate-400"
+      >
+        <Icon name="material-symbols:check-circle-rounded" class="text-emerald-500" />
+        {{ t('actions.saved') }}
+      </span>
+      <button
+        v-else
+        type="button"
+        class="btn-primary"
+        :disabled="saveDisabled"
+        :class="{ 'opacity-50 cursor-not-allowed': saveDisabled }"
+        @click="emit('save')"
+      >
+        {{ t('actions.save') }}
+      </button>
+    </div>
+
+    <div v-else class="grid">
+      <button type="button" class="btn-secondary col-span-12" @click="emit('cancel')">
+        {{ t('actions.close') }}
+      </button>
+    </div>
 
     <CommonValidationSummary :errors="validationErrors" :title="t('common.validationBlocked')" />
   </div>
@@ -217,6 +247,8 @@ import type {
 
 const props = defineProps<{
   modelValue: SaveEventBody
+  savedValue: SaveEventBody | null
+  eventId?: number | null
   members: EventMemberOption[]
   subdivisions: EventSubdivisionOption[]
   costCentres: EventCostCentreOption[]
@@ -227,7 +259,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   (e: 'update:modelValue', value: SaveEventBody): void
-  (e: 'submit'): void
+  (e: 'save'): void
   (e: 'cancel'): void
 }>()
 
@@ -238,24 +270,19 @@ const form = computed({
   set: value => emit('update:modelValue', value),
 })
 
+const isDirty = computed(() => {
+  if (!props.savedValue) return true
+  return JSON.stringify(form.value) !== JSON.stringify(props.savedValue)
+})
+
 const startsAtInput = computed({
   get: () => form.value.starts_at,
-  set: (value: string | null) => {
-    form.value = {
-      ...form.value,
-      starts_at: value || '',
-    }
-  },
+  set: (value: string | null) => { form.value = { ...form.value, starts_at: value || '' } },
 })
 
 const endsAtInput = computed({
   get: () => form.value.ends_at,
-  set: (value: string | null) => {
-    form.value = {
-      ...form.value,
-      ends_at: value || '',
-    }
-  },
+  set: (value: string | null) => { form.value = { ...form.value, ends_at: value || '' } },
 })
 
 const disabled = computed(() => Boolean(props.disabled))
@@ -266,11 +293,7 @@ const openSphereDropdownId = ref<number | null>(null)
 
 const memberOrganizerOptions = computed<SearchSelectOption<EventMemberOption>[]>(() => props.members
   .filter(member => !form.value.member_organizer_ids.includes(member.id))
-  .map(member => ({
-    key: member.id,
-    label: member.full_name,
-    value: member,
-  })))
+  .map(member => ({ key: member.id, label: member.full_name, value: member })))
 
 const subdivisionOrganizerOptions = computed<SearchSelectOption<EventSubdivisionOption>[]>(() => props.subdivisions
   .filter(subdivision => Boolean(subdivision.is_active) && !form.value.subdivision_organizer_ids.includes(subdivision.id))
@@ -290,32 +313,13 @@ const costCentreOptions = computed<SearchSelectOption<EventCostCentreOption>[]>(
     searchText: `${costCentre.code} ${costCentre.name}`,
   })))
 
-function findMember(id: number) {
-  return props.members.find(member => member.id === id)
-}
-
-function findSubdivision(id: number) {
-  return props.subdivisions.find(subdivision => subdivision.id === id)
-}
-
-function findCostCentre(id: number) {
-  return props.costCentres.find(costCentre => costCentre.id === id)
-}
-
-function findSphere(id: number) {
-  return props.spheres.find(sphere => sphere.id === id)
-}
-
 const selectedMemberOrganizers = computed<SelectionListItem[]>(() => form.value.member_organizer_ids.map((id) => {
-  const member = findMember(id)
-  return {
-    id,
-    label: member?.full_name ?? String(id),
-  }
+  const member = props.members.find(entry => entry.id === id)
+  return { id, label: member?.full_name ?? String(id) }
 }))
 
 const selectedSubdivisionOrganizers = computed<SelectionListItem[]>(() => form.value.subdivision_organizer_ids.map((id) => {
-  const subdivision = findSubdivision(id)
+  const subdivision = props.subdivisions.find(entry => entry.id === id)
   return {
     id,
     label: subdivision ? `${subdivision.code} - ${subdivision.name}` : String(id),
@@ -324,8 +328,8 @@ const selectedSubdivisionOrganizers = computed<SelectionListItem[]>(() => form.v
 }))
 
 const selectedCostCentreSplits = computed(() => form.value.cost_centre_splits.map((split) => {
-  const costCentre = findCostCentre(split.cost_centre_id)
-  const sphere = findSphere(split.sphere_id)
+  const costCentre = props.costCentres.find(entry => entry.id === split.cost_centre_id)
+  const sphere = props.spheres.find(entry => entry.id === split.sphere_id)
   const meta = [
     costCentre?.is_active === false ? t('event.inactiveCostCentre') : null,
     sphere?.is_active === false ? t('event.inactiveSphere') : null,
@@ -349,95 +353,50 @@ const validationErrors = computed(() => {
   const errors: string[] = []
 
   if (!form.value.name.trim()) errors.push(t('event.required.name'))
-  if (!form.value.location.trim()) errors.push(t('event.required.location'))
   if (!form.value.starts_at) errors.push(t('event.required.startsOn'))
   if (!form.value.ends_at) errors.push(t('event.required.endsOn'))
-  if (form.value.starts_at && form.value.ends_at && form.value.starts_at > form.value.ends_at) {
-    errors.push(t('event.required.dateOrder'))
-  }
-
-  if (!Number.isInteger(Number(form.value.expected_guests)) || Number(form.value.expected_guests) < 0) {
-    errors.push(t('event.required.expectedGuests'))
-  }
-
-  if (form.value.member_organizer_ids.length + form.value.subdivision_organizer_ids.length === 0) {
-    errors.push(t('event.required.organizers'))
-  }
-
-  if (!form.value.cost_centre_splits.length) {
-    errors.push(t('event.required.costCentres'))
-  }
-
-  if (form.value.cost_centre_splits.some(split => !Number.isInteger(Number(split.sphere_id)) || Number(split.sphere_id) <= 0)) {
-    errors.push(t('event.required.spheres'))
-  }
-
-  if (form.value.cost_centre_splits.some(split => Number(split.allocation_percentage) <= 0)) {
-    errors.push(t('event.required.allocationPositive'))
-  }
-
-  if (!allocationIsValid.value) {
-    errors.push(t('event.required.allocationTotal'))
-  }
+  if (form.value.starts_at && form.value.ends_at && form.value.starts_at > form.value.ends_at) errors.push(t('event.required.dateOrder'))
+  if (!form.value.cost_centre_splits.length) errors.push(t('event.required.costCentres'))
+  if (form.value.cost_centre_splits.some(split => !Number.isInteger(Number(split.sphere_id)) || Number(split.sphere_id) <= 0)) errors.push(t('event.required.spheres'))
+  if (form.value.cost_centre_splits.some(split => Number(split.allocation_percentage) <= 0)) errors.push(t('event.required.allocationPositive'))
+  if (form.value.cost_centre_splits.length > 0 && !allocationIsValid.value) errors.push(t('event.required.allocationTotal'))
 
   return errors
 })
 
 const saveDisabled = computed(() => disabled.value || Boolean(props.saving) || validationErrors.value.length > 0)
 
-function clearMemberOrganizerSelection() {
-  memberOrganizerQuery.value = ''
-}
-
-function clearSubdivisionOrganizerSelection() {
-  subdivisionOrganizerQuery.value = ''
-}
-
-function clearCostCentreSelection() {
-  costCentreQuery.value = ''
+function discard() {
+  if (!props.savedValue) return
+  form.value = JSON.parse(JSON.stringify(props.savedValue))
 }
 
 function addMemberOrganizer(value: unknown) {
   const member = value as EventMemberOption
   if (!member?.id || form.value.member_organizer_ids.includes(member.id)) return
-
-  form.value = {
-    ...form.value,
-    member_organizer_ids: [...form.value.member_organizer_ids, member.id],
-  }
+  form.value = { ...form.value, member_organizer_ids: [...form.value.member_organizer_ids, member.id] }
   memberOrganizerQuery.value = ''
 }
 
 function removeMemberOrganizer(value: string | number) {
   const memberId = Number(value)
-  form.value = {
-    ...form.value,
-    member_organizer_ids: form.value.member_organizer_ids.filter(id => id !== memberId),
-  }
+  form.value = { ...form.value, member_organizer_ids: form.value.member_organizer_ids.filter(id => id !== memberId) }
 }
 
 function addSubdivisionOrganizer(value: unknown) {
   const subdivision = value as EventSubdivisionOption
   if (!subdivision?.id || form.value.subdivision_organizer_ids.includes(subdivision.id)) return
-
-  form.value = {
-    ...form.value,
-    subdivision_organizer_ids: [...form.value.subdivision_organizer_ids, subdivision.id],
-  }
+  form.value = { ...form.value, subdivision_organizer_ids: [...form.value.subdivision_organizer_ids, subdivision.id] }
   subdivisionOrganizerQuery.value = ''
 }
 
 function removeSubdivisionOrganizer(value: string | number) {
   const subdivisionId = Number(value)
-  form.value = {
-    ...form.value,
-    subdivision_organizer_ids: form.value.subdivision_organizer_ids.filter(id => id !== subdivisionId),
-  }
+  form.value = { ...form.value, subdivision_organizer_ids: form.value.subdivision_organizer_ids.filter(id => id !== subdivisionId) }
 }
 
 function rebalanceCostCentreSplits(splits: SaveEventBody['cost_centre_splits']) {
   if (!splits.length) return []
-
   const base = Math.floor(10000 / splits.length) / 100
 
   return splits.map((split, index) => ({
@@ -451,16 +410,11 @@ function rebalanceCostCentreSplits(splits: SaveEventBody['cost_centre_splits']) 
 function addCostCentreSplit(value: unknown) {
   const costCentre = value as EventCostCentreOption
   if (!costCentre?.id || form.value.cost_centre_splits.some(split => split.cost_centre_id === costCentre.id)) return
-
   form.value = {
     ...form.value,
     cost_centre_splits: rebalanceCostCentreSplits([
       ...form.value.cost_centre_splits,
-      {
-        sphere_id: 0,
-        cost_centre_id: costCentre.id,
-        allocation_percentage: 0,
-      },
+      { sphere_id: 0, cost_centre_id: costCentre.id, allocation_percentage: 0 },
     ]),
   }
   costCentreQuery.value = ''
@@ -480,34 +434,23 @@ function updateCostCentreAllocation(value: string | number, allocation: string) 
   const costCentreId = Number(value)
   const parsed = Number(allocation)
   const nextAllocation = Number.isFinite(parsed) ? Math.max(0, parsed) : 0
-
   form.value = {
     ...form.value,
-    cost_centre_splits: form.value.cost_centre_splits.map((split) => {
-      if (split.cost_centre_id !== costCentreId) return split
-      return {
-        ...split,
-        allocation_percentage: nextAllocation,
-      }
-    }),
+    cost_centre_splits: form.value.cost_centre_splits.map(split => split.cost_centre_id === costCentreId
+      ? { ...split, allocation_percentage: nextAllocation }
+      : split),
   }
 }
 
 function updateCostCentreSphere(value: string | number, sphereValue: number) {
   const costCentreId = Number(value)
   const sphereId = Number(sphereValue || 0)
-
   form.value = {
     ...form.value,
-    cost_centre_splits: form.value.cost_centre_splits.map((split) => {
-      if (split.cost_centre_id !== costCentreId) return split
-      return {
-        ...split,
-        sphere_id: Number.isInteger(sphereId) ? sphereId : 0,
-      }
-    }),
+    cost_centre_splits: form.value.cost_centre_splits.map(split => split.cost_centre_id === costCentreId
+      ? { ...split, sphere_id: Number.isInteger(sphereId) ? sphereId : 0 }
+      : split),
   }
-
   openSphereDropdownId.value = null
 }
 
@@ -521,7 +464,7 @@ function sphereOptionLabel(sphere: EventSphereOption) {
 }
 
 function selectedSphereLabel(sphereId: number) {
-  const sphere = findSphere(sphereId)
+  const sphere = props.spheres.find(entry => entry.id === sphereId)
   return sphere ? sphereOptionLabel(sphere) : ''
 }
 </script>

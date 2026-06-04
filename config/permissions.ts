@@ -18,6 +18,7 @@ export type PermissionKey =
   | 'budgets.view'
   | 'budgets.edit'
   | 'events.view'
+  | 'events.shifts.signup'
   | 'events.edit'
   | 'companies.view'
   | 'companies.edit'
@@ -64,6 +65,7 @@ export const PERMISSIONS: PermissionDefinition[] = [
   { key: 'budgets.view', labelKey: 'permissions.items.budgetsView', categoryKey: 'permissions.categories.budgets' },
   { key: 'budgets.edit', labelKey: 'permissions.items.budgetsEdit', categoryKey: 'permissions.categories.budgets' },
   { key: 'events.view', labelKey: 'permissions.items.eventsView', categoryKey: 'permissions.categories.events' },
+  { key: 'events.shifts.signup', labelKey: 'permissions.items.eventsShiftsSignup', categoryKey: 'permissions.categories.events' },
   { key: 'events.edit', labelKey: 'permissions.items.eventsEdit', categoryKey: 'permissions.categories.events' },
   { key: 'companies.view', labelKey: 'permissions.items.companiesView', categoryKey: 'permissions.categories.companies' },
   { key: 'companies.edit', labelKey: 'permissions.items.companiesEdit', categoryKey: 'permissions.categories.companies' },
@@ -93,6 +95,7 @@ export const implied: Partial<Record<PermissionKey, PermissionKey[]>> = {
   'cash_counts.edit': ['cash_counts.view'],
   'budgets.view': ['cost_centres.view'],
   'budgets.edit': ['budgets.view'],
+  'events.shifts.signup': ['events.view'],
   'events.edit': ['events.view'],
   'companies.edit': ['companies.view'],
   'settings.association.manage': ['settings.access'],

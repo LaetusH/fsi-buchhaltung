@@ -269,8 +269,8 @@ CREATE TABLE IF NOT EXISTS events (
   name VARCHAR(255) NOT NULL,
   starts_at DATETIME NOT NULL,
   ends_at DATETIME NOT NULL,
-  location VARCHAR(255) NOT NULL,
-  expected_guests MEDIUMINT UNSIGNED NOT NULL
+  location VARCHAR(255) NULL,
+  expected_guests MEDIUMINT UNSIGNED NULL
 );
 
 CREATE TABLE IF NOT EXISTS event_member_organizers (
@@ -289,6 +289,81 @@ CREATE TABLE IF NOT EXISTS event_subdivision_organizers (
   UNIQUE KEY unique_event_subdivision_organizer (event_id, subdivision_id),
   FOREIGN KEY (event_id) REFERENCES events(id) ON DELETE CASCADE,
   FOREIGN KEY (subdivision_id) REFERENCES subdivisions(id)
+);
+
+CREATE TABLE IF NOT EXISTS event_shift_slots (
+  id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  event_id BIGINT UNSIGNED NOT NULL,
+  name VARCHAR(255) NOT NULL,
+  starts_at DATETIME NOT NULL,
+  ends_at DATETIME NOT NULL,
+  required_people SMALLINT UNSIGNED NOT NULL DEFAULT 1,
+  FOREIGN KEY (event_id) REFERENCES events(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS event_shift_members (
+  shift_id BIGINT UNSIGNED NOT NULL,
+  member_id BIGINT UNSIGNED NOT NULL,
+  PRIMARY KEY (shift_id, member_id),
+  FOREIGN KEY (shift_id) REFERENCES event_shift_slots(id) ON DELETE CASCADE,
+  FOREIGN KEY (member_id) REFERENCES members(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS event_checklist_templates (
+  id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  title VARCHAR(255) NOT NULL,
+  description TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS event_checklist_template_items (
+  id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  template_id BIGINT UNSIGNED NOT NULL,
+  label VARCHAR(255) NOT NULL,
+  position SMALLINT UNSIGNED NOT NULL,
+  FOREIGN KEY (template_id) REFERENCES event_checklist_templates(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS event_checklists (
+  id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  event_id BIGINT UNSIGNED NOT NULL,
+  title VARCHAR(255) NOT NULL,
+  description TEXT NOT NULL,
+  FOREIGN KEY (event_id) REFERENCES events(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS event_checklist_items (
+  id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  checklist_id BIGINT UNSIGNED NOT NULL,
+  label VARCHAR(255) NOT NULL,
+  is_done TINYINT(1) NOT NULL DEFAULT 0,
+  position SMALLINT UNSIGNED NOT NULL,
+  FOREIGN KEY (checklist_id) REFERENCES event_checklists(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS event_tasks (
+  id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  event_id BIGINT UNSIGNED NOT NULL,
+  title VARCHAR(255) NOT NULL,
+  status VARCHAR(20) NOT NULL DEFAULT 'open',
+  deadline VARCHAR(20) NULL,
+  position SMALLINT UNSIGNED NOT NULL DEFAULT 0,
+  FOREIGN KEY (event_id) REFERENCES events(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS event_task_members (
+  task_id BIGINT UNSIGNED NOT NULL,
+  member_id BIGINT UNSIGNED NOT NULL,
+  PRIMARY KEY (task_id, member_id),
+  FOREIGN KEY (task_id) REFERENCES event_tasks(id) ON DELETE CASCADE,
+  FOREIGN KEY (member_id) REFERENCES members(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS event_task_subdivisions (
+  task_id BIGINT UNSIGNED NOT NULL,
+  subdivision_id MEDIUMINT UNSIGNED NOT NULL,
+  PRIMARY KEY (task_id, subdivision_id),
+  FOREIGN KEY (task_id) REFERENCES event_tasks(id) ON DELETE CASCADE,
+  FOREIGN KEY (subdivision_id) REFERENCES subdivisions(id) ON DELETE CASCADE
 );
 
 CREATE TABLE IF NOT EXISTS spheres (

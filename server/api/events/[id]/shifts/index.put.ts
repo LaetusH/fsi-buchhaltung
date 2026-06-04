@@ -1,0 +1,55 @@
+import { defineEventHandler, readBody } from 'h3'
+import { requirePermission } from '~/server/utils/api/guards'
+import { getNumericRouteParam } from '~/server/utils/api/request'
+import { withAuditTransaction } from '~/server/utils/db'
+import {
+  eventExists,
+  loadEventShiftSlots,
+  normalizeEventShiftSlots,
+  replaceEventShiftSlots,
+} from '~/server/utils/eventShifts'
+import type { EventShiftSlot } from '~/types/event'
+
+interface UpdateEventShiftsSuccess {
+  ok: true
+  shifts: EventShiftSlot[]
+}
+
+interface UpdateEventShiftsError {
+  ok: false
+  error: string
+}
+
+export type UpdateEventShiftsResponse = UpdateEventShiftsSuccess | UpdateEventShiftsError
+
+export default defineEventHandler(async (event): Promise<UpdateEventShiftsResponse> => {
+  const current = await requirePermission(event, 'events.edit')
+  if (!current.ok) return current
+
+  const eventId = getNumericRouteParam(event)
+  if (!eventId) return { ok: false, error: 'Invalid event id' }
+
+  const body = await readBody(event)
+  const shifts = normalizeEventShiftSlots(Array.isArray(body) ? body : body?.shifts)
+  if (!shifts) return { ok: false, error: 'Invalid shift data' }
+
+  try {
+    return await withAuditTransaction(current.user, async (conn) => {
+      if (!await eventExists(eventId, conn)) return { ok: false, error: 'Event not found' }
+
+      const validationError = await replaceEventShiftSlots({
+        eventId,
+        slots: shifts,
+        conn,
+      })
+      if (validationError) return { ok: false, error: validationError }
+
+      return {
+        ok: true,
+        shifts: await loadEventShiftSlots(eventId, conn),
+      }
+    })
+  } catch (err: any) {
+    return { ok: false, error: `Failed to update event shifts: ${err}` }
+  }
+})

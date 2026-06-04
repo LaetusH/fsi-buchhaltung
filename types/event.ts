@@ -8,8 +8,8 @@ export interface SaveEventBody {
   name: string
   starts_at: string
   ends_at: string
-  location: string
-  expected_guests: number
+  location: string | null
+  expected_guests: number | null
   member_organizer_ids: number[]
   subdivision_organizer_ids: number[]
   cost_centre_splits: SaveEventCostCentreSplit[]
@@ -20,8 +20,8 @@ export interface EventRow {
   name: string
   starts_at: string
   ends_at: string
-  location: string
-  expected_guests: number
+  location: string | null
+  expected_guests: number | null
 }
 
 export interface EventMemberOrganizer {
@@ -72,4 +72,98 @@ export interface EventSphereOption {
   code: string
   name: string
   is_active: boolean
+}
+
+export interface EventTaskMember {
+  id: number
+  full_name: string
+}
+
+export interface EventTaskSubdivision {
+  id: number
+  code: string
+  name: string
+}
+
+export interface EventTask {
+  id: number
+  title: string
+  status: 'open' | 'in_progress' | 'done'
+  deadline: string | null
+  position: number
+  members: EventTaskMember[]
+  subdivisions: EventTaskSubdivision[]
+}
+
+export interface SaveEventTask {
+  id?: number
+  title: string
+  status: 'open' | 'in_progress' | 'done'
+  deadline: string | null
+  position: number
+  member_ids: number[]
+  subdivision_ids: number[]
+}
+
+export interface EventShiftMember {
+  id: number
+  full_name: string
+}
+
+export interface EventShiftSlot {
+  id: number
+  name: string
+  starts_at: string
+  ends_at: string
+  required_people: number
+  members: EventShiftMember[]
+}
+
+export interface SaveEventShiftSlot {
+  id?: number
+  name: string
+  starts_at: string
+  ends_at: string
+  required_people: number
+  member_ids: number[]
+}
+
+export interface EventChecklistItem {
+  id: number
+  label: string
+  done: boolean
+}
+
+export interface EventChecklist {
+  id: number
+  title: string
+  description: string
+  items: EventChecklistItem[]
+}
+
+export interface SaveEventChecklistItem {
+  id?: number
+  label: string
+  done: boolean
+}
+
+export interface SaveEventChecklist {
+  id?: number
+  title: string
+  description: string
+  items: SaveEventChecklistItem[]
+}
+
+export interface EventChecklistTemplate {
+  id: number
+  title: string
+  description: string
+  items: EventChecklistItem[]
+}
+
+export interface SaveEventChecklistTemplate {
+  id?: number
+  title: string
+  description: string
+  items: SaveEventChecklistItem[]
 }

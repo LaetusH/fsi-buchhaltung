@@ -14,7 +14,7 @@ import BudgetListPage from '~/components/Page/Finances/Budget/List.vue'
 import BudgetCreatePage from '~/components/Page/Finances/Budget/Create.vue'
 import FinanceAnalysisPage from '~/components/Page/Finances/Analysis.vue'
 import EventListPage from '~/components/Page/Events/List.vue'
-import EventCreatePage from '~/components/Page/Events/Create.vue'
+import EventPlanningWorkspacePage from '~/components/Page/Events/PlanningWorkspace.vue'
 import MemberListPage from '~/components/Page/Members/List.vue'
 import MemberCreatePage from '~/components/Page/Members/Create.vue'
 import SettingsPage from '~/components/Page/Settings/Overview.vue'
@@ -36,7 +36,7 @@ export const PAGES: Record<string, AppPage> = {
   BudgetCreate: { main: false, labelKey: 'pages.createBudget', component: BudgetCreatePage, permissions: ['budgets.view'], preserveOnRefresh: true },
   FinanceAnalysis: { main: true, labelKey: 'pages.financeAnalysis', component: FinanceAnalysisPage, icon: 'material-symbols:query-stats-rounded', permissions: ['receipts.view', 'cash_counts.view', 'invoices.view'], requireAllPermissions: true },
   Events: { main: true, labelKey: 'pages.events', component: EventListPage, icon: 'material-symbols:event-rounded', permissions: ['events.view'] },
-  EventCreate: { main: false, labelKey: 'pages.createEvent', component: EventCreatePage, permissions: ['events.view'], preserveOnRefresh: true },
+  EventCreate: { main: false, labelKey: 'pages.createEvent', component: EventPlanningWorkspacePage, permissions: ['events.view'], preserveOnRefresh: true },
   MemberList: { main: true, labelKey: 'pages.members', component: MemberListPage, icon: 'material-symbols:groups-rounded', permissions: ['members.view'] },
   MemberCreate: { main: false, labelKey: 'pages.createMember', component: MemberCreatePage, permissions: ['members.view'], preserveOnRefresh: true },
   Settings: { main: true, labelKey: 'pages.settings', component: SettingsPage, icon: 'material-symbols:settings-rounded', permissions: ['settings.access'], preserveOnRefresh: true },
