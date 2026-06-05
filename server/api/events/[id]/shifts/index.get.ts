@@ -1,6 +1,7 @@
 import { defineEventHandler } from 'h3'
-import { hasPermission, requirePermission } from '~/server/utils/api/guards'
+import { hasPermission, requireAuth } from '~/server/utils/api/guards'
 import { getNumericRouteParam } from '~/server/utils/api/request'
+import { isEventOrganizer } from '~/server/utils/events'
 import { eventExists, loadCurrentMemberIdForUser, loadEventShiftSlots } from '~/server/utils/eventShifts'
 import type { EventShiftSlot } from '~/types/event'
 
@@ -20,7 +21,7 @@ interface GetEventShiftsError {
 export type GetEventShiftsResponse = GetEventShiftsSuccess | GetEventShiftsError
 
 export default defineEventHandler(async (event): Promise<GetEventShiftsResponse> => {
-  const current = await requirePermission(event, 'events.view')
+  const current = await requireAuth(event)
   if (!current.ok) return current
 
   const eventId = getNumericRouteParam(event)
@@ -29,12 +30,22 @@ export default defineEventHandler(async (event): Promise<GetEventShiftsResponse>
   try {
     if (!await eventExists(eventId)) return { ok: false, error: 'Event not found' }
 
+    const [organizer, currentMemberId, shifts] = await Promise.all([
+      isEventOrganizer(current.user.id, eventId),
+      loadCurrentMemberIdForUser(current.user.id),
+      loadEventShiftSlots(eventId),
+    ])
+
+    if (!hasPermission(current.user, ['events.access', 'events.view', 'events.shifts.signup']) && !organizer) {
+      return { ok: false, error: 'Not authorized' }
+    }
+
     return {
       ok: true,
-      shifts: await loadEventShiftSlots(eventId),
-      currentMemberId: await loadCurrentMemberIdForUser(current.user.id),
-      canManageShifts: hasPermission(current.user, 'events.edit'),
-      canSelfSignup: hasPermission(current.user, ['events.edit', 'events.shifts.signup']),
+      shifts,
+      currentMemberId,
+      canManageShifts: hasPermission(current.user, 'events.edit') || organizer,
+      canSelfSignup: hasPermission(current.user, ['events.edit', 'events.shifts.signup']) || organizer,
     }
   } catch (err: any) {
     return { ok: false, error: `Failed to load event shifts: ${err}` }

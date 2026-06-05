@@ -22,6 +22,18 @@ export function hasAllPermissions(user: User | null, permissions: PermissionKey[
   return permissions.every(permission => user.permissions.includes(permission))
 }
 
+export async function requireAuth(
+  event: H3Event,
+  options: Pick<GuardOptions, 'touch' | 'allowPasswordChangeRequired'> = {},
+) {
+  const current = await getCurrentUserFromEvent(event, options.touch ?? true)
+  if (!current.ok) return { ok: false as const, error: 'Not authenticated' }
+  if (current.user.must_change_password && !options.allowPasswordChangeRequired) {
+    return { ok: false as const, error: 'Password change required' }
+  }
+  return current
+}
+
 export async function requirePermission(
   event: H3Event,
   permissions: PermissionCheck,

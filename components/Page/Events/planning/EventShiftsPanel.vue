@@ -7,18 +7,16 @@
       </div>
 
       <div class="flex flex-wrap items-center justify-end gap-2">
-        <div class="inline-flex rounded-lg bg-slate-100 p-1">
+        <div v-if="canManage" class="inline-flex rounded-lg bg-slate-100 p-1">
           <button
             type="button"
             class="rounded-md px-3 py-1.5 text-sm font-medium cursor-pointer"
             :class="permissionMode === 'own' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-600'"
-            :disabled="!canSelfSignup"
             @click="permissionMode = 'own'"
           >
             {{ t('event.planning.ownOnly') }}
           </button>
           <button
-            v-if="canManage"
             type="button"
             class="rounded-md px-3 py-1.5 text-sm font-medium cursor-pointer"
             :class="permissionMode === 'manage' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-600'"
@@ -210,7 +208,7 @@
 
                         <div class="flex items-start justify-end gap-1">
                           <button
-                            v-if="permissionMode === 'own'"
+                            v-if="permissionMode === 'own' && canSelfSignup"
                             type="button"
                             class="inline-flex h-7 w-7 items-center justify-center rounded-md border border-sky-200 bg-sky-100 text-sky-700 hover:bg-sky-200 disabled:opacity-60 cursor-pointer"
                             :disabled="disabled || saving || !currentMemberOption"

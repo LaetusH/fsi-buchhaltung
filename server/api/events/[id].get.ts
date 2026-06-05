@@ -1,13 +1,16 @@
 import { defineEventHandler } from 'h3'
-import { requirePermission } from '~/server/utils/api/guards'
+import { hasPermission, requireAuth } from '~/server/utils/api/guards'
 import { getNumericRouteParam } from '~/server/utils/api/request'
 import { query } from '~/server/utils/db'
-import { loadEventRelations } from '~/server/utils/events'
+import { isEventOrganizer, loadEventRelations } from '~/server/utils/events'
 import type { Event, EventRow } from '~/types/event'
 
 interface GetEventSuccess {
   ok: true
   event: Event
+  isOrganizer: boolean
+  canEditDetails: boolean
+  canViewAll: boolean
 }
 
 interface GetEventError {
@@ -18,7 +21,7 @@ interface GetEventError {
 export type GetEventResponse = GetEventSuccess | GetEventError
 
 export default defineEventHandler(async (event): Promise<GetEventResponse> => {
-  const current = await requirePermission(event, 'events.view')
+  const current = await requireAuth(event)
   if (!current.ok) return current
 
   const eventId = getNumericRouteParam(event)
@@ -36,7 +39,14 @@ export default defineEventHandler(async (event): Promise<GetEventResponse> => {
     const existing = rows[0]
     if (!existing) return { ok: false, error: 'Event not found' }
 
-    const relations = await loadEventRelations([eventId])
+    const [relations, organizer] = await Promise.all([
+      loadEventRelations([eventId]),
+      isEventOrganizer(current.user.id, eventId),
+    ])
+
+    if (!hasPermission(current.user, ['events.access', 'events.view', 'events.shifts.signup']) && !organizer) {
+      return { ok: false, error: 'Not authorized' }
+    }
 
     return {
       ok: true,
@@ -51,6 +61,9 @@ export default defineEventHandler(async (event): Promise<GetEventResponse> => {
         subdivision_organizers: relations.subdivisionOrganizers.get(eventId) ?? [],
         cost_centre_splits: relations.costCentreSplits.get(eventId) ?? [],
       },
+      isOrganizer: organizer,
+      canEditDetails: hasPermission(current.user, 'events.edit'),
+      canViewAll: hasPermission(current.user, 'events.view') || organizer,
     }
   } catch (err: any) {
     return { ok: false, error: `Failed to load event: ${err}` }

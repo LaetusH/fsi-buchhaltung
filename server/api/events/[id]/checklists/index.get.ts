@@ -1,6 +1,7 @@
 import { defineEventHandler } from 'h3'
-import { hasPermission, requirePermission } from '~/server/utils/api/guards'
+import { hasPermission, requireAuth } from '~/server/utils/api/guards'
 import { getNumericRouteParam } from '~/server/utils/api/request'
+import { isEventOrganizer } from '~/server/utils/events'
 import { loadEventChecklists, loadEventChecklistTemplates } from '~/server/utils/eventChecklists'
 import { eventExists } from '~/server/utils/eventShifts'
 import type { EventChecklist, EventChecklistTemplate } from '~/types/event'
@@ -20,7 +21,7 @@ interface GetEventChecklistsError {
 export type GetEventChecklistsResponse = GetEventChecklistsSuccess | GetEventChecklistsError
 
 export default defineEventHandler(async (event): Promise<GetEventChecklistsResponse> => {
-  const current = await requirePermission(event, 'events.view')
+  const current = await requireAuth(event)
   if (!current.ok) return current
 
   const eventId = getNumericRouteParam(event)
@@ -29,11 +30,17 @@ export default defineEventHandler(async (event): Promise<GetEventChecklistsRespo
   try {
     if (!await eventExists(eventId)) return { ok: false, error: 'Event not found' }
 
+    const isOrganizer = await isEventOrganizer(current.user.id, eventId)
+
+    if (!hasPermission(current.user, 'events.view') && !isOrganizer) {
+      return { ok: false, error: 'Not authorized' }
+    }
+
     return {
       ok: true,
       checklists: await loadEventChecklists(eventId),
       templates: await loadEventChecklistTemplates(),
-      canManageChecklists: hasPermission(current.user, 'events.edit'),
+      canManageChecklists: hasPermission(current.user, 'events.edit') || isOrganizer,
     }
   } catch (err: any) {
     return { ok: false, error: `Failed to load event checklists: ${err}` }

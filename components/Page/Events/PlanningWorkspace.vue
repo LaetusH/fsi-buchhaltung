@@ -53,7 +53,7 @@
               </div>
             </div>
 
-            <nav v-if="eventId" class="grid grid-cols-2 gap-2 border-b border-slate-200 bg-slate-200 px-3 py-3 sm:grid-cols-3 lg:grid-cols-6">
+            <nav v-if="eventId && planningTabs.length > 1" class="grid grid-cols-2 gap-2 border-b border-slate-200 bg-slate-200 px-3 py-3 sm:grid-cols-3 lg:grid-cols-6">
               <button
                 v-for="tab in planningTabs"
                 :key="tab.key"
@@ -69,7 +69,7 @@
           </section>
 
           <template v-if="eventId">
-            <section v-if="activeTab === 'overview'">
+            <section v-if="activeTab === 'overview' && canViewAll">
               <div class="grid items-start gap-4 lg:grid-cols-2 xl:grid-cols-[1.5fr_1fr]">
                 <div class="space-y-4">
                   <div class="rounded-xl bg-white p-4 shadow-lg">
@@ -210,13 +210,13 @@
                       <label
                         v-for="task in nextPendingTasks"
                         :key="task.id"
-                        class="flex cursor-pointer items-start gap-3 rounded-lg border border-slate-200 p-3 text-sm"
+                        :class="['flex items-start gap-3 rounded-lg border border-slate-200 p-3 text-sm', canManagePlanning ? 'cursor-pointer' : '']"
                       >
                         <input
+                          v-if="canManagePlanning"
                           type="checkbox"
                           class="checkbox mt-1"
                           :checked="false"
-                          :disabled="!canEdit"
                           @change="setTaskDone(task.id, ($event.target as HTMLInputElement).checked)"
                         >
                         <span class="min-w-0">
@@ -310,12 +310,13 @@
               </div>
             </section>
 
-            <EventTimelinePanel v-else-if="activeTab === 'timeline'" :items="timelineItems" @navigate="activeTab = $event" />
+            <EventTimelinePanel v-else-if="activeTab === 'timeline' && canViewAll" :items="timelineItems" @navigate="activeTab = $event" />
 
             <EventTasksPanel
-              v-else-if="activeTab === 'tasks'"
+              v-else-if="activeTab === 'tasks' && canViewAll"
               v-model:tasks="planningTasks"
-              :disabled="!canEdit || taskLoading || taskSaving || !canManageTasks"
+              :can-manage="canManagePlanning"
+              :disabled="!canManagePlanning || taskLoading || taskSaving || !canManageTasks"
               :saving="taskSaving"
               :loading="taskLoading"
               :members="members"
@@ -328,10 +329,12 @@
             />
 
             <EventChecklistsPanel
-              v-else-if="activeTab === 'checklists'"
+              v-else-if="activeTab === 'checklists' && canViewAll"
               v-model:checklists="reusableChecklists"
               v-model:templates="checklistTemplates"
-              :disabled="!canEdit || checklistLoading || checklistSaving || !canManageChecklists"
+              :can-manage="canManagePlanning"
+              :disabled="!canManagePlanning || checklistLoading || checklistSaving || !canManageChecklists"
+              :can-save-templates="canSaveChecklistTemplates"
               :tasks="planningTasks"
               @save-checklists="handleSaveChecklists"
               @save-templates="saveEventChecklistTemplates"
@@ -358,7 +361,7 @@
             />
 
             <EventDetailsPanel
-              v-else-if="activeTab === 'details'"
+              v-else-if="activeTab === 'details' && canViewAll"
               v-model="form"
               :saved-value="savedFormSnapshot"
               :event-id="eventId"
@@ -366,7 +369,7 @@
               :subdivisions="subdivisions"
               :cost-centres="costCentres"
               :spheres="spheres"
-              :disabled="!canEdit"
+              :disabled="!canEditDetails"
               :saving="isSaving"
               @save="submit"
               @cancel="cancel"
@@ -382,7 +385,7 @@
             :subdivisions="subdivisions"
             :cost-centres="costCentres"
             :spheres="spheres"
-            :disabled="!canEdit"
+            :disabled="!canEditDetails"
             :saving="isSaving"
             @save="submit"
             @cancel="cancel"
@@ -436,7 +439,12 @@ const { returnTarget, goToReturnTarget } = useReturnTarget('Events')
 const toast = useToast()
 
 const canEdit = computed(() => hasPermission('events.edit'))
-const canUseShiftPlanning = computed(() => canEdit.value || hasPermission('events.shifts.signup'))
+const isOrganizer = ref(false)
+const canEditDetails = ref(canEdit.value)
+const canViewAll = ref(hasPermission('events.view'))
+const canManagePlanning = computed(() => canEdit.value || isOrganizer.value)
+const canSaveChecklistTemplates = computed(() => canEdit.value)
+const canUseShiftPlanning = computed(() => canEdit.value || hasPermission('events.shifts.signup') || isOrganizer.value)
 
 // ---- Page / routing state ----
 
@@ -530,19 +538,13 @@ watch(
   (newId) => loadEvent(newId ?? null),
 )
 
-watch(
-  eventId,
-  async (id) => {
-    if (!id) {
-      resetTasks()
-      resetShifts()
-      resetChecklists()
-      return
-    }
-    await Promise.all([loadShiftSlots(id), loadEventChecklists(id), loadEventTasks(id)])
-  },
-  { immediate: true },
-)
+watch(eventId, (id) => {
+  if (!id) {
+    resetTasks()
+    resetShifts()
+    resetChecklists()
+  }
+})
 
 useAppRefresh().onRefresh(loadOptions)
 
@@ -560,6 +562,9 @@ async function loadEvent(id: number | null) {
   eventId.value = id
   if (!id) {
     savedFormSnapshot.value = null
+    isOrganizer.value = false
+    canEditDetails.value = canEdit.value
+    canViewAll.value = hasPermission('events.view')
     return
   }
 
@@ -568,6 +573,11 @@ async function loadEvent(id: number | null) {
     eventId.value = null
     return
   }
+
+  isOrganizer.value = res.isOrganizer
+  canEditDetails.value = res.canEditDetails
+  canViewAll.value = res.canViewAll
+  if (!res.canViewAll) activeTab.value = 'shifts'
 
   form.value = {
     name: res.event.name,
@@ -585,13 +595,27 @@ async function loadEvent(id: number | null) {
   }
 
   takeSnapshot()
+
+  const loads: Promise<void>[] = []
+  if (res.canViewAll) {
+    loads.push(loadEventTasks(id), loadEventChecklists(id))
+  } else {
+    resetTasks()
+    resetChecklists()
+  }
+  if (res.canViewAll || hasPermission('events.shifts.signup')) {
+    loads.push(loadShiftSlots(id))
+  } else {
+    resetShifts()
+  }
+  await Promise.all(loads)
 }
 
 // ---- Actions ----
 
 async function submit() {
   if (isSaving.value) return
-  if (!canEdit.value) {
+  if (!canEditDetails.value) {
     toast.error(t('common.notAuthorized'))
     return
   }
@@ -632,14 +656,17 @@ function cancel() {
 
 // ---- Computed display ----
 
-const planningTabs = computed(() => [
-  { key: 'overview', label: t('event.planning.tabs.overview'), icon: 'material-symbols:dashboard-rounded' },
-  { key: 'timeline', label: t('event.planning.tabs.timeline'), icon: 'material-symbols:view-timeline-rounded' },
-  { key: 'tasks', label: t('event.planning.tabs.tasks'), icon: 'material-symbols:task-alt-rounded' },
-  { key: 'checklists', label: t('event.planning.tabs.checklists'), icon: 'material-symbols:checklist-rounded' },
-  { key: 'shifts', label: t('event.planning.tabs.shifts'), icon: 'material-symbols:calendar-month-rounded' },
-  { key: 'details', label: t('event.planning.tabs.details'), icon: 'material-symbols:tune-rounded' },
-] satisfies Array<{ key: EventPlanningTabKey, label: string, icon: string }>)
+const planningTabs = computed(() => {
+  const all: Array<{ key: EventPlanningTabKey, label: string, icon: string }> = [
+    { key: 'overview', label: t('event.planning.tabs.overview'), icon: 'material-symbols:dashboard-rounded' },
+    { key: 'timeline', label: t('event.planning.tabs.timeline'), icon: 'material-symbols:view-timeline-rounded' },
+    { key: 'tasks', label: t('event.planning.tabs.tasks'), icon: 'material-symbols:task-alt-rounded' },
+    { key: 'checklists', label: t('event.planning.tabs.checklists'), icon: 'material-symbols:checklist-rounded' },
+    { key: 'shifts', label: t('event.planning.tabs.shifts'), icon: 'material-symbols:calendar-month-rounded' },
+    { key: 'details', label: t('event.planning.tabs.details'), icon: 'material-symbols:tune-rounded' },
+  ]
+  return canViewAll.value ? all : all.filter(tab => tab.key === 'shifts')
+})
 
 const eventTitle = computed(() => form.value.name.trim() || t('event.planning.untitledEvent'))
 

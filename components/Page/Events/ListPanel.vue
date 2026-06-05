@@ -94,7 +94,11 @@
             <td class="py-2">{{ organizerSummary(entry) }}</td>
             <td class="py-2">{{ costCentreSummary(entry) }}</td>
             <td class="py-2 text-right">
-              <button class="text-blue-600 hover:underline cursor-pointer" @click="openEvent(entry.id)">
+              <button
+                class="text-blue-600 not-disabled:hover:underline disabled:opacity-40 disabled:cursor-not-allowed not-disabled:cursor-pointer"
+                :disabled="!canOpenEvent(entry.id)"
+                @click="openEvent(entry.id)"
+              >
                 {{ t('actions.open') }}
               </button>
             </td>
@@ -136,6 +140,12 @@ const canEdit = computed(() => hasPermission('events.edit'))
 const resolvedReturnTarget = computed(() => cloneReturnTarget(props.returnTarget) ?? buildReturnTarget('Events'))
 
 const events = ref<Event[]>([])
+const canOpenAll = ref(true)
+const organizerEventIds = ref(new Set<number>())
+
+function canOpenEvent(eventId: number) {
+  return canOpenAll.value || organizerEventIds.value.has(eventId)
+}
 
 const {
   sortKey,
@@ -163,6 +173,8 @@ onMounted(async () => {
   const res = await $fetch('/api/events')
   if (res.ok) {
     events.value = res.events
+    canOpenAll.value = res.canOpenAll
+    organizerEventIds.value = new Set(res.organizerEventIds)
   }
 })
 

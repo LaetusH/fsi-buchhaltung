@@ -57,7 +57,7 @@
         </div>
       </div>
 
-      <div class="mt-4 rounded-lg border border-slate-200 bg-slate-50 p-3">
+      <div v-if="canManage !== false" class="mt-4 rounded-lg border border-slate-200 bg-slate-50 p-3">
         <div class="grid gap-3 sm:grid-cols-2 sm:items-end lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(12rem,auto)] lg:items-end xl:grid-cols-[minmax(14rem,1fr)_11rem_13rem_13rem_auto]">
           <div class="sm:col-span-2 lg:col-span-2 xl:col-span-1">
             <label class="text-xs font-medium text-slate-500">{{ t('event.planning.taskTitle') }}</label>
@@ -226,6 +226,7 @@
                 <Icon name="material-symbols:checklist-rounded" />
               </button>
               <button
+                v-if="canManage !== false"
                 type="button"
                 class="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-red-200 bg-red-50 text-red-700 hover:bg-red-100 disabled:opacity-60 cursor-pointer"
                 :disabled="disabled"
@@ -265,7 +266,7 @@
               />
               <button
                 type="button"
-                class="inline-flex shrink-0 items-center justify-center text-orange-600 hover:text-orange-700 disabled:opacity-60 cursor-pointer"
+                class="inline-flex shrink-0 items-center justify-center text-orange-600 hover:text-orange-700 disabled:opacity-60 not-disabled:cursor-pointer"
                 :title="taskDateMode(task) === 'date' ? t('event.planning.dateAndTime') : t('event.planning.dateOnly')"
                 :disabled="disabled"
                 @click="toggleTaskDateMode(task)"
@@ -291,6 +292,7 @@
                 >
                   {{ memberLabel(memberId) }}
                   <button
+                    v-if="canManage !== false"
                     type="button"
                     class="inline-flex h-4 w-4 items-center justify-center rounded text-slate-500 hover:bg-red-50 hover:text-red-600 disabled:opacity-60 cursor-pointer"
                     :disabled="disabled"
@@ -306,6 +308,7 @@
                 >
                   {{ subdivisionLabel(subdivisionId) }}
                   <button
+                    v-if="canManage !== false"
                     type="button"
                     class="inline-flex h-4 w-4 items-center justify-center rounded text-slate-500 hover:bg-red-50 hover:text-red-600 disabled:opacity-60 cursor-pointer"
                     :disabled="disabled"
@@ -319,7 +322,7 @@
                 </span>
               </div>
 
-              <div class="grid gap-2 sm:grid-cols-2">
+              <div v-if="canManage !== false" class="grid gap-2 sm:grid-cols-2">
                 <CommonSearchSelect
                   class="event-task-compact-input"
                   :model-value="memberQueries[task.id] ?? ''"
@@ -381,6 +384,7 @@ type DateMode = 'date' | 'datetime'
 
 const props = defineProps<{
   disabled?: boolean
+  canManage?: boolean
   saving?: boolean
   loading?: boolean
   members: EventMemberOption[]

@@ -437,6 +437,72 @@ export async function loadEventRelations(
   }
 }
 
+export async function isAnyEventOrganizer(
+  userId: number,
+  conn?: mariadb.PoolConnection,
+): Promise<boolean> {
+  const rows = await query<{ found: number }[]>(
+    `SELECT 1 AS found
+     FROM event_member_organizers emo
+     JOIN members m ON m.id = emo.member_id
+     WHERE m.account = ?
+     UNION
+     SELECT 1 AS found
+     FROM event_subdivision_organizers eso
+     JOIN subdivision_members sm ON sm.subdivision_id = eso.subdivision_id
+     JOIN members m ON m.id = sm.member_id
+     WHERE m.account = ?
+     LIMIT 1`,
+    [userId, userId],
+    conn,
+  )
+  return rows.length > 0
+}
+
+export async function isEventOrganizer(
+  userId: number,
+  eventId: number,
+  conn?: mariadb.PoolConnection,
+): Promise<boolean> {
+  const rows = await query<{ found: number }[]>(
+    `SELECT 1 AS found
+     FROM event_member_organizers emo
+     JOIN members m ON m.id = emo.member_id
+     WHERE emo.event_id = ? AND m.account = ?
+     UNION
+     SELECT 1 AS found
+     FROM event_subdivision_organizers eso
+     JOIN subdivision_members sm ON sm.subdivision_id = eso.subdivision_id
+     JOIN members m ON m.id = sm.member_id
+     WHERE eso.event_id = ? AND m.account = ?
+     LIMIT 1`,
+    [eventId, userId, eventId, userId],
+    conn,
+  )
+  return rows.length > 0
+}
+
+export async function getOrganizerEventIds(
+  userId: number,
+  conn?: mariadb.PoolConnection,
+): Promise<number[]> {
+  const rows = await query<{ event_id: number }[]>(
+    `SELECT DISTINCT emo.event_id
+     FROM event_member_organizers emo
+     JOIN members m ON m.id = emo.member_id
+     WHERE m.account = ?
+     UNION
+     SELECT DISTINCT eso.event_id
+     FROM event_subdivision_organizers eso
+     JOIN subdivision_members sm ON sm.subdivision_id = eso.subdivision_id
+     JOIN members m ON m.id = sm.member_id
+     WHERE m.account = ?`,
+    [userId, userId],
+    conn,
+  )
+  return rows.map(row => Number(row.event_id))
+}
+
 export async function loadEventOptions(conn?: mariadb.PoolConnection) {
   const [members, subdivisions, costCentres, spheres] = await Promise.all([
     query<EventMemberOption[]>(

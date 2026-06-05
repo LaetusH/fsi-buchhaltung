@@ -1,12 +1,14 @@
 import { defineEventHandler } from 'h3'
-import { requirePermission } from '~/server/utils/api/guards'
+import { hasPermission, requireAuth } from '~/server/utils/api/guards'
 import { query } from '~/server/utils/db'
-import { loadEventRelations } from '~/server/utils/events'
+import { getOrganizerEventIds, isAnyEventOrganizer, loadEventRelations } from '~/server/utils/events'
 import type { Event, EventRow } from '~/types/event'
 
 interface GetEventsSuccess {
   ok: true
   events: Event[]
+  canOpenAll: boolean
+  organizerEventIds: number[]
 }
 
 interface GetEventsError {
@@ -17,21 +19,32 @@ interface GetEventsError {
 export type GetEventsResponse = GetEventsSuccess | GetEventsError
 
 export default defineEventHandler(async (event): Promise<GetEventsResponse> => {
-  const current = await requirePermission(event, 'events.view')
+  const current = await requireAuth(event)
   if (!current.ok) return current
 
+  if (!hasPermission(current.user, ['events.access', 'events.view', 'events.shifts.signup']) && !await isAnyEventOrganizer(current.user.id)) {
+    return { ok: false, error: 'Not authorized' }
+  }
+
+  const canOpenAll = hasPermission(current.user, ['events.view', 'events.edit', 'events.shifts.signup'])
+
   try {
-    const rows = await query<EventRow[]>(
-      `SELECT id, name, starts_at, ends_at, location, expected_guests
-       FROM events
-       ORDER BY starts_at DESC, ends_at DESC, name ASC`,
-    )
+    const [rows, organizerEventIds] = await Promise.all([
+      query<EventRow[]>(
+        `SELECT id, name, starts_at, ends_at, location, expected_guests
+         FROM events
+         ORDER BY starts_at DESC, ends_at DESC, name ASC`,
+      ),
+      canOpenAll ? Promise.resolve([]) : getOrganizerEventIds(current.user.id),
+    ])
 
     const eventIds = rows.map(row => Number(row.id))
     const relations = await loadEventRelations(eventIds)
 
     return {
       ok: true,
+      canOpenAll,
+      organizerEventIds,
       events: rows.map(row => ({
         id: Number(row.id),
         name: String(row.name),

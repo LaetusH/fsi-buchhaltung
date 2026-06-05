@@ -5,8 +5,8 @@
       <p class="text-sm text-slate-500">{{ t('event.planning.checklistHint') }}</p>
     </div>
 
-    <div class="grid gap-4 xl:grid-cols-[minmax(18rem,0.75fr)_minmax(0,1.25fr)]">
-      <aside class="space-y-4">
+    <div :class="['grid gap-4', canManage !== false ? 'xl:grid-cols-[minmax(18rem,0.75fr)_minmax(0,1.25fr)]' : '']">
+      <aside v-if="canManage !== false" class="space-y-4">
         <section class="rounded-xl bg-white p-4 shadow-lg">
           <div class="flex items-center justify-between gap-3">
             <div>
@@ -109,6 +109,7 @@
                 {{ editingChecklistId === null ? t('event.planning.addChecklist') : t('actions.save') }}
               </button>
               <button
+                v-if="canSaveTemplates !== false"
                 type="button"
                 class="inline-flex items-center gap-2 rounded-md border px-3 py-2 text-sm font-medium disabled:opacity-60 not-disabled:cursor-pointer disabled:cursor-not-allowed"
                 :class="draftIsSavedAsTemplate || editingTemplateId !== null ? 'border-emerald-200 bg-emerald-50 text-emerald-700' : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50'"
@@ -126,7 +127,7 @@
         </section>
       </aside>
 
-      <section class="grid gap-4 lg:grid-cols-2 lg:auto-rows-min">
+      <section :class="['grid gap-4 lg:grid-cols-2 lg:auto-rows-min', canManage === false ? 'xl:grid-cols-3' : '']">
         <div v-for="checklist in checklists" :key="checklist.id" class="rounded-xl bg-white p-4 shadow-lg">
           <div class="flex items-start justify-between gap-3">
             <div class="min-w-0">
@@ -141,6 +142,7 @@
           <!-- Compact icon toolbar -->
           <div class="mt-2 flex items-center gap-1">
             <button
+              v-if="canManage !== false"
               type="button"
               class="inline-flex h-7 w-7 items-center justify-center rounded-md border border-slate-200 bg-white text-slate-500 hover:bg-slate-50 hover:text-slate-700 disabled:opacity-60 cursor-pointer"
               :disabled="disabled"
@@ -150,6 +152,7 @@
               <Icon name="material-symbols:edit-rounded" class="text-base" />
             </button>
             <button
+              v-if="canSaveTemplates !== false"
               type="button"
               class="inline-flex h-7 w-7 items-center justify-center rounded-md border disabled:opacity-60"
               :class="isChecklistSavedAsTemplate(checklist) ? 'border-emerald-200 bg-emerald-50 text-emerald-600 cursor-not-allowed' : 'border-slate-200 bg-white text-slate-500 hover:bg-slate-50 hover:text-slate-700 cursor-pointer'"
@@ -202,6 +205,7 @@
 
             <span class="flex-1" />
             <button
+              v-if="canManage !== false"
               type="button"
               class="inline-flex h-7 w-7 items-center justify-center rounded-md border border-red-200 bg-red-50 text-red-600 hover:bg-red-100 disabled:opacity-60 cursor-pointer"
               :disabled="disabled"
@@ -329,7 +333,7 @@
                     </span>
                   </span>
                 </button>
-                <div class="mt-3 flex flex-wrap gap-2">
+                <div v-if="canSaveTemplates !== false" class="mt-3 flex flex-wrap gap-2">
                   <button
                     type="button"
                     class="btn-secondary inline-flex items-center gap-1.5 px-2 py-1 text-xs"
@@ -370,6 +374,8 @@ import type { PlanningChecklist, EventPlanningTask } from './types'
 
 const props = defineProps<{
   disabled?: boolean
+  canManage?: boolean
+  canSaveTemplates?: boolean
   tasks?: EventPlanningTask[]
 }>()
 

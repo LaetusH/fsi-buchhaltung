@@ -1,7 +1,8 @@
 import { defineEventHandler, readBody } from 'h3'
-import { requirePermission } from '~/server/utils/api/guards'
+import { hasPermission, requireAuth } from '~/server/utils/api/guards'
 import { getNumericRouteParam } from '~/server/utils/api/request'
 import { withAuditTransaction } from '~/server/utils/db'
+import { isEventOrganizer } from '~/server/utils/events'
 import {
   eventExists,
   loadEventShiftSlots,
@@ -23,11 +24,15 @@ interface UpdateEventShiftsError {
 export type UpdateEventShiftsResponse = UpdateEventShiftsSuccess | UpdateEventShiftsError
 
 export default defineEventHandler(async (event): Promise<UpdateEventShiftsResponse> => {
-  const current = await requirePermission(event, 'events.edit')
+  const current = await requireAuth(event)
   if (!current.ok) return current
 
   const eventId = getNumericRouteParam(event)
   if (!eventId) return { ok: false, error: 'Invalid event id' }
+
+  if (!hasPermission(current.user, 'events.edit') && !await isEventOrganizer(current.user.id, eventId)) {
+    return { ok: false, error: 'Keine Berechtigung' }
+  }
 
   const body = await readBody(event)
   const shifts = normalizeEventShiftSlots(Array.isArray(body) ? body : body?.shifts)

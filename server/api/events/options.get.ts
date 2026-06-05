@@ -1,6 +1,6 @@
 import { defineEventHandler } from 'h3'
-import { requirePermission } from '~/server/utils/api/guards'
-import { loadEventOptions } from '~/server/utils/events'
+import { hasPermission, requireAuth } from '~/server/utils/api/guards'
+import { isAnyEventOrganizer, loadEventOptions } from '~/server/utils/events'
 import type { EventCostCentreOption, EventMemberOption, EventSphereOption, EventSubdivisionOption } from '~/types/event'
 
 interface GetEventOptionsSuccess {
@@ -19,8 +19,12 @@ interface GetEventOptionsError {
 export type GetEventOptionsResponse = GetEventOptionsSuccess | GetEventOptionsError
 
 export default defineEventHandler(async (event): Promise<GetEventOptionsResponse> => {
-  const current = await requirePermission(event, 'events.view')
+  const current = await requireAuth(event)
   if (!current.ok) return current
+
+  if (!hasPermission(current.user, ['events.access', 'events.view', 'events.shifts.signup']) && !await isAnyEventOrganizer(current.user.id)) {
+    return { ok: false, error: 'Not authorized' }
+  }
 
   try {
     const options = await loadEventOptions()

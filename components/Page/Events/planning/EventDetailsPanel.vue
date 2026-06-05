@@ -223,12 +223,6 @@
       </button>
     </div>
 
-    <div v-else class="grid">
-      <button type="button" class="btn-secondary col-span-12" @click="emit('cancel')">
-        {{ t('actions.close') }}
-      </button>
-    </div>
-
     <CommonValidationSummary :errors="validationErrors" :title="t('common.validationBlocked')" />
   </div>
 </template>

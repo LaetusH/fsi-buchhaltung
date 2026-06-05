@@ -1,6 +1,7 @@
 import { defineEventHandler } from 'h3'
-import { hasPermission, requirePermission } from '~/server/utils/api/guards'
+import { hasPermission, requireAuth } from '~/server/utils/api/guards'
 import { getNumericRouteParam } from '~/server/utils/api/request'
+import { isEventOrganizer } from '~/server/utils/events'
 import { eventExists } from '~/server/utils/eventShifts'
 import { loadEventTasks } from '~/server/utils/eventTasks'
 import type { EventTask } from '~/types/event'
@@ -19,7 +20,7 @@ interface GetEventTasksError {
 export type GetEventTasksResponse = GetEventTasksSuccess | GetEventTasksError
 
 export default defineEventHandler(async (event): Promise<GetEventTasksResponse> => {
-  const current = await requirePermission(event, 'events.view')
+  const current = await requireAuth(event)
   if (!current.ok) return current
 
   const eventId = getNumericRouteParam(event)
@@ -28,10 +29,16 @@ export default defineEventHandler(async (event): Promise<GetEventTasksResponse> 
   try {
     if (!await eventExists(eventId)) return { ok: false, error: 'Event not found' }
 
+    const isOrganizer = await isEventOrganizer(current.user.id, eventId)
+
+    if (!hasPermission(current.user, 'events.view') && !isOrganizer) {
+      return { ok: false, error: 'Not authorized' }
+    }
+
     return {
       ok: true,
       tasks: await loadEventTasks(eventId),
-      canManageTasks: hasPermission(current.user, 'events.edit'),
+      canManageTasks: hasPermission(current.user, 'events.edit') || isOrganizer,
     }
   } catch (err: any) {
     return { ok: false, error: `Failed to load event tasks: ${err}` }

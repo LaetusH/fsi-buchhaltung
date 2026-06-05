@@ -1,7 +1,8 @@
 import { defineEventHandler } from 'h3'
-import { requirePermission } from '~/server/utils/api/guards'
+import { hasPermission, requireAuth } from '~/server/utils/api/guards'
 import { getNumericRouteParam } from '~/server/utils/api/request'
 import { withAuditTransaction } from '~/server/utils/db'
+import { isEventOrganizer } from '~/server/utils/events'
 import {
   addSelfToShift,
   loadCurrentMemberIdForUser,
@@ -22,13 +23,17 @@ interface AddSelfToShiftError {
 export type AddSelfToShiftResponse = AddSelfToShiftSuccess | AddSelfToShiftError
 
 export default defineEventHandler(async (event): Promise<AddSelfToShiftResponse> => {
-  const current = await requirePermission(event, ['events.edit', 'events.shifts.signup'])
+  const current = await requireAuth(event)
   if (!current.ok) return current
 
   const eventId = getNumericRouteParam(event, 'id')
   const shiftId = getNumericRouteParam(event, 'shiftId')
   if (!eventId) return { ok: false, error: 'Invalid event id' }
   if (!shiftId) return { ok: false, error: 'Invalid shift id' }
+
+  if (!hasPermission(current.user, ['events.edit', 'events.shifts.signup']) && !await isEventOrganizer(current.user.id, eventId)) {
+    return { ok: false, error: 'Keine Berechtigung' }
+  }
 
   try {
     return await withAuditTransaction(current.user, async (conn) => {
