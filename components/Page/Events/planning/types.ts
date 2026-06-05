@@ -12,6 +12,8 @@ export interface EventPlanningTask {
   status: EventPlanningTaskStatus
   memberIds: number[]
   subdivisionIds: number[]
+  linkedChecklistId: number | null
+  linkedChecklistProgress: { done: number; total: number } | null
 }
 
 // Timeline types
@@ -29,6 +31,7 @@ export interface EventTimelineItem {
   status?: EventPlanningTaskStatus
   requiredPeople?: number
   memberCount?: number
+  checklistProgress?: { done: number; total: number }
 }
 
 // Checklist types
@@ -43,6 +46,7 @@ export interface PlanningChecklist {
   title: string
   description: string
   items: PlanningChecklistItem[]
+  taskId: number | null
 }
 
 // Shift types

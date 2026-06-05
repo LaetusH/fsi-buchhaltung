@@ -102,6 +102,13 @@
                   {{ t(`event.planning.taskStatus.${item.status === 'in_progress' ? 'inProgress' : item.status}`) }}
                 </span>
                 <span
+                  v-if="item.kind === 'task' && item.checklistProgress"
+                  class="inline-flex items-center gap-1 rounded-md bg-sky-100 px-2 py-0.5 text-xs font-semibold text-sky-700"
+                >
+                  <Icon name="material-symbols:checklist-rounded" class="text-sm" />
+                  {{ item.checklistProgress.done }}/{{ item.checklistProgress.total }}
+                </span>
+                <span
                   v-if="item.kind === 'shift' && item.requiredPeople !== undefined"
                   class="rounded-md px-2 py-0.5 text-xs font-semibold"
                   :class="(item.memberCount ?? 0) >= item.requiredPeople

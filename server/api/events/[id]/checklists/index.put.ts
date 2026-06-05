@@ -13,6 +13,7 @@ import type { EventChecklist } from '~/types/event'
 interface UpdateEventChecklistsSuccess {
   ok: true
   checklists: EventChecklist[]
+  affectedTaskStatuses: Array<{ id: number; status: string }>
 }
 
 interface UpdateEventChecklistsError {
@@ -37,16 +38,13 @@ export default defineEventHandler(async (event): Promise<UpdateEventChecklistsRe
     return await withAuditTransaction(current.user, async (conn) => {
       if (!await eventExists(eventId, conn)) return { ok: false, error: 'Event not found' }
 
-      const validationError = await replaceEventChecklists({
-        eventId,
-        checklists,
-        conn,
-      })
-      if (validationError) return { ok: false, error: validationError }
+      const result = await replaceEventChecklists({ eventId, checklists, conn })
+      if ('error' in result) return { ok: false, error: result.error }
 
       return {
         ok: true,
         checklists: await loadEventChecklists(eventId, conn),
+        affectedTaskStatuses: result.affectedTaskStatuses,
       }
     })
   } catch (err: any) {

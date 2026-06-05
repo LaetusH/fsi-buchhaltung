@@ -8,6 +8,9 @@ interface EventTaskRow {
   status: string
   deadline: string | null
   position: number
+  linked_checklist_id: number | null
+  checklist_done: number
+  checklist_total: number
 }
 
 interface EventTaskMemberRow {
@@ -93,11 +96,22 @@ export function normalizeEventTasks(value: unknown): SaveEventTask[] | null {
 
 export async function loadEventTasks(eventId: number, conn?: mariadb.PoolConnection): Promise<EventTask[]> {
   const taskRows = await query<EventTaskRow[]>(
-    `SELECT id, title, status, deadline, position
-     FROM event_tasks
-     WHERE event_id = ?
-     ORDER BY position, id`,
-    [eventId],
+    `SELECT t.id, t.title, t.status, t.deadline, t.position,
+            c.id AS linked_checklist_id,
+            COALESCE(ci_agg.done, 0) AS checklist_done,
+            COALESCE(ci_agg.total, 0) AS checklist_total
+     FROM event_tasks t
+     LEFT JOIN event_checklists c ON c.task_id = t.id AND c.event_id = ?
+     LEFT JOIN (
+       SELECT checklist_id,
+              SUM(is_done) AS done,
+              COUNT(*) AS total
+       FROM event_checklist_items
+       GROUP BY checklist_id
+     ) ci_agg ON ci_agg.checklist_id = c.id
+     WHERE t.event_id = ?
+     ORDER BY t.position, t.id`,
+    [eventId, eventId],
     conn,
   )
 
@@ -154,6 +168,12 @@ export async function loadEventTasks(eventId: number, conn?: mariadb.PoolConnect
     position: Number(row.position),
     members: membersByTask.get(Number(row.id)) ?? [],
     subdivisions: subdivisionsByTask.get(Number(row.id)) ?? [],
+    linkedChecklistId: row.linked_checklist_id !== null && row.linked_checklist_id !== undefined
+      ? Number(row.linked_checklist_id)
+      : null,
+    linkedChecklistProgress: row.linked_checklist_id !== null && row.linked_checklist_id !== undefined
+      ? { done: Number(row.checklist_done), total: Number(row.checklist_total) }
+      : null,
   }))
 }
 

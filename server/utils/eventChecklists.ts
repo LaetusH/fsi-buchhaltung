@@ -11,6 +11,7 @@ import type {
 
 interface EventChecklistRow {
   id: number
+  task_id: number | null
   title: string
   description: string
 }
@@ -80,6 +81,16 @@ export function normalizeEventChecklists(value: unknown): SaveEventChecklist[] |
     const description = String(raw.description ?? '').trim()
     const items = normalizeChecklistItems(raw.items)
 
+    let taskId: number | null | undefined
+    if (raw.taskId === undefined || raw.taskId === null) {
+      taskId = null
+    }
+    else {
+      const parsed = normalizePositiveInteger(raw.taskId)
+      if (!parsed) return null
+      taskId = parsed
+    }
+
     if (raw.id !== undefined && raw.id !== null && !id) return null
     if (!title || !items?.length) return null
 
@@ -88,6 +99,7 @@ export function normalizeEventChecklists(value: unknown): SaveEventChecklist[] |
       title,
       description,
       items,
+      taskId,
     })
   }
 
@@ -144,7 +156,7 @@ function mapItemsByParent<T extends { id: number }>(
 
 export async function loadEventChecklists(eventId: number, conn?: mariadb.PoolConnection): Promise<EventChecklist[]> {
   const checklistRows = await query<EventChecklistRow[]>(
-    `SELECT id, title, description
+    `SELECT id, task_id, title, description
      FROM event_checklists
      WHERE event_id = ?
      ORDER BY id`,
@@ -167,6 +179,7 @@ export async function loadEventChecklists(eventId: number, conn?: mariadb.PoolCo
 
   return checklistRows.map(row => ({
     id: Number(row.id),
+    taskId: row.task_id !== null && row.task_id !== undefined ? Number(row.task_id) : null,
     title: String(row.title),
     description: String(row.description),
     items: itemsByChecklist.get(Number(row.id)) ?? [],
@@ -338,6 +351,49 @@ async function syncTemplateItems({
   return null
 }
 
+export interface AffectedTaskStatus {
+  id: number
+  status: 'open' | 'in_progress' | 'done'
+}
+
+export async function syncLinkedTaskStatuses(
+  eventId: number,
+  conn: mariadb.PoolConnection,
+): Promise<AffectedTaskStatus[]> {
+  const rows = await query<{ task_id: number; total: number; done: number }[]>(
+    `SELECT c.task_id,
+            COUNT(ci.id) AS total,
+            COALESCE(SUM(ci.is_done), 0) AS done
+     FROM event_checklists c
+     LEFT JOIN event_checklist_items ci ON ci.checklist_id = c.id
+     WHERE c.event_id = ? AND c.task_id IS NOT NULL
+     GROUP BY c.task_id`,
+    [eventId],
+    conn,
+  )
+
+  const affected: AffectedTaskStatus[] = []
+
+  for (const row of rows) {
+    const total = Number(row.total)
+    const done = Number(row.done)
+    const status: 'open' | 'in_progress' | 'done'
+      = total > 0 && done === total ? 'done'
+        : done > 0 ? 'in_progress'
+          : 'open'
+
+    await query(
+      `UPDATE event_tasks SET status = ? WHERE id = ? AND event_id = ?`,
+      [status, Number(row.task_id), eventId],
+      conn,
+    )
+
+    affected.push({ id: Number(row.task_id), status })
+  }
+
+  return affected
+}
+
 export async function replaceEventChecklists({
   eventId,
   checklists,
@@ -346,9 +402,9 @@ export async function replaceEventChecklists({
   eventId: number
   checklists: SaveEventChecklist[]
   conn: mariadb.PoolConnection
-}) {
+}): Promise<{ error: string } | { affectedTaskStatuses: AffectedTaskStatus[] }> {
   const existingRows = await query<EventChecklistRow[]>(
-    `SELECT id, title, description
+    `SELECT id, task_id, title, description
      FROM event_checklists
      WHERE event_id = ?`,
     [eventId],
@@ -359,7 +415,31 @@ export async function replaceEventChecklists({
   const incomingIds = checklists.flatMap(checklist => checklist.id ? [checklist.id] : [])
 
   if (incomingIds.some(id => !existingIdSet.has(id))) {
-    return 'At least one checklist does not belong to this event'
+    return { error: 'At least one checklist does not belong to this event' }
+  }
+
+  // Validate task_id values — all must belong to this event
+  const incomingTaskIds = checklists.flatMap(c => c.taskId ? [c.taskId] : [])
+  if (incomingTaskIds.length > 0) {
+    const validTaskRows = await query<{ id: number }[]>(
+      `SELECT id FROM event_tasks WHERE event_id = ? AND id IN (${incomingTaskIds.map(() => '?').join(',')})`,
+      [eventId, ...incomingTaskIds],
+      conn,
+    )
+    const validTaskIdSet = new Set(validTaskRows.map(r => Number(r.id)))
+    if (incomingTaskIds.some(id => !validTaskIdSet.has(id))) {
+      return { error: 'At least one linked task does not belong to this event' }
+    }
+  }
+
+  // Validate no two checklists share the same task_id
+  const taskIdsSeen = new Set<number>()
+  for (const checklist of checklists) {
+    if (checklist.taskId == null) continue
+    if (taskIdsSeen.has(checklist.taskId)) {
+      return { error: 'A task can only be linked to one checklist at a time' }
+    }
+    taskIdsSeen.add(checklist.taskId)
   }
 
   const incomingIdSet = new Set(incomingIds)
@@ -375,23 +455,33 @@ export async function replaceEventChecklists({
 
   for (const checklist of checklists) {
     let checklistId = checklist.id ?? null
+    const taskId = checklist.taskId ?? null
 
     if (checklistId) {
       const existing = existingRows.find(row => Number(row.id) === checklistId)
-      if (existing && (String(existing.title) !== checklist.title || String(existing.description) !== checklist.description)) {
+      const existingTaskId = existing?.task_id !== null && existing?.task_id !== undefined ? Number(existing.task_id) : null
+      if (
+        existing
+        && (
+          String(existing.title) !== checklist.title
+          || String(existing.description) !== checklist.description
+          || existingTaskId !== taskId
+        )
+      ) {
         await query(
           `UPDATE event_checklists
-           SET title = ?, description = ?
+           SET title = ?, description = ?, task_id = ?
            WHERE id = ? AND event_id = ?`,
-          [checklist.title, checklist.description, checklistId, eventId],
+          [checklist.title, checklist.description, taskId, checklistId, eventId],
           conn,
         )
       }
-    } else {
+    }
+    else {
       const result: any = await query(
-        `INSERT INTO event_checklists (event_id, title, description)
-         VALUES (?, ?, ?)`,
-        [eventId, checklist.title, checklist.description],
+        `INSERT INTO event_checklists (event_id, task_id, title, description)
+         VALUES (?, ?, ?, ?)`,
+        [eventId, taskId, checklist.title, checklist.description],
         conn,
       )
       checklistId = Number(result.insertId)
@@ -402,10 +492,11 @@ export async function replaceEventChecklists({
       items: checklist.items,
       conn,
     })
-    if (itemValidationError) return itemValidationError
+    if (itemValidationError) return { error: itemValidationError }
   }
 
-  return null
+  const affectedTaskStatuses = await syncLinkedTaskStatuses(eventId, conn)
+  return { affectedTaskStatuses }
 }
 
 export async function replaceEventChecklistTemplates({
@@ -454,7 +545,8 @@ export async function replaceEventChecklistTemplates({
           conn,
         )
       }
-    } else {
+    }
+    else {
       const result: any = await query(
         `INSERT INTO event_checklist_templates (title, description)
          VALUES (?, ?)`,

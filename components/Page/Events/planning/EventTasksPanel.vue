@@ -174,26 +174,31 @@
             v-for="task in tasksByStatus[column.status]"
             :key="task.id"
             :data-task-id="task.id"
-            :draggable="!disabled"
+            :draggable="!disabled && !task.linkedChecklistId"
             class="rounded-lg border border-slate-200 border-l-4 bg-slate-50 p-3 transition-all"
             :class="[
               draggedTaskId === task.id ? 'opacity-40' : '',
               dragOverTaskId === task.id ? 'ring-2 ring-inset ring-orange-400' : '',
               deadlineBorderClass(task),
             ]"
-            @dragstart="onDragStart(task.id, $event)"
-            @dragover.prevent="!disabled && onDragOver(task.id)"
+            @dragstart="!task.linkedChecklistId && onDragStart(task.id, $event)"
+            @dragover.prevent="!disabled && !task.linkedChecklistId && onDragOver(task.id)"
             @dragleave="onTaskDragLeave(task.id, $event)"
-            @drop.prevent.stop="!disabled && onDrop(task.id, column.status)"
+            @drop.prevent.stop="!disabled && !task.linkedChecklistId && onDrop(task.id, column.status)"
             @dragend="onDragEnd"
           >
             <div class="flex items-start gap-2">
               <span
                 v-if="!disabled"
-                class="mt-0.5 shrink-0 touch-none cursor-grab"
-                @touchstart.prevent="startTaskCardTouchDrag(task.id, $event)"
+                class="mt-0.5 shrink-0 touch-none"
+                :class="task.linkedChecklistId ? 'cursor-default' : 'cursor-grab'"
+                @touchstart.prevent="!task.linkedChecklistId && startTaskCardTouchDrag(task.id, $event)"
               >
-                <Icon name="material-symbols:drag-indicator" class="text-slate-300" />
+                <Icon
+                  :name="task.linkedChecklistId ? 'material-symbols:lock' : 'material-symbols:drag-indicator'"
+                  :class="task.linkedChecklistId ? 'text-sky-400' : 'text-slate-300'"
+                  :title="task.linkedChecklistId ? t('event.planning.checklistControlled') : undefined"
+                />
               </span>
               <input
                 :value="task.title"
@@ -201,6 +206,25 @@
                 :disabled="disabled"
                 @input="updateTask(task.id, { title: ($event.target as HTMLInputElement).value })"
               >
+              <!-- Checklist link icon button -->
+              <button
+                v-if="task.linkedChecklistId"
+                type="button"
+                class="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-sky-200 bg-sky-50 text-sky-600 hover:bg-sky-100 cursor-pointer"
+                :title="`${linkedChecklistTitle(task)}${task.linkedChecklistProgress ? ` (${task.linkedChecklistProgress.done}/${task.linkedChecklistProgress.total})` : ''}`"
+                @click="emit('navigate-to-checklists')"
+              >
+                <Icon name="material-symbols:checklist-rounded" />
+              </button>
+              <button
+                v-else-if="!disabled"
+                type="button"
+                class="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-slate-200 bg-white text-slate-400 hover:bg-slate-50 hover:text-slate-600 cursor-pointer"
+                :title="t('event.planning.linkChecklist')"
+                @click="linkingChecklistForTaskId = linkingChecklistForTaskId === task.id ? null : task.id"
+              >
+                <Icon name="material-symbols:checklist-rounded" />
+              </button>
               <button
                 type="button"
                 class="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-red-200 bg-red-50 text-red-700 hover:bg-red-100 disabled:opacity-60 cursor-pointer"
@@ -209,6 +233,23 @@
                 @click="removeTask(task.id)"
               >
                 <Icon name="material-symbols:delete-rounded" />
+              </button>
+            </div>
+
+            <!-- Checklist link dropdown (opens inline below title) -->
+            <div v-if="linkingChecklistForTaskId === task.id && !disabled" class="mt-1.5 flex items-center gap-1.5">
+              <CommonSearchSelect
+                class="event-task-compact-input min-w-0 flex-1"
+                :model-value="checklistLinkQuery"
+                :options="checklistLinkOptions"
+                :placeholder="t('event.planning.selectChecklist')"
+                :empty-text="t('event.planning.noUnlinkedChecklists')"
+                @update:model-value="checklistLinkQuery = $event"
+                @select="selectChecklistForTask(task.id, $event)"
+                @clear-selection="checklistLinkQuery = ''"
+              />
+              <button type="button" class="shrink-0 text-xs text-slate-400 hover:text-slate-600 cursor-pointer" @click="linkingChecklistForTaskId = null">
+                {{ t('actions.cancel') }}
               </button>
             </div>
 
@@ -334,7 +375,7 @@ import { useI18n } from '~/composables/useI18n'
 import { useTouchDrag } from '~/composables/useTouchDrag'
 import type { SearchSelectOption } from '~/components/Common/SearchSelect.vue'
 import type { EventMemberOption, EventSubdivisionOption } from '~/types/event'
-import type { EventPlanningTask, EventPlanningTaskStatus } from './types'
+import type { EventPlanningTask, EventPlanningTaskStatus, PlanningChecklist } from './types'
 
 type DateMode = 'date' | 'datetime'
 
@@ -345,10 +386,13 @@ const props = defineProps<{
   members: EventMemberOption[]
   subdivisions: EventSubdivisionOption[]
   currentMemberId?: number | null
+  checklists?: PlanningChecklist[]
 }>()
 
 const emit = defineEmits<{
   (e: 'save', tasks: EventPlanningTask[]): void
+  (e: 'link-checklist-to-task', value: { checklistId: number; taskId: number }): void
+  (e: 'navigate-to-checklists'): void
 }>()
 
 const tasks = defineModel<EventPlanningTask[]>('tasks', { required: true })
@@ -467,6 +511,8 @@ function normalizeTask(task: EventPlanningTask): EventPlanningTask {
     status,
     memberIds: task.memberIds ?? [],
     subdivisionIds: task.subdivisionIds ?? [],
+    linkedChecklistId: task.linkedChecklistId ?? null,
+    linkedChecklistProgress: task.linkedChecklistProgress ?? null,
   }
 
   return normalized.status === task.status
@@ -490,6 +536,8 @@ function addTask() {
       status: 'open' as const,
       memberIds: [...quickAdd.memberIds],
       subdivisionIds: [...quickAdd.subdivisionIds],
+      linkedChecklistId: null,
+      linkedChecklistProgress: null,
     },
   ]
   tasks.value = next
@@ -683,6 +731,37 @@ function onDragEnd() {
   dragOverColumnStatus.value = null
 }
 
+// ---- Checklist linking ----
+
+const linkingChecklistForTaskId = ref<number | null>(null)
+const checklistLinkQuery = ref('')
+
+watch(linkingChecklistForTaskId, () => { checklistLinkQuery.value = '' })
+
+const availableChecklistsForTask = computed(() => {
+  const linkedIds = new Set(tasks.value.flatMap(t => t.linkedChecklistId ? [t.linkedChecklistId] : []))
+  return (props.checklists ?? []).filter(c => !linkedIds.has(c.id))
+})
+
+const checklistLinkOptions = computed<SearchSelectOption<PlanningChecklist>[]>(() =>
+  availableChecklistsForTask.value.map(c => ({ key: c.id, label: c.title, value: c })),
+)
+
+function linkedChecklistTitle(task: EventPlanningTask) {
+  if (!task.linkedChecklistId) return ''
+  const checklist = props.checklists?.find(c => c.id === task.linkedChecklistId)
+  return checklist?.title ?? String(task.linkedChecklistId)
+}
+
+function selectChecklistForTask(taskId: number, checklist: unknown) {
+  const c = checklist as PlanningChecklist | null
+  if (!c) return
+  emit('link-checklist-to-task', { checklistId: c.id, taskId })
+  linkingChecklistForTaskId.value = null
+}
+
+// ---- Drag: block for checklist-linked tasks ----
+
 function onDrop(targetTaskId: number | null, targetStatus: EventPlanningTaskStatus) {
   const sourceId = draggedTaskId.value
   onDragEnd()
@@ -690,6 +769,8 @@ function onDrop(targetTaskId: number | null, targetStatus: EventPlanningTaskStat
 
   const source = tasks.value.find(t => t.id === sourceId)
   if (!source) return
+
+  if (source.linkedChecklistId) return
 
   const updated = normalizeTask({ ...source, status: targetStatus })
   const without = tasks.value.filter(t => t.id !== sourceId)

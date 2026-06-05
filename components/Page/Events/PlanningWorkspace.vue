@@ -256,6 +256,10 @@
                           <span class="min-w-0 truncate font-medium text-slate-700">{{ checklist.title }}</span>
                           <span class="shrink-0 text-slate-500">{{ t('event.planning.checklistItemsDone', { done: checklist.items.filter(i => i.done).length, total: checklist.items.length }) }}</span>
                         </div>
+                        <p v-if="checklist.taskId" class="mt-0.5 flex items-center gap-1 text-xs text-slate-400">
+                          <Icon name="material-symbols:task-alt-rounded" class="shrink-0 text-sm" />
+                          <span class="truncate">{{ planningTasks.find(t => t.id === checklist.taskId)?.title }}</span>
+                        </p>
                         <div class="mt-1 h-1.5 overflow-hidden rounded-full bg-slate-100">
                           <div
                             class="h-1.5 rounded-full bg-emerald-400 transition-all"
@@ -317,7 +321,10 @@
               :members="members"
               :subdivisions="subdivisions"
               :current-member-id="currentMemberId"
+              :checklists="reusableChecklists"
               @save="saveEventTasks"
+              @link-checklist-to-task="linkChecklistToTask"
+              @navigate-to-checklists="activeTab = 'checklists'"
             />
 
             <EventChecklistsPanel
@@ -325,8 +332,11 @@
               v-model:checklists="reusableChecklists"
               v-model:templates="checklistTemplates"
               :disabled="!canEdit || checklistLoading || checklistSaving || !canManageChecklists"
-              @save-checklists="saveEventChecklists"
+              :tasks="planningTasks"
+              @save-checklists="handleSaveChecklists"
               @save-templates="saveEventChecklistTemplates"
+              @create-task-from-checklist="createTaskFromChecklist"
+              @navigate-to-tasks="activeTab = 'tasks'"
             />
 
             <EventShiftsPanel
@@ -413,6 +423,7 @@ import type {
   EventPlanningTask,
   EventPlanningTaskStatus,
   EventTimelineItem,
+  PlanningChecklist,
 } from './planning/types'
 
 defineEmits<{ (e: 'openMenu'): void }>()
@@ -502,7 +513,7 @@ const {
   checklistSaving,
   canManageChecklists,
   loadEventChecklists,
-  saveEventChecklists,
+  saveEventChecklists: _saveEventChecklists,
   saveEventChecklistTemplates,
   reset: resetChecklists,
 } = useEventChecklists(eventIdRef)
@@ -835,6 +846,7 @@ const timelineItems = computed<EventTimelineItem[]>(() => {
         kind: 'task',
         typeLabel: t('event.planning.taskDeadline'),
         status: task.status,
+        checklistProgress: task.linkedChecklistProgress ?? undefined,
       })
     })
 
@@ -893,9 +905,58 @@ function taskAssigneeSummary(task: EventPlanningTask) {
   return labels.length ? labels.join(', ') : t('event.planning.unassigned')
 }
 
+async function handleSaveChecklists(nextChecklists: PlanningChecklist[]) {
+  const updatedStatuses = await _saveEventChecklists(nextChecklists)
+  if (updatedStatuses !== null && eventId.value) {
+    await loadEventTasks(eventId.value)
+  }
+}
+
+const nextTempTaskId = ref(-1)
+
+async function createTaskFromChecklist({ checklistId, title, deadline }: { checklistId: number; title: string; deadline: string | null }) {
+  const prevIds = new Set(planningTasks.value.filter(t => t.id > 0).map(t => t.id))
+
+  const tempTask: EventPlanningTask = {
+    id: nextTempTaskId.value--,
+    title,
+    deadline,
+    status: 'open',
+    memberIds: [],
+    subdivisionIds: [],
+    linkedChecklistId: null,
+    linkedChecklistProgress: null,
+  }
+
+  planningTasks.value = [...planningTasks.value, tempTask]
+  await saveEventTasks(planningTasks.value)
+
+  const newTask = planningTasks.value.find(t => t.id > 0 && !prevIds.has(t.id))
+  if (!newTask) return
+
+  const checklist = reusableChecklists.value.find(c => c.id === checklistId)
+  if (checklist) {
+    checklist.taskId = newTask.id
+    await handleSaveChecklists(reusableChecklists.value)
+  }
+}
+
+function linkChecklistToTask({ checklistId, taskId }: { checklistId: number; taskId: number | null }) {
+  if (taskId !== null) {
+    const existing = reusableChecklists.value.find(c => c.taskId === taskId && c.id !== checklistId)
+    if (existing) existing.taskId = null
+  }
+  const checklist = reusableChecklists.value.find(c => c.id === checklistId)
+  if (checklist) checklist.taskId = taskId
+  handleSaveChecklists(reusableChecklists.value)
+}
+
 function setTaskDone(taskId: number, done: boolean) {
-  const next = planningTasks.value.map(task =>
-    task.id === taskId ? { ...task, status: (done ? 'done' : 'open') as EventPlanningTaskStatus } : task,
+  const task = planningTasks.value.find(t => t.id === taskId)
+  if (task?.linkedChecklistId) return
+
+  const next = planningTasks.value.map(t =>
+    t.id === taskId ? { ...t, status: (done ? 'done' : 'open') as EventPlanningTaskStatus } : t,
   )
   planningTasks.value = next
   saveEventTasks(next)

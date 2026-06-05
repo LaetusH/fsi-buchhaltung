@@ -31,6 +31,7 @@ export function useEventChecklists(eventId: Ref<number | null>) {
         label: item.label,
         done: item.done,
       })),
+      taskId: checklist.taskId,
     }
   }
 
@@ -44,6 +45,7 @@ export function useEventChecklists(eventId: Ref<number | null>) {
         label: item.label,
         done: false,
       })),
+      taskId: null,
     }
   }
 
@@ -57,6 +59,7 @@ export function useEventChecklists(eventId: Ref<number | null>) {
         label: item.label,
         done: item.done,
       })),
+      taskId: checklist.taskId ?? null,
     }
   }
 
@@ -93,8 +96,8 @@ export function useEventChecklists(eventId: Ref<number | null>) {
     }
   }
 
-  async function saveEventChecklists(nextChecklists: PlanningChecklist[]) {
-    if (!eventId.value || checklistSaving.value) return
+  async function saveEventChecklists(nextChecklists: PlanningChecklist[]): Promise<Array<{ id: number; status: string }> | null> {
+    if (!eventId.value || checklistSaving.value) return null
 
     try {
       checklistSaving.value = true
@@ -105,10 +108,12 @@ export function useEventChecklists(eventId: Ref<number | null>) {
       if (!res.ok) throw new Error(res.error)
 
       reusableChecklists.value = res.checklists.map(mapPersistedChecklistToPanel)
+      return res.affectedTaskStatuses
     }
     catch (err: any) {
       toast.error(err?.message || t('event.planning.failedSaveChecklists'))
       if (eventId.value) await loadEventChecklists(eventId.value)
+      return null
     }
     finally {
       checklistSaving.value = false

@@ -323,23 +323,6 @@ CREATE TABLE IF NOT EXISTS event_checklist_template_items (
   FOREIGN KEY (template_id) REFERENCES event_checklist_templates(id) ON DELETE CASCADE
 );
 
-CREATE TABLE IF NOT EXISTS event_checklists (
-  id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-  event_id BIGINT UNSIGNED NOT NULL,
-  title VARCHAR(255) NOT NULL,
-  description TEXT NOT NULL,
-  FOREIGN KEY (event_id) REFERENCES events(id) ON DELETE CASCADE
-);
-
-CREATE TABLE IF NOT EXISTS event_checklist_items (
-  id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-  checklist_id BIGINT UNSIGNED NOT NULL,
-  label VARCHAR(255) NOT NULL,
-  is_done TINYINT(1) NOT NULL DEFAULT 0,
-  position SMALLINT UNSIGNED NOT NULL,
-  FOREIGN KEY (checklist_id) REFERENCES event_checklists(id) ON DELETE CASCADE
-);
-
 CREATE TABLE IF NOT EXISTS event_tasks (
   id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
   event_id BIGINT UNSIGNED NOT NULL,
@@ -364,6 +347,26 @@ CREATE TABLE IF NOT EXISTS event_task_subdivisions (
   PRIMARY KEY (task_id, subdivision_id),
   FOREIGN KEY (task_id) REFERENCES event_tasks(id) ON DELETE CASCADE,
   FOREIGN KEY (subdivision_id) REFERENCES subdivisions(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS event_checklists (
+  id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  event_id BIGINT UNSIGNED NOT NULL,
+  task_id BIGINT UNSIGNED NULL,
+  title VARCHAR(255) NOT NULL,
+  description TEXT NOT NULL,
+  UNIQUE KEY uq_checklist_task (task_id),
+  FOREIGN KEY (event_id) REFERENCES events(id) ON DELETE CASCADE,
+  FOREIGN KEY (task_id) REFERENCES event_tasks(id) ON DELETE SET NULL
+);
+
+CREATE TABLE IF NOT EXISTS event_checklist_items (
+  id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  checklist_id BIGINT UNSIGNED NOT NULL,
+  label VARCHAR(255) NOT NULL,
+  is_done TINYINT(1) NOT NULL DEFAULT 0,
+  position SMALLINT UNSIGNED NOT NULL,
+  FOREIGN KEY (checklist_id) REFERENCES event_checklists(id) ON DELETE CASCADE
 );
 
 CREATE TABLE IF NOT EXISTS spheres (

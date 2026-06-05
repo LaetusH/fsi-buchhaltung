@@ -22,6 +22,8 @@ export function useEventTasks(eventId: Ref<number | null>) {
       status: task.status,
       memberIds: task.members.map(m => m.id),
       subdivisionIds: task.subdivisions.map(s => s.id),
+      linkedChecklistId: task.linkedChecklistId,
+      linkedChecklistProgress: task.linkedChecklistProgress,
     }
   }
 

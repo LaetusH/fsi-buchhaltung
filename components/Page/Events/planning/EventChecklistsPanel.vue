@@ -138,25 +138,116 @@
             </span>
           </div>
 
-          <div class="mt-3 flex flex-wrap gap-2">
-            <button type="button" class="btn-secondary inline-flex items-center gap-1.5 px-2 py-1 text-xs" :disabled="disabled" @click="editChecklist(checklist)">
-              <Icon name="material-symbols:edit-rounded" />
-              {{ t('actions.edit') }}
+          <!-- Compact icon toolbar -->
+          <div class="mt-2 flex items-center gap-1">
+            <button
+              type="button"
+              class="inline-flex h-7 w-7 items-center justify-center rounded-md border border-slate-200 bg-white text-slate-500 hover:bg-slate-50 hover:text-slate-700 disabled:opacity-60 cursor-pointer"
+              :disabled="disabled"
+              :title="t('actions.edit')"
+              @click="editChecklist(checklist)"
+            >
+              <Icon name="material-symbols:edit-rounded" class="text-base" />
             </button>
             <button
               type="button"
-              class="inline-flex items-center gap-1.5 rounded-md border px-2 py-1 text-xs font-medium disabled:opacity-60"
-              :class="isChecklistSavedAsTemplate(checklist) ? 'border-emerald-200 bg-emerald-50 text-emerald-700 cursor-not-allowed' : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50 cursor-pointer'"
+              class="inline-flex h-7 w-7 items-center justify-center rounded-md border disabled:opacity-60"
+              :class="isChecklistSavedAsTemplate(checklist) ? 'border-emerald-200 bg-emerald-50 text-emerald-600 cursor-not-allowed' : 'border-slate-200 bg-white text-slate-500 hover:bg-slate-50 hover:text-slate-700 cursor-pointer'"
               :disabled="disabled || isChecklistSavedAsTemplate(checklist)"
+              :title="isChecklistSavedAsTemplate(checklist) ? t('event.planning.savedAsTemplate') : t('event.planning.saveAsTemplate')"
               @click="saveChecklistAsTemplate(checklist)"
             >
-              <Icon name="material-symbols:bookmark-add-rounded" />
-              {{ isChecklistSavedAsTemplate(checklist) ? t('event.planning.savedAsTemplate') : t('event.planning.saveAsTemplate') }}
+              <Icon name="material-symbols:bookmark-add-rounded" class="text-base" />
             </button>
-            <button type="button" class="inline-flex items-center gap-1.5 rounded-md border border-red-200 bg-red-50 px-2 py-1 text-xs font-medium text-red-700 hover:bg-red-100 disabled:opacity-60 cursor-pointer" :disabled="disabled" @click="removeChecklist(checklist.id)">
-              <Icon name="material-symbols:delete-rounded" />
-              {{ t('actions.remove') }}
+
+            <!-- Task link button -->
+            <template v-if="checklist.taskId !== null">
+              <button
+                type="button"
+                class="inline-flex h-7 min-w-7 items-center gap-1 rounded-md border border-sky-200 bg-sky-50 px-1.5 text-xs font-medium text-sky-700 hover:bg-sky-100 cursor-pointer"
+                :title="t('event.planning.navigateToTask')"
+                @click="emit('navigate-to-tasks')"
+              >
+                <Icon name="material-symbols:task-alt-rounded" class="shrink-0 text-base" />
+                <span class="max-w-24 truncate">{{ linkedTaskTitle(checklist.taskId) }}</span>
+              </button>
+              <button
+                v-if="!disabled"
+                type="button"
+                class="inline-flex h-7 w-7 items-center justify-center rounded-md border border-slate-200 bg-white text-slate-400 hover:bg-slate-50 hover:text-slate-600 cursor-pointer"
+                :title="t('event.planning.unlinkFromTask')"
+                @click="unlinkTask(checklist.id)"
+              >
+                <Icon name="material-symbols:link-off-rounded" class="text-base" />
+              </button>
+            </template>
+            <template v-else-if="!disabled">
+              <button
+                type="button"
+                class="inline-flex h-7 w-7 items-center justify-center rounded-md border border-slate-200 bg-white text-slate-400 hover:bg-slate-50 hover:text-slate-700 cursor-pointer"
+                :title="t('event.planning.linkToTask')"
+                @click="openLinkTask(checklist.id)"
+              >
+                <Icon name="material-symbols:link-rounded" class="text-base" />
+              </button>
+              <button
+                type="button"
+                class="inline-flex h-7 w-7 items-center justify-center rounded-md border border-slate-200 bg-white text-slate-400 hover:bg-orange-50 hover:text-orange-600 cursor-pointer"
+                :title="t('event.planning.createTaskFromChecklist')"
+                @click="openCreateTask(checklist.id)"
+              >
+                <Icon name="material-symbols:add-task-rounded" class="text-base" />
+              </button>
+            </template>
+
+            <span class="flex-1" />
+            <button
+              type="button"
+              class="inline-flex h-7 w-7 items-center justify-center rounded-md border border-red-200 bg-red-50 text-red-600 hover:bg-red-100 disabled:opacity-60 cursor-pointer"
+              :disabled="disabled"
+              :title="t('actions.remove')"
+              @click="removeChecklist(checklist.id)"
+            >
+              <Icon name="material-symbols:delete-rounded" class="text-base" />
             </button>
+          </div>
+
+          <!-- Link task dropdown (only when open) -->
+          <div v-if="linkingChecklistId === checklist.id" class="mt-2 flex items-center gap-1.5">
+            <CommonSearchSelect
+              class="checklist-compact-input min-w-0 flex-1"
+              :model-value="taskLinkQuery"
+              :options="taskLinkOptions(checklist.id)"
+              :placeholder="t('event.planning.selectTask')"
+              :empty-text="t('event.planning.noUnlinkedTasks')"
+              @update:model-value="taskLinkQuery = $event"
+              @select="selectTaskForChecklist(checklist.id, $event)"
+              @clear-selection="taskLinkQuery = ''"
+            />
+            <button type="button" class="shrink-0 text-xs text-slate-400 hover:text-slate-600 cursor-pointer" @click="closeLinkTask">
+              {{ t('actions.cancel') }}
+            </button>
+          </div>
+
+          <!-- Create task inline form (only when open) -->
+          <div v-else-if="creatingTaskForChecklistId === checklist.id" class="mt-2 space-y-1.5">
+            <div class="flex items-center gap-1.5">
+              <input
+                v-model="newTaskTitle"
+                class="input min-w-0 flex-1 py-0.75 text-sm"
+                :placeholder="t('event.planning.taskTitle')"
+                @keydown.enter.prevent="submitCreateTask(checklist.id)"
+                @keydown.esc.prevent="cancelCreateTask"
+              >
+              <button type="button" class="btn-primary inline-flex h-7 items-center gap-1 px-2 text-xs" :disabled="!newTaskTitle.trim()" @click="submitCreateTask(checklist.id)">
+                <Icon name="material-symbols:add-rounded" />
+                {{ t('event.planning.createTaskFromChecklist') }}
+              </button>
+              <button type="button" class="shrink-0 text-xs text-slate-400 hover:text-slate-600 cursor-pointer" @click="cancelCreateTask">
+                {{ t('actions.cancel') }}
+              </button>
+            </div>
+            <CommonDateInput v-model="newTaskDeadline" mode="date" :empty-value="null" />
           </div>
 
           <div class="mt-4 space-y-2">
@@ -274,10 +365,12 @@
 <script setup lang="ts">
 import { useI18n } from '~/composables/useI18n'
 import { useTouchDrag } from '~/composables/useTouchDrag'
-import type { PlanningChecklist } from './types'
+import type { SearchSelectOption } from '~/components/Common/SearchSelect.vue'
+import type { PlanningChecklist, EventPlanningTask } from './types'
 
 const props = defineProps<{
   disabled?: boolean
+  tasks?: EventPlanningTask[]
 }>()
 
 const checklists = defineModel<PlanningChecklist[]>('checklists', { required: true })
@@ -285,6 +378,8 @@ const checklistTemplates = defineModel<PlanningChecklist[]>('templates', { requi
 const emit = defineEmits<{
   (e: 'save-checklists', value: PlanningChecklist[]): void
   (e: 'save-templates', value: PlanningChecklist[]): void
+  (e: 'create-task-from-checklist', value: { checklistId: number; title: string; deadline: string | null }): void
+  (e: 'navigate-to-tasks'): void
 }>()
 const { t } = useI18n()
 
@@ -375,6 +470,7 @@ function createEmptyChecklist(id: number): PlanningChecklist {
     items: [
       { id: nextDraftItemId.value--, label: '', done: false },
     ],
+    taskId: null,
   }
 }
 
@@ -479,17 +575,23 @@ function buildDraftChecklist(): PlanningChecklist {
     title: draft.title.trim(),
     description: draft.description.trim(),
     items: normalizeDraftItems(false),
+    taskId: null,
   }
 }
 
 function saveDraftToEvent() {
   if (!canSaveDraft.value) return
 
+  const existingTaskId = editingChecklistId.value !== null
+    ? (checklists.value.find(c => c.id === editingChecklistId.value)?.taskId ?? null)
+    : null
+
   const nextChecklist: PlanningChecklist = {
     id: editingChecklistId.value ?? nextChecklistId.value--,
     title: draft.title.trim(),
     description: draft.description.trim(),
     items: normalizeDraftItems(true),
+    taskId: existingTaskId,
   }
 
   let nextChecklists: PlanningChecklist[]
@@ -525,6 +627,7 @@ function saveDraftAsTemplate() {
       title: draft.title.trim(),
       description: draft.description.trim(),
       items: duplicateDraftItems(false),
+      taskId: null,
     },
     ...checklistTemplates.value,
   ])
@@ -615,6 +718,7 @@ function copyChecklist(checklist: PlanningChecklist, keepDone: boolean): Plannin
       label: item.label,
       done: keepDone ? item.done : false,
     })),
+    taskId: checklist.taskId,
   }
 }
 
@@ -628,7 +732,87 @@ function duplicateChecklist(checklist: PlanningChecklist, id: number, keepDone: 
       label: item.label,
       done: keepDone ? item.done : false,
     })),
+    taskId: null,
   }
+}
+
+// ---- Task linking ----
+
+const linkingChecklistId = ref<number | null>(null)
+const taskLinkQuery = ref('')
+const creatingTaskForChecklistId = ref<number | null>(null)
+const newTaskTitle = ref('')
+const newTaskDeadline = ref<string | null>(null)
+
+watch(linkingChecklistId, () => { taskLinkQuery.value = '' })
+
+const claimedTaskIds = computed(() => new Set(checklists.value.flatMap(c => c.taskId ? [c.taskId] : [])))
+
+function availableTasksForLinking(forChecklistId: number) {
+  const currentTaskId = checklists.value.find(c => c.id === forChecklistId)?.taskId ?? null
+  return (props.tasks ?? []).filter(t => t.linkedChecklistId === null || t.id === currentTaskId)
+    .filter(t => !claimedTaskIds.value.has(t.id) || t.id === currentTaskId)
+}
+
+function taskLinkOptions(forChecklistId: number): SearchSelectOption<EventPlanningTask>[] {
+  return availableTasksForLinking(forChecklistId).map(t => ({ key: t.id, label: t.title, value: t }))
+}
+
+function linkedTaskTitle(taskId: number) {
+  return props.tasks?.find(t => t.id === taskId)?.title ?? String(taskId)
+}
+
+function openLinkTask(checklistId: number) {
+  if (linkingChecklistId.value === checklistId) {
+    linkingChecklistId.value = null
+    return
+  }
+  linkingChecklistId.value = checklistId
+  creatingTaskForChecklistId.value = null
+}
+
+function closeLinkTask() {
+  linkingChecklistId.value = null
+}
+
+function selectTaskForChecklist(checklistId: number, selected: unknown) {
+  const task = selected as EventPlanningTask | null
+  if (!task) return
+  persistChecklists(checklists.value.map(c =>
+    c.id === checklistId ? { ...c, taskId: task.id } : c,
+  ))
+  linkingChecklistId.value = null
+}
+
+function unlinkTask(checklistId: number) {
+  persistChecklists(checklists.value.map(c =>
+    c.id === checklistId ? { ...c, taskId: null } : c,
+  ))
+}
+
+function openCreateTask(checklistId: number) {
+  if (creatingTaskForChecklistId.value === checklistId) {
+    cancelCreateTask()
+    return
+  }
+  const checklist = checklists.value.find(c => c.id === checklistId)
+  newTaskTitle.value = checklist?.title ?? ''
+  newTaskDeadline.value = null
+  creatingTaskForChecklistId.value = checklistId
+  linkingChecklistId.value = null
+}
+
+function cancelCreateTask() {
+  creatingTaskForChecklistId.value = null
+  newTaskTitle.value = ''
+  newTaskDeadline.value = null
+}
+
+function submitCreateTask(checklistId: number) {
+  const title = newTaskTitle.value.trim()
+  if (!title) return
+  emit('create-task-from-checklist', { checklistId, title, deadline: newTaskDeadline.value })
+  cancelCreateTask()
 }
 
 function persistChecklists(nextChecklists: PlanningChecklist[]) {
@@ -643,6 +827,19 @@ function persistTemplates(nextTemplates: PlanningChecklist[]) {
 </script>
 
 <style scoped>
+.checklist-compact-input :deep(input),
+.checklist-compact-input:deep(input) {
+  height: 1.75rem;
+  padding-top: 0.125rem;
+  padding-bottom: 0.125rem;
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+}
+
+.checklist-compact-input {
+  height: 1.75rem;
+}
+
 .event-checklist-template-scroll {
   scrollbar-width: auto;
   scrollbar-color: #94a3b8 #e2e8f0;

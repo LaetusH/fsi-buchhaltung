@@ -93,6 +93,8 @@ export interface EventTask {
   position: number
   members: EventTaskMember[]
   subdivisions: EventTaskSubdivision[]
+  linkedChecklistId: number | null
+  linkedChecklistProgress: { done: number; total: number } | null
 }
 
 export interface SaveEventTask {
@@ -139,6 +141,7 @@ export interface EventChecklist {
   title: string
   description: string
   items: EventChecklistItem[]
+  taskId: number | null
 }
 
 export interface SaveEventChecklistItem {
@@ -152,6 +155,7 @@ export interface SaveEventChecklist {
   title: string
   description: string
   items: SaveEventChecklistItem[]
+  taskId?: number | null
 }
 
 export interface EventChecklistTemplate {
