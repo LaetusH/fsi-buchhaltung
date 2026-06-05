@@ -70,6 +70,7 @@ import { useI18n } from '~/composables/useI18n'
 import { usePage } from '~/composables/usePage'
 import { useToast } from '~/composables/useToast'
 import type { ChangePasswordResponse } from '~/server/api/auth/change-password.post'
+import { MIN_PASSWORD_LENGTH } from '~/config/validation'
 
 const { fetchSession, logout } = useAuth()
 const { setPage } = usePage()
@@ -85,7 +86,7 @@ const passwordForm = ref({
 
 function translatePasswordError(error?: string) {
   if (error === 'Missing fields') return t('settings.general.passwordMissingFields')
-  if (error === 'Password too short') return t('settings.general.passwordTooShort')
+  if (error === 'Password too short') return t('settings.general.passwordTooShort', { min: MIN_PASSWORD_LENGTH })
   if (error === 'Passwords do not match') return t('settings.general.passwordMismatch')
   if (error === 'Invalid current password') return t('settings.general.currentPasswordInvalid')
   if (error === 'Not authenticated') return t('errors.notAuthenticated')
@@ -104,8 +105,8 @@ async function changePassword() {
     return
   }
 
-  if (passwordForm.value.newPassword.length < 8) {
-    toast.error(t('settings.general.passwordTooShort'))
+  if (passwordForm.value.newPassword.length < MIN_PASSWORD_LENGTH) {
+    toast.error(t('settings.general.passwordTooShort', { min: MIN_PASSWORD_LENGTH }))
     return
   }
 

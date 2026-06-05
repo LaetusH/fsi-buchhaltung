@@ -47,8 +47,8 @@
             <td class="py-2">{{ user.member_name || t('settings.users.noLinkedMember') }}</td>
             <td class="py-2">
               <div class="flex justify-end gap-3">
-                <button class="text-blue-600 hover:underline cursor-pointer" @click="openMemberModal(user)">
-                  {{ user.member_id ? t('actions.edit') : t('settings.users.assignMember') }}
+                <button class="text-blue-600 hover:underline cursor-pointer" @click="openEditUserModal(user)">
+                  {{ t('actions.edit') }}
                 </button>
 
                 <button
@@ -153,30 +153,64 @@
   <CommonModal
     v-if="editingUser"
     :model-value="!!editingUser"
-    :title="t('settings.users.memberTitle', { username: editingUser.username })"
+    :title="t('settings.users.editUserTitle', { username: editingUser.username })"
     footer-class="relative z-10 mt-4 flex justify-end gap-3 bg-white pt-2"
-    @update:model-value="!$event && closeMemberModal()"
-    @close="closeMemberModal"
+    @update:model-value="!$event && closeEditUserModal()"
+    @close="closeEditUserModal"
   >
-    <div class="field relative z-20">
-      <label>{{ t('settings.users.linkedMember') }}</label>
-      <CommonSearchSelect
-        v-model="editMemberQuery"
-        :options="editMemberOptions"
-        :selected-label="selectedEditMemberLabel"
-        :placeholder="t('settings.users.memberPlaceholder')"
-        :empty-text="t('settings.users.noAvailableMembers')"
-        @select="selectEditMember"
-        @clear-selection="editingMemberId = null"
-      />
+    <div class="grid gap-4">
+      <div class="field">
+        <label>{{ t('login.username') }}</label>
+        <input
+          v-model="editingUsernameInput"
+          class="input"
+          autocomplete="off"
+          autocapitalize="off"
+          spellcheck="false"
+          data-lpignore="true"
+        >
+      </div>
+
+      <div class="field">
+        <label>{{ t('settings.general.newPassword') }}</label>
+        <input
+          v-model="editingPasswordNew"
+          type="password"
+          class="input"
+          autocomplete="new-password"
+        >
+      </div>
+
+      <div class="field">
+        <label>{{ t('settings.general.confirmPassword') }}</label>
+        <input
+          v-model="editingPasswordConfirm"
+          type="password"
+          class="input"
+          autocomplete="new-password"
+        >
+      </div>
+
+      <div class="field relative z-20">
+        <label>{{ t('settings.users.linkedMember') }}</label>
+        <CommonSearchSelect
+          v-model="editMemberQuery"
+          :options="editMemberOptions"
+          :selected-label="selectedEditMemberLabel"
+          :placeholder="t('settings.users.memberPlaceholder')"
+          :empty-text="t('settings.users.noAvailableMembers')"
+          @select="selectEditMember"
+          @clear-selection="editingMemberId = null"
+        />
+      </div>
     </div>
 
     <template #footer>
-      <button class="btn-secondary" @click="closeMemberModal">
+      <button class="btn-secondary" :disabled="isSavingUserEdit" :class="{ 'opacity-50 cursor-not-allowed': isSavingUserEdit }" @click="closeEditUserModal">
         {{ t('actions.cancel') }}
       </button>
 
-      <button class="btn-primary" :disabled="isSavingMemberLink" :class="{ 'opacity-50 cursor-not-allowed': isSavingMemberLink }" @click="saveMemberLink">
+      <button class="btn-primary" :disabled="isSavingUserEdit" :class="{ 'opacity-50 cursor-not-allowed': isSavingUserEdit }" @click="saveUserEdit">
         {{ t('actions.save') }}
       </button>
     </template>
@@ -189,6 +223,7 @@ import { useAdvancedTable } from '~/composables/useAdvancedTable'
 import { useI18n } from '~/composables/useI18n'
 import { useToast } from '~/composables/useToast'
 import { useAuth } from '~/composables/useAuth'
+import { MIN_PASSWORD_LENGTH } from '~/config/validation'
 
 interface UserListRow {
   id: number
@@ -225,8 +260,11 @@ const form = ref({
   member_id: null as number | null,
 })
 const editingMemberId = ref<number | null>(null)
+const editingUsernameInput = ref('')
+const editingPasswordNew = ref('')
+const editingPasswordConfirm = ref('')
 const isCreatingUser = ref(false)
-const isSavingMemberLink = ref(false)
+const isSavingUserEdit = ref(false)
 type UserColumnKey = 'username' | 'member'
 
 const {
@@ -291,16 +329,23 @@ function closeCreateModal() {
   resetForm()
 }
 
-function openMemberModal(user: UserListRow) {
+function openEditUserModal(user: UserListRow) {
   editingUser.value = { ...user }
+  editingUsernameInput.value = user.username
   editingMemberId.value = user.member_id
   editMemberQuery.value = user.member_name || ''
+  editingPasswordNew.value = ''
+  editingPasswordConfirm.value = ''
 }
 
-function closeMemberModal() {
+function closeEditUserModal() {
+  if (isSavingUserEdit.value) return
   editingUser.value = null
+  editingUsernameInput.value = ''
   editingMemberId.value = null
   editMemberQuery.value = ''
+  editingPasswordNew.value = ''
+  editingPasswordConfirm.value = ''
 }
 
 function selectCreateMember(value: unknown) {
@@ -341,6 +386,11 @@ async function createUser() {
     return
   }
 
+  if (payload.password.length < MIN_PASSWORD_LENGTH) {
+    toast.error(t('settings.users.setPasswordTooShort', { min: MIN_PASSWORD_LENGTH }))
+    return
+  }
+
   try {
     isCreatingUser.value = true
     const res = await $fetch<{ ok: boolean, error?: string }>('/api/auth/register', {
@@ -351,6 +401,10 @@ async function createUser() {
     if (!res.ok) {
       if (res.error === 'Username already exists') {
         toast.error(t('settings.users.usernameExists'))
+        return
+      }
+      if (res.error === 'Password too short') {
+        toast.error(t('settings.users.setPasswordTooShort', { min: MIN_PASSWORD_LENGTH }))
         return
       }
       if (res.error === 'Member already linked to another user') {
@@ -373,37 +427,86 @@ async function createUser() {
   }
 }
 
-async function saveMemberLink() {
-  if (!editingUser.value || isSavingMemberLink.value) return
+async function saveUserEdit() {
+  if (!editingUser.value || isSavingUserEdit.value) return
+
+  const newUsername = editingUsernameInput.value.trim()
+
+  if (!newUsername) {
+    toast.error(t('settings.users.usernameRequired'))
+    return
+  }
+
+  if (editingPasswordNew.value) {
+    if (editingPasswordNew.value.length < MIN_PASSWORD_LENGTH) {
+      toast.error(t('settings.users.setPasswordTooShort', { min: MIN_PASSWORD_LENGTH }))
+      return
+    }
+    if (editingPasswordNew.value !== editingPasswordConfirm.value) {
+      toast.error(t('settings.users.setPasswordMismatch'))
+      return
+    }
+  }
 
   try {
-    isSavingMemberLink.value = true
-    const res = await $fetch<{ ok: boolean, error?: string }>('/api/auth/link-member', {
+    isSavingUserEdit.value = true
+
+    if (newUsername !== editingUser.value.username) {
+      const res = await $fetch<{ ok: boolean, error?: string }>('/api/auth/change-username', {
+        method: 'POST',
+        body: { user_id: editingUser.value.id, username: newUsername },
+      })
+      if (!res.ok) {
+        if (res.error === 'Username already exists') {
+          toast.error(t('settings.users.usernameExists'))
+          return
+        }
+        toast.error(`${t('settings.users.usernameSaveFailed')}: ${res.error}`)
+        return
+      }
+    }
+
+    if (editingPasswordNew.value) {
+      const res = await $fetch<{ ok: boolean, error?: string }>('/api/auth/admin-set-password', {
+        method: 'POST',
+        body: {
+          user_id: editingUser.value.id,
+          newPassword: editingPasswordNew.value,
+          confirmPassword: editingPasswordConfirm.value,
+        },
+      })
+      if (!res.ok) {
+        toast.error(`${t('settings.users.setPasswordFailed')}: ${res.error}`)
+        return
+      }
+    }
+
+    const memberRes = await $fetch<{ ok: boolean, error?: string }>('/api/auth/link-member', {
       method: 'POST',
       body: {
         user_id: editingUser.value.id,
         member_id: editingMemberId.value,
       },
     })
-
-    if (!res.ok) {
-      if (res.error === 'Member already linked to another user') {
+    if (!memberRes.ok) {
+      if (memberRes.error === 'Member already linked to another user') {
         toast.error(t('settings.users.memberAlreadyLinked'))
         return
       }
-      if (res.error === 'Member not found') {
+      if (memberRes.error === 'Member not found') {
         toast.error(t('settings.users.memberNotFound'))
         return
       }
-      toast.error(`${t('settings.users.memberSaveFailed')}: ${res.error}`)
+      toast.error(`${t('settings.users.memberSaveFailed')}: ${memberRes.error}`)
       return
     }
 
-    toast.success(t('settings.users.memberSaved'))
-    closeMemberModal()
+    toast.success(t('settings.users.userEditSaved'))
+    isSavingUserEdit.value = false
+    closeEditUserModal()
     await Promise.all([loadUsers(), loadMemberOptions()])
   } finally {
-    isSavingMemberLink.value = false
+    isSavingUserEdit.value = false
   }
 }
 

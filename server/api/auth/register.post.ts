@@ -1,6 +1,7 @@
 import { defineEventHandler, readBody } from 'h3'
 import { withAuditTransaction } from '~/server/utils/db'
 import { requirePermission } from '~/server/utils/api/guards'
+import { MIN_PASSWORD_LENGTH } from '~/config/validation'
 import {
   assignMemberToUser,
   createUserAccount,
@@ -34,6 +35,7 @@ export default defineEventHandler(async (event): Promise<RegisterResponse> => {
 
   const body = await readBody<RegisterBody>(event)
   if (!body.username || !body.password) return { ok: false, error: 'Missing fields' }
+  if (body.password.length < MIN_PASSWORD_LENGTH) return { ok: false, error: 'Password too short' }
 
   try {
     await withAuditTransaction(current.user, async (conn) => {
