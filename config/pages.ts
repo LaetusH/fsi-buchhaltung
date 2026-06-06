@@ -23,7 +23,7 @@ import SettingsPage from '~/components/Page/Settings/Overview.vue'
 export const PAGES: Record<string, AppPage> = {
   Login: { main: true, labelKey: 'pages.login', component: LoginPage, icon: 'material-symbols:login-rounded', permissions: [], allowGuest: true },
   Home: { main: true, labelKey: 'pages.home', component: HomePage, icon: 'material-symbols:home-rounded', permissions: ['pages.home.view'] },
-  Finances: { main: true, labelKey: 'pages.finances', component: FinancesPage, icon: 'ri:money-euro-circle-fill', permissions: ['receipts.view', 'invoices.view', 'reimbursements.view', 'cash_counts.view', 'budgets.view'] },
+  Finances: { main: true, labelKey: 'pages.finances', component: FinancesPage, icon: 'material-symbols:euro-rounded', permissions: ['receipts.view', 'invoices.view', 'reimbursements.view', 'cash_counts.view', 'budgets.view'] },
   ReceiptList: { main: false, labelKey: 'pages.receipts', component: ReceiptListPage, permissions: ['receipts.view'] },
   ReceiptCreate: { main: false, labelKey: 'pages.createReceipt', component: ReceiptCreatePage, permissions: ['receipts.view'], preserveOnRefresh: true },
   InvoiceList: { main: false, labelKey: 'pages.invoices', component: InvoiceListPage, permissions: ['invoices.view'] },
