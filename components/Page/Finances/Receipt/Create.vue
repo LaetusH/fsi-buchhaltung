@@ -73,10 +73,12 @@ const reimbursementDraftContext = computed<Partial<CreateReimbursementBody> | nu
 
 const statusLockedByDraft = computed(() => reimbursementDraftContext.value !== null)
 const statusLocked = computed(() => statusLockedFromAssociation.value || statusLockedByDraft.value)
+const fromBankStatement = computed(() => returnTarget.value.page === 'BankStatementCreate')
 const hasReceiptFile = computed(() => Boolean(file.value) || (!!existingFile.value && !removeExistingFile.value))
 const externalValidationErrors = computed(() => {
   const errors: string[] = []
   if (statusLocked.value && !hasReceiptFile.value) errors.push(t('receipt.required.fileForReimbursement'))
+  if (fromBankStatement.value && !hasReceiptFile.value) errors.push(t('receipt.required.fileForBankStatement'))
   return errors
 })
 
@@ -139,6 +141,10 @@ async function submit() {
     toast.error(t('receipt.required.fileForReimbursement'))
     return
   }
+  if (fromBankStatement.value && !hasReceiptFile.value) {
+    toast.error(t('receipt.required.fileForBankStatement'))
+    return
+  }
   if (statusLockedByDraft.value) {
     form.value.status = statusFromReimbursementDraft(reimbursementDraftContext.value)
   }
@@ -193,7 +199,7 @@ async function submit() {
     }
 
     toast.success(isEditMode.value ? t('receipt.saved.updated') : t('receipt.saved.created'))
-    if (createdReceiptId && returnTarget.value.page === 'ReimbursementCreate') {
+    if (createdReceiptId && (returnTarget.value.page === 'ReimbursementCreate' || returnTarget.value.page === 'BankStatementCreate')) {
       goToReturnTarget({ newReceiptId: createdReceiptId })
       return
     }

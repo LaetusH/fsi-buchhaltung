@@ -15,6 +15,7 @@
     "setup:migrate:password-change-required": "node --env-file=.env scripts/migrate-user-password-change-required.mjs",
     "setup:migrate:event-planning": "node --env-file=.env scripts/migrate-event-planning.mjs",
     "setup:migrate:checklist-task-link": "node --env-file=.env scripts/migrate-checklist-task-link.mjs",
+    "setup:migrate:bank-statements": "node --env-file=.env scripts/migrate-bank-statements.mjs",
     "setup:seed-admin": "node --env-file=.env scripts/seed-admin.mjs",
     "setup:audit": "node --env-file=.env scripts/ensure-audit-infrastructure.mjs",
     "postinstall": "nuxt prepare"

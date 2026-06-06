@@ -35,6 +35,8 @@ export interface FinanceAnalysisInvoiceBreakdownItem {
 
 export interface FinanceAnalysisCashCountItem {
   id: number
+  source_type?: 'bankStatementEvent'
+  bank_statement_id?: number
   event_id: number
   event_name: string
   cost_centres: {

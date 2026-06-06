@@ -18,7 +18,10 @@
       </div>
     </template>
 
-    <div v-if="isLocked" class="mb-6 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+    <div v-if="bankStatementLocked" class="mb-6 rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-900">
+      {{ t('invoice.bankStatementLockedNotice') }}
+    </div>
+    <div v-else-if="isLocked" class="mb-6 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
       {{ t('invoice.lockedNotice', { status: t(`invoice.states.${form.status}`) }) }}
     </div>
 
@@ -81,12 +84,13 @@ const { hasPermission } = useAuth()
 const { goToReturnTarget } = useReturnTarget('InvoiceList')
 
 const persistedStatus = ref<InvoiceStatus | null>(null)
+const bankStatementLocked = ref(false)
 const isLocked = computed(() => isEditMode.value && persistedStatus.value !== InvoiceStatus.Draft)
 const canEdit = computed(() => !pageMeta.value?.forceReadonly && hasPermission('invoices.edit') && !isLocked.value)
-const canEditStatus = computed(() => !pageMeta.value?.forceReadonly && hasPermission('invoices.edit'))
+const canEditStatus = computed(() => !pageMeta.value?.forceReadonly && hasPermission('invoices.edit') && !bankStatementLocked.value)
 const canEditCompany = computed(() => canEdit.value && hasPermission('companies.edit'))
 const statusTargets = computed<InvoiceStatus[] | undefined>(() => {
-  if (!canEditStatus.value || !isLocked.value) return undefined
+  if (!canEditStatus.value || !isLocked.value || bankStatementLocked.value) return undefined
   return [InvoiceStatus.Open, InvoiceStatus.Paid, InvoiceStatus.Cancelled].filter(status => status !== form.value.status)
 })
 
@@ -191,12 +195,14 @@ async function saveInvoice() {
       if (invoiceId.value) await loadInvoice(invoiceId.value)
       toast.success(t('invoice.saved.updated'))
     } else {
-      const res = await $fetch<{ ok: boolean, error?: string }>('/api/invoices/create', {
+      const res = await $fetch<{ ok: boolean, invoiceId?: number, error?: string }>('/api/invoices/create', {
         method: 'POST',
         body,
       })
       if (!res.ok) throw new Error(res.error || t('invoice.saved.failedCreate'))
       toast.success(t('invoice.saved.created'))
+      goToReturnTarget(res.invoiceId ? { newInvoiceId: res.invoiceId } : undefined)
+      return
     }
 
     goToReturnTarget()
@@ -236,6 +242,7 @@ async function loadInvoice(id: number) {
     positions: res.invoice.positions,
   }
   persistedStatus.value = res.invoice.status
+  bankStatementLocked.value = res.statusLocked ?? false
 
   file.value = null
   removeExistingFile.value = false

@@ -677,10 +677,21 @@
                         <td class="py-2 pl-3 align-middle">
                           <div class="flex items-center justify-end">
                             <button
+                              v-if="!cashCount.source_type"
                               type="button"
                               class="inline-flex items-center justify-center rounded-md p-1 text-slate-600 transition hover:bg-slate-200 hover:text-slate-900 cursor-pointer"
                               :title="t('actions.open')"
                               @click="openCashCount(cashCount.id)"
+                            >
+                              <Icon name="material-symbols:visibility-outline-rounded" class="h-5 w-5" />
+                              <span class="sr-only">{{ t('actions.open') }}</span>
+                            </button>
+                            <button
+                              v-else-if="cashCount.bank_statement_id"
+                              type="button"
+                              class="inline-flex items-center justify-center rounded-md p-1 text-slate-600 transition hover:bg-slate-200 hover:text-slate-900 cursor-pointer"
+                              :title="t('actions.open')"
+                              @click="openBankStatement(cashCount.bank_statement_id)"
                             >
                               <Icon name="material-symbols:visibility-outline-rounded" class="h-5 w-5" />
                               <span class="sr-only">{{ t('actions.open') }}</span>
@@ -1820,6 +1831,14 @@ function openReceipt(id: number) {
 function openCashCount(id: number) {
   setPage('CashCountCreate', {
     cashCountId: id,
+    returnTarget: buildReturnTarget('FinanceAnalysis', getAnalysisPageMeta()),
+    forceReadonly: true,
+  })
+}
+
+function openBankStatement(id: number) {
+  setPage('BankStatementCreate', {
+    bankStatementId: id,
     returnTarget: buildReturnTarget('FinanceAnalysis', getAnalysisPageMeta()),
     forceReadonly: true,
   })

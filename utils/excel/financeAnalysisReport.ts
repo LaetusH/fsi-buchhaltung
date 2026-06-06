@@ -313,7 +313,7 @@ function buildVisibleStatementCostCentres(
         const beforeChildCount = ordered.length
         visit(child.id, displayChild ? depth + 1 : depth)
         if (displayChild) {
-          ordered[beforeChildCount - 1].hasChildren = ordered
+          ordered[beforeChildCount - 1]!.hasChildren = ordered
             .slice(beforeChildCount)
             .some(row => row.depth === depth + 1)
         }
@@ -332,7 +332,7 @@ function buildVisibleStatementCostCentres(
       })
       if (includeChildCostCentres) {
         visit(selected.id, 1)
-        ordered[selectedIndex].hasChildren = ordered
+        ordered[selectedIndex]!.hasChildren = ordered
           .slice(selectedIndex + 1)
           .some(row => row.depth === 1)
       }
@@ -354,7 +354,7 @@ function buildStatementSummaryMap(
   const parentStack: StatementCostCentreRow[] = []
 
   for (const costCentre of visibleCostCentres) {
-    while (parentStack.length && parentStack[parentStack.length - 1].depth >= costCentre.depth) {
+    while (parentStack.length && parentStack[parentStack.length - 1]!.depth >= costCentre.depth) {
       parentStack.pop()
     }
 
@@ -905,6 +905,8 @@ function balanceEventNote(event: FinanceAnalysisBalanceEvent, t: TranslateFuncti
   if (event.has_discrepancy) return t('financeAnalysis.balance.discrepancyFound')
   if (event.note === 'latestCashCountBeforePeriod') return t('financeAnalysis.balance.latestCashCountBeforePeriodNote')
   if (event.note === 'reimbursement') return t('financeAnalysis.balance.reimbursementNote')
+  if (event.note === 'bankStatement') return t('financeAnalysis.balance.bankStatementNote')
+  if (event.note === 'bankStatementEvent') return t('financeAnalysis.balance.bankStatementEventNote')
   if (event.note === 'initialCashCount') return t('financeAnalysis.balance.initialCashCountNote')
   return ''
 }

@@ -10,6 +10,7 @@ interface GetInvoiceSuccess {
   ok: true
   invoice: Invoice
   file: FileRow | null
+  statusLocked: boolean
 }
 
 interface GetInvoiceError {
@@ -61,10 +62,16 @@ export default defineEventHandler(async (event): Promise<GetInvoiceResponse> => 
       [invoiceId],
     )
 
+    const bankStatementLinks = await query<{ bank_statement_id: number }[]>(
+      `SELECT bank_statement_id FROM bank_statement_positions WHERE invoice_id = ? LIMIT 1`,
+      [invoiceId],
+    )
+
     const file = await getAttachedFile('invoice', invoiceId)
 
     return {
       ok: true,
+      statusLocked: bankStatementLinks.length > 0,
       invoice: {
         id: Number(invoiceRows[0].id),
         company_id: Number(invoiceRows[0].company_id),

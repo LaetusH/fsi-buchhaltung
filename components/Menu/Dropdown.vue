@@ -54,7 +54,7 @@ const open = computed({
 
 const disabled = computed(() => Boolean(props.disabled))
 const triggerStyling = computed(() => [
-  'input w-full flex justify-between text-left',
+  'input w-full flex items-center justify-between text-left',
 ].filter(Boolean).join(' '))
 
 function toggleDropdown() {

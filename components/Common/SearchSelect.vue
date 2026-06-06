@@ -29,7 +29,7 @@
             class="flex w-full items-center justify-between px-3 py-2 text-sm hover:bg-gray-100 rounded-md cursor-pointer whitespace-nowrap"
             @click="onCreate"
           >
-            <span>"{{ currentQuery }}"</span>
+            <span v-if="!hideCreateQuery">"{{ currentQuery }}"</span>
             <span class="text-orange-500 font-semibold">{{ createActionLabel }}</span>
           </button>
 
@@ -102,6 +102,10 @@ const props = defineProps({
     type: String,
     default: '',
   },
+  hideCreateQuery: {
+    type: Boolean,
+    default: false,
+  },
   optionClass: {
     type: String,
     default: '',
@@ -136,7 +140,7 @@ const filteredOptions = computed(() => {
     return searchable.includes(normalizedQuery.value)
   })
 })
-const showCreateOption = computed(() => props.allowCreate && currentQuery.value.trim().length > 0)
+const showCreateOption = computed(() => props.allowCreate && (props.hideCreateQuery || currentQuery.value.trim().length > 0))
 const menuWidthClass = computed(() => props.menuWidth === 'wide' ? 'w-full max-w-[48rem]' : 'max-w-[30vw]')
 
 function updateMenuPosition() {

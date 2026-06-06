@@ -135,6 +135,15 @@ export default defineEventHandler(async (event): Promise<UpdateInvoiceResponse> 
       if (!existingRows.length) return { ok: false, error: 'Invoice not found' }
       const existing = normalizeInvoiceLogRow(existingRows[0])
 
+      const bankStatementLinks = await query<{ bank_statement_id: number }[]>(
+        `SELECT bank_statement_id FROM bank_statement_positions WHERE invoice_id = ? LIMIT 1`,
+        [invoiceId],
+        conn,
+      )
+      if (bankStatementLinks.length > 0) {
+        return { ok: false, error: 'This invoice is part of a bank statement and cannot be edited' }
+      }
+
       const existingPositions = await query<InvoicePosition[]>(
         `SELECT id, name, description, sphere, cost_centre, quantity, unit, unit_price, tax
          FROM invoice_positions

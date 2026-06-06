@@ -29,8 +29,9 @@ import InvoiceListPanel from './Invoice/ListPanel.vue'
 import ReimbursementListPanel from './Reimbursement/ListPanel.vue'
 import CashCountListPanel from './CashCount/ListPanel.vue'
 import BudgetListPanel from './Budget/ListPanel.vue'
+import BankStatementListPanel from './BankStatement/ListPanel.vue'
 
-type FinancesTab = 'receipts' | 'invoices' | 'reimbursements' | 'cashCounts' | 'budgets'
+type FinancesTab = 'receipts' | 'invoices' | 'reimbursements' | 'cashCounts' | 'budgets' | 'bankStatements'
 
 defineEmits<{
   (e: 'openMenu'): void
@@ -46,8 +47,9 @@ const tabs = computed(() => {
   const list = [
     { key: 'receipts', label: t('pages.receipts'), show: hasPermission('receipts.view') },
     { key: 'invoices', label: t('pages.invoices'), show: hasPermission('invoices.view') },
-    { key: 'reimbursements', label: t('pages.reimbursements'), show: hasPermission('reimbursements.view') },
     { key: 'cashCounts', label: t('pages.cashCounts'), show: hasPermission('cash_counts.view') },
+    { key: 'reimbursements', label: t('pages.reimbursements'), show: hasPermission('reimbursements.view') },
+    { key: 'bankStatements', label: t('pages.bankStatements'), show: hasPermission('bank_statements.view') },
     { key: 'budgets', label: t('pages.budgets'), show: hasPermission('budgets.view') },
   ] as const
 
@@ -66,6 +68,8 @@ const activeComponent = computed(() => {
       return CashCountListPanel
     case 'budgets':
       return BudgetListPanel
+    case 'bankStatements':
+      return BankStatementListPanel
     default:
       return ReceiptListPanel
   }

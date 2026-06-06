@@ -478,3 +478,29 @@ CREATE TABLE IF NOT EXISTS cash_count_positions (
   FOREIGN KEY (cash_count_id) REFERENCES cash_counts(id) ON DELETE CASCADE,
   UNIQUE KEY uq_cash_count_register (cash_count_id, register_number)
 );
+
+CREATE TABLE IF NOT EXISTS bank_statements (
+  id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  statement_number VARCHAR(50) NOT NULL,
+  checked_by BIGINT UNSIGNED NOT NULL,
+  statement_date TIMESTAMP NOT NULL,
+  FOREIGN KEY (checked_by) REFERENCES members(id)
+);
+
+CREATE TABLE IF NOT EXISTS bank_statement_positions (
+  id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  bank_statement_id BIGINT UNSIGNED NOT NULL,
+  position_type ENUM('receipt','invoice','event') NOT NULL,
+  position_date DATE NOT NULL,
+  receipt_id BIGINT UNSIGNED NULL,
+  invoice_id BIGINT UNSIGNED NULL,
+  event_id BIGINT UNSIGNED NULL,
+  amount DECIMAL(10,2) NULL,
+  notes TEXT NULL,
+  UNIQUE KEY uq_bsp_receipt (receipt_id),
+  UNIQUE KEY uq_bsp_invoice (invoice_id),
+  FOREIGN KEY (bank_statement_id) REFERENCES bank_statements(id) ON DELETE CASCADE,
+  FOREIGN KEY (receipt_id) REFERENCES receipts(id),
+  FOREIGN KEY (invoice_id) REFERENCES invoices(id),
+  FOREIGN KEY (event_id) REFERENCES events(id)
+);

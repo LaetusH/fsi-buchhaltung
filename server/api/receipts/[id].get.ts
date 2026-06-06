@@ -74,6 +74,11 @@ export default defineEventHandler(async (event): Promise<GetReceiptResponse> => 
       [id]
     )
 
+    const bankStatementLinks: Array<{ bank_statement_id: number }> = await query(
+      `SELECT bank_statement_id FROM bank_statement_positions WHERE receipt_id = ? LIMIT 1`,
+      [id]
+    )
+
     const file = await getAttachedFile('receipt', id)
     const receiptIdsWithFiles = await getEntityIdsWithActiveFiles('receipt', [id])
 
@@ -90,7 +95,7 @@ export default defineEventHandler(async (event): Promise<GetReceiptResponse> => 
         positions: normalizeBigInt(positions) as ReceiptPosition[],
       }),
       file: file ? normalizeBigInt(file) : null,
-      statusLocked: reimbursementLinks.length > 0,
+      statusLocked: reimbursementLinks.length > 0 || bankStatementLinks.length > 0,
     }
   } catch (err: any) {
     return { ok: false, error: `An error occurred while fetching a receipt: ${err}` }

@@ -1,4 +1,6 @@
 import type { AppPage } from '~/types/page'
+import BankStatementListPage from '~/components/Page/Finances/BankStatement/List.vue'
+import BankStatementCreatePage from '~/components/Page/Finances/BankStatement/Create.vue'
 import LoginPage from '~/components/Page/Login.vue'
 import HomePage from '~/components/Page/Home.vue'
 import FinancesPage from '~/components/Page/Finances/Overview.vue'
@@ -23,7 +25,7 @@ import SettingsPage from '~/components/Page/Settings/Overview.vue'
 export const PAGES: Record<string, AppPage> = {
   Login: { main: true, labelKey: 'pages.login', component: LoginPage, icon: 'material-symbols:login-rounded', permissions: [], allowGuest: true },
   Home: { main: true, labelKey: 'pages.home', component: HomePage, icon: 'material-symbols:home-rounded', permissions: ['pages.home.view'] },
-  Finances: { main: true, labelKey: 'pages.finances', component: FinancesPage, icon: 'material-symbols:euro-rounded', permissions: ['receipts.view', 'invoices.view', 'reimbursements.view', 'cash_counts.view', 'budgets.view'] },
+  Finances: { main: true, labelKey: 'pages.finances', component: FinancesPage, icon: 'material-symbols:euro-rounded', permissions: ['receipts.view', 'invoices.view', 'reimbursements.view', 'cash_counts.view', 'budgets.view', 'bank_statements.view'] },
   ReceiptList: { main: false, labelKey: 'pages.receipts', component: ReceiptListPage, permissions: ['receipts.view'] },
   ReceiptCreate: { main: false, labelKey: 'pages.createReceipt', component: ReceiptCreatePage, permissions: ['receipts.view'], preserveOnRefresh: true },
   InvoiceList: { main: false, labelKey: 'pages.invoices', component: InvoiceListPage, permissions: ['invoices.view'] },
@@ -40,4 +42,6 @@ export const PAGES: Record<string, AppPage> = {
   MemberList: { main: true, labelKey: 'pages.members', component: MemberListPage, icon: 'material-symbols:groups-rounded', permissions: ['members.view'] },
   MemberCreate: { main: false, labelKey: 'pages.createMember', component: MemberCreatePage, permissions: ['members.view'], preserveOnRefresh: true },
   Settings: { main: true, labelKey: 'pages.settings', component: SettingsPage, icon: 'material-symbols:settings-rounded', permissions: ['settings.access'], preserveOnRefresh: true },
+  BankStatementList: { main: false, labelKey: 'pages.bankStatements', component: BankStatementListPage, permissions: ['bank_statements.view'] },
+  BankStatementCreate: { main: false, labelKey: 'pages.createBankStatement', component: BankStatementCreatePage, permissions: ['bank_statements.view'], preserveOnRefresh: true },
 }

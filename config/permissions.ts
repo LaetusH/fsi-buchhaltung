@@ -38,6 +38,8 @@ export type PermissionKey =
   | 'files.view'
   | 'users.view'
   | 'users.manage'
+  | 'bank_statements.view'
+  | 'bank_statements.edit'
 
 export interface PermissionDefinition {
   key: PermissionKey
@@ -86,6 +88,8 @@ export const PERMISSIONS: PermissionDefinition[] = [
   { key: 'files.view', labelKey: 'permissions.items.filesView', categoryKey: 'permissions.categories.files' },
   { key: 'users.view', labelKey: 'permissions.items.usersView', categoryKey: 'permissions.categories.users' },
   { key: 'users.manage', labelKey: 'permissions.items.usersManage', categoryKey: 'permissions.categories.users' },
+  { key: 'bank_statements.view', labelKey: 'permissions.items.bankStatementsView', categoryKey: 'permissions.categories.bankStatements' },
+  { key: 'bank_statements.edit', labelKey: 'permissions.items.bankStatementsEdit', categoryKey: 'permissions.categories.bankStatements' },
 ]
 
 export const implied: Partial<Record<PermissionKey, PermissionKey[]>> = {
@@ -111,4 +115,5 @@ export const implied: Partial<Record<PermissionKey, PermissionKey[]>> = {
   'settings.app.snapshots.manage': ['settings.app.access'],
   'permissions.manage': ['settings.access', 'users.view'],
   'users.manage': ['users.view'],
+  'bank_statements.edit': ['bank_statements.view'],
 }

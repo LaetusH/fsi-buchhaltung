@@ -77,6 +77,17 @@ export default defineEventHandler(async (event): Promise<UpdateReimbursementResp
         return { ok: false, error: 'At least one selected receipt is already part of another reimbursement' }
       }
 
+      const bsConflicts: { receipt_id: number }[] = await query(
+        `SELECT receipt_id
+         FROM bank_statement_positions
+         WHERE receipt_id IN (${uniqueIncomingReceiptIds.map(() => '?').join(',')})`,
+        uniqueIncomingReceiptIds,
+        conn
+      )
+      if (bsConflicts.length) {
+        return { ok: false, error: 'At least one selected receipt is already part of a bank statement' }
+      }
+
       const receiptIdsWithFiles = await getEntityIdsWithActiveFiles('receipt', uniqueIncomingReceiptIds, conn)
       if (receiptIdsWithFiles.size !== uniqueIncomingReceiptIds.length) {
         return { ok: false, error: 'Each receipt in a reimbursement must have a file attached' }

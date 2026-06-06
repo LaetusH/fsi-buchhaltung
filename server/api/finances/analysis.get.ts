@@ -177,12 +177,14 @@ async function loadBalanceEvents(
       r.id,
       CASE
         WHEN IFNULL(reimb_info.reimbursement_count, 0) > 0 THEN reimb_info.disbursed_date
+        WHEN bsp_r.position_date IS NOT NULL THEN bsp_r.position_date
         ELSE r.receipt_date
       END AS effective_date,
       r.receipt_number,
       c.name AS company_name,
       IFNULL(SUM(rp.amount), 0) AS total_amount,
-      IFNULL(reimb_info.reimbursement_count, 0) AS reimbursement_count
+      IFNULL(reimb_info.reimbursement_count, 0) AS reimbursement_count,
+      bsp_r.position_date IS NOT NULL AS is_bank_statement
     FROM receipts r
     INNER JOIN receipt_positions rp ON rp.receipt_id = r.id
     LEFT JOIN companies c ON c.id = r.company_id
@@ -195,9 +197,15 @@ async function loadBalanceEvents(
       INNER JOIN reimbursements reimb ON reimb.id = rlink.reimbursement_id
       GROUP BY rlink.receipt_id
     ) reimb_info ON reimb_info.receipt_id = r.id
+    LEFT JOIN (
+      SELECT receipt_id, MIN(position_date) AS position_date
+      FROM bank_statement_positions
+      WHERE position_type = 'receipt'
+      GROUP BY receipt_id
+    ) bsp_r ON bsp_r.receipt_id = r.id
     WHERE r.status = ?
       ${hasCostCentreFilter ? `AND rp.cost_centre IN (${costCentrePlaceholders})` : ''}
-    GROUP BY r.id, r.receipt_date, reimb_info.disbursed_date, r.receipt_number, c.name, reimb_info.reimbursement_count
+    GROUP BY r.id, r.receipt_date, reimb_info.disbursed_date, bsp_r.position_date, r.receipt_number, c.name, reimb_info.reimbursement_count
     HAVING effective_date IS NOT NULL
       AND effective_date <= ?
     ORDER BY effective_date ASC, r.id ASC
@@ -211,21 +219,32 @@ async function loadBalanceEvents(
     `
     SELECT
       i.id,
-      COALESCE(i.paid_at, i.due_date) AS effective_date,
+      CASE
+        WHEN bsp_i.position_date IS NOT NULL THEN bsp_i.position_date
+        ELSE COALESCE(i.paid_at, i.due_date)
+      END AS effective_date,
       i.invoice_number,
       c.name AS company_name,
-      IFNULL(SUM(ip.quantity * ip.unit_price * (1 + (ip.tax / 100))), 0) AS total_amount
+      IFNULL(SUM(ip.quantity * ip.unit_price * (1 + (ip.tax / 100))), 0) AS total_amount,
+      bsp_i.position_date IS NOT NULL AS is_bank_statement
     FROM invoices i
     INNER JOIN invoice_positions ip ON ip.invoice_id = i.id
     LEFT JOIN companies c ON c.id = i.company_id
+    LEFT JOIN (
+      SELECT invoice_id, MIN(position_date) AS position_date
+      FROM bank_statement_positions
+      WHERE position_type = 'invoice'
+      GROUP BY invoice_id
+    ) bsp_i ON bsp_i.invoice_id = i.id
     WHERE i.status = ?
-      AND COALESCE(i.paid_at, i.due_date) <= ?
       ${hasCostCentreFilter ? `AND ip.cost_centre IN (${costCentrePlaceholders})` : ''}
-    GROUP BY i.id, effective_date, i.invoice_number, c.name
+    GROUP BY i.id, i.paid_at, i.due_date, bsp_i.position_date, i.invoice_number, c.name
+    HAVING effective_date IS NOT NULL
+      AND effective_date <= ?
     ORDER BY effective_date ASC, i.id ASC
     `,
     hasCostCentreFilter
-      ? [InvoiceStatus.Paid, endDate, ...selectedCostCentreIds]
+      ? [InvoiceStatus.Paid, ...selectedCostCentreIds, endDate]
       : [InvoiceStatus.Paid, endDate],
   )
 
@@ -258,6 +277,34 @@ async function loadBalanceEvents(
     hasCostCentreFilter ? [...selectedCostCentreIds, endDate] : [endDate],
   )
 
+  const bankStatementEventRows: any[] = await query(
+    `
+    SELECT
+      bsp.id,
+      bsp.position_date AS effective_date,
+      bsp.amount,
+      e.name AS event_name,
+      bs.statement_number,
+      ${hasCostCentreFilter ? 'balance_split.allocation_factor' : '1'} AS allocation_factor
+    FROM bank_statement_positions bsp
+    INNER JOIN bank_statements bs ON bs.id = bsp.bank_statement_id
+    INNER JOIN events e ON e.id = bsp.event_id
+    ${hasCostCentreFilter
+      ? `INNER JOIN (
+          SELECT event_id, LEAST(IFNULL(SUM(allocation_percentage), 0) / 100, 1) AS allocation_factor
+          FROM event_cost_centre_splits
+          WHERE cost_centre_id IN (${costCentrePlaceholders})
+          GROUP BY event_id
+        ) balance_split ON balance_split.event_id = bsp.event_id`
+      : ''}
+    WHERE bsp.position_type = 'event'
+      AND bsp.amount IS NOT NULL
+      AND bsp.position_date <= ?
+    ORDER BY bsp.position_date ASC, bsp.id ASC
+    `,
+    hasCostCentreFilter ? [...selectedCostCentreIds, endDate] : [endDate],
+  )
+
   type RawLedgerEvent =
     | {
       type: 'receipt'
@@ -267,6 +314,7 @@ async function loadBalanceEvents(
       reference: string | null
       amount: number
       isReimbursement: boolean
+      isBankStatement: boolean
     }
     | {
       type: 'invoice'
@@ -275,6 +323,7 @@ async function loadBalanceEvents(
       label: string
       reference: string | null
       amount: number
+      isBankStatement: boolean
     }
     | {
       type: 'cashCount'
@@ -283,6 +332,14 @@ async function loadBalanceEvents(
       label: string
       reference: string | null
       registers: Array<{ registerNumber: number, amountBefore: number, amountAfter: number }>
+    }
+    | {
+      type: 'bankStatementEvent'
+      source_id: number
+      date: string
+      label: string
+      reference: string | null
+      amount: number
     }
 
   const cashCountsById = new Map<number, Extract<RawLedgerEvent, { type: 'cashCount' }>>()
@@ -323,6 +380,7 @@ async function loadBalanceEvents(
       reference: row.receipt_number ? String(row.receipt_number) : null,
       amount: Number(row.total_amount || 0),
       isReimbursement: Number(row.reimbursement_count || 0) > 0,
+      isBankStatement: Boolean(row.is_bank_statement),
     })),
     ...invoiceRows.map(row => ({
       type: 'invoice' as const,
@@ -331,11 +389,20 @@ async function loadBalanceEvents(
       label: row.company_name ? String(row.company_name) : '',
       reference: row.invoice_number ? String(row.invoice_number) : null,
       amount: Number(row.total_amount || 0),
+      isBankStatement: Boolean(row.is_bank_statement),
     })),
     ...cashCountsById.values(),
+    ...bankStatementEventRows.map(row => ({
+      type: 'bankStatementEvent' as const,
+      source_id: Number(row.id),
+      date: String(row.effective_date).slice(0, 10),
+      label: String(row.event_name || ''),
+      reference: row.statement_number ? String(row.statement_number) : null,
+      amount: roundCurrency(Number(row.amount || 0) * Number(row.allocation_factor || 1)),
+    })),
   ].sort((left, right) => {
     if (left.date !== right.date) return left.date.localeCompare(right.date)
-    const order = { invoice: 1, receipt: 2, cashCount: 3 }
+    const order = { invoice: 1, receipt: 2, cashCount: 3, bankStatementEvent: 4 }
     if (order[left.type] !== order[right.type]) return order[left.type] - order[right.type]
     return left.source_id - right.source_id
   })
@@ -351,6 +418,7 @@ async function loadBalanceEvents(
   function transactionDelta(rawEvent: RawLedgerEvent) {
     if (rawEvent.type === 'invoice') return roundCurrency(rawEvent.amount)
     if (rawEvent.type === 'receipt') return roundCurrency(-rawEvent.amount)
+    if (rawEvent.type === 'bankStatementEvent') return roundCurrency(rawEvent.amount)
     return 0
   }
 
@@ -390,7 +458,7 @@ async function loadBalanceEvents(
         cash_after_amount: null,
         discrepancy_amount: null,
         has_discrepancy: false,
-        note: null,
+        note: rawEvent.isBankStatement ? 'bankStatement' : null,
       }
     }
 
@@ -409,7 +477,26 @@ async function loadBalanceEvents(
         cash_after_amount: null,
         discrepancy_amount: null,
         has_discrepancy: false,
-        note: rawEvent.isReimbursement ? 'reimbursement' : null,
+        note: rawEvent.isReimbursement ? 'reimbursement' : rawEvent.isBankStatement ? 'bankStatement' : null,
+      }
+    }
+
+    if (rawEvent.type === 'bankStatementEvent') {
+      const delta = roundCurrency(rawEvent.amount)
+      runningBalance = roundCurrency(runningBalance + delta)
+      return {
+        type: 'cashCount' as const,
+        source_id: rawEvent.source_id,
+        date: rawEvent.date,
+        label: rawEvent.label,
+        reference: rawEvent.reference,
+        delta_amount: delta,
+        balance_amount: runningBalance,
+        cash_before_amount: null,
+        cash_after_amount: null,
+        discrepancy_amount: null,
+        has_discrepancy: false,
+        note: 'bankStatementEvent',
       }
     }
 
@@ -739,25 +826,70 @@ export default defineEventHandler(async (event): Promise<FinanceAnalysisResponse
       total_amount: Number(row.total_amount || 0),
     }))
 
-    const cashCountCostCentresByEventId = await loadCashCountCostCentreSplits(
-      cashCountRows.map(row => Number(row.event_id)),
+    const bankStatementEventListRows: any[] = await query(
+      `
+      SELECT
+        bsp.id,
+        bsp.bank_statement_id,
+        bsp.event_id,
+        e.name AS event_name,
+        bsp.position_date,
+        bsp.amount,
+        CONCAT(m.first_name, ' ', m.last_name) AS checked_by_name
+      FROM bank_statement_positions bsp
+      INNER JOIN bank_statements bs ON bs.id = bsp.bank_statement_id
+      INNER JOIN events e ON e.id = bsp.event_id
+      LEFT JOIN members m ON m.id = bs.checked_by
+      ${hasCostCentreFilter ? `INNER JOIN event_cost_centre_splits eccs_filter ON eccs_filter.event_id = e.id AND eccs_filter.cost_centre_id IN (${costCentrePlaceholders})` : ''}
+      WHERE bsp.position_type = 'event'
+        AND bsp.amount IS NOT NULL
+        AND bsp.position_date BETWEEN ? AND ?
+      GROUP BY bsp.id, bsp.bank_statement_id, bsp.event_id, e.name, bsp.position_date, bsp.amount, m.first_name, m.last_name
+      ORDER BY bsp.position_date DESC, bsp.id DESC
+      `,
+      hasCostCentreFilter ? [...selectedCostCentreIds, startDate, endDate] : [startDate, endDate],
     )
 
-    const cashCounts: FinanceAnalysisCashCountItem[] = cashCountRows.map(row => ({
-      id: Number(row.id),
-      event_id: Number(row.event_id),
-      event_name: String(row.event_name || ''),
-      cost_centres: cashCountCostCentresByEventId.get(Number(row.event_id)) ?? [],
-      counted_before_at: String(row.counted_before_at),
-      counted_after_at: String(row.counted_after_at),
-      counted_by_first_name: String(row.counted_by_first_name || ''),
-      counted_by_second_name: String(row.counted_by_second_name || ''),
-      checked_by_name: String(row.checked_by_name || ''),
-      register_count: Number(row.register_count || 0),
-      total_before_amount: Number(row.total_before_amount || 0),
-      total_after_amount: Number(row.total_after_amount || 0),
-      total_difference: Number(row.total_difference || 0),
-    }))
+    const allCashCountEventIds = [
+      ...cashCountRows.map(row => Number(row.event_id)),
+      ...bankStatementEventListRows.map(row => Number(row.event_id)),
+    ]
+    const cashCountCostCentresByEventId = await loadCashCountCostCentreSplits(allCashCountEventIds)
+
+    const cashCounts: FinanceAnalysisCashCountItem[] = [
+      ...cashCountRows.map(row => ({
+        id: Number(row.id),
+        event_id: Number(row.event_id),
+        event_name: String(row.event_name || ''),
+        cost_centres: cashCountCostCentresByEventId.get(Number(row.event_id)) ?? [],
+        counted_before_at: String(row.counted_before_at),
+        counted_after_at: String(row.counted_after_at),
+        counted_by_first_name: String(row.counted_by_first_name || ''),
+        counted_by_second_name: String(row.counted_by_second_name || ''),
+        checked_by_name: String(row.checked_by_name || ''),
+        register_count: Number(row.register_count || 0),
+        total_before_amount: Number(row.total_before_amount || 0),
+        total_after_amount: Number(row.total_after_amount || 0),
+        total_difference: Number(row.total_difference || 0),
+      })),
+      ...bankStatementEventListRows.map(row => ({
+        id: Number(row.id),
+        source_type: 'bankStatementEvent' as const,
+        bank_statement_id: Number(row.bank_statement_id),
+        event_id: Number(row.event_id),
+        event_name: String(row.event_name || ''),
+        cost_centres: cashCountCostCentresByEventId.get(Number(row.event_id)) ?? [],
+        counted_before_at: String(row.position_date).slice(0, 10) + ' 00:00:00',
+        counted_after_at: String(row.position_date).slice(0, 10) + ' 00:00:00',
+        counted_by_first_name: '',
+        counted_by_second_name: '',
+        checked_by_name: String(row.checked_by_name || ''),
+        register_count: 0,
+        total_before_amount: 0,
+        total_after_amount: Number(row.amount || 0),
+        total_difference: Number(row.amount || 0),
+      })),
+    ]
 
     const cashCountRegisterTotal = Number(cashCountRegisterSummaryRows[0]?.register_total || 0)
 
