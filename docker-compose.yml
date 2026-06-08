@@ -29,7 +29,7 @@ services:
       - APP_BASE_URL=${APP_BASE_URL:-/}
     ports:
       - "3002:3002"
-    command: sh -c "npm ci && node scripts/migrate-event-cost-centre-splits.mjs && node scripts/migrate-event-planning.mjs && node scripts/migrate-invoice-paid-at.mjs && node scripts/migrate-invoice-position-description-nullable.mjs && node scripts/migrate-app-settings.mjs && node scripts/migrate-cash-count-register-checks.mjs && node scripts/migrate-user-password-change-required.mjs && npm run setup:audit && node scripts/seed-admin.mjs && npm run build && node .output/server/index.mjs"
+    command: sh -c "npm ci && node scripts/migrate-event-cost-centre-splits.mjs && node scripts/migrate-event-planning.mjs && node scripts/migrate-invoice-paid-at.mjs && node scripts/migrate-invoice-position-description-nullable.mjs && node scripts/migrate-app-settings.mjs && node scripts/migrate-cash-count-register-checks.mjs && node scripts/migrate-user-password-change-required.mjs && node scripts/migrate-checklist-task-link.mjs && node scripts/migrate-bank-statements.mjs && npm run setup:audit && node scripts/seed-admin.mjs && npm run build && node .output/server/index.mjs"
     depends_on:
       db:
         condition: service_healthy
