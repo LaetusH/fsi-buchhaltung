@@ -43,7 +43,7 @@
           >
         </div>
 
-        <p class="text-xs text-slate-500">{{ t('settings.general.passwordHelp') }}</p>
+        <p class="text-xs text-slate-500">{{ t('settings.general.passwordHelp', { min: MIN_PASSWORD_LENGTH }) }}</p>
 
         <div class="flex items-center justify-between gap-3">
           <button type="button" class="btn-secondary" :disabled="isChangingPassword" @click="handleLogout">
