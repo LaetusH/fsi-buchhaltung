@@ -27,7 +27,7 @@
 import { ref } from 'vue'
 import { useAuth } from '~/composables/useAuth'
 import { useI18n } from '~/composables/useI18n'
-import { usePage } from '~/composables/usePage'
+import { usePage, parseDeepLinkHash } from '~/composables/usePage'
 
 const username = ref('')
 const password = ref('')
@@ -41,8 +41,13 @@ async function doLogin() {
   error.value = ''
   const res = await login(username.value, password.value)
   if (res.ok) {
-    setPage('Home')
-  } else { 
+    const deepLink = parseDeepLinkHash()
+    if (deepLink && deepLink.page !== 'Login') {
+      setPage(deepLink.page, deepLink.meta || undefined)
+    } else {
+      setPage('Home')
+    }
+  } else {
     error.value = res.error || t('login.error')
   }
 }

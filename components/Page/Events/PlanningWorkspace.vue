@@ -458,6 +458,9 @@ watch(
   (val) => { if (val) activeTab.value = val },
 )
 watch(activeTab, () => { window.scrollTo({ top: 0, behavior: 'instant' }) })
+watch([activeTab, eventId], ([tab, id]) => {
+  if (id) window.location.hash = `EventCreate?eventId=${id}&activeTab=${tab}`
+})
 
 // ---- Options ----
 
