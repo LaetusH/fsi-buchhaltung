@@ -71,6 +71,7 @@ import { usePage } from '~/composables/usePage'
 import { useToast } from '~/composables/useToast'
 import type { ChangePasswordResponse } from '~/server/api/auth/change-password.post'
 import { MIN_PASSWORD_LENGTH } from '~/config/validation'
+import { parseDeepLinkHash } from '~/composables/usePage'
 
 const { fetchSession, logout } = useAuth()
 const { setPage } = usePage()
@@ -133,7 +134,12 @@ async function changePassword() {
 
     await fetchSession()
     toast.success(t('passwordChangeRequired.success'))
-    setPage('Home')
+    const deepLink = parseDeepLinkHash()
+    if (deepLink && deepLink.page !== 'Login') {
+      setPage(deepLink.page, deepLink.meta || undefined)
+    } else {
+      setPage('Home')
+    }
   } catch {
     toast.error(t('settings.general.passwordFailed'))
   } finally {
