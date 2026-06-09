@@ -37,6 +37,19 @@ async function indexExists(conn, databaseName, tableName, indexName) {
   return rows.length > 0
 }
 
+async function constraintExists(conn, databaseName, tableName, constraintName) {
+  const rows = await conn.query(
+    `SELECT CONSTRAINT_NAME
+     FROM information_schema.TABLE_CONSTRAINTS
+     WHERE TABLE_SCHEMA = ?
+       AND TABLE_NAME = ?
+       AND CONSTRAINT_NAME = ?
+     LIMIT 1`,
+    [databaseName, tableName, constraintName],
+  )
+  return rows.length > 0
+}
+
 async function migrateChecklistTaskLink() {
   const migrationUser = DB_AUDIT_SETUP_USER || DB_USER
   const migrationPassword = DB_AUDIT_SETUP_USER
@@ -70,7 +83,7 @@ async function migrateChecklistTaskLink() {
       console.log('migrate-checklist-task-link: added unique key uq_checklist_task')
     }
 
-    if (!(await indexExists(conn, databaseName, 'event_checklists', 'fk_checklist_task'))) {
+    if (!(await constraintExists(conn, databaseName, 'event_checklists', 'fk_checklist_task'))) {
       await conn.query(
         `ALTER TABLE event_checklists
          ADD CONSTRAINT fk_checklist_task
