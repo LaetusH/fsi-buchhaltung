@@ -43,7 +43,11 @@ const ALL_PERMISSION_KEYS = [
   'reimbursements.edit',
   'cash_counts.view',
   'cash_counts.edit',
+  'budgets.view',
+  'budgets.edit',
+  'events.access',
   'events.view',
+  'events.shifts.signup',
   'events.edit',
   'companies.view',
   'companies.edit',
@@ -62,6 +66,8 @@ const ALL_PERMISSION_KEYS = [
   'files.view',
   'users.view',
   'users.manage',
+  'bank_statements.view',
+  'bank_statements.edit',
 ]
 
 const DEFAULT_ROLE_PERMISSIONS = {
