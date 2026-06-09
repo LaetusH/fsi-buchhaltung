@@ -96,14 +96,14 @@ async function ensureRole(conn, userId, code, permissions) {
       [code, code.toUpperCase(), code === 'user' ? 1 : 0]
     )
     roleId = Number(result.insertId)
-  }
 
-  for (const permissionKey of permissions) {
-    await conn.query(
-      `INSERT IGNORE INTO role_permissions (role_id, permission_key)
-       VALUES (?, ?)`,
-      [roleId, permissionKey]
-    )
+    for (const permissionKey of permissions) {
+      await conn.query(
+        `INSERT IGNORE INTO role_permissions (role_id, permission_key)
+         VALUES (?, ?)`,
+        [roleId, permissionKey]
+      )
+    }
   }
 
   return roleId
