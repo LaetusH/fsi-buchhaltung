@@ -15,7 +15,8 @@ export default defineEventHandler(async (event): Promise<LogoutResponse> => {
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'strict',
       path: '/',
-      maxAge: 0
+      maxAge: 0,
+      ...(process.env.COOKIE_DOMAIN ? { domain: process.env.COOKIE_DOMAIN } : {}),
     })
     await cleanupExpiredSessions() 
     return { ok: true }

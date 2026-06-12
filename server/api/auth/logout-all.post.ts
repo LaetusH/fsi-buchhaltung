@@ -30,6 +30,7 @@ export default defineEventHandler(async (event): Promise<LogoutAllResponse> => {
     sameSite: 'strict',
     path: '/',
     maxAge: 0,
+    ...(process.env.COOKIE_DOMAIN ? { domain: process.env.COOKIE_DOMAIN } : {}),
   })
 
   return { ok: true }

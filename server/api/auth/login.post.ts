@@ -53,6 +53,7 @@ export default defineEventHandler(async (event): Promise<LoginResponse> => {
     sameSite: 'strict',
     path: '/',
     maxAge: maxAgeSeconds,
+    ...(process.env.COOKIE_DOMAIN ? { domain: process.env.COOKIE_DOMAIN } : {}),
   })
 
   const roles = await getUserRoleIds(user.id)

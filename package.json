@@ -18,6 +18,7 @@
     "setup:migrate:bank-statements": "node --env-file=.env scripts/migrate-bank-statements.mjs",
     "setup:seed-admin": "node --env-file=.env scripts/seed-admin.mjs",
     "setup:audit": "node --env-file=.env scripts/ensure-audit-infrastructure.mjs",
+    "setup:connection-db-user": "node --env-file=.env scripts/create-connection-db-user.mjs",
     "postinstall": "nuxt prepare"
   },
   "dependencies": {

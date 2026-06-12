@@ -5,6 +5,11 @@ export default defineNuxtConfig({
   devtools: { enabled: false },
   modules: ['@vite-pwa/nuxt', '@nuxt/icon'],
   css: ['~/assets/css/main.css'],
+  runtimeConfig: {
+    public: {
+      cashRegisterMode: process.env.CASH_REGISTER_MODE || 'standalone',
+    },
+  },
   app: {
     // Allow hosting under a subpath like /buchhaltung
     baseURL: process.env.APP_BASE_URL || '/'

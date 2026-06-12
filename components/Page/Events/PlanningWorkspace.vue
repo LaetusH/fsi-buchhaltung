@@ -53,7 +53,11 @@
               </div>
             </div>
 
-            <nav v-if="eventId && planningTabs.length > 1" class="grid grid-cols-2 gap-2 border-b border-slate-200 bg-slate-200 px-3 py-3 sm:grid-cols-3 lg:grid-cols-6">
+            <nav
+              v-if="eventId && planningTabs.length > 1"
+              class="grid grid-cols-2 gap-2 border-b border-slate-200 bg-slate-200 px-3 py-3 sm:grid-cols-3"
+              :class="planningTabs.length > 6 ? 'lg:grid-cols-7' : 'lg:grid-cols-6'"
+            >
               <button
                 v-for="tab in planningTabs"
                 :key="tab.key"
@@ -360,6 +364,11 @@
               @remove-self="removeCurrentMemberFromShift"
             />
 
+            <EventCashRegisterPanel
+              v-else-if="activeTab === 'cashRegister' && canViewAll && cashRegisterAvailable"
+              :event-id="eventId"
+            />
+
             <EventDetailsPanel
               v-else-if="activeTab === 'details' && canViewAll"
               v-model="form"
@@ -417,6 +426,7 @@ import type {
   SaveEventBody,
 } from '~/types/event'
 import EventDetailsPanel from './planning/EventDetailsPanel.vue'
+import EventCashRegisterPanel from './planning/EventCashRegisterPanel.vue'
 import EventChecklistsPanel from './planning/EventChecklistsPanel.vue'
 import EventShiftsPanel from './planning/EventShiftsPanel.vue'
 import EventTasksPanel from './planning/EventTasksPanel.vue'
@@ -445,6 +455,11 @@ const canViewAll = ref(hasPermission('events.view'))
 const canManagePlanning = computed(() => canEdit.value || isOrganizer.value)
 const canSaveChecklistTemplates = computed(() => canEdit.value)
 const canUseShiftPlanning = computed(() => canEdit.value || hasPermission('events.shifts.signup') || isOrganizer.value)
+
+const runtimeConfig = useRuntimeConfig()
+const cashRegisterAvailable = computed(() =>
+  runtimeConfig.public.cashRegisterMode === 'connected' && hasPermission('cash_register.manage'),
+)
 
 // ---- Page / routing state ----
 
@@ -666,8 +681,14 @@ const planningTabs = computed(() => {
     { key: 'tasks', label: t('event.planning.tabs.tasks'), icon: 'material-symbols:task-alt-rounded' },
     { key: 'checklists', label: t('event.planning.tabs.checklists'), icon: 'material-symbols:checklist-rounded' },
     { key: 'shifts', label: t('event.planning.tabs.shifts'), icon: 'material-symbols:calendar-month-rounded' },
-    { key: 'details', label: t('event.planning.tabs.details'), icon: 'material-symbols:tune-rounded' },
   ]
+
+  if (cashRegisterAvailable.value) {
+    all.push({ key: 'cashRegister', label: t('event.planning.tabs.cashRegister'), icon: 'material-symbols:point-of-sale-rounded' })
+  }
+
+  all.push({ key: 'details', label: t('event.planning.tabs.details'), icon: 'material-symbols:tune-rounded' })
+
   return canViewAll.value ? all : all.filter(tab => tab.key === 'shifts')
 })
 
