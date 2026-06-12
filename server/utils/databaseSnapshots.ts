@@ -15,6 +15,29 @@ const ENCRYPTED_SNAPSHOT_MAGIC = Buffer.from('FSI-DB-SNAPSHOT-ENC\0', 'utf8')
 const ENCRYPTED_SNAPSHOT_TAG_LENGTH = 16
 const ENCRYPTED_SNAPSHOT_SCRYPT_OPTIONS = { N: 32768, r: 8, p: 1, maxmem: 64 * 1024 * 1024 }
 
+export type SnapshotErrorCode =
+  | 'invalidPassword'
+  | 'wrongPassword'
+  | 'notEncrypted'
+  | 'corruptedFile'
+  | 'unsupportedFormat'
+  | 'schemaMismatch'
+  | 'integrityFailed'
+  | 'archiveInvalid'
+  | 'archiveFilesMissing'
+  | 'previewExpired'
+
+export class SnapshotError extends Error {
+  constructor(
+    public readonly code: SnapshotErrorCode,
+    message: string,
+    public readonly params: Record<string, string | number> = {},
+  ) {
+    super(message)
+    this.name = 'SnapshotError'
+  }
+}
+
 interface TableColumn {
   table_name: string
   column_name: string
@@ -120,7 +143,7 @@ function sha256(value: unknown) {
 
 function normalizeSnapshotPassword(password: unknown) {
   const value = String(password || '')
-  if (value.length < 12) throw new Error('Snapshot password must contain at least 12 characters')
+  if (value.length < 12) throw new SnapshotError('invalidPassword', 'Snapshot password must contain at least 12 characters')
   return value
 }
 
@@ -175,11 +198,11 @@ export function createEncryptedDatabaseSnapshotStream(passwordValue: unknown) {
 }
 
 export function decryptDatabaseSnapshotBuffer(encryptedSnapshot: Buffer, passwordValue: unknown) {
-  if (!isEncryptedSnapshotBuffer(encryptedSnapshot)) throw new Error('Snapshot is not encrypted')
+  if (!isEncryptedSnapshotBuffer(encryptedSnapshot)) throw new SnapshotError('notEncrypted', 'Snapshot is not encrypted')
   const password = normalizeSnapshotPassword(passwordValue)
 
   if (encryptedSnapshot.length < ENCRYPTED_SNAPSHOT_MAGIC.length + 4 + ENCRYPTED_SNAPSHOT_TAG_LENGTH) {
-    throw new Error('Encrypted snapshot is incomplete')
+    throw new SnapshotError('corruptedFile', 'Encrypted snapshot is incomplete')
   }
 
   const headerLengthOffset = ENCRYPTED_SNAPSHOT_MAGIC.length
@@ -188,9 +211,14 @@ export function decryptDatabaseSnapshotBuffer(encryptedSnapshot: Buffer, passwor
   const headerEnd = headerStart + headerLength
   const tagStart = encryptedSnapshot.length - ENCRYPTED_SNAPSHOT_TAG_LENGTH
 
-  if (headerLength <= 0 || headerEnd >= tagStart) throw new Error('Encrypted snapshot header is invalid')
+  if (headerLength <= 0 || headerEnd >= tagStart) throw new SnapshotError('corruptedFile', 'Encrypted snapshot header is invalid')
 
-  const header = JSON.parse(encryptedSnapshot.subarray(headerStart, headerEnd).toString('utf8')) as EncryptedSnapshotHeader
+  let header: EncryptedSnapshotHeader
+  try {
+    header = JSON.parse(encryptedSnapshot.subarray(headerStart, headerEnd).toString('utf8')) as EncryptedSnapshotHeader
+  } catch {
+    throw new SnapshotError('corruptedFile', 'Encrypted snapshot header is invalid')
+  }
   if (
     header.format !== ENCRYPTED_SNAPSHOT_FORMAT ||
     header.version !== 1 ||
@@ -198,7 +226,7 @@ export function decryptDatabaseSnapshotBuffer(encryptedSnapshot: Buffer, passwor
     header.kdf !== 'scrypt' ||
     header.tagLength !== ENCRYPTED_SNAPSHOT_TAG_LENGTH
   ) {
-    throw new Error('Unsupported encrypted snapshot format')
+    throw new SnapshotError('unsupportedFormat', 'Unsupported encrypted snapshot format')
   }
 
   const salt = Buffer.from(header.salt, 'base64')
@@ -207,10 +235,24 @@ export function decryptDatabaseSnapshotBuffer(encryptedSnapshot: Buffer, passwor
   const decipher = crypto.createDecipheriv('aes-256-gcm', key, iv, { authTagLength: ENCRYPTED_SNAPSHOT_TAG_LENGTH })
   decipher.setAuthTag(encryptedSnapshot.subarray(tagStart))
 
-  return Buffer.concat([
-    decipher.update(encryptedSnapshot.subarray(headerEnd, tagStart)),
-    decipher.final(),
-  ])
+  try {
+    return Buffer.concat([
+      decipher.update(encryptedSnapshot.subarray(headerEnd, tagStart)),
+      decipher.final(),
+    ])
+  } catch {
+    // AES-GCM authentication failure: wrong password or tampered ciphertext
+    throw new SnapshotError('wrongPassword', 'Snapshot password is incorrect or the snapshot file is corrupted')
+  }
+}
+
+export function parseEncryptedDatabaseSnapshot(encryptedSnapshot: Buffer, passwordValue: unknown) {
+  const decrypted = decryptDatabaseSnapshotBuffer(encryptedSnapshot, passwordValue)
+  try {
+    return JSON.parse(decrypted.toString('utf8'))
+  } catch {
+    throw new SnapshotError('corruptedFile', 'Decrypted snapshot is not valid JSON')
+  }
 }
 
 function checksumSnapshot(snapshot: DatabaseSnapshot) {
@@ -340,8 +382,7 @@ export function createDatabaseSnapshotStream() {
     yield `  "excludedContent": ${JSON.stringify(snapshotMeta.excludedContent, null, 2).replace(/\n/g, '\n  ')},\n`
     yield '  "tables": [\n'
 
-    for (let tableIndex = 0; tableIndex < tableDefinitions.length; tableIndex += 1) {
-      const table = tableDefinitions[tableIndex]
+    for (const [tableIndex, table] of tableDefinitions.entries()) {
       const stats = tableStats.get(table.name)!
       if (tableIndex > 0) yield ',\n'
       yield '    {\n'
@@ -380,17 +421,17 @@ function parseTarArchive(archive: Buffer) {
     const name = header.subarray(0, 100).toString('utf8').replace(/\0.*$/, '')
     const sizeText = header.subarray(124, 136).toString('ascii').replace(/\0.*$/, '').trim()
     const typeFlag = header.subarray(156, 157).toString('ascii') || '0'
-    if (!/^[0-7]*$/.test(sizeText)) throw new Error('Invalid file archive entry size')
+    if (!/^[0-7]*$/.test(sizeText)) throw new SnapshotError('archiveInvalid', 'Invalid file archive entry size')
 
     const size = parseInt(sizeText || '0', 8)
-    if (!Number.isFinite(size) || size < 0) throw new Error('Invalid file archive entry size')
-    if (offset + size > archive.length) throw new Error('Files archive is incomplete')
+    if (!Number.isFinite(size) || size < 0) throw new SnapshotError('archiveInvalid', 'Invalid file archive entry size')
+    if (offset + size > archive.length) throw new SnapshotError('archiveInvalid', 'Files archive is incomplete')
 
     const content = archive.subarray(offset, offset + size)
     const paddingSize = (512 - (size % 512)) % 512
     offset += size + paddingSize
 
-    if (offset > archive.length) throw new Error('Files archive is incomplete')
+    if (offset > archive.length) throw new SnapshotError('archiveInvalid', 'Files archive is incomplete')
 
     if (typeFlag === '0' || typeFlag === '\0') {
       entries.set(name, content)
@@ -398,7 +439,7 @@ function parseTarArchive(archive: Buffer) {
   }
 
   if (offset + 512 > archive.length && !archive.subarray(offset).every(byte => byte === 0)) {
-    throw new Error('Files archive is incomplete')
+    throw new SnapshotError('archiveInvalid', 'Files archive is incomplete')
   }
 
   return entries
@@ -418,11 +459,16 @@ function getSnapshotFiles(snapshot: DatabaseSnapshot) {
 function readFilesArchive(archive: Buffer) {
   const entries = parseTarArchive(archive)
   const manifestContent = entries.get('manifest.json')
-  if (!manifestContent) throw new Error('Files archive manifest is missing')
+  if (!manifestContent) throw new SnapshotError('archiveInvalid', 'Files archive manifest is missing')
 
-  const manifest = JSON.parse(manifestContent.toString('utf8')) as FileArchiveManifest
+  let manifest: FileArchiveManifest
+  try {
+    manifest = JSON.parse(manifestContent.toString('utf8')) as FileArchiveManifest
+  } catch {
+    throw new SnapshotError('archiveInvalid', 'Files archive manifest is invalid')
+  }
   if (manifest.format !== 'fsi-buchhaltung.files-archive' || !Array.isArray(manifest.files)) {
-    throw new Error('Unsupported files archive format')
+    throw new SnapshotError('archiveInvalid', 'Unsupported files archive format')
   }
 
   return { entries, manifest }
@@ -443,7 +489,7 @@ export function previewFilesArchiveForSnapshot(snapshotValue: unknown, archive: 
   }
 
   if (missingFiles.length) {
-    throw new Error(`Files archive is missing ${missingFiles.length} file(s)`)
+    throw new SnapshotError('archiveFilesMissing', `Files archive is missing ${missingFiles.length} file(s)`, { count: missingFiles.length })
   }
 
   return {
@@ -522,22 +568,26 @@ export async function createDatabaseSnapshot(): Promise<DatabaseSnapshot> {
 }
 
 function validateSnapshot(value: unknown): DatabaseSnapshot {
-  if (!value || typeof value !== 'object') throw new Error('Invalid snapshot payload')
+  if (!value || typeof value !== 'object') throw new SnapshotError('unsupportedFormat', 'Invalid snapshot payload')
 
   const snapshot = value as DatabaseSnapshot
   if (snapshot.format !== SNAPSHOT_FORMAT || !SUPPORTED_SNAPSHOT_VERSIONS.has(Number(snapshot.version))) {
-    throw new Error('Unsupported snapshot format')
+    throw new SnapshotError('unsupportedFormat', 'Unsupported snapshot format')
   }
-  if (!Array.isArray(snapshot.tables)) throw new Error('Snapshot tables are missing')
+  if (!Array.isArray(snapshot.tables)) throw new SnapshotError('unsupportedFormat', 'Snapshot tables are missing')
 
   for (const table of snapshot.tables) {
     if (!table || typeof table.name !== 'string' || !Array.isArray(table.columns) || !Array.isArray(table.rows)) {
-      throw new Error('Snapshot contains an invalid table entry')
+      throw new SnapshotError('unsupportedFormat', 'Snapshot contains an invalid table entry')
     }
-    quoteIdentifier(table.name)
-    table.columns.forEach(quoteIdentifier)
+    try {
+      quoteIdentifier(table.name)
+      table.columns.forEach(quoteIdentifier)
+    } catch {
+      throw new SnapshotError('unsupportedFormat', `Snapshot contains invalid identifiers for table ${table.name}`)
+    }
     if (table.rows.some(row => !row || typeof row !== 'object' || Array.isArray(row))) {
-      throw new Error(`Snapshot contains invalid rows for table ${table.name}`)
+      throw new SnapshotError('unsupportedFormat', `Snapshot contains invalid rows for table ${table.name}`)
     }
   }
 
@@ -550,12 +600,12 @@ export function previewDatabaseSnapshot(value: unknown): SnapshotPreview {
   const integrityValid = integrityChecksum ? checksumSnapshot(snapshot) === integrityChecksum : false
 
   if (snapshot.integrity && snapshot.integrity.algorithm !== 'sha256') {
-    throw new Error('Unsupported snapshot checksum algorithm')
+    throw new SnapshotError('unsupportedFormat', 'Unsupported snapshot checksum algorithm')
   }
 
   for (const table of snapshot.tables) {
     if (table.checksum && table.checksum !== sha256(tablePayload(table))) {
-      throw new Error(`Snapshot checksum does not match table ${table.name}`)
+      throw new SnapshotError('integrityFailed', `Snapshot checksum does not match table ${table.name}`)
     }
   }
 
@@ -591,7 +641,7 @@ export async function assertSnapshotMatchesCurrentSchema(snapshot: DatabaseSnaps
   const missingTables = currentTables.filter(table => !snapshotTableMap.has(table.name)).map(table => table.name)
   const unknownTables = snapshot.tables.filter(table => !currentTableMap.has(table.name)).map(table => table.name)
   if (missingTables.length || unknownTables.length) {
-    throw new Error(`Snapshot schema does not match this app database`)
+    throw new SnapshotError('schemaMismatch', `Snapshot schema does not match this app database`)
   }
 
   for (const table of snapshot.tables) {
@@ -599,7 +649,7 @@ export async function assertSnapshotMatchesCurrentSchema(snapshot: DatabaseSnaps
     const currentColumnKey = currentColumns.join('|')
     const snapshotColumnKey = table.columns.join('|')
     if (currentColumnKey !== snapshotColumnKey) {
-      throw new Error(`Snapshot columns do not match table ${table.name}`)
+      throw new SnapshotError('schemaMismatch', `Snapshot columns do not match table ${table.name}`)
     }
   }
 
@@ -617,7 +667,7 @@ export async function restoreDatabaseSnapshot(value: unknown, beforeCommit?: () 
   const snapshot = validateSnapshot(value)
   const preview = previewDatabaseSnapshot(snapshot)
   if (preview.integrity.present && !preview.integrity.valid) {
-    throw new Error('Snapshot integrity check failed')
+    throw new SnapshotError('integrityFailed', 'Snapshot integrity check failed')
   }
 
   return await withTransaction(async (conn) => {
@@ -681,15 +731,15 @@ export function prepareFilesArchiveRestoreForSnapshot(snapshotValue: unknown, ar
 
   for (const snapshotFile of snapshotFiles) {
     const archivedFile = manifestByFilePath.get(snapshotFile.file_path)
-    if (!archivedFile?.included) throw new Error(`Files archive is missing ${snapshotFile.original_name}`)
+    if (!archivedFile?.included) throw new SnapshotError('archiveFilesMissing', `Files archive is missing ${snapshotFile.original_name}`, { count: 1 })
 
     const content = entries.get(archivedFile.archive_path)
-    if (!content) throw new Error(`Files archive is missing ${snapshotFile.original_name}`)
+    if (!content) throw new SnapshotError('archiveFilesMissing', `Files archive is missing ${snapshotFile.original_name}`, { count: 1 })
 
     const relativePath = snapshotFile.file_path.replace(/^\/uploads\//, '')
     const absolutePath = path.resolve(resolvedUploadRoot, relativePath)
     if (!absolutePath.startsWith(resolvedUploadRoot + path.sep)) {
-      throw new Error(`Invalid snapshot file path: ${snapshotFile.file_path}`)
+      throw new SnapshotError('archiveInvalid', `Invalid snapshot file path: ${snapshotFile.file_path}`)
     }
 
     filesToWrite.push({ name: absolutePath, content })

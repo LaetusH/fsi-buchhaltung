@@ -2,8 +2,9 @@ import { createError, defineEventHandler } from 'h3'
 import { requirePermission } from '~/server/utils/api/guards'
 import { readMultipart } from '~/server/utils/api/request'
 import {
-  decryptDatabaseSnapshotBuffer,
+  parseEncryptedDatabaseSnapshot,
   previewDatabaseSnapshotForCurrentSchema,
+  SnapshotError,
   type SnapshotPreview,
 } from '~/server/utils/databaseSnapshots'
 import { createSnapshotRestoreSession } from '~/server/utils/snapshotRestoreSessions'
@@ -38,7 +39,7 @@ export default defineEventHandler(async (event): Promise<PreviewSnapshotResponse
       if (!snapshotFile) throw new Error('Missing encrypted snapshot')
 
       const password = multipart.getField('password')
-      const snapshot = JSON.parse(decryptDatabaseSnapshotBuffer(snapshotFile.data, password).toString('utf8'))
+      const snapshot = parseEncryptedDatabaseSnapshot(snapshotFile.data, password)
       const preview = await previewDatabaseSnapshotForCurrentSchema(snapshot)
       const restoreToken = createSnapshotRestoreSession(snapshot, preview)
 
@@ -47,6 +48,11 @@ export default defineEventHandler(async (event): Promise<PreviewSnapshotResponse
 
     throw new Error('Encrypted snapshot upload is required')
   } catch (err: any) {
-    throw createError({ statusCode: 400, statusMessage: 'Failed to preview database snapshot', message: String(err?.message || err) })
+    throw createError({
+      statusCode: 400,
+      statusMessage: 'Failed to preview database snapshot',
+      message: String(err?.message || err),
+      data: err instanceof SnapshotError ? { snapshotErrorCode: err.code, snapshotErrorParams: err.params } : undefined,
+    })
   }
 })

@@ -270,6 +270,7 @@ import { useToast } from '~/composables/useToast'
 import type { PreviewSnapshotResponse } from '~/server/api/settings/app/snapshot.preview.post'
 import type { PreviewFilesSnapshotResponse } from '~/server/api/settings/app/snapshot.files-preview.post'
 import type { RestoreSnapshotResponse } from '~/server/api/settings/app/snapshot.restore.post'
+import type { SnapshotErrorCode } from '~/server/utils/databaseSnapshots'
 import type { InvoiceTextSettings, InvoiceTextVariable } from '~/types/appSettings'
 
 const { t } = useI18n()
@@ -449,6 +450,38 @@ async function downloadFiles() {
   }
 }
 
+interface SnapshotRequestError extends Error {
+  snapshotErrorCode?: SnapshotErrorCode | 'uploadFailed'
+  snapshotErrorParams?: Record<string, string | number>
+}
+
+function createSnapshotRequestError(message: string, code?: SnapshotRequestError['snapshotErrorCode'], params?: Record<string, string | number>) {
+  const error = new Error(message) as SnapshotRequestError
+  error.snapshotErrorCode = code
+  error.snapshotErrorParams = params
+  return error
+}
+
+const snapshotErrorMessageKeys: Record<SnapshotErrorCode | 'uploadFailed', string> = {
+  invalidPassword: 'settings.app.snapshotErrors.invalidPassword',
+  wrongPassword: 'settings.app.snapshotErrors.wrongPassword',
+  notEncrypted: 'settings.app.snapshotErrors.notEncrypted',
+  corruptedFile: 'settings.app.snapshotErrors.corruptedFile',
+  unsupportedFormat: 'settings.app.snapshotErrors.unsupportedFormat',
+  schemaMismatch: 'settings.app.snapshotErrors.schemaMismatch',
+  integrityFailed: 'settings.app.snapshotErrors.integrityFailed',
+  archiveInvalid: 'settings.app.snapshotErrors.archiveInvalid',
+  archiveFilesMissing: 'settings.app.snapshotErrors.archiveFilesMissing',
+  previewExpired: 'settings.app.snapshotErrors.previewExpired',
+  uploadFailed: 'settings.app.snapshotErrors.uploadFailed',
+}
+
+function snapshotErrorMessage(err: unknown, fallback: string) {
+  const code = (err as SnapshotRequestError | null)?.snapshotErrorCode
+  if (!code || !(code in snapshotErrorMessageKeys)) return fallback
+  return t(snapshotErrorMessageKeys[code], (err as SnapshotRequestError).snapshotErrorParams)
+}
+
 function sendFormData<T>(url: string, body: FormData) {
   uploadProgress.value = 0
 
@@ -469,14 +502,18 @@ function sendFormData<T>(url: string, body: FormData) {
         if (request.status >= 200 && request.status < 300) {
           resolve(data as T)
         } else {
-          reject(new Error(data?.message || data?.error || request.statusText))
+          reject(createSnapshotRequestError(
+            data?.message || data?.error || request.statusText,
+            data?.data?.snapshotErrorCode,
+            data?.data?.snapshotErrorParams,
+          ))
         }
       } catch (err) {
         reject(err)
       }
     }
 
-    request.onerror = () => reject(new Error('Upload failed'))
+    request.onerror = () => reject(createSnapshotRequestError('Upload failed', 'uploadFailed'))
     request.send(body)
   })
 }
@@ -516,7 +553,7 @@ async function openRestorePreview() {
     restorePreview.value = res
     restoreConfirmation.value = ''
   } catch (err) {
-    toast.error(t('settings.app.previewFailed'))
+    toast.error(snapshotErrorMessage(err, t('settings.app.previewFailed')))
   } finally {
     isPreviewing.value = false
     uploadProgress.value = null
@@ -549,7 +586,7 @@ async function restoreSnapshot() {
     await fetchSession()
     toast.success(t('settings.app.restoreSuccess', { tables: String(res.tables), rows: String(res.rows), files: String(res.files) }))
   } catch (err) {
-    toast.error(t('settings.app.restoreFailed'))
+    toast.error(snapshotErrorMessage(err, t('settings.app.restoreFailed')))
   } finally {
     isRestoring.value = false
     uploadProgress.value = null

@@ -1,5 +1,5 @@
 import crypto from 'crypto'
-import type { DatabaseSnapshot, SnapshotPreview } from '~/server/utils/databaseSnapshots'
+import { SnapshotError, type DatabaseSnapshot, type SnapshotPreview } from '~/server/utils/databaseSnapshots'
 
 const RESTORE_SESSION_MAX_AGE_MS = 15 * 60 * 1000
 
@@ -29,7 +29,7 @@ export function getSnapshotRestoreSession(tokenValue: unknown) {
   pruneRestoreSessions()
   const token = String(tokenValue || '')
   const session = restoreSessions.get(token)
-  if (!session) throw new Error('Restore preview has expired')
+  if (!session) throw new SnapshotError('previewExpired', 'Restore preview has expired')
   return session
 }
 

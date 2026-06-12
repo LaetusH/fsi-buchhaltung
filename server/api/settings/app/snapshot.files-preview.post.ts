@@ -3,6 +3,7 @@ import { requirePermission } from '~/server/utils/api/guards'
 import { readMultipart } from '~/server/utils/api/request'
 import {
   previewFilesArchiveForSnapshot,
+  SnapshotError,
 } from '~/server/utils/databaseSnapshots'
 import { getSnapshotRestoreSession } from '~/server/utils/snapshotRestoreSessions'
 
@@ -48,6 +49,11 @@ export default defineEventHandler(async (event): Promise<PreviewFilesSnapshotRes
 
     throw new Error('Files archive upload is required')
   } catch (err: any) {
-    throw createError({ statusCode: 400, statusMessage: 'Failed to preview snapshot files archive', message: String(err?.message || err) })
+    throw createError({
+      statusCode: 400,
+      statusMessage: 'Failed to preview snapshot files archive',
+      message: String(err?.message || err),
+      data: err instanceof SnapshotError ? { snapshotErrorCode: err.code, snapshotErrorParams: err.params } : undefined,
+    })
   }
 })

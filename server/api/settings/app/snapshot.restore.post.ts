@@ -2,10 +2,11 @@ import { createError, defineEventHandler } from 'h3'
 import { requirePermission } from '~/server/utils/api/guards'
 import { readMultipart } from '~/server/utils/api/request'
 import {
-  decryptDatabaseSnapshotBuffer,
+  parseEncryptedDatabaseSnapshot,
   prepareFilesArchiveRestoreForSnapshot,
   restoreDatabaseSnapshot,
   restorePreparedFilesArchive,
+  SnapshotError,
 } from '~/server/utils/databaseSnapshots'
 import { consumeSnapshotRestoreSession } from '~/server/utils/snapshotRestoreSessions'
 
@@ -42,7 +43,7 @@ export default defineEventHandler(async (event): Promise<RestoreSnapshotResponse
         : (() => {
             if (!snapshotFile) throw new Error('Missing encrypted snapshot')
             const password = multipart.getField('password')
-            return JSON.parse(decryptDatabaseSnapshotBuffer(snapshotFile.data, password).toString('utf8'))
+            return parseEncryptedDatabaseSnapshot(snapshotFile.data, password)
           })()
 
       const filesToWrite = archiveFile
@@ -61,6 +62,11 @@ export default defineEventHandler(async (event): Promise<RestoreSnapshotResponse
 
     throw new Error('Encrypted snapshot upload is required')
   } catch (err: any) {
-    throw createError({ statusCode: 400, statusMessage: 'Failed to restore database snapshot', message: String(err?.message || err) })
+    throw createError({
+      statusCode: 400,
+      statusMessage: 'Failed to restore database snapshot',
+      message: String(err?.message || err),
+      data: err instanceof SnapshotError ? { snapshotErrorCode: err.code, snapshotErrorParams: err.params } : undefined,
+    })
   }
 })
