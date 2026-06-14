@@ -86,6 +86,7 @@ const messages = {
       notAuthorized: 'Nicht berechtigt.',
       positionAssignmentInvalidRange: '{label}: Enddatum darf nicht vor dem Beginndatum liegen.',
       positionAssignmentOverlap: '{label}: Zeiträume dürfen sich nicht überschneiden ({firstRange} und {secondRange}).',
+      total: 'Gesamt',
     },
     login: {
       title: 'Anmelden',
@@ -1474,6 +1475,7 @@ const messages = {
       notAuthorized: 'Not authorized.',
       positionAssignmentInvalidRange: '{label}: end date cannot be before start date.',
       positionAssignmentOverlap: '{label}: assignment periods must not overlap ({firstRange} and {secondRange}).',
+      total: 'Total'
     },
     login: {
       title: 'Sign in',
