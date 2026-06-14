@@ -19,6 +19,29 @@ export interface MemberListItem {
   account_is_active?: boolean | null
 }
 
+export interface MemberSpotlightStats {
+  total: number
+  active: number
+  passive: number
+  hold: number
+  left: number
+  honorary: number
+  active_accounts: number | null
+  inactive_accounts: number | null
+}
+
+export interface MemberBirthday {
+  id: number
+  first_name: string
+  last_name: string
+  full_name: string
+  birthdate: string
+  subject_name: string | null
+  status: MemberStatus
+  days_until: number
+  turning_age: number
+}
+
 export interface MemberPositionAssignment {
   id?: number
   position_id: number

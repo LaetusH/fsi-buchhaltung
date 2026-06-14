@@ -1,71 +1,64 @@
 <template>
-  <section class="col-span-12 overflow-hidden rounded-xl bg-white shadow-lg">
-    <div v-if="loading" class="flex items-center justify-center p-8 text-slate-400">
-      <Icon name="material-symbols:progress-activity" class="animate-spin text-2xl" />
-    </div>
+  <CommonSpotlight
+    :loading="loading"
+    :is-empty="!active"
+    empty-icon="material-symbols:event-busy-rounded"
+    :empty-text="t('event.spotlight.none')"
+    :title="active?.name"
+  >
+    <template #badge>
+      <span
+        class="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold uppercase tracking-wide"
+        :class="active?.status === 'past' ? 'bg-white/10 text-slate-200' : 'bg-orange-500/20 text-orange-200'"
+      >
+        <span class="h-1.5 w-1.5 rounded-full" :class="active?.status === 'past' ? 'bg-slate-400' : 'bg-orange-400'" />
+        {{ activeLabel }}
+      </span>
+    </template>
 
-    <div v-else-if="!active" class="flex flex-col items-center gap-2 p-8 text-center text-slate-400">
-      <Icon name="material-symbols:event-busy-rounded" class="text-3xl" />
-      <p class="text-sm">{{ t('event.spotlight.none') }}</p>
-    </div>
-
-    <template v-else>
-      <!-- Hero -->
-      <div class="bg-slate-900 px-4 py-4 text-white sm:px-6 sm:py-5">
-        <div class="flex flex-wrap items-start justify-between gap-3">
-          <div class="flex items-center gap-2">
-            <span
-              class="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold uppercase tracking-wide"
-              :class="active.status === 'past' ? 'bg-white/10 text-slate-200' : 'bg-orange-500/20 text-orange-200'"
-            >
-              <span class="h-1.5 w-1.5 rounded-full" :class="active.status === 'past' ? 'bg-slate-400' : 'bg-orange-400'" />
-              {{ activeLabel }}
-            </span>
-          </div>
-
-          <div v-if="canToggle" class="inline-flex rounded-lg bg-white/10 p-0.5 text-xs font-medium">
-            <button
-              type="button"
-              class="cursor-pointer rounded-md px-3 py-1.5 transition"
-              :class="view === 'upcoming' ? 'bg-white text-slate-900' : 'text-slate-200 hover:text-white'"
-              @click="view = 'upcoming'"
-            >
-              {{ t('event.spotlight.toggleUpcoming') }}
-            </button>
-            <button
-              type="button"
-              class="cursor-pointer rounded-md px-3 py-1.5 transition"
-              :class="view === 'latest' ? 'bg-white text-slate-900' : 'text-slate-200 hover:text-white'"
-              @click="view = 'latest'"
-            >
-              {{ t('event.spotlight.toggleLatest') }}
-            </button>
-          </div>
-        </div>
-
-        <div class="mt-3 flex flex-wrap items-end justify-between gap-3">
-          <div class="min-w-0">
-            <h2 class="truncate text-xl font-semibold sm:text-2xl">{{ active.name }}</h2>
-            <p v-if="countdownLabel" class="mt-1 flex items-center gap-1.5 text-sm text-slate-300">
-              <Icon name="material-symbols:schedule-rounded" class="text-base text-slate-400" />
-              {{ countdownLabel }}
-            </p>
-          </div>
-
-          <button
-            type="button"
-            class="inline-flex shrink-0 items-center gap-1.5 rounded-lg bg-orange-500 px-4 py-2 text-sm font-semibold text-white transition not-disabled:cursor-pointer not-disabled:hover:bg-orange-600 disabled:cursor-not-allowed disabled:opacity-40"
-            :disabled="!active.canOpen"
-            @click="$emit('open', active.id)"
-          >
-            <Icon name="material-symbols:open-in-new-rounded" class="text-base" />
-            {{ t('actions.open') }}
-          </button>
-        </div>
+    <template v-if="canToggle" #toggle>
+      <div class="inline-flex rounded-lg bg-white/10 p-0.5 text-xs font-medium">
+        <button
+          type="button"
+          class="cursor-pointer rounded-md px-3 py-1.5 transition"
+          :class="view === 'upcoming' ? 'bg-white text-slate-900' : 'text-slate-200 hover:text-white'"
+          @click="view = 'upcoming'"
+        >
+          {{ t('event.spotlight.toggleUpcoming') }}
+        </button>
+        <button
+          type="button"
+          class="cursor-pointer rounded-md px-3 py-1.5 transition"
+          :class="view === 'latest' ? 'bg-white text-slate-900' : 'text-slate-200 hover:text-white'"
+          @click="view = 'latest'"
+        >
+          {{ t('event.spotlight.toggleLatest') }}
+        </button>
       </div>
+    </template>
 
+    <template #subtitle>
+      <p v-if="countdownLabel" class="mt-1 flex items-center gap-1.5 text-sm text-slate-300">
+        <Icon name="material-symbols:schedule-rounded" class="text-base text-slate-400" />
+        {{ countdownLabel }}
+      </p>
+    </template>
+
+    <template #action>
+      <button
+        type="button"
+        class="inline-flex shrink-0 items-center gap-1.5 rounded-lg bg-orange-500 px-4 py-2 text-sm font-semibold text-white transition not-disabled:cursor-pointer not-disabled:hover:bg-orange-600 disabled:cursor-not-allowed disabled:opacity-40"
+        :disabled="!active?.canOpen"
+        @click="active && $emit('open', active.id)"
+      >
+        <Icon name="material-symbols:open-in-new-rounded" class="text-base" />
+        {{ t('actions.open') }}
+      </button>
+    </template>
+
+    <template v-if="active">
       <!-- Body -->
-      <div class="grid gap-4 p-4 sm:p-6" :class="active.planning ? 'md:grid-cols-[1fr_1.1fr]' : ''">
+      <div class="grid gap-4" :class="active.planning ? 'md:grid-cols-[1fr_1.1fr]' : ''">
         <!-- Event facts -->
         <dl
           class="grid grid-cols-2 gap-x-4 gap-y-3 self-start"
@@ -172,7 +165,7 @@
         </div>
       </div>
     </template>
-  </section>
+  </CommonSpotlight>
 </template>
 
 <script setup lang="ts">
