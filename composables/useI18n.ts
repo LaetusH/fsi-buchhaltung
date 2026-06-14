@@ -465,7 +465,6 @@ const messages = {
     },
     member: {
       title: 'Mitglied',
-      listTitle: 'Mitglieder',
       stored: 'Gespeicherte Mitglieder',
       search: 'Mitglieder durchsuchen',
       new: 'Neues Mitglied',
@@ -899,7 +898,6 @@ const messages = {
     },
     event: {
       title: 'Veranstaltung',
-      listTitle: 'Veranstaltungen',
       stored: 'Gespeicherte Veranstaltungen',
       search: 'Veranstaltungen durchsuchen',
       new: 'Neue Veranstaltung',
@@ -1866,7 +1864,6 @@ const messages = {
     },
     member: {
       title: 'Member',
-      listTitle: 'Members',
       stored: 'Saved members',
       search: 'Search members',
       new: 'New member',
@@ -2302,7 +2299,6 @@ const messages = {
     },
     event: {
       title: 'Event',
-      listTitle: 'Events',
       stored: 'Saved events',
       search: 'Search events',
       new: 'New event',
