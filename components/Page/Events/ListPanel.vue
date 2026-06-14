@@ -1,4 +1,6 @@
 <template>
+  <PageEventsSpotlight @open="openEvent" />
+
   <CommonPageTableCard
     :title="t('event.stored')"
     :search-value="globalSearchInput"
@@ -8,8 +10,9 @@
     @update:search-value="globalSearchInput = $event"
     @create="createEvent"
   >
-    <div class="overflow-x-auto">
-      <table class="w-full text-sm border-collapse">
+    <!-- Desktop table -->
+    <div class="hidden overflow-x-auto xl:block">
+      <table class="w-full min-w-[64rem] text-sm border-collapse">
         <thead>
           <tr class="text-left border-b">
             <th class="py-2">
@@ -112,6 +115,60 @@
         </tbody>
       </table>
     </div>
+
+    <!-- Compact card list (mobile + medium screens) -->
+    <ul class="grid gap-3 sm:grid-cols-2 xl:hidden">
+      <li
+        v-for="entry in processedRows"
+        :key="entry.id"
+        class="rounded-xl border border-slate-200 p-4"
+      >
+        <div class="flex items-start justify-between gap-3">
+          <div class="min-w-0">
+            <p class="truncate font-semibold text-slate-800">{{ entry.name }}</p>
+            <p class="mt-0.5 flex items-center gap-1 text-xs text-slate-500">
+              <Icon name="material-symbols:event-rounded" class="shrink-0 text-sm text-slate-400" />
+              {{ formatDateTime(entry.starts_at) }}
+            </p>
+          </div>
+          <button
+            class="inline-flex shrink-0 items-center gap-1 rounded-lg bg-blue-50 px-3 py-1.5 text-sm font-medium text-blue-600 transition not-disabled:cursor-pointer not-disabled:hover:bg-blue-100 disabled:cursor-not-allowed disabled:opacity-40"
+            :disabled="!canOpenEvent(entry.id)"
+            @click="openEvent(entry.id)"
+          >
+            <Icon name="material-symbols:open-in-new-rounded" class="text-sm" />
+            {{ t('actions.open') }}
+          </button>
+        </div>
+
+        <dl class="mt-3 grid grid-cols-2 gap-x-3 gap-y-2.5 text-sm">
+          <div class="col-span-2">
+            <dt class="text-xs font-medium uppercase tracking-wide text-slate-400">{{ t('event.endsOn') }}</dt>
+            <dd class="text-slate-700">{{ formatDateTime(entry.ends_at) }}</dd>
+          </div>
+          <div>
+            <dt class="text-xs font-medium uppercase tracking-wide text-slate-400">{{ t('event.location') }}</dt>
+            <dd class="truncate text-slate-700">{{ entry.location || t('common.notAvailable') }}</dd>
+          </div>
+          <div>
+            <dt class="text-xs font-medium uppercase tracking-wide text-slate-400">{{ t('event.expectedGuests') }}</dt>
+            <dd class="text-slate-700">{{ entry.expected_guests != null ? entry.expected_guests : t('common.notAvailable') }}</dd>
+          </div>
+          <div class="col-span-2">
+            <dt class="text-xs font-medium uppercase tracking-wide text-slate-400">{{ t('event.organizers') }}</dt>
+            <dd class="text-slate-700">{{ organizerSummary(entry) }}</dd>
+          </div>
+          <div class="col-span-2">
+            <dt class="text-xs font-medium uppercase tracking-wide text-slate-400">{{ t('event.costCentres') }}</dt>
+            <dd class="text-slate-700">{{ costCentreSummary(entry) }}</dd>
+          </div>
+        </dl>
+      </li>
+
+      <li v-if="processedRows.length === 0" class="py-6 text-center text-slate-500 sm:col-span-2">
+        {{ t('event.none') }}
+      </li>
+    </ul>
   </CommonPageTableCard>
 </template>
 
@@ -124,6 +181,7 @@ import { useLocaleFormatters } from '~/composables/useLocaleFormatters'
 import { usePage } from '~/composables/usePage'
 import { buildReturnTarget, cloneReturnTarget } from '~/composables/useReturnTarget'
 import type { Event } from '~/types/event'
+import type { EventPlanningTabKey } from './planning/types'
 
 type EventColumnKey = 'name' | 'starts_at' | 'ends_at' | 'location' | 'expected_guests' | 'organizers' | 'cost_centres'
 
@@ -219,9 +277,10 @@ function costCentreSummary(entry: Event) {
   ].join(', ')
 }
 
-function openEvent(id: number) {
+function openEvent(id: number, activeTab?: EventPlanningTabKey) {
   setPage('EventCreate', {
     eventId: id,
+    ...(activeTab ? { activeTab } : {}),
     returnTarget: resolvedReturnTarget.value,
   })
 }

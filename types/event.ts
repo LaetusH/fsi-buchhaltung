@@ -48,6 +48,23 @@ export interface Event extends EventRow {
   cost_centre_splits: EventCostCentreSplit[]
 }
 
+export interface EventPlanningSummary {
+  readiness: number
+  tasks: { total: number; done: number; open: number }
+  shifts: { total: number; fullyStaffed: number; partiallyStaffed: number; unstaffed: number }
+  checklists: { count: number; totalItems: number; doneItems: number }
+  details: { locationSet: boolean; guestsSet: boolean; organizerCount: number; costCentresValid: boolean }
+}
+
+export type EventSpotlightStatus = 'upcoming' | 'ongoing' | 'past'
+
+export interface EventSpotlight extends Event {
+  status: EventSpotlightStatus
+  daysToStart: number | null
+  canOpen: boolean
+  planning: EventPlanningSummary | null
+}
+
 export interface EventMemberOption {
   id: number
   full_name: string
