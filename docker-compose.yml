@@ -48,6 +48,11 @@ services:
       - ./db/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
     ports:
       - "3308:3307"
+    networks:
+      default:
+      fsi-shared:
+        aliases:
+          -buchhaltung-db
     healthcheck:
       test: ["CMD", "mariadb", "-u", "${DB_USER:-fsi}", "-p${DB_PASSWORD:-fsi_password}", "-h", "localhost", "-P", "3307", "-e", "SELECT 1;"]
       interval: 10s
@@ -59,3 +64,7 @@ volumes:
   db_data:
   uploads:
   node_modules:
+
+networks:
+  fsi-shared:
+    name: fsi-shared
