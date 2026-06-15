@@ -52,7 +52,7 @@ services:
       default:
       fsi-shared:
         aliases:
-          -buchhaltung-db
+          - buchhaltung-db
     healthcheck:
       test: ["CMD", "mariadb", "-u", "${DB_USER:-fsi}", "-p${DB_PASSWORD:-fsi_password}", "-h", "localhost", "-P", "3307", "-e", "SELECT 1;"]
       interval: 10s
