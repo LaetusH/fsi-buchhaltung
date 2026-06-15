@@ -7,7 +7,7 @@ import mariadb from 'mariadb'
 // the password and grants in sync.
 
 const {
-  DB_HOST = 'db',
+  DB_HOST = 'buchhaltung-db-local',
   DB_PORT = '3307',
   DB_NAME = 'fsi_buchhaltung',
   DB_ROOT_PASSWORD,

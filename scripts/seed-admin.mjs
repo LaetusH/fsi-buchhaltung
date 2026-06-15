@@ -4,8 +4,8 @@ import bcrypt from 'bcrypt'
 const {
   ADMIN_USERNAME,
   ADMIN_PASSWORD,
-  DB_HOST = 'db',
-  DB_PORT = '3306',
+  DB_HOST = 'buchhaltung-db-local',
+  DB_PORT = '3307',
   DB_USER = 'fsi',
   DB_PASSWORD = 'fsi_password',
   DB_NAME = 'fsi_buchhaltung',

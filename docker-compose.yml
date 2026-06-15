@@ -11,13 +11,15 @@ services:
     environment:
       - HOST=0.0.0.0
       - PORT=3002
-      - DB_HOST=${DB_HOST:-db}
-      - DB_PORT=${DB_PORT:-3307}
+      - DB_HOST=buchhaltung-db-local
+      - DB_PORT=3307
       - DB_USER=${DB_USER:-fsi}
       - DB_PASSWORD=${DB_PASSWORD:-fsi_password}
       - DB_ROOT_PASSWORD=${DB_ROOT_PASSWORD:-root_password}
       - DB_NAME=${DB_NAME:-fsi_buchhaltung}
       - DB_CONN_LIMIT=${DB_CONN_LIMIT:-5}
+      - CASH_REGISTER_DB_HOST=kasse-db
+      - CASH_REGISTER_DB_PORT=3306
       - UPLOAD_DIR=/uploads
       - MAX_UPLOAD_MB=${MAX_UPLOAD_MB:-5}
       - SESSION_COOKIE_NAME=${SESSION_COOKIE_NAME:-fsi_session}
@@ -29,6 +31,9 @@ services:
       - APP_BASE_URL=${APP_BASE_URL:-/}
     ports:
       - "3002:3002"
+    networks:
+      - default
+      - fsi-shared
     command: sh -c "npm ci && node scripts/migrate-event-cost-centre-splits.mjs && node scripts/migrate-event-planning.mjs && node scripts/migrate-invoice-paid-at.mjs && node scripts/migrate-invoice-position-description-nullable.mjs && node scripts/migrate-app-settings.mjs && node scripts/migrate-cash-count-register-checks.mjs && node scripts/migrate-user-password-change-required.mjs && node scripts/migrate-checklist-task-link.mjs && node scripts/migrate-bank-statements.mjs && npm run setup:audit && node scripts/create-connection-db-user.mjs && node scripts/seed-admin.mjs && npm run build && node .output/server/index.mjs"
     depends_on:
       db:
@@ -50,6 +55,8 @@ services:
       - "3308:3307"
     networks:
       default:
+        aliases:
+          - buchhaltung-db-local
       fsi-shared:
         aliases:
           - buchhaltung-db
