@@ -1,5 +1,5 @@
 <template>
-  <Page :headline1="t('event.title')" @open-menu="$emit('openMenu')">
+  <Page @open-menu="$emit('openMenu')">
     <template #cards>
       <div class="col-span-12 min-w-0">
         <div class="space-y-5">
