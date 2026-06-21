@@ -54,7 +54,7 @@
             >
               <span class="mb-1 whitespace-nowrap text-xs text-slate-500">{{ formatCurrency(entry.revenue) }}</span>
               <div
-                class="w-full rounded-t-md bg-orange-400 transition-colors group-hover:bg-orange-500"
+                class="w-full rounded-t-md bg-orange-400 transition-colors"
                 :style="{ height: `${barHeight(entry.revenue)}px` }"
               ></div>
               <span class="mt-1 w-full whitespace-nowrap border-t border-slate-200 pt-1 text-center text-xs font-medium text-slate-500">
