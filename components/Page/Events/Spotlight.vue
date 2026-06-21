@@ -178,7 +178,7 @@ import type { EventPlanningTabKey } from './planning/types'
 const emit = defineEmits<{ (e: 'open', eventId: number, tab?: EventPlanningTabKey): void }>()
 
 const { t } = useI18n()
-const { formatDate, formatDateTime } = useLocaleFormatters()
+const { formatDate, formatDateTime, formatLocalDate, formatLocalDateTime } = useLocaleFormatters()
 
 type SpotlightView = 'upcoming' | 'latest'
 
@@ -215,10 +215,10 @@ const rangeLabel = computed(() => {
   if (event.starts_at && event.ends_at) {
     const sameDay = event.starts_at.slice(0, 10) === event.ends_at.slice(0, 10)
     return sameDay
-      ? `${formatDateTime(event.starts_at)} – ${formatTime(event.ends_at)}`
-      : `${formatDateTime(event.starts_at)} – ${formatDateTime(event.ends_at)}`
+      ? `${formatLocalDateTime(event.starts_at)} – ${formatTime(event.ends_at)}`
+      : `${formatLocalDateTime(event.starts_at)} – ${formatLocalDateTime(event.ends_at)}`
   }
-  return formatDateTime(event.starts_at || event.ends_at)
+  return formatLocalDateTime(event.starts_at || event.ends_at)
 })
 
 const organizerLabels = computed(() => {
@@ -290,8 +290,8 @@ function openTab(tab: EventPlanningTabKey) {
 
 function formatTime(value?: string | null) {
   if (!value) return ''
-  const full = formatDateTime(value)
-  const date = formatDate(value)
+  const full = formatLocalDateTime(value)
+  const date = formatLocalDate(value)
   // Strip the leading date portion to keep just the time when on the same day.
   return full.startsWith(date) ? full.slice(date.length).trim().replace(/^[,·\s]+/, '') : full
 }

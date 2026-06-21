@@ -443,7 +443,7 @@ defineEmits<{ (e: 'openMenu'): void }>()
 
 const { hasPermission } = useAuth()
 const { t } = useI18n()
-const { formatDate, formatDateTime } = useLocaleFormatters()
+const { formatDate, formatDateTime, formatLocalDate, formatLocalDateTime } = useLocaleFormatters()
 const { pageMeta, setPage } = usePage()
 const { returnTarget, goToReturnTarget } = useReturnTarget('Events')
 const toast = useToast()
@@ -934,8 +934,8 @@ function timelineItemDotClass(item: EventTimelineItem): string {
 function formatMaybeDateTime(value: string) {
   if (!value) return t('common.notAvailable')
   try {
-    if (value.length <= 10) return formatDate(value)
-    return formatDateTime(value)
+    if (value.length <= 10) return formatLocalDate(value)
+    return formatLocalDateTime(value)
   }
   catch {
     return value

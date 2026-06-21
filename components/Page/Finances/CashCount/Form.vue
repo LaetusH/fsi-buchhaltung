@@ -261,7 +261,7 @@ const emit = defineEmits<{
 }>()
 
 const { t } = useI18n()
-const { formatCurrency, formatDateTime } = useLocaleFormatters()
+const { formatCurrency, formatDateTime, formatLocalDateTime } = useLocaleFormatters()
 
 const form = computed({
   get: () => props.modelValue,
@@ -392,7 +392,7 @@ function memberLabel(member: MemberListItem) {
 }
 
 function eventLabel(event: EventRow) {
-  const startsAt = formatDateTime(event.starts_at)
+  const startsAt = formatLocalDateTime(event.starts_at)
   return [event.name, startsAt, event.location].filter(Boolean).join(' | ')
 }
 

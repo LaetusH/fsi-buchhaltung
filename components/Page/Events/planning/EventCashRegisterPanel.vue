@@ -58,7 +58,7 @@
                 :style="{ height: `${barHeight(entry.revenue)}px` }"
               ></div>
               <span class="mt-1 w-full whitespace-nowrap border-t border-slate-200 pt-1 text-center text-xs font-medium text-slate-500">
-                {{ entry.hour.slice(11, 16) }}
+                {{ hourLabel(entry.hour) }}
               </span>
               <span class="h-4 whitespace-nowrap text-xs text-slate-400">
                 {{ dayLabel(entry.hour) }}
@@ -210,12 +210,20 @@ function barHeight(revenue: number) {
   return Math.max(revenue > 0 ? 4 : 2, scaled)
 }
 
+function toBerlinIso(hour: string) {
+  return new Date(hour.replace(' ', 'T') + 'Z').toLocaleString('sv-SE', { timeZone: 'Europe/Berlin' })
+}
+
+function hourLabel(hour: string) {
+  return toBerlinIso(hour).slice(11, 16)
+}
+
 function dayLabel(hour: string) {
   const entries = overview.value?.hourly ?? []
   const index = entries.findIndex(entry => entry.hour === hour)
-  const date = hour.slice(0, 10)
-  if (index > 0 && entries[index - 1]?.hour.slice(0, 10) === date) return ''
-  return `${date.slice(8, 10)}.${date.slice(5, 7)}.`
+  const berlinDate = toBerlinIso(hour).slice(0, 10)
+  if (index > 0 && toBerlinIso(entries[index - 1]!.hour).slice(0, 10) === berlinDate) return ''
+  return `${berlinDate.slice(8, 10)}.${berlinDate.slice(5, 7)}.`
 }
 
 async function loadOverview() {

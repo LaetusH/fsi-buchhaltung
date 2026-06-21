@@ -10,7 +10,8 @@ const pool = mariadb.createPool({
   password: process.env.DB_PASSWORD,
   database: process.env.DB_NAME,
   connectionLimit: Number(process.env.DB_CONN_LIMIT || 5),
-  dateStrings: true
+  dateStrings: true,
+  timezone: 'UTC',
 })
 
 export async function getDbConnection() {

@@ -22,6 +22,7 @@ function getPool() {
       database: process.env.CASH_REGISTER_DB_NAME || 'fsi_kasse',
       connectionLimit: Number(process.env.CASH_REGISTER_DB_CONN_LIMIT || 2),
       dateStrings: true,
+      timezone: 'UTC',
     })
   }
 

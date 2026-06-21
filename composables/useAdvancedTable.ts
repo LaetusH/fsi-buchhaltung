@@ -64,7 +64,11 @@ function toComparableValue(type: TableFilterType, value: unknown): number | stri
 function toDateSearchTokens(value: unknown): string[] {
   if (!value) return []
   const raw = String(value)
-  const ts = Date.parse(raw)
+  // Treat bare DB strings (no timezone marker) as UTC
+  const utcStr = (!/[Z+\-]\d{2}:?\d{2}$/.test(raw) && !raw.endsWith('Z'))
+    ? raw.replace(' ', 'T') + 'Z'
+    : raw
+  const ts = Date.parse(utcStr)
   if (!Number.isFinite(ts)) return [normalizeText(raw)]
   return [
     normalizeText(raw),
@@ -73,6 +77,7 @@ function toDateSearchTokens(value: unknown): string[] {
         day: '2-digit',
         month: '2-digit',
         year: 'numeric',
+        timeZone: 'Europe/Berlin',
       }),
     ),
   ]

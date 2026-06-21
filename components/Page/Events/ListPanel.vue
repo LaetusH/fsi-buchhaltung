@@ -12,7 +12,7 @@
   >
     <!-- Desktop table -->
     <div class="hidden overflow-x-auto xl:block">
-      <table class="w-full min-w-[64rem] text-sm border-collapse">
+      <table class="w-full min-w-5xl text-sm border-collapse">
         <thead>
           <tr class="text-left border-b">
             <th class="py-2">
@@ -90,8 +90,8 @@
             class="border-b last:border-b-0 transition"
           >
             <td class="py-2 font-medium">{{ entry.name }}</td>
-            <td class="py-2">{{ formatDateTime(entry.starts_at) }}</td>
-            <td class="py-2">{{ formatDateTime(entry.ends_at) }}</td>
+            <td class="py-2">{{ formatLocalDateTime(entry.starts_at) }}</td>
+            <td class="py-2">{{ formatLocalDateTime(entry.ends_at) }}</td>
             <td class="py-2">{{ entry.location }}</td>
             <td class="py-2">{{ entry.expected_guests }}</td>
             <td class="py-2">{{ organizerSummary(entry) }}</td>
@@ -128,7 +128,7 @@
             <p class="truncate font-semibold text-slate-800">{{ entry.name }}</p>
             <p class="mt-0.5 flex items-center gap-1 text-xs text-slate-500">
               <Icon name="material-symbols:event-rounded" class="shrink-0 text-sm text-slate-400" />
-              {{ formatDateTime(entry.starts_at) }}
+              {{ formatLocalDateTime(entry.starts_at) }}
             </p>
           </div>
           <button
@@ -144,7 +144,7 @@
         <dl class="mt-3 grid grid-cols-2 gap-x-3 gap-y-2.5 text-sm">
           <div class="col-span-2">
             <dt class="text-xs font-medium uppercase tracking-wide text-slate-400">{{ t('event.endsOn') }}</dt>
-            <dd class="text-slate-700">{{ formatDateTime(entry.ends_at) }}</dd>
+            <dd class="text-slate-700">{{ formatLocalDateTime(entry.ends_at) }}</dd>
           </div>
           <div>
             <dt class="text-xs font-medium uppercase tracking-wide text-slate-400">{{ t('event.location') }}</dt>
@@ -192,7 +192,7 @@ const props = defineProps<{
 const { setPage } = usePage()
 const { hasPermission } = useAuth()
 const { t } = useI18n()
-const { formatDateTime } = useLocaleFormatters()
+const { formatLocalDateTime } = useLocaleFormatters()
 
 const canEdit = computed(() => hasPermission('events.edit'))
 const resolvedReturnTarget = computed(() => cloneReturnTarget(props.returnTarget) ?? buildReturnTarget('Events'))
