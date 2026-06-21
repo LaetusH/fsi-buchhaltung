@@ -15,7 +15,7 @@
     </div>
 
     <template v-else-if="overview">
-      <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
         <div
           v-for="tile in statTiles"
           :key="tile.label"
@@ -173,6 +173,10 @@ const maxHourlyRevenue = computed(() =>
 const statTiles = computed(() => {
   if (!overview.value) return []
 
+  const totalIncome = overview.value.regular.totalRevenue
+    + overview.value.payments.revenue
+    + overview.value.donations.total
+
   return [
     {
       label: t('event.cashRegister.totalRevenue'),
@@ -190,6 +194,12 @@ const statTiles = computed(() => {
       icon: 'material-symbols:savings-rounded',
     },
     {
+      label: t('event.cashRegister.donations'),
+      value: formatCurrency(overview.value.donations.total),
+      meta: t('event.cashRegister.donationsMeta', { count: overview.value.donations.count }),
+      icon: 'material-symbols:favorite-rounded',
+    },
+    {
       label: t('event.cashRegister.givenOutWorth'),
       value: formatCurrency(overview.value.fachschaft.totalWorth),
       meta: t('event.cashRegister.givenOutMeta', { count: overview.value.fachschaft.totalQuantity }),
@@ -197,7 +207,7 @@ const statTiles = computed(() => {
     },
     {
       label: t('event.cashRegister.combinedRevenue'),
-      value: formatCurrency(overview.value.regular.totalRevenue + overview.value.payments.revenue),
+      value: formatCurrency(totalIncome),
       meta: t('event.cashRegister.combinedRevenueMeta'),
       icon: 'material-symbols:account-balance-wallet',
     },

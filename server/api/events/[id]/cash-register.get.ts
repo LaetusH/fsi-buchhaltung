@@ -31,6 +31,10 @@ export interface CashRegisterOverview {
     amount: number
     revenue: number
   }
+  donations: {
+    count: number
+    total: number
+  }
   hourly: CashRegisterHourlyEntry[]
 }
 
@@ -136,6 +140,12 @@ export default defineEventHandler(async (event): Promise<EventCashRegisterRespon
     LIMIT 1
   `, [])
 
+  const donationRows = await cashRegisterQuery<Array<{ count: unknown, total: unknown }>>(`
+    SELECT COUNT(*) AS count, IFNULL(SUM(amount), 0) AS total
+    FROM donations
+    WHERE event_id = ?
+  `, [cashRegisterEventId])
+
   const hourlyRows = await cashRegisterQuery<Array<{ hour_start: string, revenue: unknown, quantity: unknown }>>(`
     SELECT
       DATE_FORMAT(o.created_at, '%Y-%m-%d %H:00:00') AS hour_start,
@@ -183,6 +193,10 @@ export default defineEventHandler(async (event): Promise<EventCashRegisterRespon
         count: paymentCount,
         amount: paymentAmount,
         revenue: paymentCount * paymentAmount,
+      },
+      donations: {
+        count: Number(donationRows[0]?.count ?? 0),
+        total: Number(donationRows[0]?.total ?? 0),
       },
       hourly: fillHourlyGaps(hourlyRows),
     },
