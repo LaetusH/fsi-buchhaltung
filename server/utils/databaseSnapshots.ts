@@ -641,7 +641,10 @@ export async function assertSnapshotMatchesCurrentSchema(snapshot: DatabaseSnaps
   const missingTables = currentTables.filter(table => !snapshotTableMap.has(table.name)).map(table => table.name)
   const unknownTables = snapshot.tables.filter(table => !currentTableMap.has(table.name)).map(table => table.name)
   if (missingTables.length || unknownTables.length) {
-    throw new SnapshotError('schemaMismatch', `Snapshot schema does not match this app database`)
+    const parts: string[] = []
+    if (missingTables.length) parts.push(`tables missing from snapshot: ${missingTables.join(', ')}`)
+    if (unknownTables.length) parts.push(`tables in snapshot not in DB: ${unknownTables.join(', ')}`)
+    throw new SnapshotError('schemaMismatch', `Snapshot schema does not match this app database`, { details: parts.join(' | ') })
   }
 
   for (const table of snapshot.tables) {
@@ -649,7 +652,15 @@ export async function assertSnapshotMatchesCurrentSchema(snapshot: DatabaseSnaps
     const currentColumnKey = currentColumns.join('|')
     const snapshotColumnKey = table.columns.join('|')
     if (currentColumnKey !== snapshotColumnKey) {
-      throw new SnapshotError('schemaMismatch', `Snapshot columns do not match table ${table.name}`)
+      const currentColumnSet = new Set(currentColumns)
+      const snapshotColumnSet = new Set(table.columns)
+      const addedColumns = currentColumns.filter(col => !snapshotColumnSet.has(col))
+      const removedColumns = table.columns.filter(col => !currentColumnSet.has(col))
+      const parts: string[] = [`table: ${table.name}`]
+      if (addedColumns.length) parts.push(`columns added since snapshot: ${addedColumns.join(', ')}`)
+      if (removedColumns.length) parts.push(`columns removed since snapshot: ${removedColumns.join(', ')}`)
+      if (!addedColumns.length && !removedColumns.length) parts.push(`column order differs — DB: [${currentColumns.join(', ')}], snapshot: [${table.columns.join(', ')}]`)
+      throw new SnapshotError('schemaMismatch', `Snapshot columns do not match table ${table.name}`, { details: parts.join(' | ') })
     }
   }
 
