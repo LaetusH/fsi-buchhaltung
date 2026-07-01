@@ -10,6 +10,15 @@
 
           <div class="flex flex-wrap gap-3">
             <button
+              v-if="form.id"
+              type="button"
+              class="btn-secondary"
+              :disabled="isSaving || isDownloadingPdf"
+              @click="downloadPdf"
+            >
+              {{ isDownloadingPdf ? t('budget.downloading') : t('budget.downloadPdf') }}
+            </button>
+            <button
               type="button"
               class="btn-secondary"
               :disabled="isSaving"
@@ -286,6 +295,7 @@ import { useToast } from '~/composables/useToast'
 import type { GetBudgetResponse } from '~/server/api/finances/budgets/[id].get'
 import type { BudgetCostCentreLine, BudgetDetail, BudgetSemester, SaveBudgetBody } from '~/types/budget'
 import type { CostCentreRow } from '~/types/costCentre'
+import { downloadBudgetPlanPdf } from '~/utils/budgetPdfDownload'
 
 defineEmits<{
   (e: 'openMenu'): void
@@ -333,6 +343,7 @@ const canEdit = computed(() => !pageMeta.value?.forceReadonly && hasPermission('
 const costCentres = ref<CostCentreRow[]>([])
 const isLoadingBudget = ref(false)
 const isSaving = ref(false)
+const isDownloadingPdf = ref(false)
 const form = ref<BudgetEditorForm>(createEmptyBudgetForm())
 const focusedField = ref<string | null>(null)
 const generalNotesRef = ref<HTMLTextAreaElement | null>(null)
@@ -701,6 +712,26 @@ async function saveBudget() {
     toast.error(error?.message || t('budget.saveFailed'))
   } finally {
     isSaving.value = false
+  }
+}
+
+async function downloadPdf() {
+  const budgetId = form.value.id
+  if (!budgetId || isDownloadingPdf.value) return
+
+  isDownloadingPdf.value = true
+
+  try {
+    const result = await downloadBudgetPlanPdf({
+      id: budgetId,
+      year: Number(form.value.year),
+      semester: form.value.semester,
+    })
+    if (!result.ok) toast.error(result.error || t('budget.downloadFailed'))
+  } catch {
+    toast.error(t('budget.downloadFailed'))
+  } finally {
+    isDownloadingPdf.value = false
   }
 }
 

@@ -89,9 +89,18 @@
             <td class="py-2 text-right">{{ formatCurrency(budget.own_income_total) }}</td>
             <td class="py-2 text-right font-medium" :class="saldoTextClass(budget.own_saldo)">{{ formatCurrency(budget.own_saldo) }}</td>
             <td class="py-2 text-right">
-              <button class="text-blue-600 hover:underline cursor-pointer" @click="openBudget(budget.id)">
-                {{ t('actions.open') }}
-              </button>
+              <div class="flex justify-end gap-3">
+                <button
+                  class="text-blue-600 hover:underline cursor-pointer disabled:cursor-not-allowed disabled:opacity-60"
+                  :disabled="downloadingBudgetId === budget.id"
+                  @click="downloadBudget(budget)"
+                >
+                  {{ t('budget.downloadPdfShort') }}
+                </button>
+                <button class="text-blue-600 hover:underline cursor-pointer" @click="openBudget(budget.id)">
+                  {{ t('actions.open') }}
+                </button>
+              </div>
             </td>
           </tr>
 
@@ -114,8 +123,10 @@ import { useI18n } from '~/composables/useI18n'
 import { useLocaleFormatters } from '~/composables/useLocaleFormatters'
 import { usePage } from '~/composables/usePage'
 import { buildReturnTarget, cloneReturnTarget } from '~/composables/useReturnTarget'
+import { useToast } from '~/composables/useToast'
 import type { BudgetListItem, BudgetSemester } from '~/types/budget'
 import type { PageTarget } from '~/types/page'
+import { downloadBudgetPlanPdf } from '~/utils/budgetPdfDownload'
 
 type BudgetColumnKey = 'period' | 'range' | 'expense' | 'income' | 'saldo'
 
@@ -127,6 +138,9 @@ const { setPage } = usePage()
 const { hasPermission } = useAuth()
 const { t } = useI18n()
 const { formatCurrency, formatDate } = useLocaleFormatters()
+const toast = useToast()
+
+const downloadingBudgetId = ref<number | null>(null)
 
 const canEdit = computed(() => hasPermission('budgets.edit'))
 const resolvedReturnTarget = computed(() => cloneReturnTarget(props.returnTarget) ?? buildReturnTarget('BudgetList'))
@@ -167,6 +181,20 @@ function saldoTextClass(value: number) {
   if (value > 0) return 'text-green-700'
   if (value < 0) return 'text-red-700'
   return 'text-slate-700'
+}
+
+async function downloadBudget(budget: BudgetListItem) {
+  if (downloadingBudgetId.value !== null) return
+  downloadingBudgetId.value = budget.id
+
+  try {
+    const result = await downloadBudgetPlanPdf(budget)
+    if (!result.ok) toast.error(result.error || t('budget.downloadFailed'))
+  } catch {
+    toast.error(t('budget.downloadFailed'))
+  } finally {
+    downloadingBudgetId.value = null
+  }
 }
 
 function openBudget(id: number) {
