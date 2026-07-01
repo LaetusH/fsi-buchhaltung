@@ -1,14 +1,15 @@
 import { defineEventHandler, getQuery } from 'h3'
 import { query } from '~/server/utils/db'
 import { requirePermission } from '~/server/utils/api/guards'
+import { computeTotalMoney, buildCashLedger } from '~/server/utils/cashPosition'
 import type {
   FinanceAnalysisCashCountItem,
-  FinanceAnalysisBalanceEvent,
   FinanceAnalysisData,
   FinanceAnalysisInvoiceBreakdownItem,
   FinanceAnalysisInvoiceItem,
   FinanceAnalysisReceiptBreakdownItem,
   FinanceAnalysisReceiptItem,
+  FinanceLiquidityRow,
 } from '~/types/financeAnalysis'
 import { InvoiceStatus } from '~/types/invoice'
 import { ReceiptStatus } from '~/types/receipt'
@@ -163,420 +164,68 @@ function roundCurrency(value: number) {
   return Number(value.toFixed(2))
 }
 
-async function loadBalanceEvents(
+/**
+ * Slice full ledger rows to [startDate, endDate], prepend opening row, append closing row.
+ * The opening/closing totals must match computeTotalMoney at the period boundaries.
+ */
+function buildLiquidityRows(
+  allRows: FinanceLiquidityRow[],
   startDate: string,
   endDate: string,
-  selectedCostCentreIds: number[],
-) {
-  const hasCostCentreFilter = selectedCostCentreIds.length > 0
-  const costCentrePlaceholders = selectedCostCentreIds.map(() => '?').join(', ')
+  openingPosition: { bankBalance: number; cashTotal: number; totalMoney: number },
+  closingPosition: { bankBalance: number; cashTotal: number; totalMoney: number },
+  hasCostCentreFilter: boolean,
+): FinanceLiquidityRow[] {
+  const inPeriod = allRows.filter(r => r.date >= startDate && r.date <= endDate)
 
-  const receiptRows: any[] = await query(
-    `
-    SELECT
-      r.id,
-      CASE
-        WHEN IFNULL(reimb_info.reimbursement_count, 0) > 0 THEN reimb_info.disbursed_date
-        WHEN bsp_r.position_date IS NOT NULL THEN bsp_r.position_date
-        ELSE r.receipt_date
-      END AS effective_date,
-      r.receipt_number,
-      c.name AS company_name,
-      IFNULL(SUM(rp.amount), 0) AS total_amount,
-      IFNULL(reimb_info.reimbursement_count, 0) AS reimbursement_count,
-      bsp_r.position_date IS NOT NULL AS is_bank_statement
-    FROM receipts r
-    INNER JOIN receipt_positions rp ON rp.receipt_id = r.id
-    LEFT JOIN companies c ON c.id = r.company_id
-    LEFT JOIN (
-      SELECT
-        rlink.receipt_id,
-        MAX(DATE(reimb.disbursed_at)) AS disbursed_date,
-        COUNT(DISTINCT reimb.id) AS reimbursement_count
-      FROM reimbursement_positions rlink
-      INNER JOIN reimbursements reimb ON reimb.id = rlink.reimbursement_id
-      GROUP BY rlink.receipt_id
-    ) reimb_info ON reimb_info.receipt_id = r.id
-    LEFT JOIN (
-      SELECT receipt_id, MIN(position_date) AS position_date
-      FROM bank_statement_positions
-      WHERE position_type = 'receipt'
-      GROUP BY receipt_id
-    ) bsp_r ON bsp_r.receipt_id = r.id
-    WHERE r.status = ?
-      ${hasCostCentreFilter ? `AND rp.cost_centre IN (${costCentrePlaceholders})` : ''}
-    GROUP BY r.id, r.receipt_date, reimb_info.disbursed_date, bsp_r.position_date, r.receipt_number, c.name, reimb_info.reimbursement_count
-    HAVING effective_date IS NOT NULL
-      AND effective_date <= ?
-    ORDER BY effective_date ASC, r.id ASC
-    `,
-    hasCostCentreFilter
-      ? [ReceiptStatus.Paid, ...selectedCostCentreIds, endDate]
-      : [ReceiptStatus.Paid, endDate],
-  )
-
-  const invoiceRows: any[] = await query(
-    `
-    SELECT
-      i.id,
-      CASE
-        WHEN bsp_i.position_date IS NOT NULL THEN bsp_i.position_date
-        ELSE COALESCE(i.paid_at, i.due_date)
-      END AS effective_date,
-      i.invoice_number,
-      c.name AS company_name,
-      IFNULL(SUM(ip.quantity * ip.unit_price * (1 + (ip.tax / 100))), 0) AS total_amount,
-      bsp_i.position_date IS NOT NULL AS is_bank_statement
-    FROM invoices i
-    INNER JOIN invoice_positions ip ON ip.invoice_id = i.id
-    LEFT JOIN companies c ON c.id = i.company_id
-    LEFT JOIN (
-      SELECT invoice_id, MIN(position_date) AS position_date
-      FROM bank_statement_positions
-      WHERE position_type = 'invoice'
-      GROUP BY invoice_id
-    ) bsp_i ON bsp_i.invoice_id = i.id
-    WHERE i.status = ?
-      ${hasCostCentreFilter ? `AND ip.cost_centre IN (${costCentrePlaceholders})` : ''}
-    GROUP BY i.id, i.paid_at, i.due_date, bsp_i.position_date, i.invoice_number, c.name
-    HAVING effective_date IS NOT NULL
-      AND effective_date <= ?
-    ORDER BY effective_date ASC, i.id ASC
-    `,
-    hasCostCentreFilter
-      ? [InvoiceStatus.Paid, ...selectedCostCentreIds, endDate]
-      : [InvoiceStatus.Paid, endDate],
-  )
-
-  const cashCountRows: any[] = await query(
-    `
-    SELECT
-      cc.id,
-      cc.event_id,
-      e.name AS event_name,
-      DATE(cc.counted_after_at) AS effective_date,
-      cc.counted_after_at,
-      ccp.register_number,
-      ccp.amount_before,
-      ccp.amount_after,
-      ${hasCostCentreFilter ? 'balance_split.allocation_factor' : '1'} AS allocation_factor
-    FROM cash_counts cc
-    INNER JOIN events e ON e.id = cc.event_id
-    INNER JOIN cash_count_positions ccp ON ccp.cash_count_id = cc.id
-    ${hasCostCentreFilter
-      ? `INNER JOIN (
-          SELECT event_id, LEAST(IFNULL(SUM(allocation_percentage), 0) / 100, 1) AS allocation_factor
-          FROM event_cost_centre_splits
-          WHERE cost_centre_id IN (${costCentrePlaceholders})
-          GROUP BY event_id
-        ) balance_split ON balance_split.event_id = cc.event_id`
-      : ''}
-    WHERE DATE(cc.counted_after_at) <= ?
-    ORDER BY cc.counted_after_at ASC, cc.id ASC, ccp.register_number ASC
-    `,
-    hasCostCentreFilter ? [...selectedCostCentreIds, endDate] : [endDate],
-  )
-
-  const bankStatementEventRows: any[] = await query(
-    `
-    SELECT
-      bsp.id,
-      bsp.position_date AS effective_date,
-      bsp.amount,
-      e.name AS event_name,
-      bs.statement_number,
-      ${hasCostCentreFilter ? 'balance_split.allocation_factor' : '1'} AS allocation_factor
-    FROM bank_statement_positions bsp
-    INNER JOIN bank_statements bs ON bs.id = bsp.bank_statement_id
-    INNER JOIN events e ON e.id = bsp.event_id
-    ${hasCostCentreFilter
-      ? `INNER JOIN (
-          SELECT event_id, LEAST(IFNULL(SUM(allocation_percentage), 0) / 100, 1) AS allocation_factor
-          FROM event_cost_centre_splits
-          WHERE cost_centre_id IN (${costCentrePlaceholders})
-          GROUP BY event_id
-        ) balance_split ON balance_split.event_id = bsp.event_id`
-      : ''}
-    WHERE bsp.position_type = 'event'
-      AND bsp.amount IS NOT NULL
-      AND bsp.position_date <= ?
-    ORDER BY bsp.position_date ASC, bsp.id ASC
-    `,
-    hasCostCentreFilter ? [...selectedCostCentreIds, endDate] : [endDate],
-  )
-
-  type RawLedgerEvent =
-    | {
-      type: 'receipt'
-      source_id: number
-      date: string
-      label: string
-      reference: string | null
-      amount: number
-      isReimbursement: boolean
-      isBankStatement: boolean
-    }
-    | {
-      type: 'invoice'
-      source_id: number
-      date: string
-      label: string
-      reference: string | null
-      amount: number
-      isBankStatement: boolean
-    }
-    | {
-      type: 'cashCount'
-      source_id: number
-      date: string
-      label: string
-      reference: string | null
-      registers: Array<{ registerNumber: number, amountBefore: number, amountAfter: number }>
-    }
-    | {
-      type: 'bankStatementEvent'
-      source_id: number
-      date: string
-      label: string
-      reference: string | null
-      amount: number
-    }
-
-  const cashCountsById = new Map<number, Extract<RawLedgerEvent, { type: 'cashCount' }>>()
-  const firstCountedAtByRegisterNumber = new Map<number, string>()
-  for (const row of cashCountRows) {
-    const cashCountId = Number(row.id)
-    const allocationFactor = Number(row.allocation_factor || 0)
-    const registerNumber = Number(row.register_number || 0)
-    const countedAt = String(row.effective_date)
-    const cashCount = cashCountsById.get(cashCountId) ?? {
-      type: 'cashCount' as const,
-      source_id: cashCountId,
-      date: countedAt,
-      label: String(row.event_name || ''),
-      reference: String(row.counted_after_at || ''),
-      registers: [],
-    }
-
-    const firstCountedAt = firstCountedAtByRegisterNumber.get(registerNumber)
-    if (!firstCountedAt || countedAt < firstCountedAt) {
-      firstCountedAtByRegisterNumber.set(registerNumber, countedAt)
-    }
-
-    cashCount.registers.push({
-      registerNumber,
-      amountBefore: roundCurrency(Number(row.amount_before || 0) * allocationFactor),
-      amountAfter: roundCurrency(Number(row.amount_after || 0) * allocationFactor),
-    })
-    cashCountsById.set(cashCountId, cashCount)
-  }
-
-  const rawEvents: RawLedgerEvent[] = [
-    ...receiptRows.map(row => ({
-      type: 'receipt' as const,
-      source_id: Number(row.id),
-      date: String(row.effective_date),
-      label: row.company_name ? String(row.company_name) : '',
-      reference: row.receipt_number ? String(row.receipt_number) : null,
-      amount: Number(row.total_amount || 0),
-      isReimbursement: Number(row.reimbursement_count || 0) > 0,
-      isBankStatement: Boolean(row.is_bank_statement),
-    })),
-    ...invoiceRows.map(row => ({
-      type: 'invoice' as const,
-      source_id: Number(row.id),
-      date: String(row.effective_date),
-      label: row.company_name ? String(row.company_name) : '',
-      reference: row.invoice_number ? String(row.invoice_number) : null,
-      amount: Number(row.total_amount || 0),
-      isBankStatement: Boolean(row.is_bank_statement),
-    })),
-    ...cashCountsById.values(),
-    ...bankStatementEventRows.map(row => ({
-      type: 'bankStatementEvent' as const,
-      source_id: Number(row.id),
-      date: String(row.effective_date).slice(0, 10),
-      label: String(row.event_name || ''),
-      reference: row.statement_number ? String(row.statement_number) : null,
-      amount: roundCurrency(Number(row.amount || 0) * Number(row.allocation_factor || 1)),
-    })),
-  ].sort((left, right) => {
-    if (left.date !== right.date) return left.date.localeCompare(right.date)
-    const order = { invoice: 1, receipt: 2, cashCount: 3, bankStatementEvent: 4 }
-    if (order[left.type] !== order[right.type]) return order[left.type] - order[right.type]
-    return left.source_id - right.source_id
-  })
-
-  function cashCountAmountBefore(rawEvent: Extract<RawLedgerEvent, { type: 'cashCount' }>) {
-    return roundCurrency(rawEvent.registers.reduce((sum, register) => sum + register.amountBefore, 0))
-  }
-
-  function cashCountAmountAfter(rawEvent: Extract<RawLedgerEvent, { type: 'cashCount' }>) {
-    return roundCurrency(rawEvent.registers.reduce((sum, register) => sum + register.amountAfter, 0))
-  }
-
-  function transactionDelta(rawEvent: RawLedgerEvent) {
-    if (rawEvent.type === 'invoice') return roundCurrency(rawEvent.amount)
-    if (rawEvent.type === 'receipt') return roundCurrency(-rawEvent.amount)
-    if (rawEvent.type === 'bankStatementEvent') return roundCurrency(rawEvent.amount)
-    return 0
-  }
-
-  const firstCashCountIndex = rawEvents.findIndex(event => event.type === 'cashCount')
-  const firstCashCount = firstCashCountIndex >= 0
-    ? rawEvents[firstCashCountIndex] as Extract<RawLedgerEvent, { type: 'cashCount' }>
-    : null
-  const firstCashCountAmountBefore = firstCashCount ? cashCountAmountBefore(firstCashCount) : 0
-  const movementBeforeFirstCashCount = firstCashCountIndex >= 0
-    ? rawEvents.slice(0, firstCashCountIndex).reduce((sum, event) => roundCurrency(sum + transactionDelta(event)), 0)
-    : 0
-
-  let runningBalance = firstCashCount
-    ? roundCurrency(firstCashCountAmountBefore - movementBeforeFirstCashCount)
-    : 0
-  let openingBalanceNote: FinanceAnalysisBalanceEvent['note'] = null
-  const latestCashCountAmountByRegisterNumber = new Map<number, number>()
-
-  const latestCashCountBeforeStartIndex = rawEvents.reduce((latestIndex, event, index) => {
-    if (event.type !== 'cashCount' || event.date >= startDate) return latestIndex
-    return index
-  }, -1)
-
-  const applyRawEvent = (rawEvent: RawLedgerEvent, isFirstCashCount: boolean): Omit<FinanceAnalysisBalanceEvent, 'id'> => {
-    if (rawEvent.type === 'invoice') {
-      const delta = roundCurrency(rawEvent.amount)
-      runningBalance = roundCurrency(runningBalance + delta)
-      return {
-        type: 'invoice',
-        source_id: rawEvent.source_id,
-        date: rawEvent.date,
-        label: rawEvent.label,
-        reference: rawEvent.reference,
-        delta_amount: delta,
-        balance_amount: runningBalance,
-        cash_before_amount: null,
-        cash_after_amount: null,
-        discrepancy_amount: null,
-        has_discrepancy: false,
-        note: rawEvent.isBankStatement ? 'bankStatement' : null,
-      }
-    }
-
-    if (rawEvent.type === 'receipt') {
-      const delta = roundCurrency(-rawEvent.amount)
-      runningBalance = roundCurrency(runningBalance + delta)
-      return {
-        type: 'receipt',
-        source_id: rawEvent.source_id,
-        date: rawEvent.date,
-        label: rawEvent.label,
-        reference: rawEvent.reference,
-        delta_amount: delta,
-        balance_amount: runningBalance,
-        cash_before_amount: null,
-        cash_after_amount: null,
-        discrepancy_amount: null,
-        has_discrepancy: false,
-        note: rawEvent.isReimbursement ? 'reimbursement' : rawEvent.isBankStatement ? 'bankStatement' : null,
-      }
-    }
-
-    if (rawEvent.type === 'bankStatementEvent') {
-      const delta = roundCurrency(rawEvent.amount)
-      runningBalance = roundCurrency(runningBalance + delta)
-      return {
-        type: 'cashCount' as const,
-        source_id: rawEvent.source_id,
-        date: rawEvent.date,
-        label: rawEvent.label,
-        reference: rawEvent.reference,
-        delta_amount: delta,
-        balance_amount: runningBalance,
-        cash_before_amount: null,
-        cash_after_amount: null,
-        discrepancy_amount: null,
-        has_discrepancy: false,
-        note: 'bankStatementEvent',
-      }
-    }
-
-    const cashBeforeAmount = cashCountAmountBefore(rawEvent)
-    const cashAfterAmount = cashCountAmountAfter(rawEvent)
-    const cashCountSaldo = roundCurrency(cashAfterAmount - cashBeforeAmount)
-    const balanceBeforeCashCount = runningBalance
-    const registerDiscrepancy = rawEvent.registers.reduce((sum, register) => {
-      const latestAmount = latestCashCountAmountByRegisterNumber.get(register.registerNumber)
-      if (latestAmount === undefined) return sum
-      return roundCurrency(sum + register.amountBefore - latestAmount)
-    }, 0)
-    const initialRegisterBeforeAmount = rawEvent.registers.reduce((sum, register) => {
-      if (latestCashCountAmountByRegisterNumber.has(register.registerNumber)) return sum
-      return roundCurrency(sum + register.amountBefore)
-    }, 0)
-    const calculatedBalance = isFirstCashCount
-      ? cashAfterAmount
-      : roundCurrency(balanceBeforeCashCount + cashCountSaldo + initialRegisterBeforeAmount)
-    const discrepancy = isFirstCashCount ? 0 : roundCurrency(registerDiscrepancy)
-    const hasInitialRegister = rawEvent.registers.some(register => (
-      firstCountedAtByRegisterNumber.get(register.registerNumber) === rawEvent.date
-    ))
-
-    for (const register of rawEvent.registers) {
-      latestCashCountAmountByRegisterNumber.set(register.registerNumber, register.amountAfter)
-    }
-    runningBalance = isFirstCashCount ? cashAfterAmount : roundCurrency(calculatedBalance + discrepancy)
-    return {
-      type: 'cashCount',
-      source_id: rawEvent.source_id,
-      date: rawEvent.date,
-      label: rawEvent.label,
-      reference: rawEvent.reference,
-      delta_amount: isFirstCashCount ? 0 : cashCountSaldo,
-      balance_amount: calculatedBalance,
-      cash_before_amount: cashBeforeAmount,
-      cash_after_amount: cashAfterAmount,
-      discrepancy_amount: isFirstCashCount ? null : discrepancy,
-      has_discrepancy: !isFirstCashCount && discrepancy !== 0,
-      note: hasInitialRegister ? 'initialCashCount' : null,
-    }
-  }
-
-  if (latestCashCountBeforeStartIndex >= 0) {
-    openingBalanceNote = 'latestCashCountBeforePeriod'
-  }
-
-  for (const [index, rawEvent] of rawEvents.entries()) {
-    if (rawEvent.date >= startDate) break
-    applyRawEvent(rawEvent, index === firstCashCountIndex)
-  }
-
-  const openingBalance = runningBalance
-  const balanceEvents: FinanceAnalysisBalanceEvent[] = [{
+  const openingRow: FinanceLiquidityRow = {
     id: 'opening',
     type: 'opening',
-    source_id: null,
     date: startDate,
+    pool: null,
     label: 'openingBalance',
     reference: null,
+    register_number: null,
     delta_amount: 0,
-    balance_amount: openingBalance,
-    cash_before_amount: null,
-    cash_after_amount: null,
+    bank_balance: openingPosition.bankBalance,
+    cash_balance: openingPosition.cashTotal,
+    total_balance: openingPosition.totalMoney,
+    expected_amount: null,
+    measured_amount: null,
     discrepancy_amount: null,
     has_discrepancy: false,
-    note: openingBalanceNote,
-  }]
-
-  for (const [index, rawEvent] of rawEvents.entries()) {
-    if (rawEvent.date < startDate || rawEvent.date > endDate) continue
-    const event = applyRawEvent(rawEvent, index === firstCashCountIndex)
-    balanceEvents.push({
-      ...event,
-      id: `${event.type}-${event.source_id}-${balanceEvents.length}`,
-    })
+    note: hasCostCentreFilter ? 'unfilteredNote' : null,
   }
 
-  return balanceEvents
+  const closingRow: FinanceLiquidityRow = {
+    id: 'closing',
+    type: 'closing',
+    date: endDate,
+    pool: null,
+    label: 'closingBalance',
+    reference: null,
+    register_number: null,
+    delta_amount: 0,
+    bank_balance: closingPosition.bankBalance,
+    cash_balance: closingPosition.cashTotal,
+    total_balance: closingPosition.totalMoney,
+    expected_amount: null,
+    measured_amount: null,
+    discrepancy_amount: null,
+    has_discrepancy: false,
+    note: null,
+  }
+
+  // Dev-time assertion: closing total_balance should equal money_after
+  if (process.env.NODE_ENV !== 'production' && inPeriod.length > 0) {
+    const lastRow = inPeriod.at(-1)!
+    const diff = Math.abs(lastRow.total_balance - closingPosition.totalMoney)
+    if (diff > 0.02) {
+      console.warn(`[buildCashLedger] closing total mismatch: ledger=${lastRow.total_balance}, computeTotalMoney=${closingPosition.totalMoney}, diff=${diff}`)
+    }
+  }
+
+  return [openingRow, ...inPeriod, closingRow]
 }
 
 export default defineEventHandler(async (event): Promise<FinanceAnalysisResponse> => {
@@ -916,7 +565,24 @@ export default defineEventHandler(async (event): Promise<FinanceAnalysisResponse
       total_amount: Number(row.total_amount || 0),
     }))
 
-    const balanceEvents = await loadBalanceEvents(startDate, endDate, selectedCostCentreIds)
+    const [openingPosition, closingPosition, ledgerResult] = await Promise.all([
+      computeTotalMoney(startDate, true),
+      computeTotalMoney(endDate, false),
+      buildCashLedger(endDate),
+    ])
+
+    const liquidityRows = buildLiquidityRows(
+      ledgerResult.rows,
+      startDate,
+      endDate,
+      openingPosition,
+      closingPosition,
+      hasCostCentreFilter,
+    )
+
+    const inPeriodDiscrepancyRows = liquidityRows.filter(r => r.type === 'cashCountRegister' && r.discrepancy_amount !== null)
+    const periodDiscrepancyTotal = roundCurrency(inPeriodDiscrepancyRows.reduce((sum, r) => sum + (r.discrepancy_amount ?? 0), 0))
+    const periodDiscrepancyCount = inPeriodDiscrepancyRows.filter(r => r.has_discrepancy).length
 
     const receiptSummary = receipts.reduce((summary, receipt) => {
       summary.receipt_total += receipt.total_amount
@@ -955,13 +621,9 @@ export default defineEventHandler(async (event): Promise<FinanceAnalysisResponse
     })
 
     const cashCountSummary = cashCounts.reduce((summary, cashCount) => {
-      summary.cash_count_total_before += cashCount.total_before_amount
-      summary.cash_count_total_after += cashCount.total_after_amount
       summary.cash_count_total_difference += cashCount.total_difference
       return summary
     }, {
-      cash_count_total_before: 0,
-      cash_count_total_after: 0,
       cash_count_total_difference: 0,
     })
 
@@ -990,19 +652,25 @@ export default defineEventHandler(async (event): Promise<FinanceAnalysisResponse
           receipt_cancelled_total: Number(receiptSummary.receipt_cancelled_total.toFixed(2)),
           cash_count_count: cashCounts.length,
           cash_count_register_total: cashCountRegisterTotal,
-          cash_count_total_before: Number(cashCountSummary.cash_count_total_before.toFixed(2)),
-          cash_count_total_after: Number(cashCountSummary.cash_count_total_after.toFixed(2)),
           cash_count_total_difference: Number(cashCountSummary.cash_count_total_difference.toFixed(2)),
           invoice_count: invoices.length,
           invoice_total: Number(invoiceSummary.invoice_total.toFixed(2)),
           net_result: Number((cashCountSummary.cash_count_total_difference + invoiceSummary.invoice_total - receiptSummary.receipt_total).toFixed(2)),
+          money_before: openingPosition.totalMoney,
+          money_after: closingPosition.totalMoney,
+          bank_before: openingPosition.bankBalance,
+          bank_after: closingPosition.bankBalance,
+          cash_before: openingPosition.cashTotal,
+          cash_after: closingPosition.cashTotal,
+          period_discrepancy_total: periodDiscrepancyTotal,
+          period_discrepancy_count: periodDiscrepancyCount,
         },
         receipts,
         receiptBreakdown,
         invoiceBreakdown,
         cashCounts,
         invoices,
-        balanceEvents,
+        liquidityRows,
       },
     }
   } catch (err: any) {

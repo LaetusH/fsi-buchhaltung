@@ -1,7 +1,7 @@
 ﻿import type { CostCentreRow } from '~/types/costCentre'
 import type { BudgetCostCentreLine } from '~/types/budget'
 import type {
-  FinanceAnalysisBalanceEvent,
+  FinanceLiquidityRow,
   FinanceAnalysisCashCountItem,
   FinanceAnalysisData,
   FinanceAnalysisInvoiceBreakdownItem,
@@ -642,7 +642,7 @@ function buildOverviewRows(options: FinanceAnalysisReportOptions) {
         { value: exportSplitByPaymentStatus ? t('common.yes') : t('common.no'), styleId: 'Body', mergeAcross: valueMergeAcross },
       ]),
       createSpreadsheetRow([
-        { value: t('financeAnalysis.balance.exportInclude'), styleId: 'Label' },
+        { value: t('financeAnalysis.liquidity.exportInclude'), styleId: 'Label' },
         { value: options.includeBalanceSheet ? t('common.yes') : t('common.no'), styleId: 'Body', mergeAcross: valueMergeAcross },
       ]),
     )
@@ -728,9 +728,10 @@ function buildOverviewRows(options: FinanceAnalysisReportOptions) {
   rows.push(
     createBandRow(totalColumns, '', 'BodyMuted', OVERVIEW_SPACER_ROW_HEIGHT),
     createBandRow(totalColumns, t('financeAnalysis.cashCountsSectionTitle'), 'Section', 19),
-    createSpreadsheetRow([{ value: t('financeAnalysis.cashCards.totalBefore'), styleId: 'TextCell' }, currencyCell(summary.cash_count_total_before, 'CurrencyCell', singleValueMergeAcross)]),
-    createSpreadsheetRow([{ value: t('financeAnalysis.cashCards.totalAfter'), styleId: 'TextCell' }, currencyCell(summary.cash_count_total_after, 'CurrencyCell', singleValueMergeAcross)]),
+    createSpreadsheetRow([{ value: t('financeAnalysis.cashCards.totalBefore'), styleId: 'TextCell' }, currencyCell(summary.money_before, 'CurrencyCell', singleValueMergeAcross)]),
+    createSpreadsheetRow([{ value: t('financeAnalysis.cashCards.totalAfter'), styleId: 'TextCell' }, currencyCell(summary.money_after, 'CurrencyCell', singleValueMergeAcross)]),
     createSpreadsheetRow([{ value: t('financeAnalysis.cashCards.registers'), styleId: 'TextCell' }, countCell(summary.cash_count_register_total, 'CountCell', singleValueMergeAcross)]),
+    createSpreadsheetRow([{ value: t('financeAnalysis.cashCards.periodDiscrepancyTotal'), styleId: 'TextCell' }, currencyCell(summary.period_discrepancy_total, signedCurrencyStyle(summary.period_discrepancy_total), singleValueMergeAcross)]),
   )
 
   rows.push(
@@ -888,71 +889,100 @@ function getInvoiceDateValue(invoice: FinanceAnalysisInvoiceItem, invoiceDateFie
   return invoice.invoice_date
 }
 
-function balanceEventLabel(event: FinanceAnalysisBalanceEvent, t: TranslateFunction) {
-  if (event.type === 'opening') return t('financeAnalysis.balance.openingBalance')
+function liquidityRowLabel(row: FinanceLiquidityRow, t: TranslateFunction): string {
+  const typeKey = `financeAnalysis.liquidity.${row.type}`
+  const typeLabel = t(typeKey)
 
-  const labelByType: Record<FinanceAnalysisBalanceEvent['type'], string> = {
-    opening: t('financeAnalysis.balance.openingBalance'),
-    receipt: t('financeAnalysis.balance.paidReceipt'),
-    invoice: t('financeAnalysis.balance.paidInvoice'),
-    cashCount: t('financeAnalysis.balance.cashCount'),
+  if (row.type === 'opening') return t('financeAnalysis.liquidity.openingBalance')
+  if (row.type === 'closing') return t('financeAnalysis.liquidity.closingBalance')
+  if (row.type === 'bankStatementCheckpoint') return row.label ? `${typeLabel}: ${row.label}` : typeLabel
+
+  const base = row.label ? `${typeLabel}: ${row.label}` : typeLabel
+  if ((row.type === 'cashCountRegister' || row.type === 'cashCountRevenue') && row.register_number !== null) {
+    return `${base} ${t('financeAnalysis.liquidity.registerSuffix', { number: row.register_number })}`
   }
-  const baseLabel = labelByType[event.type]
-  return event.label ? `${baseLabel}: ${event.label}` : baseLabel
+  return base
 }
 
-function balanceEventNote(event: FinanceAnalysisBalanceEvent, t: TranslateFunction) {
-  if (event.has_discrepancy) return t('financeAnalysis.balance.discrepancyFound')
-  if (event.note === 'latestCashCountBeforePeriod') return t('financeAnalysis.balance.latestCashCountBeforePeriodNote')
-  if (event.note === 'reimbursement') return t('financeAnalysis.balance.reimbursementNote')
-  if (event.note === 'bankStatement') return t('financeAnalysis.balance.bankStatementNote')
-  if (event.note === 'bankStatementEvent') return t('financeAnalysis.balance.bankStatementEventNote')
-  if (event.note === 'initialCashCount') return t('financeAnalysis.balance.initialCashCountNote')
+function liquidityRowNote(row: FinanceLiquidityRow, t: TranslateFunction): string {
+  const note = row.note ?? ''
+
+  if (note === 'firstCountNote') return t('financeAnalysis.liquidity.firstCountNote')
+  if (note === 'eventRevenueNote') return t('financeAnalysis.liquidity.eventRevenueNote')
+  if (note === 'unfilteredNote') return t('financeAnalysis.liquidity.unfilteredNote')
+  if (note === 'discrepancyFound' || row.has_discrepancy) return t('financeAnalysis.liquidity.discrepancyFound')
+
+  if (note.startsWith('reimbursementNote:')) {
+    const member = note.slice('reimbursementNote:'.length)
+    return t('financeAnalysis.liquidity.reimbursementNote', { member })
+  }
+  if (note.startsWith('bankCheckedNote:')) {
+    const parts = note.split(':')
+    const date = parts[1] ?? ''
+    const checkedBy = parts.slice(2).join(':')
+    return t('financeAnalysis.liquidity.bankCheckedNote', { date, checkedBy })
+  }
+
   return ''
 }
 
 function buildBalanceRows(options: FinanceAnalysisReportOptions) {
   const { t, analysis, startDate, endDate, formatDate } = options
-  const totalColumns = 9
+  const totalColumns = 11
   const mergeAcross = totalColumns - 1
-  const events = analysis.balanceEvents ?? []
-  const eventCount = Math.max(events.length - (events.some(event => event.type === 'opening') ? 1 : 0), 0)
+  const rows = analysis.liquidityRows ?? []
+  const dataCount = rows.filter(r => r.type !== 'opening' && r.type !== 'closing').length
 
-  const rows = [
-    createBandRow(totalColumns, t('financeAnalysis.balance.title'), 'Title', 20),
+  const headerRows = [
+    createBandRow(totalColumns, t('financeAnalysis.liquidity.title'), 'Title', 20),
     createBandRow(totalColumns, t('financeAnalysis.periodLabel', { start: formatDate(startDate), end: formatDate(endDate) }), 'Subtitle'),
-    createBandRow(totalColumns, t('financeAnalysis.countLabel', { count: eventCount }), 'BodyMuted'),
+    createBandRow(totalColumns, t('financeAnalysis.countLabel', { count: dataCount }), 'BodyMuted'),
     createSpreadsheetRow([
-      { value: t('financeAnalysis.balance.date'), styleId: 'Header' },
-      { value: t('financeAnalysis.balance.event'), styleId: 'Header' },
-      { value: t('financeAnalysis.balance.reference'), styleId: 'Header' },
-      { value: t('financeAnalysis.balance.change'), styleId: 'Header' },
-      { value: t('financeAnalysis.balance.balance'), styleId: 'Header' },
-      { value: t('financeAnalysis.balance.cashBefore'), styleId: 'Header' },
-      { value: t('financeAnalysis.balance.cashAfter'), styleId: 'Header' },
-      { value: t('financeAnalysis.balance.discrepancy'), styleId: 'Header' },
-      { value: t('financeAnalysis.balance.note'), styleId: 'Header' },
+      { value: t('financeAnalysis.liquidity.date'), styleId: 'Header' },
+      { value: t('financeAnalysis.liquidity.operation'), styleId: 'Header' },
+      { value: t('financeAnalysis.liquidity.reference'), styleId: 'Header' },
+      { value: t('financeAnalysis.liquidity.movement'), styleId: 'Header' },
+      { value: t('financeAnalysis.liquidity.bank'), styleId: 'Header' },
+      { value: t('financeAnalysis.liquidity.cash'), styleId: 'Header' },
+      { value: t('financeAnalysis.liquidity.total'), styleId: 'Header' },
+      { value: t('financeAnalysis.liquidity.expected'), styleId: 'Header' },
+      { value: t('financeAnalysis.liquidity.measured'), styleId: 'Header' },
+      { value: t('financeAnalysis.liquidity.discrepancy'), styleId: 'Header' },
+      { value: t('financeAnalysis.liquidity.note'), styleId: 'Header' },
     ]),
   ]
 
-  if (events.length === 0) {
-    rows.push(createSpreadsheetRow([{ value: t('financeAnalysis.balance.noEvents'), styleId: 'Body', mergeAcross }]))
-    return rows
+  if (rows.length === 0) {
+    return [
+      ...headerRows,
+      createSpreadsheetRow([{ value: t('financeAnalysis.liquidity.noRows'), styleId: 'Body', mergeAcross }]),
+    ]
   }
 
-  rows.push(...events.map(event => createSpreadsheetRow([
-    { value: formatDate(event.date), styleId: 'TextCell' },
-    { value: balanceEventLabel(event, t), styleId: 'TextCell' },
-    { value: event.reference || '', styleId: 'TextCell' },
-    currencyCell(event.delta_amount, signedCurrencyStyle(event.delta_amount)),
-    currencyCell(event.balance_amount, signedCurrencyStyle(event.balance_amount)),
-    event.cash_before_amount === null ? { value: '', styleId: 'TextCell' } : currencyCell(event.cash_before_amount),
-    event.cash_after_amount === null ? { value: '', styleId: 'TextCell' } : currencyCell(event.cash_after_amount),
-    event.discrepancy_amount === null ? { value: '', styleId: 'TextCell' } : currencyCell(event.discrepancy_amount, signedCurrencyStyle(event.discrepancy_amount)),
-    { value: balanceEventNote(event, t), styleId: 'TextCell' },
-  ])))
+  const dataRows = rows.map(row => {
+    const isSpecialRow = row.type === 'opening' || row.type === 'closing' || row.type === 'bankStatementCheckpoint'
+    const movementCell = isSpecialRow
+      ? { value: '', styleId: 'TextCell' }
+      : currencyCell(row.delta_amount, signedCurrencyStyle(row.delta_amount))
 
-  return rows
+    return createSpreadsheetRow([
+      { value: formatDate(row.date), styleId: 'TextCell' },
+      { value: liquidityRowLabel(row, t), styleId: 'TextCell' },
+      { value: row.reference || '', styleId: 'TextCell' },
+      movementCell,
+      currencyCell(row.bank_balance, signedCurrencyStyle(row.bank_balance)),
+      currencyCell(row.cash_balance, signedCurrencyStyle(row.cash_balance)),
+      currencyCell(row.total_balance, signedCurrencyStyle(row.total_balance)),
+      row.expected_amount === null ? { value: '', styleId: 'TextCell' } : currencyCell(row.expected_amount),
+      row.measured_amount === null ? { value: '', styleId: 'TextCell' } : currencyCell(row.measured_amount),
+      row.discrepancy_amount === null
+        ? { value: '', styleId: 'TextCell' }
+        : currencyCell(row.discrepancy_amount, signedCurrencyStyle(row.discrepancy_amount)),
+      { value: liquidityRowNote(row, t), styleId: 'TextCell' },
+    ])
+  })
+
+  return [...headerRows, ...dataRows]
 }
 
 function buildReceiptOverviewAggregates(options: FinanceAnalysisReportOptions) {
@@ -1622,7 +1652,7 @@ function buildWorkbook(options: FinanceAnalysisReportOptions) {
   const invoiceColumnWidths = options.includeComparison
     ? [86, 132, 186, 94, 70, 70]
     : [86, 132, 186, 94, 82]
-  const balanceColumnWidths = [86, 210, 116, 82, 92, 82, 82, 92, 170]
+  const balanceColumnWidths = [80, 180, 100, 80, 82, 82, 82, 72, 72, 82, 160]
   const annualClosingColumnWidths = buildAnnualClosingColumnWidths(options)
   const receiptOverviewColumnWidths = buildReceiptOverviewColumnWidths(options)
   const cashCountOverviewColumnWidths = buildCashCountOverviewColumnWidths(options)
@@ -1689,7 +1719,7 @@ function buildWorkbook(options: FinanceAnalysisReportOptions) {
 
   if (options.includeBalanceSheet) {
     sheets.push({
-      name: options.t('financeAnalysis.balance.title'),
+      name: options.t('financeAnalysis.liquidity.title'),
       columnWidths: scaleColumnWidthsToTotal(balanceColumnWidths, detailSheetWidth),
       rows: buildBalanceRows(options),
       orientation: 'landscape',

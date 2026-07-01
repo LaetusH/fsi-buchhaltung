@@ -332,8 +332,8 @@
 
                 <section class="space-y-2 rounded-xl border border-slate-200 p-2.5">
                   <div>
-                    <div class="text-sm font-semibold text-slate-900">{{ t('financeAnalysis.balance.exportInclude') }}</div>
-                    <p class="text-[11px] text-slate-500">{{ t('financeAnalysis.balance.exportHint') }}</p>
+                    <div class="text-sm font-semibold text-slate-900">{{ t('financeAnalysis.liquidity.exportInclude') }}</div>
+                    <p class="text-[11px] text-slate-500">{{ t('financeAnalysis.liquidity.exportHint') }}</p>
                   </div>
 
                   <button
@@ -524,12 +524,12 @@
               <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-1 2xl:grid-cols-2 gap-3">
                 <div class="rounded-xl bg-slate-100 px-4 py-3">
                   <div class="text-xs text-slate-500">{{ t('financeAnalysis.cashCards.totalBefore') }}</div>
-                  <div class="mt-1 font-semibold">{{ formatCurrency(summary.cash_count_total_before) }}</div>
+                  <div class="mt-1 font-semibold">{{ formatCurrency(summary.money_before) }}</div>
                 </div>
 
                 <div class="rounded-xl bg-slate-100 px-4 py-3">
                   <div class="text-xs text-slate-500">{{ t('financeAnalysis.cashCards.totalAfter') }}</div>
-                  <div class="mt-1 font-semibold">{{ formatCurrency(summary.cash_count_total_after) }}</div>
+                  <div class="mt-1 font-semibold">{{ formatCurrency(summary.money_after) }}</div>
                 </div>
               </div>
             </section>

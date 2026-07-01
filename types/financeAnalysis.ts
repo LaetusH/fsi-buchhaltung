@@ -1,4 +1,4 @@
-﻿import type { InvoiceStatus } from '~/types/invoice'
+import type { InvoiceStatus } from '~/types/invoice'
 import type { ReceiptStatus } from '~/types/receipt'
 
 export interface FinanceAnalysisReceiptItem {
@@ -71,19 +71,33 @@ export interface FinanceAnalysisInvoiceItem {
   total_amount: number
 }
 
-export type FinanceAnalysisBalanceEventType = 'opening' | 'receipt' | 'invoice' | 'cashCount'
+export type FinanceLiquidityRowType =
+  | 'opening'
+  | 'cashReceipt'
+  | 'cashInvoice'
+  | 'reimbursementReceipt'
+  | 'bankReceipt'
+  | 'bankInvoice'
+  | 'bankEvent'
+  | 'bankStatementCheckpoint'
+  | 'cashCountRegister'
+  | 'cashCountRevenue'
+  | 'closing'
 
-export interface FinanceAnalysisBalanceEvent {
+export interface FinanceLiquidityRow {
   id: string
-  type: FinanceAnalysisBalanceEventType
-  source_id: number | null
+  type: FinanceLiquidityRowType
   date: string
+  pool: 'bank' | 'cash' | null
   label: string
   reference: string | null
+  register_number: number | null
   delta_amount: number
-  balance_amount: number
-  cash_before_amount: number | null
-  cash_after_amount: number | null
+  bank_balance: number
+  cash_balance: number
+  total_balance: number
+  expected_amount: number | null
+  measured_amount: number | null
   discrepancy_amount: number | null
   has_discrepancy: boolean
   note: string | null
@@ -104,12 +118,26 @@ export interface FinanceAnalysisSummary {
   receipt_cancelled_total: number
   cash_count_count: number
   cash_count_register_total: number
-  cash_count_total_before: number
-  cash_count_total_after: number
   cash_count_total_difference: number
   invoice_count: number
   invoice_total: number
   net_result: number
+  /** Total money (bank + all cash registers) at the very start of the period */
+  money_before: number
+  /** Total money (bank + all cash registers) at the end of the period */
+  money_after: number
+  /** Bank account balance at the start of the period */
+  bank_before: number
+  /** Bank account balance at the end of the period */
+  bank_after: number
+  /** Cash pool total at the start of the period */
+  cash_before: number
+  /** Cash pool total at the end of the period */
+  cash_after: number
+  /** Sum of in-period cashCountRegister discrepancy_amount values (unexplained gaps) */
+  period_discrepancy_total: number
+  /** Count of in-period cashCountRegister rows with non-zero discrepancy */
+  period_discrepancy_count: number
 }
 
 export interface FinanceAnalysisData {
@@ -119,5 +147,5 @@ export interface FinanceAnalysisData {
   invoiceBreakdown: FinanceAnalysisInvoiceBreakdownItem[]
   cashCounts: FinanceAnalysisCashCountItem[]
   invoices: FinanceAnalysisInvoiceItem[]
-  balanceEvents: FinanceAnalysisBalanceEvent[]
+  liquidityRows: FinanceLiquidityRow[]
 }
