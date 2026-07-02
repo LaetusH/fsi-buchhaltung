@@ -48,6 +48,7 @@ export default defineEventHandler(async (event): Promise<PreviewSnapshotResponse
 
     throw new Error('Encrypted snapshot upload is required')
   } catch (err: any) {
+    console.error('Failed to preview database snapshot:', err)
     throw createError({
       statusCode: 400,
       statusMessage: 'Failed to preview database snapshot',

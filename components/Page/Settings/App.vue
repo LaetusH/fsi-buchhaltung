@@ -478,8 +478,11 @@ const snapshotErrorMessageKeys: Record<SnapshotErrorCode | 'uploadFailed', strin
 
 function snapshotErrorMessage(err: unknown, fallback: string) {
   const code = (err as SnapshotRequestError | null)?.snapshotErrorCode
-  if (!code || !(code in snapshotErrorMessageKeys)) return fallback
-  return t(snapshotErrorMessageKeys[code], (err as SnapshotRequestError).snapshotErrorParams)
+  if (code && code in snapshotErrorMessageKeys) {
+    return t(snapshotErrorMessageKeys[code], (err as SnapshotRequestError).snapshotErrorParams)
+  }
+  const message = (err as Error | null)?.message
+  return message || fallback
 }
 
 function sendFormData<T>(url: string, body: FormData) {
