@@ -151,41 +151,31 @@
                       <Icon name="material-symbols:view-timeline-rounded" class="mb-1 text-2xl" />
                       <p>{{ t('event.planning.noTimelineItems') }}</p>
                     </div>
-                    <div v-else class="mt-4">
-                      <div
-                        v-for="(item, index) in overviewTimelineItems.slice(0, 5)"
+                    <div v-else class="mt-3 space-y-0.5">
+                      <button
+                        v-for="item in overviewTimelineItems.slice(0, 5)"
                         :key="item.id"
-                        class="relative flex gap-3 pb-4"
+                        type="button"
+                        class="-mx-2 flex w-[calc(100%+1rem)] cursor-pointer items-center gap-3 rounded-md px-2 py-2 text-left transition hover:bg-slate-50"
+                        @click="activeTab = overviewItemTab(item)"
                       >
-                        <div
-                          v-if="index < Math.min(overviewTimelineItems.length, 5) - 1 || overviewTimelineItems.length > 5"
-                          class="absolute bottom-0 left-1.75 top-4 w-0.5 bg-slate-200"
-                        />
-                        <div
-                          class="relative z-10 mt-0.5 h-4 w-4 shrink-0 rounded-full border-2 border-white"
-                          :class="timelineItemDotClass(item)"
-                          style="box-shadow: 0 0 0 1px #e2e8f0"
-                        />
-                        <div class="min-w-0 flex-1">
-                          <p class="text-xs font-semibold text-slate-500">{{ item.timeLabel }}</p>
-                          <p class="mt-0.5 text-sm font-semibold text-slate-800">{{ item.title }}</p>
-                          <p class="text-xs text-slate-500">{{ item.meta }}</p>
-                        </div>
-                      </div>
-                      <div v-if="overviewTimelineItems.length > 5" class="flex items-center gap-3">
-                        <div class="flex h-4 w-4 shrink-0 flex-col items-center justify-center gap-0.5">
-                          <span class="h-1 w-1 rounded-full bg-slate-300" />
-                          <span class="h-1 w-1 rounded-full bg-slate-300" />
-                          <span class="h-1 w-1 rounded-full bg-slate-300" />
-                        </div>
-                        <button
-                          type="button"
-                          class="cursor-pointer text-xs font-medium text-slate-400 hover:text-slate-600"
-                          @click="activeTab = 'timeline'"
-                        >
-                          {{ t('event.planning.moreTimelineItems', { count: overviewTimelineItems.length - 5 }) }}
-                        </button>
-                      </div>
+                        <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg" :class="overviewItemChipClass(item)">
+                          <Icon :name="overviewItemIcon(item)" class="text-lg" />
+                        </span>
+                        <span class="min-w-0 flex-1">
+                          <span class="block truncate text-sm font-medium text-slate-800">{{ item.title }}</span>
+                          <span class="block truncate text-xs text-slate-500">{{ item.timeLabel }}</span>
+                        </span>
+                        <span class="shrink-0 text-xs font-medium text-slate-400">{{ overviewRelativeLabel(item) }}</span>
+                      </button>
+                      <button
+                        v-if="overviewTimelineItems.length > 5"
+                        type="button"
+                        class="w-full cursor-pointer rounded-md py-2 text-center text-sm font-medium text-slate-500 hover:bg-slate-50 hover:text-slate-700"
+                        @click="activeTab = 'timeline'"
+                      >
+                        {{ t('event.planning.moreTimelineItems', { count: overviewTimelineItems.length - 5 }) }}
+                      </button>
                     </div>
                   </div>
                 </div>
@@ -436,6 +426,7 @@ import type {
   EventPlanningTask,
   EventPlanningTaskStatus,
   EventTimelineItem,
+  EventTimelineKind,
   PlanningChecklist,
 } from './planning/types'
 
@@ -848,8 +839,13 @@ const planningProgress = computed(() => {
   return Math.round((numerator / denominator) * 100)
 })
 
+function todayDateKey(): string {
+  const now = new Date()
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`
+}
+
 const overviewTimelineItems = computed(() => {
-  const today = new Date().toISOString().slice(0, 10)
+  const today = todayDateKey()
   return timelineItems.value.filter((item) => {
     if (item.raw.slice(0, 10) < today) return false
     if (item.kind === 'task' && item.status === 'done') return false
@@ -921,14 +917,33 @@ const timelineItems = computed<EventTimelineItem[]>(() => {
   return items.sort((a, b) => new Date(a.raw).getTime() - new Date(b.raw).getTime())
 })
 
-function timelineItemDotClass(item: EventTimelineItem): string {
-  if (item.kind === 'task') return 'bg-orange-400'
-  if (item.kind === 'shift') {
-    if (item.memberCount !== undefined && item.requiredPeople !== undefined)
-      return item.memberCount >= item.requiredPeople ? 'bg-emerald-400' : 'bg-amber-400'
-    return 'bg-amber-400'
+const overviewKindMeta: Record<EventTimelineKind, { icon: string; chip: string; tab: EventPlanningTabKey }> = {
+  event: { icon: 'material-symbols:flag-rounded', chip: 'bg-orange-100 text-orange-600', tab: 'details' },
+  task: { icon: 'material-symbols:task-alt-rounded', chip: 'bg-amber-100 text-amber-600', tab: 'tasks' },
+  shift: { icon: 'material-symbols:calendar-month-rounded', chip: 'bg-sky-100 text-sky-600', tab: 'shifts' },
+}
+
+function overviewItemTab(item: EventTimelineItem): EventPlanningTabKey {
+  return overviewKindMeta[item.kind].tab
+}
+
+function overviewItemIcon(item: EventTimelineItem): string {
+  return overviewKindMeta[item.kind].icon
+}
+
+function overviewItemChipClass(item: EventTimelineItem): string {
+  if (item.kind === 'shift' && item.requiredPeople !== undefined) {
+    const count = item.memberCount ?? 0
+    if (count < item.requiredPeople) return count > 0 ? 'bg-amber-100 text-amber-600' : 'bg-red-100 text-red-600'
   }
-  return 'bg-slate-300'
+  return overviewKindMeta[item.kind].chip
+}
+
+function overviewRelativeLabel(item: EventTimelineItem): string {
+  const days = Math.round((Date.parse(item.raw.slice(0, 10)) - Date.parse(todayDateKey())) / 86400000)
+  if (days === 0) return t('event.planning.today')
+  if (days === 1) return t('event.planning.tomorrow')
+  return t('event.planning.inDays', { days })
 }
 
 function formatMaybeDateTime(value: string) {
