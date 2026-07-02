@@ -3,6 +3,7 @@
     :value="displayValue"
     type="text"
     class="input"
+    :class="sizeClass"
     :placeholder="resolvedPlaceholder"
     :disabled="disabled"
     inputmode="numeric"
@@ -23,12 +24,16 @@ const props = withDefaults(defineProps<{
   disabled?: boolean
   placeholder?: string
   emptyValue?: string | null
+  size?: 'md' | 'sm'
 }>(), {
   mode: 'date',
   disabled: false,
   placeholder: undefined,
   emptyValue: '',
+  size: 'md',
 })
+
+const sizeClass = computed(() => props.size === 'sm' ? 'p-1 text-xs' : undefined)
 
 const emit = defineEmits<{
   (e: 'update:modelValue', value: string | null): void

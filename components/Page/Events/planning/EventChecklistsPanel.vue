@@ -251,7 +251,7 @@
                 {{ t('actions.cancel') }}
               </button>
             </div>
-            <CommonDateInput v-model="newTaskDeadline" mode="date" :empty-value="null" />
+            <CommonDateInput v-model="newTaskDeadline" mode="date" :empty-value="null" size="sm" />
           </div>
 
           <div class="mt-4 space-y-2">

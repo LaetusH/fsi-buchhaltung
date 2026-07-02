@@ -257,7 +257,8 @@
             <div class="mt-2 flex items-center gap-1.5">
               <Icon name="material-symbols:event-upcoming-rounded" class="shrink-0" :class="deadlineTextClass(task)" />
               <CommonDateInput
-                class="event-task-compact-input min-w-0 flex-1"
+                class="min-w-0 flex-1"
+                size="sm"
                 :model-value="task.deadline"
                 :mode="taskDateMode(task)"
                 :disabled="disabled"
@@ -798,8 +799,7 @@ function onDrop(targetTaskId: number | null, targetStatus: EventPlanningTaskStat
 </script>
 
 <style scoped>
-.event-task-compact-input :deep(input),
-.event-task-compact-input:deep(input) {
+.event-task-compact-input :deep(input) {
   height: 1.75rem;
   padding-top: 0.125rem;
   padding-bottom: 0.125rem;

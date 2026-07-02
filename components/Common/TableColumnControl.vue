@@ -69,13 +69,34 @@
           </div>
         </template>
 
+        <template v-else-if="filterType === 'date'">
+          <div class="px-2 pt-2 flex items-center gap-2">
+            <label class="text-xs text-slate-600 w-8 shrink-0">{{ t('common.from') }}</label>
+            <CommonDateInput
+              v-model="rangeMin"
+              size="sm"
+              class="w-full"
+              @keydown.enter.prevent="onConfirm"
+            />
+          </div>
+          <div class="px-2 py-2 flex items-center gap-2">
+            <label class="text-xs text-slate-600 w-8 shrink-0">{{ t('common.to') }}</label>
+            <CommonDateInput
+              v-model="rangeMax"
+              size="sm"
+              class="w-full"
+              @keydown.enter.prevent="onConfirm"
+            />
+          </div>
+        </template>
+
         <template v-else>
           <div class="px-2 pt-2 space-y-1">
             <label class="text-xs text-slate-600">{{ t('common.from') }}</label>
             <input
               v-model="rangeMin"
-              :type="rangeInputType"
-              :inputmode="filterType === 'number' ? 'decimal' : undefined"
+              type="text"
+              inputmode="decimal"
               class="w-full border border-slate-300 rounded px-2 py-1 text-xs"
               @keydown.enter.prevent="onConfirm"
             >
@@ -84,8 +105,8 @@
             <label class="text-xs text-slate-600">{{ t('common.to') }}</label>
             <input
               v-model="rangeMax"
-              :type="rangeInputType"
-              :inputmode="filterType === 'number' ? 'decimal' : undefined"
+              type="text"
+              inputmode="decimal"
               class="w-full border border-slate-300 rounded px-2 py-1 text-xs"
               @keydown.enter.prevent="onConfirm"
             >
@@ -157,8 +178,6 @@ const sortIcon = computed(() => {
   if (props.sortDirection === 'desc') return 'material-symbols:arrow-downward-rounded'
   return 'material-symbols:unfold-more-rounded'
 })
-const rangeInputType = computed(() => props.filterType === 'date' ? 'date' : 'text')
-
 const filteredTextOptions = computed(() => {
   const options = props.textOptions ?? []
   const term = textSearchApplied.value.trim().toLocaleLowerCase('de-DE')
