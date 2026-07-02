@@ -31,7 +31,7 @@
           </p>
         </section>
 
-        <section class="rounded-xl bg-white p-4 shadow-lg">
+        <section ref="builderSectionEl" class="rounded-xl bg-white p-4 shadow-lg">
           <div class="flex items-center justify-between gap-3">
             <h3 class="font-semibold text-slate-900">{{ builderTitle }}</h3>
             <button
@@ -127,8 +127,8 @@
         </section>
       </aside>
 
-      <section :class="['grid gap-4 lg:grid-cols-2 lg:auto-rows-min', canManage === false ? 'xl:grid-cols-3' : '']">
-        <div v-for="checklist in checklists" :key="checklist.id" class="rounded-xl bg-white p-4 shadow-lg">
+      <section :class="['gap-4 lg:columns-2', canManage === false ? 'xl:columns-3' : '']">
+        <div v-for="checklist in checklists" :key="checklist.id" class="mb-4 break-inside-avoid rounded-xl bg-white p-4 shadow-lg">
           <div class="flex items-start justify-between gap-3">
             <div class="min-w-0">
               <h3 class="truncate font-semibold text-slate-900">{{ checklist.title }}</h3>
@@ -256,7 +256,7 @@
 
           <div class="mt-4 space-y-2">
             <label
-              v-for="item in checklist.items"
+              v-for="item in sortedItems(checklist)"
               :key="item.id"
               class="flex cursor-pointer items-center gap-2 rounded-md border border-slate-200 px-2 py-1.5 text-sm hover:bg-slate-50"
             >
@@ -399,6 +399,7 @@ const nextDraftItemId = ref(-1)
 const draftItemInputs = ref<Record<number, HTMLInputElement | null>>({})
 const draggedDraftItemId = ref<number | null>(null)
 const draft = reactive<PlanningChecklist>(createEmptyChecklist(0))
+const builderSectionEl = ref<HTMLElement | null>(null)
 
 const { startTouchDrag: startDraftItemDragTouch } = useTouchDrag({
   findTarget(el) {
@@ -656,10 +657,12 @@ function loadTemplate(template: PlanningChecklist) {
   templateBrowserOpen.value = false
 }
 
-function editChecklist(checklist: PlanningChecklist) {
+async function editChecklist(checklist: PlanningChecklist) {
   editingChecklistId.value = checklist.id
   editingTemplateId.value = null
   replaceDraft(copyChecklist(checklist, true))
+  await nextTick()
+  builderSectionEl.value?.scrollIntoView({ behavior: 'smooth', block: 'start' })
 }
 
 function editTemplate(template: PlanningChecklist) {
@@ -691,6 +694,10 @@ function setChecklistItemDone(checklistId: number, itemId: number, done: boolean
 
 function completedItemCount(checklist: PlanningChecklist) {
   return checklist.items.filter(item => item.done).length
+}
+
+function sortedItems(checklist: PlanningChecklist) {
+  return [...checklist.items].sort((a, b) => Number(a.done) - Number(b.done))
 }
 
 function isChecklistSavedAsTemplate(checklist: PlanningChecklist) {
