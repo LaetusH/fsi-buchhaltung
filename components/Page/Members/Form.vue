@@ -1,6 +1,6 @@
 ﻿<template>
   <div class="space-y-6">
-    <section class="bg-white rounded-xl shadow-lg p-4 space-y-3">
+    <section class="-mx-6 bg-white shadow-sm sm:mx-0 sm:rounded-xl sm:shadow-lg p-4 space-y-3">
       <h2 class="text-lg font-semibold">{{ t('member.masterData') }}</h2>
 
       <div class="grid md:grid-cols-2 gap-4">
@@ -45,7 +45,7 @@
       </label>
     </section>
 
-    <section class="bg-white rounded-xl shadow-lg p-4 space-y-3">
+    <section class="-mx-6 bg-white shadow-sm sm:mx-0 sm:rounded-xl sm:shadow-lg p-4 space-y-3">
       <h3 class="font-semibold">{{ t('member.contact') }}</h3>
 
       <div class="grid md:grid-cols-4 gap-4">
@@ -81,7 +81,7 @@
       </div>
     </section>
 
-    <section class="bg-white rounded-xl shadow-lg p-4 space-y-3">
+    <section class="-mx-6 bg-white shadow-sm sm:mx-0 sm:rounded-xl sm:shadow-lg p-4 space-y-3">
       <h3 class="font-semibold">{{ t('member.membership') }}</h3>
 
       <div class="grid md:grid-cols-3 gap-4 items-end">
@@ -124,7 +124,7 @@
       </div>
     </section>
 
-    <section v-if="canManageSubdivisions" class="bg-white rounded-xl shadow-lg p-4 space-y-3">
+    <section v-if="canManageSubdivisions" class="-mx-6 bg-white shadow-sm sm:mx-0 sm:rounded-xl sm:shadow-lg p-4 space-y-3">
       <h3 class="font-semibold">{{ t('member.subdivisions') }}</h3>
 
       <CommonSelectionListField
@@ -151,7 +151,7 @@
       </p>
     </section>
 
-    <section class="bg-white rounded-xl shadow-lg p-4 space-y-3">
+    <section class="-mx-6 bg-white shadow-sm sm:mx-0 sm:rounded-xl sm:shadow-lg p-4 space-y-3">
       <h3 class="font-semibold">{{ t('member.positions') }}</h3>
 
       <div
@@ -201,7 +201,7 @@
       </button>
     </section>
 
-    <section v-if="canManageUsers && showAccountCreation" class="bg-white rounded-xl shadow-lg p-4 space-y-3">
+    <section v-if="canManageUsers && showAccountCreation" class="-mx-6 bg-white shadow-sm sm:mx-0 sm:rounded-xl sm:shadow-lg p-4 space-y-3">
       <h3 class="font-semibold">{{ t('member.accountTitle') }}</h3>
 
       <label class="inline-flex items-center gap-2 text-sm text-slate-700 cursor-pointer">

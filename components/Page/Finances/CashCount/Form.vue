@@ -1,6 +1,6 @@
 ﻿<template>
   <div class="space-y-6">
-    <section class="bg-white rounded-xl shadow-lg p-4 space-y-4">
+    <section class="-mx-6 bg-white shadow-sm sm:mx-0 sm:rounded-xl sm:shadow-lg p-4 space-y-4">
       <h2 class="text-lg font-semibold">{{ t('cashCount.countData') }}</h2>
 
       <label class="flex items-center gap-2 text-sm font-medium text-slate-700 cursor-pointer">
@@ -85,7 +85,7 @@
       </div>
     </section>
 
-    <section class="bg-white rounded-xl shadow-lg p-4 space-y-3">
+    <section class="-mx-6 bg-white shadow-sm sm:mx-0 sm:rounded-xl sm:shadow-lg p-4 space-y-3">
       <div class="flex items-center justify-between gap-4">
         <h3 class="font-semibold">{{ t('cashCount.positions') }}</h3>
         <button
@@ -197,7 +197,7 @@
       </div>
     </section>
 
-    <section class="bg-white rounded-xl shadow-lg p-4">
+    <section class="-mx-6 bg-white shadow-sm sm:mx-0 sm:rounded-xl sm:shadow-lg p-4">
       <div class="flex items-center justify-between gap-4 flex-wrap">
         <h3 class="font-semibold">{{ t('cashCount.overview') }}</h3>
 

@@ -16,10 +16,8 @@
     modal-width-class="max-w-3xl"
     :on-error="handleError"
   >
-    <template #row-extra="{ item }">
-      <td class="py-2 align-top text-slate-600">
-        {{ currentMemberSummary(item) }}
-      </td>
+    <template #cell-members="{ item }">
+      {{ currentMemberSummary(item) }}
     </template>
 
     <template #actions="{ item, edit, toggle }">

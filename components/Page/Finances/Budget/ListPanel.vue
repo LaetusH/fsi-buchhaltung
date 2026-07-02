@@ -1,123 +1,44 @@
 <template>
   <CommonPageTableCard
     :title="t('budget.listTitle')"
-    :search-value="globalSearchInput"
+    :search-value="search"
     :search-placeholder="t('budget.search')"
     :can-create="canEdit"
     :create-label="`+ ${t('budget.new')}`"
-    @update:search-value="globalSearchInput = $event"
+    @update:search-value="search = $event"
     @create="createBudget"
   >
-    <div class="overflow-x-auto">
-      <table class="w-full text-sm border-collapse">
-        <thead>
-          <tr class="text-left border-b">
-            <th class="py-2">
-              <CommonTableColumnControl
-                :label="t('budget.period')"
-                filter-type="text"
-                :sort-direction="columnSortDirection('period')"
-                :is-filter-active="isFilterActive('period')"
-                :filter="getFilter('period')"
-                :text-options="textOptionsByColumn.period"
-                @toggle-sort="toggleSort('period')"
-                @apply-text-filter="setTextFilter('period', $event)"
-                @reset-filter="resetFilter('period')"
-              />
-            </th>
-            <th class="py-2">
-              <CommonTableColumnControl
-                :label="t('budget.range')"
-                filter-type="date"
-                :sort-direction="columnSortDirection('range')"
-                :is-filter-active="isFilterActive('range')"
-                :filter="getFilter('range')"
-                @toggle-sort="toggleSort('range')"
-                @apply-range-filter="setRangeFilter('range', $event.min, $event.max)"
-                @reset-filter="resetFilter('range')"
-              />
-            </th>
-            <th class="py-2 text-right">
-              <CommonTableColumnControl
-                :label="t('budget.totalExpenses')"
-                filter-type="number"
-                :sort-direction="columnSortDirection('expense')"
-                :is-filter-active="isFilterActive('expense')"
-                :filter="getFilter('expense')"
-                @toggle-sort="toggleSort('expense')"
-                @apply-range-filter="setRangeFilter('expense', $event.min, $event.max)"
-                @reset-filter="resetFilter('expense')"
-              />
-            </th>
-            <th class="py-2 text-right">
-              <CommonTableColumnControl
-                :label="t('budget.totalIncome')"
-                filter-type="number"
-                :sort-direction="columnSortDirection('income')"
-                :is-filter-active="isFilterActive('income')"
-                :filter="getFilter('income')"
-                @toggle-sort="toggleSort('income')"
-                @apply-range-filter="setRangeFilter('income', $event.min, $event.max)"
-                @reset-filter="resetFilter('income')"
-              />
-            </th>
-            <th class="py-2 text-right">
-              <CommonTableColumnControl
-                :label="t('budget.totalSaldo')"
-                filter-type="number"
-                :sort-direction="columnSortDirection('saldo')"
-                :is-filter-active="isFilterActive('saldo')"
-                :filter="getFilter('saldo')"
-                @toggle-sort="toggleSort('saldo')"
-                @apply-range-filter="setRangeFilter('saldo', $event.min, $event.max)"
-                @reset-filter="resetFilter('saldo')"
-              />
-            </th>
-            <th class="py-2 text-right">{{ t('common.actions') }}</th>
-          </tr>
-        </thead>
-
-        <tbody>
-          <tr
-            v-for="budget in processedRows"
-            :key="budget.id"
-            class="border-b last:border-b-0"
+    <CommonAdvancedTable
+      v-model:search="search"
+      :rows="budgets"
+      :columns="columns"
+      :empty-text="t('budget.none')"
+      @row-open="openBudget($event.id)"
+    >
+      <template #cell-saldo="{ row }">
+        <span class="font-medium" :class="saldoTextClass(row.own_saldo)">{{ formatCurrency(row.own_saldo) }}</span>
+      </template>
+      <template #actions="{ row }">
+        <div class="flex justify-end gap-3">
+          <button
+            class="text-blue-600 hover:underline cursor-pointer disabled:cursor-not-allowed disabled:opacity-60"
+            :disabled="downloadingBudgetId === row.id"
+            @click="downloadBudget(row)"
           >
-            <td class="py-2 font-medium text-slate-900">{{ budgetLabel(budget.year, budget.semester) }}</td>
-            <td class="py-2 text-slate-600">{{ formatDate(budget.start_date) }} - {{ formatDate(budget.end_date) }}</td>
-            <td class="py-2 text-right">{{ formatCurrency(budget.own_expense_total) }}</td>
-            <td class="py-2 text-right">{{ formatCurrency(budget.own_income_total) }}</td>
-            <td class="py-2 text-right font-medium" :class="saldoTextClass(budget.own_saldo)">{{ formatCurrency(budget.own_saldo) }}</td>
-            <td class="py-2 text-right">
-              <div class="flex justify-end gap-3">
-                <button
-                  class="text-blue-600 hover:underline cursor-pointer disabled:cursor-not-allowed disabled:opacity-60"
-                  :disabled="downloadingBudgetId === budget.id"
-                  @click="downloadBudget(budget)"
-                >
-                  {{ t('budget.downloadPdfShort') }}
-                </button>
-                <button class="text-blue-600 hover:underline cursor-pointer" @click="openBudget(budget.id)">
-                  {{ t('actions.open') }}
-                </button>
-              </div>
-            </td>
-          </tr>
-
-          <tr v-if="processedRows.length === 0">
-            <td colspan="6" class="py-6 text-center text-slate-500">
-              {{ t('budget.none') }}
-            </td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
+            {{ t('budget.downloadPdfShort') }}
+          </button>
+          <button class="text-blue-600 hover:underline cursor-pointer" @click="openBudget(row.id)">
+            {{ t('actions.open') }}
+          </button>
+        </div>
+      </template>
+    </CommonAdvancedTable>
   </CommonPageTableCard>
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
-import { useAdvancedTable } from '~/composables/useAdvancedTable'
+import { computed, ref } from 'vue'
+import type { AdvancedTableColumn } from '~/composables/useAdvancedTable'
 import { useAuth } from '~/composables/useAuth'
 import { useI18n } from '~/composables/useI18n'
 import { useLocaleFormatters } from '~/composables/useLocaleFormatters'
@@ -127,8 +48,6 @@ import { useToast } from '~/composables/useToast'
 import type { BudgetListItem, BudgetSemester } from '~/types/budget'
 import type { PageTarget } from '~/types/page'
 import { downloadBudgetPlanPdf } from '~/utils/budgetPdfDownload'
-
-type BudgetColumnKey = 'period' | 'range' | 'expense' | 'income' | 'saldo'
 
 const props = defineProps<{
   returnTarget?: PageTarget | null
@@ -145,25 +64,57 @@ const downloadingBudgetId = ref<number | null>(null)
 const canEdit = computed(() => hasPermission('budgets.edit'))
 const resolvedReturnTarget = computed(() => cloneReturnTarget(props.returnTarget) ?? buildReturnTarget('BudgetList'))
 const budgets = ref<BudgetListItem[]>([])
+const search = ref('')
 
-const {
-  sortKey,
-  sortDirection,
-  textOptionsByColumn,
-  globalSearchInput,
-  processedRows,
-  getFilter,
-  isFilterActive,
-  toggleSort,
-  setTextFilter,
-  setRangeFilter,
-  resetFilter,
-} = useAdvancedTable<BudgetListItem, BudgetColumnKey>(budgets, [
-  { key: 'period', filterType: 'text', globalSearchable: true, getValue: row => budgetLabel(row.year, row.semester) },
-  { key: 'range', filterType: 'date', globalSearchable: true, getValue: row => row.start_date },
-  { key: 'expense', filterType: 'number', getValue: row => row.own_expense_total },
-  { key: 'income', filterType: 'number', getValue: row => row.own_income_total },
-  { key: 'saldo', filterType: 'number', getValue: row => row.own_saldo },
+const columns = computed<AdvancedTableColumn<BudgetListItem>[]>(() => [
+  {
+    key: 'period',
+    label: t('budget.period'),
+    filterType: 'text',
+    globalSearchable: true,
+    getValue: row => budgetLabel(row.year, row.semester),
+    cellClass: 'font-medium text-slate-900',
+    mobile: 'title',
+  },
+  {
+    key: 'range',
+    label: t('budget.range'),
+    filterType: 'date',
+    globalSearchable: true,
+    getValue: row => row.start_date,
+    format: row => `${formatDate(row.start_date)} - ${formatDate(row.end_date)}`,
+    mobileLabel: true,
+  },
+  {
+    key: 'expense',
+    label: t('budget.totalExpenses'),
+    filterType: 'number',
+    getValue: row => row.own_expense_total,
+    format: row => formatCurrency(row.own_expense_total),
+    headerClass: 'text-right',
+    cellClass: 'text-right',
+    mobileLabel: true,
+  },
+  {
+    key: 'income',
+    label: t('budget.totalIncome'),
+    filterType: 'number',
+    getValue: row => row.own_income_total,
+    format: row => formatCurrency(row.own_income_total),
+    headerClass: 'text-right',
+    cellClass: 'text-right',
+    mobileLabel: true,
+  },
+  {
+    key: 'saldo',
+    label: t('budget.totalSaldo'),
+    filterType: 'number',
+    getValue: row => row.own_saldo,
+    format: row => formatCurrency(row.own_saldo),
+    headerClass: 'text-right',
+    cellClass: 'text-right',
+    mobileLabel: true,
+  },
 ])
 
 onMounted(async () => {
@@ -208,9 +159,5 @@ function createBudget() {
   setPage('BudgetCreate', {
     returnTarget: resolvedReturnTarget.value,
   })
-}
-
-function columnSortDirection(key: BudgetColumnKey) {
-  return sortKey.value === key ? sortDirection.value : null
 }
 </script>

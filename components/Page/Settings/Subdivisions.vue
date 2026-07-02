@@ -28,9 +28,12 @@
       </button>
     </template>
 
-    <template #row-extra="{ item }">
-      <td class="py-2 align-top text-slate-600">{{ memberSummary(item) }}</td>
-      <td class="py-2 align-top font-medium text-slate-800">{{ memberCount(item) }}</td>
+    <template #cell-members="{ item }">
+      {{ memberSummary(item) }}
+    </template>
+
+    <template #cell-count="{ item }">
+      <span class="font-medium text-slate-800">{{ memberCount(item) }}</span>
     </template>
 
     <template #modal-fields-after-description="{ editingItem }">

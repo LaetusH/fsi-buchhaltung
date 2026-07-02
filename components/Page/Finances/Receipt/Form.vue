@@ -1,6 +1,6 @@
 ﻿<template>
   <div class="space-y-6">
-    <section class="bg-white rounded-xl shadow-lg p-4 space-y-1">
+    <section class="-mx-6 bg-white shadow-sm sm:mx-0 sm:rounded-xl sm:shadow-lg p-4 space-y-1">
       <h2 class="text-lg font-semibold">{{ t('receipt.issue') }}</h2>
 
       <label class="section-title">{{ t('receipt.company') }}</label>
@@ -32,7 +32,7 @@
       </CommonSearchSelect>
     </section>
 
-    <section class="bg-white rounded-xl shadow-lg p-4 grid grid-cols-2 gap-4">
+    <section class="-mx-6 bg-white shadow-sm sm:mx-0 sm:rounded-xl sm:shadow-lg p-4 grid grid-cols-2 gap-4">
       <div>
         <label class="text-sm font-medium text-slate-600">{{ t('receipt.receiptNumber') }}</label>
         <input v-model="form.receipt_number" class="input" :disabled="disabled">
@@ -44,7 +44,7 @@
       </div>
     </section>
 
-    <section class="bg-white rounded-xl shadow-lg p-4 space-y-3">
+    <section class="-mx-6 bg-white shadow-sm sm:mx-0 sm:rounded-xl sm:shadow-lg p-4 space-y-3">
       <h3 class="font-semibold">{{ t('receipt.positions') }}</h3>
 
       <div
@@ -157,7 +157,7 @@
       </div>
     </section>
 
-    <section class="bg-white rounded-xl shadow-lg p-4 flex items-center gap-4">
+    <section class="-mx-6 bg-white shadow-sm sm:mx-0 sm:rounded-xl sm:shadow-lg p-4 flex items-center gap-4">
       <span class="font-medium">{{ t('receipt.paymentStatus') }}</span>
       <PageFinancesPaymentStatus v-model="form.status" :disabled="disabled || statusDisabled" />
     </section>

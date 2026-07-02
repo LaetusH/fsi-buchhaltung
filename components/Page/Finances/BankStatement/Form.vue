@@ -1,6 +1,6 @@
 ﻿<template>
   <div class="space-y-6">
-    <section class="bg-white rounded-xl shadow-lg p-4 space-y-4">
+    <section class="-mx-6 bg-white shadow-sm sm:mx-0 sm:rounded-xl sm:shadow-lg p-4 space-y-4">
       <h2 class="text-lg font-semibold">{{ t('bankStatement.title') }}</h2>
 
       <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-1 xl:grid-cols-3 gap-4">
@@ -40,7 +40,7 @@
       </div>
     </section>
 
-    <section class="bg-white rounded-xl shadow-lg p-4 space-y-3">
+    <section class="-mx-6 bg-white shadow-sm sm:mx-0 sm:rounded-xl sm:shadow-lg p-4 space-y-3">
       <div class="flex items-center justify-between gap-4">
         <h3 class="font-semibold">{{ t('bankStatement.positions') }}</h3>
         <button
@@ -176,7 +176,7 @@
       </div>
     </section>
 
-    <section class="bg-white rounded-xl shadow-lg p-4 space-y-3">
+    <section class="-mx-6 bg-white shadow-sm sm:mx-0 sm:rounded-xl sm:shadow-lg p-4 space-y-3">
       <h3 class="font-semibold">{{ t('bankStatement.overview') }}</h3>
 
       <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-2 xl:grid-cols-4 gap-3 text-sm">

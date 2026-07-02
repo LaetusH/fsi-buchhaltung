@@ -1,15 +1,15 @@
 <template>
-  <section class="space-y-4">
-    <div v-if="loading" class="rounded-xl bg-white p-8 text-center text-sm text-slate-400 shadow-lg">
+  <section class="space-y-6">
+    <div v-if="loading" class="-mx-6 bg-white p-8 text-center text-sm text-slate-400 shadow-sm sm:mx-0 sm:rounded-xl sm:shadow-lg">
       {{ t('event.cashRegister.loading') }}
     </div>
 
-    <div v-else-if="error" class="rounded-xl bg-white p-8 text-center shadow-lg">
+    <div v-else-if="error" class="-mx-6 bg-white p-8 text-center shadow-sm sm:mx-0 sm:rounded-xl sm:shadow-lg">
       <Icon name="material-symbols:error-outline-rounded" class="mb-1 text-2xl text-rose-400" />
       <p class="text-sm text-slate-500">{{ error }}</p>
     </div>
 
-    <div v-else-if="!linked" class="rounded-xl bg-white p-8 text-center shadow-lg">
+    <div v-else-if="!linked" class="-mx-6 bg-white p-8 text-center shadow-sm sm:mx-0 sm:rounded-xl sm:shadow-lg">
       <Icon name="material-symbols:link-off-rounded" class="mb-1 text-2xl text-slate-300" />
       <p class="text-sm text-slate-500">{{ t('event.cashRegister.notLinked') }}</p>
     </div>
@@ -19,7 +19,7 @@
         <div
           v-for="tile in statTiles"
           :key="tile.label"
-          class="rounded-xl bg-white p-4 shadow-lg"
+          class="-mx-6 bg-white p-4 shadow-sm sm:mx-0 sm:rounded-xl sm:shadow-lg"
         >
           <div class="flex items-center gap-2">
             <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-orange-50 text-orange-600">
@@ -32,7 +32,7 @@
         </div>
       </div>
 
-      <div class="rounded-xl bg-white p-4 shadow-lg">
+      <div class="-mx-6 bg-white p-4 shadow-sm sm:mx-0 sm:rounded-xl sm:shadow-lg">
         <div class="mb-4 flex items-center gap-2">
           <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-orange-50 text-orange-600">
             <Icon name="material-symbols:bar-chart-rounded" class="text-base" />
@@ -68,8 +68,8 @@
         </div>
       </div>
 
-      <div class="grid items-start gap-4 lg:grid-cols-2">
-        <div class="rounded-xl bg-white p-4 shadow-lg">
+      <div class="grid items-start gap-6 lg:grid-cols-2">
+        <div class="-mx-6 bg-white p-4 shadow-sm sm:mx-0 sm:rounded-xl sm:shadow-lg">
           <div class="mb-3 flex items-center gap-2">
             <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-orange-50 text-orange-600">
               <Icon name="material-symbols:shopping-cart-rounded" class="text-base" />
@@ -106,7 +106,7 @@
           </table>
         </div>
 
-        <div class="rounded-xl bg-white p-4 shadow-lg">
+        <div class="-mx-6 bg-white p-4 shadow-sm sm:mx-0 sm:rounded-xl sm:shadow-lg">
           <div class="mb-3 flex items-center gap-2">
             <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-orange-50 text-orange-600">
               <Icon name="material-symbols:volunteer-activism-rounded" class="text-base" />

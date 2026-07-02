@@ -1,10 +1,10 @@
 <template>
   <Page :headline1="t('budget.title')" @open-menu="$emit('openMenu')">
     <template #cards>
-      <section class="col-span-12 rounded-xl bg-white p-4 md:p-6 shadow-lg space-y-6">
+      <section class="-mx-6 -mb-6 col-span-12 bg-white p-4 shadow-sm space-y-6 sm:mx-0 sm:rounded-xl sm:p-6 sm:shadow-lg">
         <div class="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
           <div>
-            <h2 class="text-lg font-semibold">{{ t('budget.title') }}</h2>
+            <h2 class="text-base font-semibold sm:text-lg">{{ t('budget.title') }}</h2>
             <p class="text-sm text-slate-500">{{ t('budget.editorHint') }}</p>
           </div>
 

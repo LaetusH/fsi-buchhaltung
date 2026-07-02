@@ -1,6 +1,6 @@
 <template>
   <div class="space-y-6">
-    <section class="space-y-4 rounded-xl bg-white p-4 shadow-lg">
+    <section class="space-y-4 -mx-6 bg-white p-4 shadow-sm sm:mx-0 sm:rounded-xl sm:shadow-lg">
       <h2 class="text-lg font-semibold">{{ t('event.masterData') }}</h2>
 
       <div class="grid gap-4 md:grid-cols-2">
@@ -44,7 +44,7 @@
       </div>
     </section>
 
-    <section class="space-y-4 rounded-xl bg-white p-4 shadow-lg">
+    <section class="space-y-4 -mx-6 bg-white p-4 shadow-sm sm:mx-0 sm:rounded-xl sm:shadow-lg">
       <h2 class="text-lg font-semibold">{{ t('event.organizers') }}</h2>
 
       <div class="grid gap-4 lg:grid-cols-2">
@@ -86,7 +86,7 @@
       </div>
     </section>
 
-    <section class="space-y-4 rounded-xl bg-white p-4 shadow-lg">
+    <section class="space-y-4 -mx-6 bg-white p-4 shadow-sm sm:mx-0 sm:rounded-xl sm:shadow-lg">
       <div class="flex flex-wrap items-center justify-between gap-3">
         <h2 class="text-lg font-semibold">{{ t('event.costCentres') }}</h2>
         <p class="text-sm font-medium" :class="allocationIsValid ? 'text-emerald-600' : 'text-amber-600'">

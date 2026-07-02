@@ -1,13 +1,13 @@
 <template>
-  <section class="space-y-4">
-    <div class="rounded-xl bg-white p-4 shadow-lg">
+  <section class="space-y-6">
+    <div class="-mx-6 bg-white p-4 shadow-sm sm:mx-0 sm:rounded-xl sm:shadow-lg">
       <h2 class="text-lg font-semibold">{{ t('event.planning.checklists') }}</h2>
       <p class="text-sm text-slate-500">{{ t('event.planning.checklistHint') }}</p>
     </div>
 
-    <div :class="['grid gap-4', canManage !== false ? 'xl:grid-cols-[minmax(18rem,0.75fr)_minmax(0,1.25fr)]' : '']">
-      <aside v-if="canManage !== false" class="space-y-4">
-        <section class="rounded-xl bg-white p-4 shadow-lg">
+    <div :class="['grid gap-6', canManage !== false ? 'xl:grid-cols-[minmax(18rem,0.75fr)_minmax(0,1.25fr)]' : '']">
+      <aside v-if="canManage !== false" class="space-y-6">
+        <section class="-mx-6 bg-white p-4 shadow-sm sm:mx-0 sm:rounded-xl sm:shadow-lg">
           <div class="flex items-center justify-between gap-3">
             <div>
               <h3 class="font-semibold text-slate-900">{{ t('event.planning.checklistTemplates') }}</h3>
@@ -31,7 +31,7 @@
           </p>
         </section>
 
-        <section ref="builderSectionEl" class="rounded-xl bg-white p-4 shadow-lg">
+        <section ref="builderSectionEl" class="-mx-6 bg-white p-4 shadow-sm sm:mx-0 sm:rounded-xl sm:shadow-lg">
           <div class="flex items-center justify-between gap-3">
             <h3 class="font-semibold text-slate-900">{{ builderTitle }}</h3>
             <button
@@ -128,7 +128,7 @@
       </aside>
 
       <section :class="['gap-4 lg:columns-2', canManage === false ? 'xl:columns-3' : '']">
-        <div v-for="checklist in checklists" :key="checklist.id" class="mb-4 break-inside-avoid rounded-xl bg-white p-4 shadow-lg">
+        <div v-for="checklist in checklists" :key="checklist.id" class="mb-4 break-inside-avoid -mx-6 bg-white p-4 shadow-sm sm:mx-0 sm:rounded-xl sm:shadow-lg">
           <div class="flex items-start justify-between gap-3">
             <div class="min-w-0">
               <h3 class="truncate font-semibold text-slate-900">{{ checklist.title }}</h3>

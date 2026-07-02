@@ -1,7 +1,7 @@
 <template>
   <div v-if="hasAccess" class="contents">
-    <div class="bg-white rounded-xl shadow-lg p-6 space-y-8 col-span-12">
-      <h2 class="text-lg font-semibold">{{ t('settings.permissions.title') }}</h2>
+    <div class="-mx-6 -mb-6 bg-white p-4 shadow-sm space-y-4 col-span-12 sm:mx-0 sm:space-y-8 sm:rounded-xl sm:p-6 sm:shadow-lg">
+      <h2 class="text-base font-semibold sm:text-lg">{{ t('settings.permissions.title') }}</h2>
 
       <section class="rounded-xl border border-slate-300 p-4 space-y-4">
         <div class="flex items-center justify-between gap-3 flex-wrap">
@@ -16,82 +16,27 @@
           </div>
         </div>
 
-        <div class="overflow-x-auto">
-          <table class="w-full text-sm border-collapse">
-            <thead>
-              <tr class="text-left border-b">
-                <th class="py-2">
-                  <CommonTableColumnControl
-                    :label="t('common.code')"
-                    :sort-direction="roleColumnSortDirection('code')"
-                    :filterable="false"
-                    @toggle-sort="toggleRoleSort('code')"
-                  />
-                </th>
-                <th class="py-2">
-                  <CommonTableColumnControl
-                    :label="t('common.name')"
-                    :sort-direction="roleColumnSortDirection('name')"
-                    :filterable="false"
-                    @toggle-sort="toggleRoleSort('name')"
-                  />
-                </th>
-                <th class="py-2">
-                  <CommonTableColumnControl
-                    :label="t('settings.permissions.roleStatus')"
-                    filter-type="text"
-                    :sort-direction="roleColumnSortDirection('status')"
-                    :is-filter-active="isRoleFilterActive('status')"
-                    :filter="getRoleFilter('status')"
-                    :text-options="roleTextOptionsByColumn.status"
-                    @toggle-sort="toggleRoleSort('status')"
-                    @apply-text-filter="setRoleTextFilter('status', $event)"
-                    @reset-filter="resetRoleFilter('status')"
-                  />
-                </th>
-                <th class="py-2">
-                  <CommonTableColumnControl
-                    :label="t('settings.permissions.defaultRole')"
-                    :sort-direction="roleColumnSortDirection('default')"
-                    :filterable="false"
-                    @toggle-sort="toggleRoleSort('default')"
-                  />
-                </th>
-                <th class="py-2">
-                  <CommonTableColumnControl
-                    :label="t('common.description')"
-                    :sort-direction="roleColumnSortDirection('description')"
-                    :filterable="false"
-                    @toggle-sort="toggleRoleSort('description')"
-                  />
-                </th>
-                <th class="py-2 text-right">{{ t('common.actions') }}</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-for="role in processedRoles" :key="role.id" class="border-b last:border-b-0">
-                <td class="py-2">{{ role.code }}</td>
-                <td class="py-2">{{ role.name }}</td>
-                <td class="py-2">{{ roleStatusLabel(role) }}</td>
-                <td class="py-2">{{ yesNoLabel(role.is_default) }}</td>
-                <td class="py-2 text-slate-600">{{ role.description || '-' }}</td>
-                <td class="py-2 text-right space-x-2">
-                  <button class="text-blue-600 hover:underline cursor-pointer" @click="openRoleEditor(role)">
-                    {{ t('actions.edit') }}
-                  </button>
-                  <button class="text-orange-600 hover:underline cursor-pointer" @click="openRolePermissions(role)">
-                    {{ t('settings.permissions.editPermissions') }}
-                  </button>
-                </td>
-              </tr>
-              <tr v-if="processedRoles.length === 0">
-                <td colspan="6" class="py-6 text-center text-slate-500">
-                  {{ t('settings.permissions.noRoles') }}
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
+        <CommonAdvancedTable
+          v-model:search="roleSearchInput"
+          :rows="roles"
+          :columns="roleColumns"
+          :empty-text="t('settings.permissions.noRoles')"
+          @row-open="openRoleEditor($event)"
+        >
+          <template #cell-description="{ row }">
+            <span class="text-slate-600">{{ row.description || '-' }}</span>
+          </template>
+          <template #actions="{ row }">
+            <div class="flex justify-end gap-3">
+              <button class="text-blue-600 hover:underline cursor-pointer" @click="openRoleEditor(row)">
+                {{ t('actions.edit') }}
+              </button>
+              <button class="text-orange-600 hover:underline cursor-pointer" @click="openRolePermissions(row)">
+                {{ t('settings.permissions.editPermissions') }}
+              </button>
+            </div>
+          </template>
+        </CommonAdvancedTable>
       </section>
 
       <section class="rounded-xl border border-slate-300 p-4 space-y-4">
@@ -102,61 +47,19 @@
           />
         </div>
 
-        <div class="overflow-x-auto">
-          <table class="w-full text-sm border-collapse">
-            <thead>
-              <tr class="text-left border-b">
-                <th class="py-2">
-                  <CommonTableColumnControl
-                    :label="t('common.code')"
-                    :sort-direction="positionColumnSortDirection('code')"
-                    :filterable="false"
-                    @toggle-sort="togglePositionSort('code')"
-                  />
-                </th>
-                <th class="py-2">
-                  <CommonTableColumnControl
-                    :label="t('common.name')"
-                    :sort-direction="positionColumnSortDirection('name')"
-                    :filterable="false"
-                    @toggle-sort="togglePositionSort('name')"
-                  />
-                </th>
-                <th class="py-2">
-                  <CommonTableColumnControl
-                    :label="t('settings.permissions.positionStatus')"
-                    filter-type="text"
-                    :sort-direction="positionColumnSortDirection('status')"
-                    :is-filter-active="isPositionFilterActive('status')"
-                    :filter="getPositionFilter('status')"
-                    :text-options="positionTextOptionsByColumn.status"
-                    @toggle-sort="togglePositionSort('status')"
-                    @apply-text-filter="setPositionTextFilter('status', $event)"
-                    @reset-filter="resetPositionFilter('status')"
-                  />
-                </th>
-                <th class="py-2 text-right">{{ t('common.actions') }}</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-for="position in processedPositions" :key="position.id" class="border-b last:border-b-0">
-                <td class="py-2">{{ position.code }}</td>
-                <td class="py-2">{{ position.name }}</td>
-                <td class="py-2">{{ positionStatusLabel(position) }}</td>
-                <td class="py-2 text-right">
-                  <button class="text-orange-600 hover:underline cursor-pointer" @click="openPositionPermissions(position)">
-                    {{ t('settings.permissions.editPermissions') }}
-                  </button>
-                </td>
-              </tr>
-              <tr v-if="processedPositions.length === 0">
-                <td colspan="4" class="py-6 text-center text-slate-500">
-                  {{ t('settings.permissions.noPositions') }}
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
+        <CommonAdvancedTable
+          v-model:search="positionSearchInput"
+          :rows="positions"
+          :columns="positionColumns"
+          :empty-text="t('settings.permissions.noPositions')"
+          @row-open="openPositionPermissions($event)"
+        >
+          <template #actions="{ row }">
+            <button class="text-orange-600 hover:underline cursor-pointer" @click="openPositionPermissions(row)">
+              {{ t('settings.permissions.editPermissions') }}
+            </button>
+          </template>
+        </CommonAdvancedTable>
       </section>
 
       <section class="rounded-xl border border-slate-300 p-4 space-y-4">
@@ -167,52 +70,19 @@
           />
         </div>
 
-        <div class="overflow-x-auto">
-          <table class="w-full text-sm border-collapse">
-            <thead>
-              <tr class="text-left border-b">
-                <th class="py-2">
-                  <CommonTableColumnControl
-                    :label="t('settings.permissions.username')"
-                    :sort-direction="userColumnSortDirection('username')"
-                    :filterable="false"
-                    @toggle-sort="toggleUserSort('username')"
-                  />
-                </th>
-                <th class="py-2">
-                  <CommonTableColumnControl
-                    :label="t('settings.permissions.roles')"
-                    filter-type="text"
-                    :sort-direction="userColumnSortDirection('roles')"
-                    :is-filter-active="isUserFilterActive('roles')"
-                    :filter="getUserFilter('roles')"
-                    :text-options="userTextOptionsByColumn.roles"
-                    @toggle-sort="toggleUserSort('roles')"
-                    @apply-text-filter="setUserTextFilter('roles', $event)"
-                    @reset-filter="resetUserFilter('roles')"
-                  />
-                </th>
-                <th class="py-2 text-right">{{ t('common.actions') }}</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-for="user in processedUsers" :key="user.id" class="border-b last:border-b-0">
-                <td class="py-2">{{ user.username }}</td>
-                <td class="py-2">{{ roleNamesForUser(user) }}</td>
-                <td class="py-2 text-right">
-                  <button class="text-orange-600 hover:underline cursor-pointer" @click="openUserAccess(user)">
-                    {{ t('settings.permissions.editAccess') }}
-                  </button>
-                </td>
-              </tr>
-              <tr v-if="processedUsers.length === 0">
-                <td colspan="3" class="py-6 text-center text-slate-500">
-                  {{ t('settings.permissions.noUsers') }}
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
+        <CommonAdvancedTable
+          v-model:search="userSearchInput"
+          :rows="users"
+          :columns="userColumns"
+          :empty-text="t('settings.permissions.noUsers')"
+          @row-open="openUserAccess($event)"
+        >
+          <template #actions="{ row }">
+            <button class="text-orange-600 hover:underline cursor-pointer" @click="openUserAccess(row)">
+              {{ t('settings.permissions.editAccess') }}
+            </button>
+          </template>
+        </CommonAdvancedTable>
       </section>
     </div>
 
@@ -336,8 +206,8 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
-import { useAdvancedTable } from '~/composables/useAdvancedTable'
+import { computed, ref } from 'vue'
+import type { AdvancedTableColumn } from '~/composables/useAdvancedTable'
 import { useI18n } from '~/composables/useI18n'
 import { useToast } from '~/composables/useToast'
 import type { PermissionDefinition } from '~/config/permissions'
@@ -425,60 +295,96 @@ const activeRoleIds = computed(() => new Set(
     .map(role => role.id)
 ))
 
-type RoleColumnKey = 'code' | 'name' | 'status' | 'default' | 'description'
-type PositionColumnKey = 'code' | 'name' | 'status'
-type UserColumnKey = 'username' | 'roles'
+const roleSearchInput = ref('')
+const positionSearchInput = ref('')
+const userSearchInput = ref('')
 
-const {
-  sortKey: roleSortKey,
-  sortDirection: roleSortDirection,
-  textOptionsByColumn: roleTextOptionsByColumn,
-  globalSearchInput: roleSearchInput,
-  processedRows: processedRoles,
-  getFilter: getRoleFilter,
-  isFilterActive: isRoleFilterActive,
-  toggleSort: toggleRoleSort,
-  setTextFilter: setRoleTextFilter,
-  resetFilter: resetRoleFilter,
-} = useAdvancedTable<RoleRow, RoleColumnKey>(roles, [
-  { key: 'code', filterable: false, globalSearchable: true, getValue: role => role.code },
-  { key: 'name', filterable: false, globalSearchable: true, getValue: role => role.name },
-  { key: 'status', filterType: 'text', globalSearchable: true, getValue: role => roleStatusLabel(role) },
-  { key: 'default', filterable: false, globalSearchable: true, getValue: role => yesNoLabel(role.is_default) },
-  { key: 'description', filterable: false, globalSearchable: true, getValue: role => role.description || '-' },
+const roleColumns = computed<AdvancedTableColumn<RoleRow>[]>(() => [
+  {
+    key: 'code',
+    label: t('common.code'),
+    filterable: false,
+    globalSearchable: true,
+    getValue: role => role.code,
+  },
+  {
+    key: 'name',
+    label: t('common.name'),
+    filterable: false,
+    globalSearchable: true,
+    getValue: role => role.name,
+    mobile: 'title',
+  },
+  {
+    key: 'status',
+    label: t('settings.permissions.roleStatus'),
+    filterType: 'text',
+    globalSearchable: true,
+    getValue: role => roleStatusLabel(role),
+    mobileLabel: true,
+  },
+  {
+    key: 'default',
+    label: t('settings.permissions.defaultRole'),
+    filterable: false,
+    globalSearchable: true,
+    getValue: role => yesNoLabel(role.is_default),
+    mobileLabel: true,
+  },
+  {
+    key: 'description',
+    label: t('common.description'),
+    filterable: false,
+    globalSearchable: true,
+    getValue: role => role.description || '-',
+    mobileLabel: true,
+    mobileMinBreakpoint: 'lg',
+  },
 ])
 
-const {
-  sortKey: positionSortKey,
-  sortDirection: positionSortDirection,
-  textOptionsByColumn: positionTextOptionsByColumn,
-  globalSearchInput: positionSearchInput,
-  processedRows: processedPositions,
-  getFilter: getPositionFilter,
-  isFilterActive: isPositionFilterActive,
-  toggleSort: togglePositionSort,
-  setTextFilter: setPositionTextFilter,
-  resetFilter: resetPositionFilter,
-} = useAdvancedTable<PositionRow, PositionColumnKey>(positions, [
-  { key: 'code', filterable: false, globalSearchable: true, getValue: position => position.code },
-  { key: 'name', filterable: false, globalSearchable: true, getValue: position => position.name },
-  { key: 'status', filterType: 'text', globalSearchable: true, getValue: position => positionStatusLabel(position) },
+const positionColumns = computed<AdvancedTableColumn<PositionRow>[]>(() => [
+  {
+    key: 'code',
+    label: t('common.code'),
+    filterable: false,
+    globalSearchable: true,
+    getValue: position => position.code,
+  },
+  {
+    key: 'name',
+    label: t('common.name'),
+    filterable: false,
+    globalSearchable: true,
+    getValue: position => position.name,
+    mobile: 'title',
+  },
+  {
+    key: 'status',
+    label: t('settings.permissions.positionStatus'),
+    filterType: 'text',
+    globalSearchable: true,
+    getValue: position => positionStatusLabel(position),
+    mobileLabel: true,
+  },
 ])
 
-const {
-  sortKey: userSortKey,
-  sortDirection: userSortDirection,
-  textOptionsByColumn: userTextOptionsByColumn,
-  globalSearchInput: userSearchInput,
-  processedRows: processedUsers,
-  getFilter: getUserFilter,
-  isFilterActive: isUserFilterActive,
-  toggleSort: toggleUserSort,
-  setTextFilter: setUserTextFilter,
-  resetFilter: resetUserFilter,
-} = useAdvancedTable<UserRow, UserColumnKey>(users, [
-  { key: 'username', filterable: false, globalSearchable: true, getValue: user => user.username },
-  { key: 'roles', filterType: 'text', globalSearchable: true, getValue: user => roleNamesForUser(user) },
+const userColumns = computed<AdvancedTableColumn<UserRow>[]>(() => [
+  {
+    key: 'username',
+    label: t('settings.permissions.username'),
+    filterable: false,
+    globalSearchable: true,
+    getValue: user => user.username,
+    mobile: 'title',
+  },
+  {
+    key: 'roles',
+    label: t('settings.permissions.roles'),
+    filterType: 'text',
+    globalSearchable: true,
+    getValue: user => roleNamesForUser(user),
+    mobileLabel: true,
+  },
 ])
 
 function roleStatusLabel(role: RoleRow) {
@@ -498,18 +404,6 @@ function roleNamesForUser(user: UserRow) {
     .filter(role => user.roles.includes(role.id))
     .map(role => role.name)
     .join(', ') || '-'
-}
-
-function roleColumnSortDirection(key: RoleColumnKey) {
-  return roleSortKey.value === key ? roleSortDirection.value : null
-}
-
-function positionColumnSortDirection(key: PositionColumnKey) {
-  return positionSortKey.value === key ? positionSortDirection.value : null
-}
-
-function userColumnSortDirection(key: UserColumnKey) {
-  return userSortKey.value === key ? userSortDirection.value : null
 }
 
 function formatRoleOptionLabel(role: RoleRow) {

@@ -28,7 +28,7 @@
       </button>
     </template>
 
-    <template #name-cell="{ item }">
+    <template #cell-name="{ item }">
       <div
         class="flex items-center gap-2"
         :style="{ paddingLeft: `${itemDepth(item) * 1.25}rem` }"
@@ -38,10 +38,8 @@
       </div>
     </template>
 
-    <template #row-extra="{ item, items }">
-      <td class="py-2 align-top text-slate-600">
-        {{ parentLabel(itemParentId(item), items) }}
-      </td>
+    <template #cell-parent="{ item, items }">
+      {{ parentLabel(itemParentId(item), items) }}
     </template>
 
     <template #modal-fields-before-description="{ editingItem, items }">

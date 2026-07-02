@@ -2,8 +2,8 @@
   <Page @open-menu="$emit('openMenu')">
     <template #cards>
       <div class="col-span-12 min-w-0">
-        <div class="space-y-5">
-          <section class="overflow-hidden rounded-xl bg-white shadow-lg">
+        <div class="-mb-6 space-y-6">
+          <section class="-mx-6 overflow-hidden bg-white shadow-sm sm:mx-0 sm:rounded-xl sm:shadow-lg">
             <div class="border-b border-slate-200 bg-slate-900 px-5 py-5 text-white">
               <div class="flex flex-wrap items-start justify-between gap-4">
                 <div class="flex min-w-0 items-start gap-3">
@@ -74,9 +74,9 @@
 
           <template v-if="eventId">
             <section v-if="activeTab === 'overview' && canViewAll">
-              <div class="grid items-start gap-4 lg:grid-cols-2 xl:grid-cols-[1.5fr_1fr]">
-                <div class="space-y-4">
-                  <div class="rounded-xl bg-white p-4 shadow-lg">
+              <div class="grid items-start gap-6 lg:grid-cols-2 xl:grid-cols-[1.5fr_1fr]">
+                <div class="space-y-6">
+                  <div class="-mx-6 bg-white p-4 shadow-sm sm:mx-0 sm:rounded-xl sm:shadow-lg">
                     <div class="mb-2 flex items-center justify-between gap-3">
                       <div class="flex items-center gap-2">
                         <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-orange-50 text-orange-600">
@@ -135,7 +135,7 @@
                     </div>
                   </div>
 
-                  <div class="rounded-xl bg-white p-4 shadow-lg">
+                  <div class="-mx-6 bg-white p-4 shadow-sm sm:mx-0 sm:rounded-xl sm:shadow-lg">
                     <div class="flex items-center justify-between gap-3">
                       <div class="flex items-center gap-2">
                         <button type="button" class="flex h-7 w-7 shrink-0 cursor-pointer items-center justify-center rounded-lg bg-orange-50 text-orange-600 transition hover:bg-orange-100" @click="activeTab = 'timeline'">
@@ -180,8 +180,8 @@
                   </div>
                 </div>
 
-                <div class="space-y-4">
-                  <div class="rounded-xl bg-white p-4 shadow-lg">
+                <div class="space-y-6">
+                  <div class="-mx-6 bg-white p-4 shadow-sm sm:mx-0 sm:rounded-xl sm:shadow-lg">
                     <div class="flex items-center justify-between gap-3">
                       <div class="flex items-center gap-2">
                         <button type="button" class="flex h-7 w-7 shrink-0 cursor-pointer items-center justify-center rounded-lg bg-orange-50 text-orange-600 transition hover:bg-orange-100" @click="activeTab = 'tasks'">
@@ -229,7 +229,7 @@
                     </div>
                   </div>
 
-                  <div class="rounded-xl bg-white p-4 shadow-lg">
+                  <div class="-mx-6 bg-white p-4 shadow-sm sm:mx-0 sm:rounded-xl sm:shadow-lg">
                     <div class="flex items-center justify-between gap-3">
                       <div class="flex items-center gap-2">
                         <button type="button" class="flex h-7 w-7 shrink-0 cursor-pointer items-center justify-center rounded-lg bg-orange-50 text-orange-600 transition hover:bg-orange-100" @click="activeTab = 'checklists'">
@@ -272,7 +272,7 @@
                     </div>
                   </div>
 
-                  <div class="rounded-xl bg-white p-4 shadow-lg">
+                  <div class="-mx-6 bg-white p-4 shadow-sm sm:mx-0 sm:rounded-xl sm:shadow-lg">
                     <div class="flex items-center justify-between gap-3">
                       <div class="flex items-center gap-2">
                         <button type="button" class="flex h-7 w-7 shrink-0 cursor-pointer items-center justify-center rounded-lg bg-orange-50 text-orange-600 transition hover:bg-orange-100" @click="activeTab = 'shifts'">

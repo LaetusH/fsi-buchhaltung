@@ -2,129 +2,56 @@
   <CommonPageTableCard
     v-if="canManage"
     :title="title"
-    :search-value="globalSearchInput"
+    :search-value="search"
     :can-create="true"
     :create-label="`+ ${addLabel}`"
-    @update:search-value="globalSearchInput = $event"
+    @update:search-value="search = $event"
     @create="addItem"
   >
-    <div class="overflow-x-auto">
-      <table class="w-full text-sm border-collapse">
-        <thead>
-          <tr class="text-left border-b">
-            <th class="py-2">
-              <CommonTableColumnControl
-                :label="t('common.code')"
-                :sort-direction="columnSortDirection('code')"
-                :filterable="false"
-                @toggle-sort="toggleSort('code')"
-              />
-            </th>
-            <th class="py-2">
-              <CommonTableColumnControl
-                :label="t('common.name')"
-                :sort-direction="columnSortDirection('name')"
-                :filterable="false"
-                @toggle-sort="toggleSort('name')"
-              />
-            </th>
-            <th
-              v-for="column in extraColumns"
-              :key="column.key"
-              :class="['py-2', column.headerClass]"
-            >
-              <CommonTableColumnControl
-                v-if="column.filterable === false"
-                :label="column.label"
-                :sort-direction="columnSortDirection(column.key)"
-                :filterable="false"
-                @toggle-sort="toggleSort(column.key)"
-              />
-              <CommonTableColumnControl
-                v-else
-                :label="column.label"
-                :filter-type="column.filterType || 'text'"
-                :sort-direction="columnSortDirection(column.key)"
-                :is-filter-active="isFilterActive(column.key)"
-                :filter="getFilter(column.key)"
-                :text-options="column.filterType === 'number' || column.filterType === 'date' ? undefined : textOptionsByColumn[column.key]"
-                @toggle-sort="toggleSort(column.key)"
-                @apply-text-filter="setTextFilter(column.key, $event)"
-                @apply-range-filter="setRangeFilter(column.key, $event.min, $event.max)"
-                @reset-filter="resetFilter(column.key)"
-              />
-            </th>
-            <th class="py-2 text-right">{{ t('common.actions') }}</th>
-          </tr>
-        </thead>
+    <CommonAdvancedTable
+      v-model:search="search"
+      :rows="displayItems"
+      :columns="columns"
+      :empty-text="emptyLabel"
+      @row-open="editItem($event)"
+    >
+      <template
+        v-for="column in columnsWithSlot"
+        :key="column.key"
+        #[cellSlotName(column.key)]="{ row }"
+      >
+        <slot
+          :name="`cell-${column.key}`"
+          :item="row"
+          :items="items"
+          :display-items="displayItems"
+        />
+      </template>
 
-        <tbody>
-          <tr
-            v-for="item in processedRows"
-            :key="item.id"
-            class="border-b last:border-b-0"
+      <template #actions="{ row }">
+        <slot
+          name="actions"
+          :item="row"
+          :items="items"
+          :display-items="displayItems"
+          :edit="() => editItem(row)"
+          :toggle="() => toggleActive(row)"
+          :reload="loadItems"
+        >
+          <button class="text-blue-600 hover:underline cursor-pointer" @click="editItem(row)">
+            {{ t('actions.edit') }}
+          </button>
+
+          <button
+            class="hover:underline cursor-pointer"
+            :class="row.is_active ? 'text-red-500' : 'text-gray-500'"
+            @click="toggleActive(row)"
           >
-            <td class="py-2 align-top">
-              <slot
-                name="code-cell"
-                :item="item"
-                :items="items"
-                :display-items="processedRows"
-              >
-                {{ item.code }}
-              </slot>
-            </td>
-
-            <td class="py-2 align-top">
-              <slot
-                name="name-cell"
-                :item="item"
-                :items="items"
-                :display-items="processedRows"
-              >
-                {{ item.name }}
-              </slot>
-            </td>
-
-            <slot
-              name="row-extra"
-              :item="item"
-              :items="items"
-              :display-items="processedRows"
-            />
-
-            <td class="py-2 text-right space-x-2 align-top">
-              <slot
-                name="actions"
-                :item="item"
-                :items="items"
-                :display-items="processedRows"
-                :edit="() => editItem(item)"
-                :toggle="() => toggleActive(item)"
-                :reload="loadItems"
-              >
-                <button class="text-blue-600 hover:underline cursor-pointer" @click="editItem(item)">
-                  {{ t('actions.edit') }}
-                </button>
-
-                <button
-                  class="hover:underline cursor-pointer"
-                  :class="item.is_active ? 'text-red-500' : 'text-gray-500'"
-                  @click="toggleActive(item)"
-                >
-                  {{ item.is_active ? t('actions.deactivate') : t('actions.activate') }}
-                </button>
-              </slot>
-            </td>
-          </tr>
-          <tr v-if="processedRows.length === 0">
-            <td :colspan="extraColumns.length + 3" class="py-6 text-center text-slate-500">
-              {{ emptyLabel }}
-            </td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
+            {{ row.is_active ? t('actions.deactivate') : t('actions.activate') }}
+          </button>
+        </slot>
+      </template>
+    </CommonAdvancedTable>
   </CommonPageTableCard>
 
   <CommonModal
@@ -182,8 +109,9 @@
 </template>
 
 <script setup lang="ts">
+import { useSlots } from 'vue'
 import { useI18n } from '~/composables/useI18n'
-import { useAdvancedTable, type TableFilterType } from '~/composables/useAdvancedTable'
+import type { AdvancedTableColumn, TableFilterType } from '~/composables/useAdvancedTable'
 
 export interface SettingsEntityRow {
   id: number
@@ -251,17 +179,7 @@ const props = withDefaults(defineProps<{
 })
 
 defineSlots<{
-  'code-cell'?: (props: {
-    item: SettingsEntityRow
-    items: SettingsEntityRow[]
-    displayItems: SettingsEntityRow[]
-  }) => any
-  'name-cell'?: (props: {
-    item: SettingsEntityRow
-    items: SettingsEntityRow[]
-    displayItems: SettingsEntityRow[]
-  }) => any
-  'row-extra'?: (props: {
+  [key: `cell-${string}`]: (props: {
     item: SettingsEntityRow
     items: SettingsEntityRow[]
     displayItems: SettingsEntityRow[]
@@ -288,57 +206,55 @@ defineSlots<{
   }) => any
 }>()
 
+const slots = useSlots()
 const { t } = useI18n()
 const items = ref<SettingsEntityRow[]>([])
 const displayItems = computed(() => props.transformItems(items.value))
+const search = ref('')
 
 function getFallbackColumnValue(item: SettingsEntityRow, key: string) {
   return (item as unknown as Record<string, unknown>)[key] ?? '-'
 }
 
-const tableColumns = computed(() => [
+function cellSlotName(key: string) {
+  return `cell-${key}`
+}
+
+const columns = computed<AdvancedTableColumn<SettingsEntityRow>[]>(() => [
   {
     key: 'code',
+    label: t('common.code'),
     filterable: false,
     globalSearchable: true,
-    getValue: (item: SettingsEntityRow) => item.code,
+    getValue: item => item.code,
   },
   {
     key: 'name',
+    label: t('common.name'),
     filterable: false,
     globalSearchable: true,
-    getValue: (item: SettingsEntityRow) => item.name,
+    getValue: item => item.name,
+    mobile: 'title',
   },
   ...props.extraColumns.map(column => ({
     key: column.key,
+    label: column.label,
+    headerClass: column.headerClass,
     filterType: column.filterType || ('text' as const),
     sortable: column.sortable,
     filterable: column.filterable,
     globalSearchable: column.globalSearchable ?? true,
     getValue: (item: SettingsEntityRow) => column.getValue?.(item, items.value) ?? getFallbackColumnValue(item, column.key),
+    mobileLabel: true,
   })),
 ])
-const {
-  sortKey,
-  sortDirection,
-  textOptionsByColumn,
-  globalSearchInput,
-  processedRows,
-  getFilter,
-  isFilterActive,
-  toggleSort,
-  setTextFilter,
-  setRangeFilter,
-  resetFilter,
-} = useAdvancedTable<SettingsEntityRow, string>(displayItems, tableColumns.value)
+
+const columnsWithSlot = computed(() => columns.value.filter(column => !!slots[cellSlotName(column.key)]))
+
 const showModal = ref(false)
 const editingItem = ref<SaveSettingsEntityBody | null>(null)
 const isNewItem = ref(false)
 const isSaving = ref(false)
-
-function columnSortDirection(key: string) {
-  return sortKey.value === key ? sortDirection.value : null
-}
 
 function reportError(phase: EntityManagerErrorContext['phase'], message?: string, error?: unknown) {
   if (props.onError) {

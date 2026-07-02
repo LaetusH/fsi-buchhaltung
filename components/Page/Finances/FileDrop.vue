@@ -1,5 +1,5 @@
 <template>
-  <div ref="rootRef" class="w-full mx-auto text-slate-700">
+  <div ref="rootRef" class="text-slate-700 lg:w-full" :class="previewUrl ? '-mx-6 lg:mx-0' : ''">
     <div
       v-if="!modelValue && !existingFile"
       @dragover.prevent="isDragging = true"
@@ -30,7 +30,7 @@
 
     <div
       v-else-if="previewUrl"
-      class="relative flex flex-col w-full border border-slate-200 rounded-lg overflow-hidden bg-slate-800 group shadow-lg"
+      class="relative flex flex-col w-full border-y border-slate-200 lg:border lg:rounded-lg overflow-hidden bg-slate-800 group shadow-lg"
       :style="{ height: `${previewHeight}px` }"
     >
       <div class="file-preview-toolbar z-20 flex items-center justify-between gap-3 p-3 bg-black/70 backdrop-blur-sm">

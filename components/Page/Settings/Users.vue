@@ -2,81 +2,54 @@
   <CommonPageTableCard
     v-if="hasAccess"
     :title="t('settings.users.title')"
-    :search-value="globalSearchInput"
+    :search-value="search"
     :can-create="true"
     :create-label="`+ ${t('settings.users.newUser')}`"
-    @update:search-value="globalSearchInput = $event"
+    @update:search-value="search = $event"
     @create="openCreateModal"
   >
-    <div class="overflow-x-auto">
-      <table class="w-full text-sm border-collapse">
-        <thead>
-          <tr class="text-left border-b">
-            <th class="py-2">
-              <CommonTableColumnControl
-                :label="t('login.username')"
-                :sort-direction="columnSortDirection('username')"
-                :filterable="false"
-                @toggle-sort="toggleSort('username')"
-              />
-            </th>
-            <th class="py-2">
-              <CommonTableColumnControl
-                :label="t('settings.users.linkedMember')"
-                :sort-direction="columnSortDirection('member')"
-                :filterable="false"
-                @toggle-sort="toggleSort('member')"
-              />
-            </th>
-            <th class="py-2 text-right">{{ t('common.actions') }}</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-for="user in processedRows" :key="user.id" class="border-b last:border-b-0">
-            <td class="py-2">
-              <div class="flex flex-col gap-1">
-                <span>{{ user.username }}</span>
-                <span
-                  v-if="user.must_change_password"
-                  class="w-fit rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-800"
-                >
-                  {{ t('settings.users.passwordChangeRequired') }}
-                </span>
-              </div>
-            </td>
-            <td class="py-2">{{ user.member_name || t('settings.users.noLinkedMember') }}</td>
-            <td class="py-2">
-              <div class="flex justify-end gap-3">
-                <button class="text-blue-600 hover:underline cursor-pointer" @click="openEditUserModal(user)">
-                  {{ t('actions.edit') }}
-                </button>
+    <CommonAdvancedTable
+      v-model:search="search"
+      :rows="users"
+      :columns="columns"
+      :empty-text="t('settings.permissions.noUsers')"
+      @row-open="openEditUserModal($event)"
+    >
+      <template #cell-username="{ row }">
+        <div class="flex flex-col gap-1">
+          <span>{{ row.username }}</span>
+          <span
+            v-if="row.must_change_password"
+            class="w-fit rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-800"
+          >
+            {{ t('settings.users.passwordChangeRequired') }}
+          </span>
+        </div>
+      </template>
+      <template #actions="{ row }">
+        <div class="flex justify-end gap-3">
+          <button class="text-blue-600 hover:underline cursor-pointer" @click="openEditUserModal(row)">
+            {{ t('actions.edit') }}
+          </button>
 
-                <button
-                  v-if="!user.must_change_password"
-                  class="text-amber-700 hover:underline cursor-pointer"
-                  @click="requirePasswordChange(user)"
-                >
-                  {{ t('settings.users.requirePasswordChange') }}
-                </button>
+          <button
+            v-if="!row.must_change_password"
+            class="text-amber-700 hover:underline cursor-pointer"
+            @click="requirePasswordChange(row)"
+          >
+            {{ t('settings.users.requirePasswordChange') }}
+          </button>
 
-                <button
-                  class="hover:underline cursor-pointer"
-                  :class="user.is_active ? 'text-red-500' : 'text-gray-500'"
-                  @click="toggleUserActive(user)"
-                >
-                  {{ user.is_active ? t('actions.deactivate') : t('actions.activate') }}
-                </button>
-              </div>
-            </td>
-          </tr>
-          <tr v-if="processedRows.length === 0">
-            <td colspan="3" class="py-6 text-center text-slate-500">
-              {{ t('settings.permissions.noUsers') }}
-            </td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
+          <button
+            class="hover:underline cursor-pointer"
+            :class="row.is_active ? 'text-red-500' : 'text-gray-500'"
+            @click="toggleUserActive(row)"
+          >
+            {{ row.is_active ? t('actions.deactivate') : t('actions.activate') }}
+          </button>
+        </div>
+      </template>
+    </CommonAdvancedTable>
   </CommonPageTableCard>
 
   <CommonModal
@@ -219,7 +192,7 @@
 
 <script setup lang="ts">
 import type { SearchSelectOption } from '~/components/Common/SearchSelect.vue'
-import { useAdvancedTable } from '~/composables/useAdvancedTable'
+import type { AdvancedTableColumn } from '~/composables/useAdvancedTable'
 import { useI18n } from '~/composables/useI18n'
 import { useToast } from '~/composables/useToast'
 import { useAuth } from '~/composables/useAuth'
@@ -265,22 +238,26 @@ const editingPasswordNew = ref('')
 const editingPasswordConfirm = ref('')
 const isCreatingUser = ref(false)
 const isSavingUserEdit = ref(false)
-type UserColumnKey = 'username' | 'member'
+const search = ref('')
 
-const {
-  sortKey,
-  sortDirection,
-  globalSearchInput,
-  processedRows,
-  toggleSort,
-} = useAdvancedTable<UserListRow, UserColumnKey>(users, [
-  { key: 'username', filterable: false, globalSearchable: true, getValue: user => user.username },
-  { key: 'member', filterable: false, globalSearchable: true, getValue: user => user.member_name || t('settings.users.noLinkedMember') },
+const columns = computed<AdvancedTableColumn<UserListRow>[]>(() => [
+  {
+    key: 'username',
+    label: t('login.username'),
+    filterable: false,
+    globalSearchable: true,
+    getValue: user => user.username,
+    mobile: 'title',
+  },
+  {
+    key: 'member',
+    label: t('settings.users.linkedMember'),
+    filterable: false,
+    globalSearchable: true,
+    getValue: user => user.member_name || t('settings.users.noLinkedMember'),
+    mobileLabel: true,
+  },
 ])
-
-function columnSortDirection(key: UserColumnKey) {
-  return sortKey.value === key ? sortDirection.value : null
-}
 
 const createMemberOptions = computed<SearchSelectOption<MemberOptionRow>[]>(() => memberOptions.value
   .filter(member => member.account === null)

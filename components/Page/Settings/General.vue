@@ -1,6 +1,6 @@
 <template>
-  <div class="bg-white rounded-xl shadow-lg p-6 space-y-6 col-span-12">
-    <h2 class="text-lg font-semibold">{{ t('settings.general.title') }}</h2>
+  <div class="-mx-6 -mb-6 bg-white p-4 shadow-sm space-y-3 col-span-12 sm:mx-0 sm:space-y-6 sm:rounded-xl sm:p-6 sm:shadow-lg">
+    <h2 class="text-base font-semibold sm:text-lg">{{ t('settings.general.title') }}</h2>
 
     <section class="rounded-xl border border-slate-200 p-4 space-y-3">
       <div>

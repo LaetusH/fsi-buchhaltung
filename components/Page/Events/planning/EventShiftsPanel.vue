@@ -1,5 +1,5 @@
 <template>
-  <section class="rounded-xl bg-white p-4 shadow-lg">
+  <section class="-mx-6 bg-white p-4 shadow-sm sm:mx-0 sm:rounded-xl sm:shadow-lg">
     <div class="flex flex-wrap items-center justify-between gap-3">
       <div>
         <h2 class="text-lg font-semibold">{{ t('event.planning.shifts') }}</h2>

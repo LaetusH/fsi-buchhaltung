@@ -1,5 +1,5 @@
 <template>
-  <section class="col-span-12 overflow-hidden rounded-xl bg-white shadow-lg">
+  <section class="-mx-6 col-span-12 overflow-hidden bg-white shadow-sm sm:mx-0 sm:rounded-xl sm:shadow-lg">
     <div v-if="loading" class="flex items-center justify-center p-8 text-slate-400">
       <Icon name="material-symbols:progress-activity" class="animate-spin text-2xl" />
     </div>

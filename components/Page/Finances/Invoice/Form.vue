@@ -1,6 +1,6 @@
 <template>
   <div class="space-y-6">
-    <section class="bg-white rounded-xl shadow-lg p-4 space-y-4">
+    <section class="-mx-6 bg-white shadow-sm sm:mx-0 sm:rounded-xl sm:shadow-lg p-4 space-y-4">
       <div class="field">
         <label>{{ t('invoice.sourceType') }}</label>
         <div class="grid grid-cols-2 gap-2">
@@ -82,7 +82,7 @@
       </div>
     </section>
 
-    <section class="bg-white rounded-xl shadow-lg p-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+    <section class="-mx-6 bg-white shadow-sm sm:mx-0 sm:rounded-xl sm:shadow-lg p-4 grid grid-cols-1 md:grid-cols-2 gap-4">
       <div class="field">
         <label>{{ t('invoice.invoiceNumber') }}</label>
         <input v-model="form.invoice_number" class="input" :placeholder="invoiceNumberPlaceholder" :disabled="invoiceNumberDisabled">
@@ -109,7 +109,7 @@
       </div>
     </section>
 
-    <section class="bg-white rounded-xl shadow-lg p-4 space-y-3">
+    <section class="-mx-6 bg-white shadow-sm sm:mx-0 sm:rounded-xl sm:shadow-lg p-4 space-y-3">
       <div class="field">
         <label>{{ t('invoice.introText') }}</label>
         <textarea
@@ -133,7 +133,7 @@
       </div>
     </section>
 
-    <section class="bg-white rounded-xl shadow-lg p-4 space-y-4">
+    <section class="-mx-6 bg-white shadow-sm sm:mx-0 sm:rounded-xl sm:shadow-lg p-4 space-y-4">
       <div class="flex items-center justify-between">
         <h3 class="font-semibold">{{ t('invoice.positions') }}</h3>
         <button v-if="!disabled" type="button" class="text-orange-500 font-medium cursor-pointer" @click="addPosition">

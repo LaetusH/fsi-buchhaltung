@@ -1,6 +1,6 @@
 <template>
-  <section class="space-y-4">
-    <div class="rounded-xl bg-white p-4 shadow-lg">
+  <section class="space-y-6">
+    <div class="-mx-6 bg-white p-4 shadow-sm sm:mx-0 sm:rounded-xl sm:shadow-lg">
       <div class="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h2 class="text-lg font-semibold">{{ t('event.planning.tasks') }}</h2>
@@ -159,7 +159,7 @@
         v-for="column in statusColumns"
         :key="column.status"
         :data-column-status="column.status"
-        class="min-h-72 rounded-xl bg-white p-3 shadow-lg"
+        class="-mx-6 min-h-72 min-w-0 bg-white p-3 shadow-sm sm:mx-0 sm:rounded-xl sm:shadow-lg"
       >
         <div class="flex items-center justify-between gap-3 border-b border-slate-200 pb-3">
           <div>

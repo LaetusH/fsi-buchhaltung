@@ -1,5 +1,5 @@
 <template>
-  <section class="rounded-xl bg-white p-4 shadow-lg">
+  <section class="-mx-6 bg-white p-4 shadow-sm sm:mx-0 sm:rounded-xl sm:shadow-lg">
     <div class="flex flex-wrap items-center justify-between gap-3">
       <div>
         <h2 class="text-lg font-semibold">{{ t('event.planning.timeline') }}</h2>
@@ -123,7 +123,7 @@
                 v-for="item in cluster.items"
                 :key="item.id"
                 type="button"
-                class="group flex w-full cursor-pointer flex-col gap-2 rounded-lg border p-3 text-left transition-colors"
+                class="group flex w-full min-w-0 cursor-pointer flex-col gap-2 rounded-lg border p-3 text-left transition-colors"
                 :class="itemCardClass(item, group)"
                 :title="t(kindConfig[item.kind].titleKey)"
                 @click="emit('navigate', kindConfig[item.kind].tab)"

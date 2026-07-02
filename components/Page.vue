@@ -32,7 +32,7 @@
 
     <div
       v-if="$slots.cards"
-      class="grid grid-cols-12 gap-4 xl:gap-6"
+      class="grid grid-cols-12 gap-6"
     >
       <slot name="cards"></slot>
     </div>

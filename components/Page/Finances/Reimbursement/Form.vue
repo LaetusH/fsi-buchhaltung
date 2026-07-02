@@ -1,6 +1,6 @@
 ﻿<template>
   <div class="space-y-6">
-    <section class="bg-white rounded-xl shadow-lg p-4 space-y-4">
+    <section class="-mx-6 bg-white shadow-sm sm:mx-0 sm:rounded-xl sm:shadow-lg p-4 space-y-4">
       <h2 class="text-lg font-semibold">{{ t('reimbursement.data') }}</h2>
 
       <div class="grid grid-cols-2 gap-4">
@@ -55,7 +55,7 @@
       </div>
     </section>
 
-    <section class="bg-white rounded-xl shadow-lg p-4 space-y-3">
+    <section class="-mx-6 bg-white shadow-sm sm:mx-0 sm:rounded-xl sm:shadow-lg p-4 space-y-3">
       <div class="flex items-center justify-between">
         <h3 class="font-semibold">{{ t('reimbursement.receiptsInReimbursement') }}</h3>
         <button v-if="!disabled && canCreateReceipt" type="button" class="btn-primary" @click="createNewReceipt">
@@ -148,7 +148,7 @@
       </div>
     </section>
 
-    <section class="bg-white rounded-xl shadow-lg p-4 space-y-4">
+    <section class="-mx-6 bg-white shadow-sm sm:mx-0 sm:rounded-xl sm:shadow-lg p-4 space-y-4">
       <h2 class="text-lg font-semibold">{{ t('reimbursement.reviewAndPayout') }}</h2>
 
       <div class="grid grid-cols-2 gap-4">

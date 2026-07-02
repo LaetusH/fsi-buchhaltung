@@ -1,7 +1,7 @@
 ﻿<template>
   <Page :headline1="t('financeAnalysis.title')" @open-menu="$emit('openMenu')">
     <template #cards>
-      <section class="bg-white rounded-xl shadow-lg p-4 space-y-4 col-span-12 lg:col-span-4 xl:col-span-3">
+      <section class="-mx-6 bg-white shadow-sm sm:mx-0 sm:rounded-xl sm:shadow-lg p-4 space-y-4 col-span-12 lg:col-span-4 xl:col-span-3">
         <div class="space-y-1">
           <h2 class="text-lg font-semibold">{{ t('financeAnalysis.menuTitle') }}</h2>
         </div>
@@ -255,7 +255,7 @@
         </div>
       </section>
 
-      <section class="bg-white rounded-xl shadow-lg p-4 md:p-6 space-y-6 col-span-12 lg:col-span-8 xl:col-span-9">
+      <section class="-mx-6 -mb-6 bg-white shadow-sm sm:mx-0 sm:rounded-xl sm:shadow-lg lg:mb-0 p-4 md:p-6 space-y-6 col-span-12 lg:col-span-8 xl:col-span-9">
         <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <div class="space-y-1">
             <h2 class="text-lg font-semibold">{{ t('financeAnalysis.analysisTitle') }}</h2>

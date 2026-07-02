@@ -12,6 +12,22 @@ export interface TableColumnConfig<T, K extends string = string> {
   globalSearchable?: boolean
 }
 
+export interface AdvancedTableColumn<T, K extends string = string> extends TableColumnConfig<T, K> {
+  label: string
+  /** Display text for a cell; defaults to String(getValue(row)) with '-' for empty values. */
+  format?: (row: T) => string
+  headerClass?: string
+  cellClass?: string
+  /** Reactively hide the column entirely (e.g. permission-gated columns). */
+  hidden?: boolean
+  /** Placement in the compact mobile row: part of the bold title line, the meta line (default), or omitted. */
+  mobile?: 'title' | 'meta' | 'hidden'
+  /** Prefix the value with the column label in the mobile meta line (for values that are ambiguous on their own). */
+  mobileLabel?: boolean
+  /** Only show this meta-line entry from this breakpoint up (e.g. 'lg' hides it on phones but keeps it on the tablet-width compact view). */
+  mobileMinBreakpoint?: 'lg'
+}
+
 export interface TextColumnFilter {
   type: 'text'
   selected: string[]
@@ -188,15 +204,6 @@ export function useAdvancedTable<T, K extends string>(
     sortDirection.value = null
   }
 
-  function applyGlobalSearch() {
-    globalSearchTerm.value = globalSearchInput.value.trim()
-  }
-
-  function resetGlobalSearch() {
-    globalSearchInput.value = ''
-    globalSearchTerm.value = ''
-  }
-
   watch(globalSearchInput, (value) => {
     globalSearchTerm.value = value.trim()
   })
@@ -282,7 +289,5 @@ export function useAdvancedTable<T, K extends string>(
     setTextFilter,
     setRangeFilter,
     resetFilter,
-    applyGlobalSearch,
-    resetGlobalSearch,
   }
 }
