@@ -295,9 +295,26 @@ CREATE TABLE IF NOT EXISTS event_shift_slots (
   id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
   event_id BIGINT UNSIGNED NOT NULL,
   name VARCHAR(255) NOT NULL,
+  description TEXT NOT NULL DEFAULT '',
   starts_at DATETIME NOT NULL,
   ends_at DATETIME NOT NULL,
   required_people SMALLINT UNSIGNED NOT NULL DEFAULT 1,
+  FOREIGN KEY (event_id) REFERENCES events(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS event_shift_templates (
+  id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  name VARCHAR(255) NOT NULL,
+  description TEXT NOT NULL,
+  required_people SMALLINT UNSIGNED NOT NULL DEFAULT 1
+);
+
+CREATE TABLE IF NOT EXISTS event_shift_type_descriptions (
+  id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  event_id BIGINT UNSIGNED NOT NULL,
+  name_key VARCHAR(255) NOT NULL,
+  description TEXT NOT NULL,
+  UNIQUE KEY unique_event_shift_type (event_id, name_key),
   FOREIGN KEY (event_id) REFERENCES events(id) ON DELETE CASCADE
 );
 

@@ -1,12 +1,20 @@
 import type mariadb from 'mariadb'
 import { query } from '~/server/utils/db'
-import type { EventShiftMember, EventShiftSlot, SaveEventShiftSlot } from '~/types/event'
+import type { EventShiftMember, EventShiftSlot, EventShiftTemplate, EventShiftTypeDescriptions, SaveEventShiftSlot, SaveEventShiftTemplate } from '~/types/event'
 
 interface EventShiftSlotRow {
   id: number
   name: string
+  description: string
   starts_at: string | Date
   ends_at: string | Date
+  required_people: number
+}
+
+interface EventShiftTemplateRow {
+  id: number
+  name: string
+  description: string
   required_people: number
 }
 
@@ -93,6 +101,7 @@ export function normalizeEventShiftSlots(value: unknown): SaveEventShiftSlot[] |
     const requiredPeople = normalizePositiveInteger(raw.required_people ?? raw.requiredPeople)
     const memberIds = normalizeMemberIds(raw.member_ids ?? raw.memberIds)
     const name = String(raw.name ?? '').trim()
+    const description = String(raw.description ?? '').trim()
 
     if (raw.id !== undefined && raw.id !== null && !id) return null
     if (!startsAt || !endsAt || startsAt >= endsAt || !requiredPeople || !memberIds || !name) return null
@@ -100,6 +109,7 @@ export function normalizeEventShiftSlots(value: unknown): SaveEventShiftSlot[] |
     slots.push({
       ...(id ? { id } : {}),
       name,
+      description,
       starts_at: startsAt,
       ends_at: endsAt,
       required_people: requiredPeople,
@@ -108,6 +118,52 @@ export function normalizeEventShiftSlots(value: unknown): SaveEventShiftSlot[] |
   }
 
   return slots
+}
+
+export function normalizeEventShiftTemplates(value: unknown): SaveEventShiftTemplate[] | null {
+  if (!Array.isArray(value)) return null
+
+  const templates: SaveEventShiftTemplate[] = []
+
+  for (const entry of value) {
+    if (!entry || typeof entry !== 'object') return null
+
+    const raw = entry as Record<string, unknown>
+    const id = raw.id === undefined || raw.id === null ? undefined : normalizePositiveInteger(raw.id)
+    const requiredPeople = normalizePositiveInteger(raw.required_people ?? raw.requiredPeople)
+    const name = String(raw.name ?? '').trim()
+    const description = String(raw.description ?? '').trim()
+
+    if (raw.id !== undefined && raw.id !== null && !id) return null
+    if (!name || !requiredPeople) return null
+
+    templates.push({
+      ...(id ? { id } : {}),
+      name,
+      description,
+      required_people: requiredPeople,
+    })
+  }
+
+  return templates
+}
+
+export function normalizeShiftTypeKey(name: string) {
+  return name.trim().toLocaleLowerCase()
+}
+
+export function normalizeEventShiftTypeDescriptions(value: unknown): Record<string, string> | null {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return null
+
+  const entries: Record<string, string> = {}
+
+  for (const [key, rawValue] of Object.entries(value as Record<string, unknown>)) {
+    const nameKey = normalizeShiftTypeKey(key)
+    if (!nameKey) return null
+    entries[nameKey] = String(rawValue ?? '').trim()
+  }
+
+  return entries
 }
 
 export async function eventExists(eventId: number, conn?: mariadb.PoolConnection) {
@@ -138,7 +194,7 @@ export async function loadCurrentMemberIdForUser(userId: number, conn?: mariadb.
 
 export async function loadEventShiftSlots(eventId: number, conn?: mariadb.PoolConnection): Promise<EventShiftSlot[]> {
   const slotRows = await query<EventShiftSlotRow[]>(
-    `SELECT id, name, starts_at, ends_at, required_people
+    `SELECT id, name, description, starts_at, ends_at, required_people
      FROM event_shift_slots
      WHERE event_id = ?
      ORDER BY starts_at, ends_at, name, id`,
@@ -176,11 +232,168 @@ export async function loadEventShiftSlots(eventId: number, conn?: mariadb.PoolCo
   return slotRows.map(row => ({
     id: Number(row.id),
     name: String(row.name),
+    description: String(row.description ?? ''),
     starts_at: formatDateTimeForClient(row.starts_at),
     ends_at: formatDateTimeForClient(row.ends_at),
     required_people: Number(row.required_people),
     members: membersByShift.get(Number(row.id)) ?? [],
   }))
+}
+
+export async function loadEventShiftTemplates(conn?: mariadb.PoolConnection): Promise<EventShiftTemplate[]> {
+  const rows = await query<EventShiftTemplateRow[]>(
+    `SELECT id, name, description, required_people
+     FROM event_shift_templates
+     ORDER BY name, id`,
+    [],
+    conn,
+  )
+
+  return rows.map(row => ({
+    id: Number(row.id),
+    name: String(row.name),
+    description: String(row.description ?? ''),
+    required_people: Number(row.required_people),
+  }))
+}
+
+export async function replaceEventShiftTemplates({
+  templates,
+  conn,
+}: {
+  templates: SaveEventShiftTemplate[]
+  conn: mariadb.PoolConnection
+}) {
+  const existingRows = await query<EventShiftTemplateRow[]>(
+    `SELECT id, name, description, required_people
+     FROM event_shift_templates`,
+    [],
+    conn,
+  )
+  const existingIds = existingRows.map(row => Number(row.id))
+  const existingIdSet = new Set(existingIds)
+  const incomingIds = templates.flatMap(template => template.id ? [template.id] : [])
+
+  if (incomingIds.some(id => !existingIdSet.has(id))) {
+    return 'At least one shift template does not exist'
+  }
+
+  const incomingIdSet = new Set(incomingIds)
+  for (const id of existingIds) {
+    if (incomingIdSet.has(id)) continue
+    await query(
+      `DELETE FROM event_shift_templates
+       WHERE id = ?`,
+      [id],
+      conn,
+    )
+  }
+
+  for (const template of templates) {
+    if (template.id) {
+      const existing = existingRows.find(row => Number(row.id) === template.id)
+      if (
+        existing
+        && (
+          String(existing.name) !== template.name
+          || String(existing.description) !== template.description
+          || Number(existing.required_people) !== template.required_people
+        )
+      ) {
+        await query(
+          `UPDATE event_shift_templates
+           SET name = ?, description = ?, required_people = ?
+           WHERE id = ?`,
+          [template.name, template.description, template.required_people, template.id],
+          conn,
+        )
+      }
+      continue
+    }
+
+    await query(
+      `INSERT INTO event_shift_templates (name, description, required_people)
+       VALUES (?, ?, ?)`,
+      [template.name, template.description, template.required_people],
+      conn,
+    )
+  }
+
+  return null
+}
+
+export async function loadEventShiftTypeDescriptions(eventId: number, conn?: mariadb.PoolConnection): Promise<EventShiftTypeDescriptions> {
+  const rows = await query<{ name_key: string, description: string }[]>(
+    `SELECT name_key, description
+     FROM event_shift_type_descriptions
+     WHERE event_id = ?`,
+    [eventId],
+    conn,
+  )
+
+  const entries: EventShiftTypeDescriptions = {}
+  for (const row of rows) entries[String(row.name_key)] = String(row.description)
+  return entries
+}
+
+export async function replaceEventShiftTypeDescriptions({
+  eventId,
+  entries,
+  conn,
+}: {
+  eventId: number
+  entries: Record<string, string>
+  conn: mariadb.PoolConnection
+}) {
+  const existingRows = await query<{ name_key: string, description: string }[]>(
+    `SELECT name_key, description
+     FROM event_shift_type_descriptions
+     WHERE event_id = ?`,
+    [eventId],
+    conn,
+  )
+  const existingByKey = new Map(existingRows.map(row => [String(row.name_key), String(row.description)]))
+
+  const incomingEntries = Object.entries(entries)
+    .map(([nameKey, description]) => [nameKey, description.trim()] as const)
+    .filter(([, description]) => description)
+  const incomingKeySet = new Set(incomingEntries.map(([nameKey]) => nameKey))
+
+  for (const existingKey of existingByKey.keys()) {
+    if (incomingKeySet.has(existingKey)) continue
+    await query(
+      `DELETE FROM event_shift_type_descriptions
+       WHERE event_id = ? AND name_key = ?`,
+      [eventId, existingKey],
+      conn,
+    )
+  }
+
+  for (const [nameKey, description] of incomingEntries) {
+    const existingDescription = existingByKey.get(nameKey)
+
+    if (existingDescription === undefined) {
+      await query(
+        `INSERT INTO event_shift_type_descriptions (event_id, name_key, description)
+         VALUES (?, ?, ?)`,
+        [eventId, nameKey, description],
+        conn,
+      )
+      continue
+    }
+
+    if (existingDescription === description) continue
+
+    await query(
+      `UPDATE event_shift_type_descriptions
+       SET description = ?
+       WHERE event_id = ? AND name_key = ?`,
+      [description, eventId, nameKey],
+      conn,
+    )
+  }
+
+  return null
 }
 
 export async function validateShiftMembers(memberIds: number[], conn: mariadb.PoolConnection) {
@@ -242,7 +455,7 @@ export async function replaceEventShiftSlots({
   conn: mariadb.PoolConnection
 }) {
   const existingRows = await query<EventShiftSlotRow[]>(
-    `SELECT id, name, starts_at, ends_at, required_people
+    `SELECT id, name, description, starts_at, ends_at, required_people
      FROM event_shift_slots
      WHERE event_id = ?`,
     [eventId],
@@ -282,6 +495,7 @@ export async function replaceEventShiftSlots({
         existing
         && (
           String(existing.name) !== slot.name
+          || String(existing.description ?? '') !== slot.description
           || String(existing.starts_at) !== slot.starts_at
           || String(existing.ends_at) !== slot.ends_at
           || Number(existing.required_people) !== slot.required_people
@@ -289,10 +503,11 @@ export async function replaceEventShiftSlots({
       ) {
         await query(
           `UPDATE event_shift_slots
-           SET name = ?, starts_at = ?, ends_at = ?, required_people = ?
+           SET name = ?, description = ?, starts_at = ?, ends_at = ?, required_people = ?
            WHERE id = ? AND event_id = ?`,
           [
             slot.name,
+            slot.description,
             slot.starts_at,
             slot.ends_at,
             slot.required_people,
@@ -304,11 +519,12 @@ export async function replaceEventShiftSlots({
       }
     } else {
       const result: any = await query(
-        `INSERT INTO event_shift_slots (event_id, name, starts_at, ends_at, required_people)
-         VALUES (?, ?, ?, ?, ?)`,
+        `INSERT INTO event_shift_slots (event_id, name, description, starts_at, ends_at, required_people)
+         VALUES (?, ?, ?, ?, ?, ?)`,
         [
           eventId,
           slot.name,
+          slot.description,
           slot.starts_at,
           slot.ends_at,
           slot.required_people,

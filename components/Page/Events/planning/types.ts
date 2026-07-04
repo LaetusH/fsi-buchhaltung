@@ -53,9 +53,17 @@ export interface PlanningChecklist {
 export interface PlanningShiftSlot {
   id: number
   name: string
+  description: string
   startsAt: string
   endsAt: string
   requiredPeople: number
   memberIds: number[]
   memberQuery: string
+}
+
+export interface PlanningShiftTemplate {
+  id: number
+  name: string
+  description: string
+  requiredPeople: number
 }

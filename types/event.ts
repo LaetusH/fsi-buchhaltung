@@ -143,6 +143,7 @@ export interface EventShiftMember {
 export interface EventShiftSlot {
   id: number
   name: string
+  description: string
   starts_at: string
   ends_at: string
   required_people: number
@@ -152,10 +153,28 @@ export interface EventShiftSlot {
 export interface SaveEventShiftSlot {
   id?: number
   name: string
+  description: string
   starts_at: string
   ends_at: string
   required_people: number
   member_ids: number[]
+}
+
+export interface EventShiftTemplate {
+  id: number
+  name: string
+  description: string
+  required_people: number
+}
+
+/** Shared description for a shift "type" (shifts grouped by normalized name) within one event, keyed by that normalized name. */
+export type EventShiftTypeDescriptions = Record<string, string>
+
+export interface SaveEventShiftTemplate {
+  id?: number
+  name: string
+  description: string
+  required_people: number
 }
 
 export interface EventChecklistItem {

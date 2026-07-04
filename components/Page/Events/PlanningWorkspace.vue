@@ -339,9 +339,12 @@
             <EventShiftsPanel
               v-else-if="activeTab === 'shifts'"
               v-model:slots="shiftSlots"
+              v-model:templates="shiftTemplates"
+              v-model:type-descriptions="shiftTypeDescriptions"
               v-model:permission-mode="shiftPermissionMode"
               :members="members"
               :current-member-id="currentMemberId"
+              :event-id="eventId"
               :event-start-at="form.starts_at"
               :event-end-at="form.ends_at"
               :disabled="!canUseShiftPlanning"
@@ -349,7 +352,10 @@
               :saving="shiftSaving"
               :can-manage="canManageShifts"
               :can-self-signup="canSelfSignup"
+              :can-save-templates="canEdit"
               @save="saveShiftSlots"
+              @save-templates="saveShiftTemplates"
+              @save-type-descriptions="saveShiftTypeDescriptions"
               @assign-self="assignCurrentMemberToShift"
               @remove-self="removeCurrentMemberFromShift"
             />
@@ -510,6 +516,8 @@ const {
 
 const {
   shiftSlots,
+  shiftTemplates,
+  shiftTypeDescriptions,
   shiftPermissionMode,
   currentMemberId,
   shiftLoading,
@@ -518,6 +526,8 @@ const {
   canSelfSignup,
   loadShiftSlots,
   saveShiftSlots,
+  saveShiftTemplates,
+  saveShiftTypeDescriptions,
   assignCurrentMemberToShift,
   removeCurrentMemberFromShift,
   reset: resetShifts,

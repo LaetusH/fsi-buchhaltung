@@ -1,17 +1,21 @@
 import { useI18n } from '~/composables/useI18n'
 import { useToast } from '~/composables/useToast'
-import type { EventShiftSlot as PersistedEventShiftSlot, SaveEventShiftSlot } from '~/types/event'
+import type { EventShiftSlot as PersistedEventShiftSlot, EventShiftTemplate as PersistedEventShiftTemplate, EventShiftTypeDescriptions, SaveEventShiftSlot, SaveEventShiftTemplate } from '~/types/event'
 import type { GetEventShiftsResponse } from '~/server/api/events/[id]/shifts/index.get'
 import type { UpdateEventShiftsResponse } from '~/server/api/events/[id]/shifts/index.put'
+import type { UpdateEventShiftTemplatesResponse } from '~/server/api/events/shift-templates/index.put'
+import type { UpdateEventShiftTypeDescriptionsResponse } from '~/server/api/events/[id]/shifts/type-descriptions.put'
 import type { AddSelfToShiftResponse } from '~/server/api/events/[id]/shifts/[shiftId]/self.post'
 import type { RemoveSelfFromShiftResponse } from '~/server/api/events/[id]/shifts/[shiftId]/self.delete'
-import type { EventShiftPermissionMode, PlanningShiftSlot } from '~/components/Page/Events/planning/types'
+import type { EventShiftPermissionMode, PlanningShiftSlot, PlanningShiftTemplate } from '~/components/Page/Events/planning/types'
 
 export function useEventShifts(eventId: Ref<number | null>) {
   const { t } = useI18n()
   const toast = useToast()
 
   const shiftSlots = ref<PlanningShiftSlot[]>([])
+  const shiftTemplates = ref<PlanningShiftTemplate[]>([])
+  const shiftTypeDescriptions = ref<EventShiftTypeDescriptions>({})
   const shiftPermissionMode = ref<EventShiftPermissionMode>('manage')
   const currentMemberId = ref<number | null>(null)
   const shiftLoading = ref(false)
@@ -23,6 +27,7 @@ export function useEventShifts(eventId: Ref<number | null>) {
     return {
       id: shift.id,
       name: shift.name,
+      description: shift.description,
       startsAt: shift.starts_at,
       endsAt: shift.ends_at,
       requiredPeople: shift.required_people,
@@ -35,10 +40,29 @@ export function useEventShifts(eventId: Ref<number | null>) {
     return {
       ...(shift.id > 0 ? { id: shift.id } : {}),
       name: shift.name,
+      description: shift.description,
       starts_at: shift.startsAt,
       ends_at: shift.endsAt,
       required_people: shift.requiredPeople,
       member_ids: shift.memberIds,
+    }
+  }
+
+  function mapPersistedShiftTemplateToPanel(template: PersistedEventShiftTemplate): PlanningShiftTemplate {
+    return {
+      id: template.id,
+      name: template.name,
+      description: template.description,
+      requiredPeople: template.required_people,
+    }
+  }
+
+  function mapPanelShiftTemplateToPayload(template: PlanningShiftTemplate): SaveEventShiftTemplate {
+    return {
+      ...(template.id > 0 ? { id: template.id } : {}),
+      name: template.name,
+      description: template.description,
+      required_people: template.requiredPeople,
     }
   }
 
@@ -51,6 +75,8 @@ export function useEventShifts(eventId: Ref<number | null>) {
       if (!res.ok) throw new Error(res.error)
 
       shiftSlots.value = res.shifts.map(mapPersistedShiftToPanel)
+      shiftTemplates.value = res.templates.map(mapPersistedShiftTemplateToPanel)
+      shiftTypeDescriptions.value = res.typeDescriptions
       currentMemberId.value = res.currentMemberId
       canManageShifts.value = res.canManageShifts
       canSelfSignup.value = res.canSelfSignup
@@ -79,6 +105,50 @@ export function useEventShifts(eventId: Ref<number | null>) {
     }
     catch (err: any) {
       toast.error(err?.message || t('event.planning.failedSaveShifts'))
+      if (eventId.value) await loadShiftSlots(eventId.value)
+    }
+    finally {
+      shiftSaving.value = false
+    }
+  }
+
+  async function saveShiftTemplates(nextTemplates: PlanningShiftTemplate[]) {
+    if (shiftSaving.value) return
+
+    try {
+      shiftSaving.value = true
+      const res = await $fetch<UpdateEventShiftTemplatesResponse>('/api/events/shift-templates', {
+        method: 'PUT',
+        body: { templates: nextTemplates.map(mapPanelShiftTemplateToPayload) },
+      })
+      if (!res.ok) throw new Error(res.error)
+
+      shiftTemplates.value = res.templates.map(mapPersistedShiftTemplateToPanel)
+    }
+    catch (err: any) {
+      toast.error(err?.message || t('event.planning.failedSaveShiftTemplates'))
+      if (eventId.value) await loadShiftSlots(eventId.value)
+    }
+    finally {
+      shiftSaving.value = false
+    }
+  }
+
+  async function saveShiftTypeDescriptions(nextEntries: EventShiftTypeDescriptions) {
+    if (!eventId.value || shiftSaving.value) return
+
+    try {
+      shiftSaving.value = true
+      const res = await $fetch<UpdateEventShiftTypeDescriptionsResponse>(`/api/events/${eventId.value}/shifts/type-descriptions`, {
+        method: 'PUT',
+        body: { entries: nextEntries },
+      })
+      if (!res.ok) throw new Error(res.error)
+
+      shiftTypeDescriptions.value = res.typeDescriptions
+    }
+    catch (err: any) {
+      toast.error(err?.message || t('event.planning.failedSaveShiftTypeDescriptions'))
       if (eventId.value) await loadShiftSlots(eventId.value)
     }
     finally {
@@ -128,6 +198,8 @@ export function useEventShifts(eventId: Ref<number | null>) {
 
   function reset() {
     shiftSlots.value = []
+    shiftTemplates.value = []
+    shiftTypeDescriptions.value = {}
     currentMemberId.value = null
     canManageShifts.value = false
     canSelfSignup.value = false
@@ -135,6 +207,8 @@ export function useEventShifts(eventId: Ref<number | null>) {
 
   return {
     shiftSlots,
+    shiftTemplates,
+    shiftTypeDescriptions,
     shiftPermissionMode,
     currentMemberId,
     shiftLoading,
@@ -143,6 +217,8 @@ export function useEventShifts(eventId: Ref<number | null>) {
     canSelfSignup,
     loadShiftSlots,
     saveShiftSlots,
+    saveShiftTemplates,
+    saveShiftTypeDescriptions,
     assignCurrentMemberToShift,
     removeCurrentMemberFromShift,
     reset,

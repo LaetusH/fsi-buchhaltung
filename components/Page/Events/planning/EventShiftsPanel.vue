@@ -6,11 +6,11 @@
         <p class="text-sm text-slate-500">{{ shiftModeHint }}</p>
       </div>
 
-      <div class="flex flex-wrap items-center justify-end gap-2">
-        <div v-if="canManage" class="inline-flex rounded-lg bg-slate-100 p-1">
+      <div class="flex w-full flex-wrap items-center gap-2 sm:w-auto sm:justify-end">
+        <div v-if="canManage" class="flex w-full rounded-lg bg-slate-100 p-1 sm:inline-flex sm:w-auto">
           <button
             type="button"
-            class="rounded-md px-3 py-1.5 text-sm font-medium cursor-pointer"
+            class="flex-1 rounded-md px-3 py-1.5 text-sm font-medium cursor-pointer sm:flex-none"
             :class="permissionMode === 'own' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-600'"
             @click="permissionMode = 'own'"
           >
@@ -18,7 +18,7 @@
           </button>
           <button
             type="button"
-            class="rounded-md px-3 py-1.5 text-sm font-medium cursor-pointer"
+            class="flex-1 rounded-md px-3 py-1.5 text-sm font-medium cursor-pointer sm:flex-none"
             :class="permissionMode === 'manage' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-600'"
             @click="permissionMode = 'manage'"
           >
@@ -28,7 +28,7 @@
 
         <button
           type="button"
-          class="inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1.5 text-sm font-medium cursor-pointer"
+          class="inline-flex flex-1 items-center justify-center gap-1.5 rounded-md border px-2.5 py-1.5 text-sm font-medium cursor-pointer sm:flex-none"
           :class="showUnderstaffedOnly ? 'border-amber-300 bg-amber-50 text-amber-800' : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'"
           :disabled="loading"
           @click="showUnderstaffedOnly = !showUnderstaffedOnly"
@@ -38,13 +38,22 @@
         </button>
         <button
           type="button"
-          class="inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1.5 text-sm font-medium cursor-pointer"
+          class="inline-flex flex-1 items-center justify-center gap-1.5 rounded-md border px-2.5 py-1.5 text-sm font-medium cursor-pointer sm:flex-none"
           :class="showMyShiftsOnly ? 'border-sky-300 bg-sky-50 text-sky-800' : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'"
           :disabled="loading"
           @click="showMyShiftsOnly = !showMyShiftsOnly"
         >
           <Icon name="material-symbols:person-rounded" />
           {{ t('event.planning.showMyShiftsOnly') }}
+        </button>
+        <button
+          type="button"
+          class="btn-secondary inline-flex flex-1 items-center justify-center gap-1.5 py-1.5 disabled:opacity-60 sm:flex-none h-8.5"
+          :disabled="loading || !eventId"
+          @click="pdfExportOpen = true"
+        >
+          <Icon name="material-symbols:download-rounded" />
+          {{ t('event.planning.exportShiftPlanPdf') }}
         </button>
       </div>
     </div>
@@ -98,6 +107,39 @@
           <Icon name="material-symbols:add-rounded" />
           {{ t('event.planning.addShift') }}
         </button>
+        <div v-if="!newShiftMatchesExistingType" class="sm:col-span-4 lg:col-span-3 xl:col-span-full">
+          <label class="text-xs font-medium text-slate-500">{{ t('event.planning.shiftDescription') }}</label>
+          <textarea
+            v-model="newShift.description"
+            class="input mt-1 min-h-16"
+            :placeholder="t('event.planning.shiftTypeDescriptionPlaceholder')"
+            :disabled="disabled || saving"
+          />
+        </div>
+      </div>
+
+      <div class="mt-3 flex flex-wrap items-center gap-2">
+        <button
+          type="button"
+          class="btn-secondary inline-flex items-center gap-2"
+          :disabled="disabled || saving || shiftTemplates.length === 0"
+          @click="templateBrowserOpen = true"
+        >
+          <Icon name="material-symbols:folder-open-rounded" />
+          {{ t('event.planning.openShiftTemplates') }}
+          <span class="rounded bg-white px-1.5 py-0.5 text-xs text-slate-600">{{ shiftTemplates.length }}</span>
+        </button>
+        <button
+          v-if="canSaveTemplates"
+          type="button"
+          class="inline-flex items-center gap-2 rounded-md border px-3 py-2 text-sm font-medium disabled:opacity-60 not-disabled:cursor-pointer disabled:cursor-not-allowed"
+          :class="newShiftIsSavedAsTemplate ? 'border-emerald-200 bg-emerald-50 text-emerald-700' : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50'"
+          :disabled="disabled || saving || !newShift.name.trim() || newShiftIsSavedAsTemplate"
+          @click="saveNewShiftAsTemplate"
+        >
+          <Icon name="material-symbols:bookmark-add-rounded" />
+          {{ newShiftIsSavedAsTemplate ? t('event.planning.savedAsTemplate') : t('event.planning.saveAsTemplate') }}
+        </button>
       </div>
     </div>
 
@@ -118,31 +160,71 @@
         <div class="event-shift-scroll overflow-x-auto overscroll-x-none">
           <div class="min-w-full" :style="section.timetableStyle">
             <div class="grid border-y border-slate-200 bg-slate-100 text-xs font-semibold uppercase text-slate-500" :style="section.timetableStyle">
-              <span class="sticky left-0 z-20 bg-slate-100 px-3 py-2 shadow-[2px_0_0_rgba(226,232,240,0.9)]">{{ t('event.planning.timeBlock') }}</span>
+              <span class="sticky left-0 z-20 bg-slate-100 px-2 py-2 shadow-[2px_0_0_rgba(226,232,240,0.9)] sm:px-3">{{ t('event.planning.timeBlock') }}</span>
               <div
                 v-for="column in section.columns"
                 :key="column.key"
                 class="min-w-0 border-l border-slate-200 px-2 py-1.5"
               >
+                <div class="flex items-start gap-1">
+                  <button
+                    type="button"
+                    class="flex min-w-0 flex-1 gap-2 rounded px-1 py-0.5 text-left hover:bg-white cursor-pointer"
+                    :class="column.collapsed ? 'min-h-12 flex-col items-stretch justify-between' : 'items-center justify-between'"
+                    :title="column.collapsed ? t('event.planning.expandShiftColumn') : t('event.planning.collapseShiftColumn')"
+                    @click="toggleColumn(section.key, column.key)"
+                  >
+                    <span class="min-w-0 w-full">
+                      <span class="flex min-w-0 items-center gap-1">
+                        <span class="block min-w-0 truncate" :class="column.collapsed ? 'text-[0.7rem] leading-tight' : ''">{{ column.label }}</span>
+                        <Icon :name="column.collapsed ? 'material-symbols:unfold-more-rounded' : 'material-symbols:unfold-less-rounded'" class="shrink-0 text-base" />
+                      </span>
+                      <span class="block truncate text-[0.65rem] normal-case" :class="column.hasUnderstaffed ? 'text-amber-700' : 'text-emerald-700'">
+                        {{ t('event.planning.staffedCount', { current: column.assignedPeople, required: column.requiredPeople }) }}
+                      </span>
+                    </span>
+                  </button>
+                  <button
+                    v-if="!column.collapsed && canEditShiftDetails"
+                    type="button"
+                    class="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-md border disabled:opacity-60 cursor-pointer"
+                    :class="isColumnDescriptionExpanded(column.key) ? 'border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100' : (typeDescriptionValue(column.key) ? 'border-sky-200 bg-sky-50 text-sky-700 hover:bg-sky-100' : 'border-slate-200 bg-white text-slate-500 hover:bg-slate-100')"
+                    :disabled="disabled || saving"
+                    :title="isColumnDescriptionExpanded(column.key) ? t('actions.save') : t('event.planning.editShiftDescription')"
+                    @click="isColumnDescriptionExpanded(column.key) ? commitAndCloseColumnDescription(column.key) : toggleColumnDescription(column.key)"
+                  >
+                    <Icon :name="isColumnDescriptionExpanded(column.key) ? 'material-symbols:save-rounded' : 'material-symbols:sticky-note-2-outline-rounded'" class="text-sm" />
+                  </button>
+                </div>
+                <textarea
+                  v-if="!column.collapsed && canEditShiftDetails && isColumnDescriptionExpanded(column.key)"
+                  :value="columnDescriptionInputValue(column.key)"
+                  class="input mt-1 min-h-10 w-full py-1 text-[0.65rem] font-normal normal-case"
+                  :placeholder="t('event.planning.shiftTypeDescriptionPlaceholder')"
+                  :disabled="disabled || saving"
+                  @focus="startColumnDescriptionEdit(column.key)"
+                  @input="setColumnDescriptionDraft(column.key, ($event.target as HTMLTextAreaElement).value)"
+                />
                 <button
+                  v-else-if="!column.collapsed && columnDescriptionOverflows(typeDescriptionValue(column.key))"
                   type="button"
-                  class="flex w-full gap-2 rounded px-1 py-0.5 text-left hover:bg-white cursor-pointer"
-                  :class="column.collapsed ? 'min-h-12 flex-col items-stretch justify-between' : 'items-center justify-between'"
-                  :title="column.collapsed ? t('event.planning.expandShiftColumn') : t('event.planning.collapseShiftColumn')"
-                  @click="toggleColumn(section.key, column.key)"
+                  class="mt-1 flex w-full items-start gap-1 text-left text-[0.65rem] font-normal normal-case text-slate-500 cursor-pointer"
+                  @click="toggleColumnTextExpanded(column.key)"
                 >
-                  <span class="min-w-0 w-full">
-                    <span class="flex min-w-0 items-center gap-1">
-                      <span class="block min-w-0 truncate" :class="column.collapsed ? 'text-[0.7rem] leading-tight' : ''">{{ column.label }}</span>
-                      <Icon :name="column.collapsed ? 'material-symbols:unfold-more-rounded' : 'material-symbols:unfold-less-rounded'" class="shrink-0 text-base" />
-                    </span>
-                    <span class="block truncate text-[0.65rem] normal-case" :class="column.hasUnderstaffed ? 'text-amber-700' : 'text-emerald-700'">
-                      {{ t('event.planning.staffedCount', { current: column.assignedPeople, required: column.requiredPeople }) }}
-                    </span>
-                  </span>
+                  <span :class="isColumnTextExpanded(column.key) ? '' : 'line-clamp-2'">{{ typeDescriptionValue(column.key) }}</span>
+                  <Icon
+                    :name="isColumnTextExpanded(column.key) ? 'material-symbols:expand-less-rounded' : 'material-symbols:expand-more-rounded'"
+                    class="mt-0.5 shrink-0 text-sm text-slate-400"
+                  />
                 </button>
+                <p
+                  v-else-if="!column.collapsed && typeDescriptionValue(column.key)"
+                  class="mt-1 text-[0.65rem] font-normal normal-case text-slate-500"
+                >
+                  {{ typeDescriptionValue(column.key) }}
+                </p>
               </div>
-              <span class="sticky right-0 z-20 bg-slate-100 px-3 py-2 text-right shadow-[-2px_0_0_rgba(226,232,240,0.9)]" aria-hidden="true" />
+              <span v-if="showManageRail" class="sticky right-0 z-20 bg-slate-100 px-3 py-2 text-right shadow-[-2px_0_0_rgba(226,232,240,0.9)]" aria-hidden="true" />
             </div>
 
             <div class="divide-y divide-slate-200">
@@ -153,7 +235,7 @@
                 :class="section.rowClass"
                 :style="section.timetableStyle"
               >
-                <div class="sticky left-0 z-10 px-3 py-1.5 shadow-[2px_0_0_rgba(226,232,240,0.8)]" :class="section.rowClass">
+                <div class="sticky left-0 z-10 px-2 py-1.5 shadow-[2px_0_0_rgba(226,232,240,0.8)] sm:px-3" :class="section.rowClass">
                   <p class="text-sm font-semibold text-slate-900">{{ group.label }}</p>
                   <p class="text-[0.7rem] text-slate-500">{{ t('event.planning.parallelShiftCount', { count: group.shifts.length }) }}</p>
                 </div>
@@ -163,7 +245,7 @@
                     v-for="shift in shiftsForColumn(group, column.key)"
                     :key="shift.id"
                     class="rounded-md border border-slate-200 bg-slate-50 p-1.5"
-                    :class="shiftStateClass(shift)"
+                    :class="[shiftStateClass(shift), shiftHighlightClass(shift)]"
                   >
                     <div v-if="column.collapsed" class="flex items-center justify-between gap-1">
                       <span class="text-[0.7rem] font-bold" :class="staffingClass(shift)">
@@ -177,16 +259,22 @@
                     </div>
                     <div v-else class="space-y-1">
                       <div class="grid grid-cols-[minmax(0,1fr)_auto_auto] items-start gap-2">
-                        <div class="min-w-0">
+                        <div class="flex min-w-0 items-center gap-1">
+                          <Icon
+                            v-if="permissionMode === 'own' && isOwnShift(shift)"
+                            name="material-symbols:person-pin-circle-rounded"
+                            class="shrink-0 text-base text-sky-600"
+                            :title="t('event.planning.yourShift')"
+                          />
                           <input
                             v-if="canManageShift(shift)"
                             :value="shiftNameInputValue(shift)"
-                            class="input h-7 py-0.5 text-sm font-medium"
+                            class="input h-7 min-w-0 flex-1 py-0.5 text-sm font-medium"
                             @focus="startShiftNameEdit(shift)"
                             @input="setShiftNameDraft(shift.id, ($event.target as HTMLInputElement).value)"
                             @blur="commitShiftName(shift)"
                           >
-                          <p v-else class="truncate text-sm font-semibold text-slate-800">{{ shift.name }}</p>
+                          <p v-else class="min-w-0 flex-1 truncate text-sm font-semibold text-slate-800">{{ shift.name }}</p>
                         </div>
 
                         <div class="flex items-center gap-0.5 text-sm font-bold" :class="staffingClass(shift)">
@@ -218,33 +306,52 @@
                             <Icon name="material-symbols:person-add-rounded" />
                           </button>
                           <button
-                            v-if="permissionMode === 'manage'"
+                            v-if="canManageShift(shift) && isDescriptionExpanded(shift.id)"
                             type="button"
-                            class="inline-flex h-7 w-7 items-center justify-center rounded-md border border-red-200 bg-red-100 text-red-700 hover:bg-red-200 disabled:opacity-60 cursor-pointer"
+                            class="inline-flex h-7 w-7 items-center justify-center rounded-md border border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 disabled:opacity-60 cursor-pointer"
                             :disabled="disabled || saving"
-                            :title="t('actions.remove')"
-                            @click="removeShift(shift.id)"
+                            :title="t('actions.save')"
+                            @click="commitAndCloseShiftDescription(shift)"
                           >
-                            <Icon name="material-symbols:delete-rounded" />
+                            <Icon name="material-symbols:save-rounded" />
+                          </button>
+                          <button
+                            type="button"
+                            class="inline-flex h-7 w-7 items-center justify-center rounded-md border border-slate-200 bg-white text-slate-600 hover:bg-slate-100 cursor-pointer sm:hidden"
+                            :title="isShiftDetailsExpanded(shift.id) ? t('event.planning.hideShiftDetails') : t('event.planning.showShiftDetails')"
+                            @click="toggleShiftDetails(shift.id)"
+                          >
+                            <Icon :name="isShiftDetailsExpanded(shift.id) ? 'material-symbols:expand-less-rounded' : 'material-symbols:expand-more-rounded'" />
+                          </button>
+                          <button
+                            v-if="canManageShift(shift)"
+                            type="button"
+                            data-shift-menu
+                            class="inline-flex h-7 w-7 items-center justify-center rounded-md border disabled:opacity-60 cursor-pointer"
+                            :class="openShiftMenuId === shift.id ? 'border-slate-300 bg-slate-100 text-slate-700' : 'border-slate-200 bg-white text-slate-500 hover:bg-slate-100'"
+                            :disabled="disabled || saving"
+                            :title="t('actions.more')"
+                            @click="toggleShiftMenu(shift.id, $event)"
+                          >
+                            <Icon name="material-symbols:more-vert" />
                           </button>
                         </div>
                       </div>
 
-                      <div class="space-y-1">
-                        <div class="flex min-h-6 items-center justify-between gap-2 sm:hidden">
-                          <span class="text-[0.7rem] font-medium text-slate-600">
-                            {{ t('event.planning.staffedCount', { current: shift.memberIds.length, required: shift.requiredPeople }) }}
-                          </span>
-                          <button
-                            type="button"
-                            class="inline-flex h-6 w-6 items-center justify-center rounded border border-slate-200 bg-white text-slate-600 hover:bg-slate-100 cursor-pointer"
-                            :title="isMembersExpanded(shift.id) ? t('event.planning.hideAssignedMembers') : t('event.planning.showAssignedMembers')"
-                            @click="toggleMembers(shift.id)"
-                          >
-                            <Icon :name="isMembersExpanded(shift.id) ? 'material-symbols:expand-less-rounded' : 'material-symbols:expand-more-rounded'" />
-                          </button>
-                        </div>
+                      <textarea
+                        v-if="canManageShift(shift) && isDescriptionExpanded(shift.id)"
+                        :value="shiftDescriptionInputValue(shift)"
+                        class="input min-h-14 w-full py-1 text-xs"
+                        :placeholder="t('event.planning.shiftDescriptionPlaceholder')"
+                        @focus="startShiftDescriptionEdit(shift)"
+                        @input="setShiftDescriptionDraft(shift.id, ($event.target as HTMLTextAreaElement).value)"
+                      />
+                      <template v-else-if="shiftOwnDescription(shift)">
+                        <p class="hidden whitespace-pre-line text-xs text-slate-600 sm:block">{{ shiftOwnDescription(shift) }}</p>
+                        <p v-if="isShiftDetailsExpanded(shift.id)" class="whitespace-pre-line text-xs text-slate-600 sm:hidden">{{ shiftOwnDescription(shift) }}</p>
+                      </template>
 
+                      <div class="space-y-1">
                         <div class="hidden min-h-6 flex-wrap gap-1 sm:flex">
                           <span v-if="shift.memberIds.length === 0" class="rounded border border-dashed border-slate-300 bg-white px-1.5 py-0.5 text-[0.7rem] font-medium text-slate-500">
                             {{ t('event.planning.unassigned') }}
@@ -267,7 +374,7 @@
                           </span>
                         </div>
 
-                        <div v-if="isMembersExpanded(shift.id)" class="flex min-h-6 flex-wrap gap-1 sm:hidden">
+                        <div v-if="isShiftDetailsExpanded(shift.id)" class="flex min-h-6 flex-wrap gap-1 sm:hidden">
                           <span v-if="shift.memberIds.length === 0" class="rounded border border-dashed border-slate-300 bg-white px-1.5 py-0.5 text-[0.7rem] font-medium text-slate-500">
                             {{ t('event.planning.unassigned') }}
                           </span>
@@ -306,9 +413,8 @@
                   </div>
                 </div>
 
-                <div class="sticky right-0 z-10 flex justify-end px-3 py-1.5 shadow-[-2px_0_0_rgba(226,232,240,0.8)]" :class="section.rowClass">
+                <div v-if="showManageRail" class="sticky right-0 z-10 flex justify-end px-3 py-1.5 shadow-[-2px_0_0_rgba(226,232,240,0.8)]" :class="section.rowClass">
                   <button
-                    v-if="permissionMode === 'manage'"
                     type="button"
                     class="inline-flex h-8 w-8 items-center justify-center rounded-md bg-slate-100 text-slate-600 hover:bg-slate-200 disabled:opacity-60 cursor-pointer"
                     :disabled="disabled || saving"
@@ -331,14 +437,127 @@
         {{ t('event.planning.noMatchingShifts') }}
       </div>
     </div>
+
+    <Teleport to="body">
+      <div
+        v-if="shiftMenuShift && shiftMenuPosition"
+        data-shift-menu
+        class="fixed z-50 w-52 overflow-hidden rounded-lg border border-slate-200 bg-white py-1.5 shadow-xl"
+        :style="{ top: `${shiftMenuPosition.top}px`, left: `${shiftMenuPosition.left}px` }"
+      >
+        <button
+          type="button"
+          class="flex w-full items-center gap-2.5 px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-50 disabled:opacity-60 cursor-pointer"
+          :disabled="disabled || saving"
+          @click="openShiftDescriptionEditor(shiftMenuShift.id)"
+        >
+          <Icon name="material-symbols:sticky-note-2-outline-rounded" class="shrink-0 text-base text-slate-400" />
+          {{ t('event.planning.editShiftDescription') }}
+        </button>
+        <button
+          v-if="canSaveTemplates"
+          type="button"
+          class="flex w-full items-center gap-2.5 px-3 py-2 text-left text-sm disabled:opacity-60"
+          :class="isShiftSavedAsTemplate(shiftMenuShift) ? 'text-emerald-600 cursor-not-allowed' : 'text-slate-700 hover:bg-slate-50 cursor-pointer'"
+          :disabled="disabled || saving || isShiftSavedAsTemplate(shiftMenuShift)"
+          @click="saveShiftAsTemplate(shiftMenuShift); closeShiftMenu()"
+        >
+          <Icon name="material-symbols:bookmark-add-rounded" class="shrink-0 text-base" :class="isShiftSavedAsTemplate(shiftMenuShift) ? 'text-emerald-500' : 'text-slate-400'" />
+          {{ isShiftSavedAsTemplate(shiftMenuShift) ? t('event.planning.savedAsTemplate') : t('event.planning.saveAsTemplate') }}
+        </button>
+        <div class="my-1 border-t border-slate-100" />
+        <button
+          type="button"
+          class="flex w-full items-center gap-2.5 px-3 py-2 text-left text-sm text-red-600 hover:bg-red-50 disabled:opacity-60 cursor-pointer"
+          :disabled="disabled || saving"
+          @click="removeShift(shiftMenuShift.id); closeShiftMenu()"
+        >
+          <Icon name="material-symbols:delete-rounded" class="shrink-0 text-base" />
+          {{ t('actions.remove') }}
+        </button>
+      </div>
+    </Teleport>
+
+    <CommonModal v-model="templateBrowserOpen" :title="t('event.planning.shiftTemplates')" width-class="max-w-lg">
+      <p class="text-sm text-slate-500">{{ t('event.planning.shiftTemplateBrowserHint') }}</p>
+      <div class="space-y-2">
+        <article
+          v-for="template in shiftTemplates"
+          :key="template.id"
+          class="rounded-lg border border-slate-200 bg-slate-50 p-3"
+        >
+          <div class="flex items-start gap-2">
+            <button
+              type="button"
+              class="min-w-0 flex-1 text-left cursor-pointer"
+              :disabled="disabled || saving"
+              @click="applyTemplate(template)"
+            >
+              <span class="flex items-start justify-between gap-3">
+                <span class="min-w-0">
+                  <span class="block truncate text-sm font-semibold text-slate-900">{{ template.name }}</span>
+                  <span class="mt-0.5 block line-clamp-2 text-xs text-slate-500">{{ template.description || t('event.planning.noShiftDescription') }}</span>
+                </span>
+                <span class="inline-flex shrink-0 items-center gap-1 rounded-md bg-white px-2 py-1 text-xs font-semibold text-slate-600">
+                  <Icon name="material-symbols:group-rounded" />
+                  {{ template.requiredPeople }}
+                </span>
+              </span>
+            </button>
+            <button
+              v-if="canSaveTemplates"
+              type="button"
+              class="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-red-200 bg-red-50 text-red-700 hover:bg-red-100 disabled:opacity-60 cursor-pointer"
+              :disabled="disabled || saving"
+              :title="t('actions.remove')"
+              @click="removeTemplate(template.id)"
+            >
+              <Icon name="material-symbols:delete-rounded" class="text-base" />
+            </button>
+          </div>
+        </article>
+
+        <p v-if="shiftTemplates.length === 0" class="rounded-lg border border-dashed border-slate-300 p-3 text-sm text-slate-500">
+          {{ t('event.planning.noShiftTemplates') }}
+        </p>
+      </div>
+    </CommonModal>
+
+    <CommonModal v-model="pdfExportOpen" :title="t('event.planning.exportShiftPlanPdf')">
+      <p class="text-sm text-slate-500">{{ t('event.planning.exportShiftPlanPdfHint') }}</p>
+      <p v-if="permissionMode === 'own'" class="flex items-center gap-1.5 text-sm text-sky-700">
+        <Icon name="material-symbols:person-pin-circle-rounded" class="text-base" />
+        {{ t('event.planning.exportHighlightsOwnShifts') }}
+      </p>
+      <label class="flex cursor-pointer items-center gap-2 text-sm text-slate-700">
+        <input v-model="pdfIncludeDescriptions" type="checkbox" class="checkbox">
+        {{ t('event.planning.exportWithDescriptions') }}
+      </label>
+      <template #footer>
+        <button type="button" class="btn-secondary" :disabled="pdfDownloading" @click="pdfExportOpen = false">
+          {{ t('actions.cancel') }}
+        </button>
+        <button
+          type="button"
+          class="btn-primary inline-flex items-center gap-2"
+          :disabled="pdfDownloading || !eventId"
+          @click="exportShiftPlanPdf"
+        >
+          <Icon name="material-symbols:download-rounded" />
+          {{ t('event.planning.downloadShiftPlanPdf') }}
+        </button>
+      </template>
+    </CommonModal>
   </section>
 </template>
 
 <script setup lang="ts">
 import type { SearchSelectOption } from '~/components/Common/SearchSelect.vue'
 import { useI18n } from '~/composables/useI18n'
-import type { EventMemberOption } from '~/types/event'
-import type { EventShiftPermissionMode, PlanningShiftSlot } from './types'
+import { useToast } from '~/composables/useToast'
+import { downloadShiftPlanPdf } from '~/utils/shiftPlanPdfDownload'
+import type { EventShiftTypeDescriptions, EventMemberOption } from '~/types/event'
+import type { EventShiftPermissionMode, PlanningShiftSlot, PlanningShiftTemplate } from './types'
 
 type TimetableSectionKey = 'before' | 'during' | 'after'
 type ShiftColumn = {
@@ -354,6 +573,7 @@ type ShiftColumn = {
 const props = defineProps<{
   members: EventMemberOption[]
   currentMemberId: number | null
+  eventId?: number | null
   eventStartAt?: string
   eventEndAt?: string
   disabled?: boolean
@@ -361,20 +581,27 @@ const props = defineProps<{
   saving?: boolean
   canManage?: boolean
   canSelfSignup?: boolean
+  canSaveTemplates?: boolean
 }>()
 
 const emit = defineEmits<{
   (e: 'save', value: PlanningShiftSlot[]): void
+  (e: 'save-templates', value: PlanningShiftTemplate[]): void
+  (e: 'save-type-descriptions', value: EventShiftTypeDescriptions): void
   (e: 'assign-self', shiftId: number): void
   (e: 'remove-self', shiftId: number): void
 }>()
 
 const slots = defineModel<PlanningShiftSlot[]>('slots', { required: true })
+const shiftTemplates = defineModel<PlanningShiftTemplate[]>('templates', { required: true })
+const shiftTypeDescriptions = defineModel<EventShiftTypeDescriptions>('typeDescriptions', { required: true })
 const permissionMode = defineModel<EventShiftPermissionMode>('permissionMode', { required: true })
 const { t } = useI18n()
+const toast = useToast()
 
 const newShift = reactive({
   name: t('event.planning.newShift'),
+  description: '',
   startsAt: '',
   endsAt: '',
   requiredPeople: '1',
@@ -382,19 +609,82 @@ const newShift = reactive({
 })
 const showUnderstaffedOnly = ref(false)
 const showMyShiftsOnly = ref(false)
-const collapsedColumnKeys = ref(new Set<string>())
-const expandedMemberShiftIds = ref(new Set<number>())
+const isNarrowViewport = ref(false)
+const columnCollapsedOverrides = ref<Record<string, boolean>>({})
+const expandedShiftDetailsIds = ref(new Set<number>())
+const expandedDescriptionShiftIds = ref(new Set<number>())
+const expandedColumnDescriptionKeys = ref(new Set<string>())
+const expandedColumnTextKeys = ref(new Set<string>())
 const shiftNameDrafts = ref<Record<number, string>>({})
+const shiftDescriptionDrafts = ref<Record<number, string>>({})
 const requiredPeopleDrafts = ref<Record<number, string>>({})
+const columnDescriptionDrafts = ref<Record<string, string>>({})
 const nextTemporaryShiftId = ref(-1)
+const nextTemplateId = ref(-1)
+const templateBrowserOpen = ref(false)
+const openShiftMenuId = ref<number | null>(null)
+const shiftMenuPosition = ref<{ top: number, left: number } | null>(null)
+const pdfExportOpen = ref(false)
+const pdfIncludeDescriptions = ref(true)
+const pdfDownloading = ref(false)
 
 const loading = computed(() => Boolean(props.loading))
 const saving = computed(() => Boolean(props.saving))
 const canManage = computed(() => Boolean(props.canManage))
 const canSelfSignup = computed(() => Boolean(props.canSelfSignup))
+const canSaveTemplates = computed(() => Boolean(props.canSaveTemplates))
+const eventId = computed(() => props.eventId ?? null)
+const showManageRail = computed(() => canManage.value && permissionMode.value === 'manage')
+const newShiftNameKey = computed(() => normalizeShiftColumnKey(newShift.name))
+const newShiftMatchesExistingType = computed(() => {
+  const key = newShiftNameKey.value
+  if (!key) return false
+  return slots.value.some(shift => normalizeShiftColumnKey(shift.name) === key)
+})
+const newShiftIsSavedAsTemplate = computed(() => isTemplateContentSaved({
+  name: newShift.name,
+  description: newShiftMatchesExistingType.value ? typeDescriptionValue(newShiftNameKey.value) : newShift.description,
+  requiredPeople: parseRequiredPeople(newShift.requiredPeople),
+}))
 const shiftModeHint = computed(() => permissionMode.value === 'own'
   ? t('event.planning.shiftSelfSignupHint')
   : t('event.planning.shiftManageHint'))
+
+let narrowViewportQuery: MediaQueryList | null = null
+function updateNarrowViewport() {
+  isNarrowViewport.value = narrowViewportQuery?.matches ?? false
+}
+
+function handleWindowClickForShiftMenu(event: MouseEvent) {
+  if (openShiftMenuId.value === null) return
+  const target = event.target as HTMLElement | null
+  if (target?.closest('[data-shift-menu]')) return
+  closeShiftMenu()
+}
+
+function handleScrollForShiftMenu(event: Event) {
+  if (openShiftMenuId.value === null) return
+  const target = event.target as HTMLElement | null
+  if (target?.closest?.('[data-shift-menu]')) return
+  closeShiftMenu()
+}
+
+onMounted(() => {
+  if (typeof window === 'undefined') return
+  narrowViewportQuery = window.matchMedia('(max-width: 639px)')
+  updateNarrowViewport()
+  narrowViewportQuery.addEventListener('change', updateNarrowViewport)
+  window.addEventListener('click', handleWindowClickForShiftMenu)
+  window.addEventListener('scroll', handleScrollForShiftMenu, true)
+  window.addEventListener('resize', closeShiftMenu)
+})
+
+onBeforeUnmount(() => {
+  narrowViewportQuery?.removeEventListener('change', updateNarrowViewport)
+  window.removeEventListener('click', handleWindowClickForShiftMenu)
+  window.removeEventListener('scroll', handleScrollForShiftMenu, true)
+  window.removeEventListener('resize', closeShiftMenu)
+})
 
 const currentMemberOption = computed(() => props.currentMemberId
   ? props.members.find(member => member.id === props.currentMemberId) ?? null
@@ -478,6 +768,7 @@ const timetableSections = computed(() => {
       const columns = buildShiftColumns(section.key, sectionShifts)
       const groups = buildTimeGroups(sectionShifts)
       const columnWidth = columns.map(column => column.collapsed ? '6rem' : 'minmax(15rem, 1fr)').join(' ') || 'minmax(15rem, 1fr)'
+      const railWidth = showManageRail.value ? ' 3rem' : ''
 
       return {
         ...section,
@@ -485,8 +776,8 @@ const timetableSections = computed(() => {
         columns,
         groups,
         timetableStyle: {
-          gridTemplateColumns: `8rem ${columnWidth} 3rem`,
-          minWidth: `calc(11rem + ${columns.reduce((total, column) => total + (column.collapsed ? 6 : 15), 0)}rem)`,
+          gridTemplateColumns: `var(--shift-time-col, 8rem) ${columnWidth}${railWidth}`,
+          minWidth: `calc(var(--shift-time-col, 8rem)${showManageRail.value ? ' + 3rem' : ''} + ${columns.reduce((total, column) => total + (column.collapsed ? 6 : 15), 0)}rem)`,
         },
       }
     })
@@ -562,28 +853,24 @@ function columnStateKey(sectionKey: string, columnKey: string) {
 }
 
 function isColumnCollapsed(sectionKey: string, columnKey: string) {
-  return collapsedColumnKeys.value.has(columnStateKey(sectionKey, columnKey))
+  const stateKey = columnStateKey(sectionKey, columnKey)
+  return columnCollapsedOverrides.value[stateKey] ?? isNarrowViewport.value
 }
 
 function toggleColumn(sectionKey: string, columnKey: string) {
-  const nextKeys = new Set(collapsedColumnKeys.value)
   const stateKey = columnStateKey(sectionKey, columnKey)
-
-  if (nextKeys.has(stateKey)) {
-    nextKeys.delete(stateKey)
-  } else {
-    nextKeys.add(stateKey)
+  columnCollapsedOverrides.value = {
+    ...columnCollapsedOverrides.value,
+    [stateKey]: !isColumnCollapsed(sectionKey, columnKey),
   }
-
-  collapsedColumnKeys.value = nextKeys
 }
 
-function isMembersExpanded(shiftId: number) {
-  return expandedMemberShiftIds.value.has(shiftId)
+function isShiftDetailsExpanded(shiftId: number) {
+  return expandedShiftDetailsIds.value.has(shiftId)
 }
 
-function toggleMembers(shiftId: number) {
-  const nextIds = new Set(expandedMemberShiftIds.value)
+function toggleShiftDetails(shiftId: number) {
+  const nextIds = new Set(expandedShiftDetailsIds.value)
 
   if (nextIds.has(shiftId)) {
     nextIds.delete(shiftId)
@@ -591,7 +878,55 @@ function toggleMembers(shiftId: number) {
     nextIds.add(shiftId)
   }
 
-  expandedMemberShiftIds.value = nextIds
+  expandedShiftDetailsIds.value = nextIds
+}
+
+function isDescriptionExpanded(shiftId: number) {
+  return expandedDescriptionShiftIds.value.has(shiftId)
+}
+
+function toggleDescription(shiftId: number) {
+  const nextIds = new Set(expandedDescriptionShiftIds.value)
+
+  if (nextIds.has(shiftId)) {
+    nextIds.delete(shiftId)
+  } else {
+    nextIds.add(shiftId)
+  }
+
+  expandedDescriptionShiftIds.value = nextIds
+}
+
+function isColumnDescriptionExpanded(columnKey: string) {
+  return expandedColumnDescriptionKeys.value.has(columnKey)
+}
+
+function toggleColumnDescription(columnKey: string) {
+  const nextKeys = new Set(expandedColumnDescriptionKeys.value)
+
+  if (nextKeys.has(columnKey)) {
+    nextKeys.delete(columnKey)
+  } else {
+    nextKeys.add(columnKey)
+  }
+
+  expandedColumnDescriptionKeys.value = nextKeys
+}
+
+function isColumnTextExpanded(columnKey: string) {
+  return expandedColumnTextKeys.value.has(columnKey)
+}
+
+function toggleColumnTextExpanded(columnKey: string) {
+  const nextKeys = new Set(expandedColumnTextKeys.value)
+
+  if (nextKeys.has(columnKey)) {
+    nextKeys.delete(columnKey)
+  } else {
+    nextKeys.add(columnKey)
+  }
+
+  expandedColumnTextKeys.value = nextKeys
 }
 
 function memberLabel(memberId: number) {
@@ -652,11 +987,25 @@ function canRemoveShiftMember(memberId: number) {
   return permissionMode.value === 'manage' || memberId === props.currentMemberId
 }
 
+function persistNewShiftTypeDescription(name: string, wasNewType: boolean) {
+  if (!wasNewType) return
+
+  const description = newShift.description.trim()
+  if (!description) return
+
+  const key = normalizeShiftColumnKey(name)
+  persistTypeDescriptions({ ...shiftTypeDescriptions.value, [key]: description })
+}
+
 function addParallelShift(group: { startsAt: string, endsAt: string }) {
+  const name = newShift.name.trim() || t('event.planning.newShift')
+  const wasNewType = !newShiftMatchesExistingType.value
+
   persistSlots([
     ...slots.value,
-    createRegularShift(newShift.name.trim() || t('event.planning.newShift'), group.startsAt, group.endsAt, parseRequiredPeople(newShift.requiredPeople)),
+    createRegularShift(name, group.startsAt, group.endsAt, parseRequiredPeople(newShift.requiredPeople)),
   ])
+  persistNewShiftTypeDescription(name, wasNewType)
 }
 
 function addConsecutiveShiftsFromInput() {
@@ -669,6 +1018,8 @@ function addConsecutiveShiftsFromInput() {
   const duration = Math.floor(totalMinutes / count)
   if (duration < 1) return
 
+  const name = newShift.name.trim()
+  const wasNewType = !newShiftMatchesExistingType.value
   const requiredPeople = parseRequiredPeople(newShift.requiredPeople)
   const nextShifts: PlanningShiftSlot[] = []
 
@@ -680,7 +1031,7 @@ function addConsecutiveShiftsFromInput() {
     const startsAt = formatDateTimeInput(shiftStart)
     const endsAt = formatDateTimeInput(shiftEnd)
 
-    nextShifts.push(createRegularShift(newShift.name.trim(), startsAt, endsAt, requiredPeople))
+    nextShifts.push(createRegularShift(name, startsAt, endsAt, requiredPeople))
   }
 
   if (!nextShifts.length) return
@@ -689,12 +1040,14 @@ function addConsecutiveShiftsFromInput() {
     ...slots.value,
     ...nextShifts,
   ])
+  persistNewShiftTypeDescription(name, wasNewType)
 }
 
-function createRegularShift(name: string, startsAt: string, endsAt: string, requiredPeople: number): PlanningShiftSlot {
+function createRegularShift(name: string, startsAt: string, endsAt: string, requiredPeople: number, description = ''): PlanningShiftSlot {
   return {
     id: nextTemporaryShiftId.value--,
     name,
+    description,
     startsAt,
     endsAt,
     requiredPeople: Math.max(Number(requiredPeople) || 1, 1),
@@ -703,18 +1056,55 @@ function createRegularShift(name: string, startsAt: string, endsAt: string, requ
   }
 }
 
+const shiftMenuShift = computed(() => openShiftMenuId.value !== null
+  ? slots.value.find(shift => shift.id === openShiftMenuId.value) ?? null
+  : null)
+
+function toggleShiftMenu(shiftId: number, event: MouseEvent) {
+  if (openShiftMenuId.value === shiftId) {
+    closeShiftMenu()
+    return
+  }
+
+  const trigger = event.currentTarget as HTMLElement
+  const rect = trigger.getBoundingClientRect()
+  const menuWidth = 208
+
+  shiftMenuPosition.value = {
+    top: rect.bottom + 4,
+    left: Math.max(8, Math.min(rect.right - menuWidth, window.innerWidth - menuWidth - 8)),
+  }
+  openShiftMenuId.value = shiftId
+}
+
+function closeShiftMenu() {
+  openShiftMenuId.value = null
+  shiftMenuPosition.value = null
+}
+
+function openShiftDescriptionEditor(shiftId: number) {
+  if (!isDescriptionExpanded(shiftId)) toggleDescription(shiftId)
+  closeShiftMenu()
+}
+
 function removeShift(shiftId: number) {
   const nextSlots = slots.value.filter(shift => shift.id !== shiftId)
-  const nextIds = new Set(expandedMemberShiftIds.value)
+  const nextIds = new Set(expandedShiftDetailsIds.value)
+  const nextDescriptionIds = new Set(expandedDescriptionShiftIds.value)
   const nextNameDrafts = { ...shiftNameDrafts.value }
+  const nextDescriptionDrafts = { ...shiftDescriptionDrafts.value }
   const nextRequiredPeopleDrafts = { ...requiredPeopleDrafts.value }
 
   nextIds.delete(shiftId)
+  nextDescriptionIds.delete(shiftId)
   delete nextNameDrafts[shiftId]
+  delete nextDescriptionDrafts[shiftId]
   delete nextRequiredPeopleDrafts[shiftId]
 
-  expandedMemberShiftIds.value = nextIds
+  expandedShiftDetailsIds.value = nextIds
+  expandedDescriptionShiftIds.value = nextDescriptionIds
   shiftNameDrafts.value = nextNameDrafts
+  shiftDescriptionDrafts.value = nextDescriptionDrafts
   requiredPeopleDrafts.value = nextRequiredPeopleDrafts
   persistSlots(nextSlots)
 }
@@ -750,6 +1140,94 @@ function commitShiftName(shift: PlanningShiftSlot) {
   updateShift(shift.id, { name: nextName }, true)
 }
 
+function shiftDescriptionInputValue(shift: PlanningShiftSlot) {
+  return shiftDescriptionDrafts.value[shift.id] ?? shift.description
+}
+
+function startShiftDescriptionEdit(shift: PlanningShiftSlot) {
+  setShiftDescriptionDraft(shift.id, shift.description)
+}
+
+function setShiftDescriptionDraft(shiftId: number, value: string) {
+  shiftDescriptionDrafts.value = { ...shiftDescriptionDrafts.value, [shiftId]: value }
+}
+
+function commitShiftDescription(shift: PlanningShiftSlot) {
+  const draft = shiftDescriptionDrafts.value[shift.id]
+  const nextDescription = (draft ?? shift.description).trim()
+  const nextDrafts = { ...shiftDescriptionDrafts.value }
+
+  delete nextDrafts[shift.id]
+  shiftDescriptionDrafts.value = nextDrafts
+  if (nextDescription === shift.description) return
+  updateShift(shift.id, { description: nextDescription }, true)
+}
+
+function commitAndCloseShiftDescription(shift: PlanningShiftSlot) {
+  commitShiftDescription(shift)
+  toggleDescription(shift.id)
+}
+
+function typeDescriptionValue(columnKey: string) {
+  return shiftTypeDescriptions.value[columnKey] ?? ''
+}
+
+function columnDescriptionOverflows(text: string) {
+  return text.trim().length > 80
+}
+
+function combinedTemplateDescription(name: string, ownDescription: string) {
+  const typeValue = typeDescriptionValue(normalizeShiftColumnKey(name)).trim()
+  const rowValue = ownDescription.trim()
+  return [typeValue, rowValue].filter(Boolean).join('\n\n')
+}
+
+function shiftOwnDescription(shift: PlanningShiftSlot) {
+  return shift.description.trim()
+}
+
+function columnDescriptionInputValue(columnKey: string) {
+  return columnDescriptionDrafts.value[columnKey] ?? typeDescriptionValue(columnKey)
+}
+
+function startColumnDescriptionEdit(columnKey: string) {
+  columnDescriptionDrafts.value = { ...columnDescriptionDrafts.value, [columnKey]: typeDescriptionValue(columnKey) }
+}
+
+function setColumnDescriptionDraft(columnKey: string, value: string) {
+  columnDescriptionDrafts.value = { ...columnDescriptionDrafts.value, [columnKey]: value }
+}
+
+function commitColumnDescription(columnKey: string) {
+  const draft = columnDescriptionDrafts.value[columnKey]
+  const nextDrafts = { ...columnDescriptionDrafts.value }
+  delete nextDrafts[columnKey]
+  columnDescriptionDrafts.value = nextDrafts
+
+  if (draft === undefined) return
+
+  const nextValue = draft.trim()
+  if (nextValue === typeDescriptionValue(columnKey)) return
+
+  const nextEntries = { ...shiftTypeDescriptions.value }
+  if (nextValue) {
+    nextEntries[columnKey] = nextValue
+  } else {
+    delete nextEntries[columnKey]
+  }
+  persistTypeDescriptions(nextEntries)
+}
+
+function commitAndCloseColumnDescription(columnKey: string) {
+  commitColumnDescription(columnKey)
+  toggleColumnDescription(columnKey)
+}
+
+function persistTypeDescriptions(nextEntries: EventShiftTypeDescriptions) {
+  shiftTypeDescriptions.value = nextEntries
+  emit('save-type-descriptions', nextEntries)
+}
+
 function requiredPeopleInputValue(shift: PlanningShiftSlot) {
   return requiredPeopleDrafts.value[shift.id] ?? String(shift.requiredPeople)
 }
@@ -773,6 +1251,115 @@ function commitRequiredPeople(shift: PlanningShiftSlot) {
 
 function canManageShift(_shift: PlanningShiftSlot) {
   return canEditShiftDetails.value
+}
+
+// ---- Shift templates ----
+
+watch(
+  shiftTemplates,
+  (value) => {
+    const minimumId = Math.min(-1, ...value.map(template => template.id))
+    nextTemplateId.value = Math.min(nextTemplateId.value, minimumId - 1)
+  },
+  { immediate: true, deep: true },
+)
+
+function templateSignature(template: { name: string, description: string, requiredPeople: number }) {
+  const name = template.name.trim()
+  if (!name) return ''
+
+  return JSON.stringify({
+    name,
+    description: template.description.trim(),
+    requiredPeople: template.requiredPeople,
+  })
+}
+
+function isTemplateContentSaved(template: { name: string, description: string, requiredPeople: number }) {
+  const signature = templateSignature(template)
+  return Boolean(signature) && shiftTemplates.value.some(existing => templateSignature(existing) === signature)
+}
+
+function isShiftSavedAsTemplate(shift: PlanningShiftSlot) {
+  return isTemplateContentSaved({
+    name: shift.name,
+    description: combinedTemplateDescription(shift.name, shift.description),
+    requiredPeople: shift.requiredPeople,
+  })
+}
+
+function persistTemplates(nextTemplates: PlanningShiftTemplate[]) {
+  shiftTemplates.value = nextTemplates
+  emit('save-templates', nextTemplates)
+}
+
+function saveNewShiftAsTemplate() {
+  const name = newShift.name.trim()
+  if (!name || newShiftIsSavedAsTemplate.value) return
+
+  const description = newShiftMatchesExistingType.value
+    ? typeDescriptionValue(newShiftNameKey.value)
+    : newShift.description.trim()
+
+  persistTemplates([
+    {
+      id: nextTemplateId.value--,
+      name,
+      description,
+      requiredPeople: parseRequiredPeople(newShift.requiredPeople),
+    },
+    ...shiftTemplates.value,
+  ])
+}
+
+function saveShiftAsTemplate(shift: PlanningShiftSlot) {
+  if (isShiftSavedAsTemplate(shift)) return
+
+  persistTemplates([
+    {
+      id: nextTemplateId.value--,
+      name: shift.name.trim(),
+      description: combinedTemplateDescription(shift.name, shift.description),
+      requiredPeople: shift.requiredPeople,
+    },
+    ...shiftTemplates.value,
+  ])
+}
+
+function removeTemplate(templateId: number) {
+  persistTemplates(shiftTemplates.value.filter(template => template.id !== templateId))
+}
+
+function applyTemplate(template: PlanningShiftTemplate) {
+  newShift.name = template.name
+  newShift.description = template.description
+  newShift.requiredPeople = String(template.requiredPeople)
+  templateBrowserOpen.value = false
+}
+
+// ---- PDF export ----
+
+async function exportShiftPlanPdf() {
+  if (!eventId.value || pdfDownloading.value) return
+
+  try {
+    pdfDownloading.value = true
+    const res = await downloadShiftPlanPdf(eventId.value, {
+      includeDescriptions: pdfIncludeDescriptions.value,
+      highlightOwn: permissionMode.value === 'own',
+    })
+    if (!res.ok) {
+      toast.error(res.error || t('event.planning.failedExportShiftPlanPdf'))
+      return
+    }
+    pdfExportOpen.value = false
+  }
+  catch {
+    toast.error(t('event.planning.failedExportShiftPlanPdf'))
+  }
+  finally {
+    pdfDownloading.value = false
+  }
 }
 
 function parseRequiredPeople(value: string) {
@@ -886,15 +1473,30 @@ function shiftStateClass(shift: PlanningShiftSlot) {
 function isShiftFullyStaffed(shift: PlanningShiftSlot) {
   return shift.memberIds.length >= shift.requiredPeople
 }
+
+function isOwnShift(shift: PlanningShiftSlot) {
+  return Boolean(props.currentMemberId) && shift.memberIds.includes(props.currentMemberId!)
+}
+
+function shiftHighlightClass(shift: PlanningShiftSlot) {
+  return permissionMode.value === 'own' && isOwnShift(shift) ? 'bg-sky-50' : ''
+}
 </script>
 
 <style scoped>
 .event-shift-scroll {
+  --shift-time-col: 6.5rem;
   background:
-    linear-gradient(to right, rgb(241 245 249) 0, rgb(241 245 249) 8rem, transparent 8rem),
+    linear-gradient(to right, rgb(241 245 249) 0, rgb(241 245 249) var(--shift-time-col), transparent var(--shift-time-col)),
     white;
   scrollbar-width: thin;
   scrollbar-color: rgb(148 163 184) rgb(226 232 240);
+}
+
+@media (min-width: 640px) {
+  .event-shift-scroll {
+    --shift-time-col: 8rem;
+  }
 }
 
 .event-shift-scroll::-webkit-scrollbar {
