@@ -106,7 +106,16 @@ const messages = {
     },
     home: {
       title: 'Startseite',
-      body: 'Willkommen.',
+      noWidgets: 'Für dich sind aktuell keine Dashboard-Widgets freigegeben.',
+      widgets: {
+        showAll: 'Alle anzeigen',
+        members: {
+          title: 'Mitglieder',
+        },
+        events: {
+          title: 'Veranstaltungen',
+        },
+      },
     },
     finances: {
       title: 'Finanzen',
@@ -945,6 +954,8 @@ const messages = {
         recap: 'Rückblick',
         recapHint: 'Planung zum Schluss zu {pct}% abgeschlossen',
         tasksDone: '{done}/{total} Aufgaben erledigt',
+        openShifts: 'Offene Schichten',
+        moreOpenShifts: '+ {count} weitere offene Schichten',
       },
       planning: {
         workspace: 'Planungsbereich',
@@ -1540,7 +1551,16 @@ const messages = {
     },
     home: {
       title: 'Home',
-      body: 'Welcome.',
+      noWidgets: 'No dashboard widgets are available for you yet.',
+      widgets: {
+        showAll: 'Show all',
+        members: {
+          title: 'Members',
+        },
+        events: {
+          title: 'Events',
+        },
+      },
     },
     finances: {
       title: 'Finances',
@@ -2381,6 +2401,8 @@ const messages = {
         recap: 'Recap',
         recapHint: 'Planning was {pct}% complete in the end',
         tasksDone: '{done}/{total} tasks done',
+        openShifts: 'Open shifts',
+        moreOpenShifts: '+ {count} more open shifts',
       },
       planning: {
         workspace: 'Planning workspace',

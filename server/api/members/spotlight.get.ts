@@ -5,7 +5,7 @@ import { MemberStatus, type MemberBirthday, type MemberSpotlightStats } from '~/
 import { parseMemberStatus } from '~/server/utils/members'
 
 const BIRTHDAY_HORIZON_DAYS = 60
-const MAX_BIRTHDAYS = 3
+const MAX_BIRTHDAYS = 4
 
 interface GetMemberSpotlightSuccess {
   ok: true

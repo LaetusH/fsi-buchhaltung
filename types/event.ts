@@ -58,11 +58,22 @@ export interface EventPlanningSummary {
 
 export type EventSpotlightStatus = 'upcoming' | 'ongoing' | 'past'
 
+export interface EventSpotlightShift {
+  id: number
+  name: string
+  starts_at: string
+  ends_at: string
+  required_people: number
+  member_count: number
+  is_signed_up: boolean
+}
+
 export interface EventSpotlight extends Event {
   status: EventSpotlightStatus
   daysToStart: number | null
   canOpen: boolean
   planning: EventPlanningSummary | null
+  shiftOverview: EventSpotlightShift[] | null
 }
 
 export interface EventMemberOption {

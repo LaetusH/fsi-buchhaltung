@@ -58,11 +58,11 @@
 
     <template v-if="active">
       <!-- Body -->
-      <div class="grid gap-4" :class="active.planning ? 'md:grid-cols-[1fr_1.1fr]' : ''">
+      <div class="grid gap-4" :class="hasSidePanel ? 'md:grid-cols-[1fr_1.1fr]' : ''">
         <!-- Event facts -->
         <dl
           class="grid grid-cols-2 gap-x-4 gap-y-3 self-start"
-          :class="active.planning ? '' : 'md:grid-cols-4'"
+          :class="hasSidePanel ? '' : 'md:grid-cols-4'"
         >
           <div class="col-span-2">
             <dt class="text-xs font-medium uppercase tracking-wide text-slate-400">{{ t('event.startsOn') }} – {{ t('event.endsOn') }}</dt>
@@ -163,6 +163,15 @@
             </button>
           </div>
         </div>
+
+        <!-- Shift overview (signup users without planning access) -->
+        <PageEventsSpotlightShifts
+          v-else-if="active.shiftOverview"
+          :shifts="active.shiftOverview"
+          :status="active.status"
+          :can-open="active.canOpen"
+          @open="openTab('shifts')"
+        />
       </div>
     </template>
   </CommonSpotlight>
@@ -170,7 +179,6 @@
 
 <script setup lang="ts">
 import { useI18n } from '~/composables/useI18n'
-import { useLocaleFormatters } from '~/composables/useLocaleFormatters'
 import type { GetEventSpotlightResponse } from '~/server/api/events/spotlight.get'
 import type { EventSpotlight } from '~/types/event'
 import type { EventPlanningTabKey } from './planning/types'
@@ -178,7 +186,6 @@ import type { EventPlanningTabKey } from './planning/types'
 const emit = defineEmits<{ (e: 'open', eventId: number, tab?: EventPlanningTabKey): void }>()
 
 const { t } = useI18n()
-const { formatDate, formatDateTime, formatLocalDate, formatLocalDateTime } = useLocaleFormatters()
 
 type SpotlightView = 'upcoming' | 'latest'
 
@@ -194,106 +201,12 @@ const active = computed<EventSpotlight | null>(() => {
   return upcoming.value ?? latest.value
 })
 
-const activeLabel = computed(() => {
-  if (!active.value) return ''
-  if (active.value.status === 'ongoing') return t('event.spotlight.ongoingLabel')
-  if (active.value.status === 'past') return t('event.spotlight.latestLabel')
-  return t('event.spotlight.upcomingLabel')
-})
+const { statusLabel: activeLabel, countdownLabel, rangeLabel, organizerLabels, summaryTiles } = useEventSpotlightView(active)
 
-const countdownLabel = computed(() => {
-  const days = active.value?.daysToStart
-  if (days == null) return ''
-  if (days > 0) return t('event.planning.daysUntilEvent', { days })
-  if (days === 0) return t('event.planning.eventToday')
-  return t('event.planning.daysPastEvent', { days: Math.abs(days) })
-})
-
-const rangeLabel = computed(() => {
-  const event = active.value
-  if (!event) return ''
-  if (event.starts_at && event.ends_at) {
-    const sameDay = event.starts_at.slice(0, 10) === event.ends_at.slice(0, 10)
-    return sameDay
-      ? `${formatLocalDateTime(event.starts_at)} – ${formatTime(event.ends_at)}`
-      : `${formatLocalDateTime(event.starts_at)} – ${formatLocalDateTime(event.ends_at)}`
-  }
-  return formatLocalDateTime(event.starts_at || event.ends_at)
-})
-
-const organizerLabels = computed(() => {
-  const event = active.value
-  if (!event) return []
-  return [
-    ...event.subdivision_organizers.map(o => `${o.code} - ${o.name}`),
-    ...event.member_organizers.map(o => o.full_name),
-  ]
-})
-
-type TileVariant = 'ok' | 'warning' | 'neutral'
-interface SummaryTile { label: string; value: string; icon: string; variant: TileVariant; tab: EventPlanningTabKey }
-
-const summaryTiles = computed<SummaryTile[]>(() => {
-  const event = active.value
-  if (!event?.planning) return []
-  const { tasks, shifts, checklists, details } = event.planning
-
-  const masterComplete = details.locationSet && details.guestsSet
-  const masterTile: SummaryTile = {
-    label: t('event.masterData'),
-    value: masterComplete
-      ? t('event.planning.statusText.complete')
-      : details.locationSet || details.guestsSet
-        ? t('event.planning.statusText.partiallySet')
-        : t('event.planning.statusText.notSet'),
-    icon: 'material-symbols:info-outline-rounded',
-    variant: masterComplete ? 'ok' : details.locationSet || details.guestsSet ? 'warning' : 'neutral',
-    tab: 'details',
-  }
-
-  const tasksTile: SummaryTile = {
-    label: t('event.planning.tabs.tasks'),
-    value: tasks.total === 0
-      ? t('event.planning.statusText.noneYet')
-      : t('event.spotlight.tasksDone', { done: tasks.done, total: tasks.total }),
-    icon: 'material-symbols:task-alt-rounded',
-    variant: tasks.total === 0 ? 'neutral' : tasks.open === 0 ? 'ok' : 'warning',
-    tab: 'tasks',
-  }
-
-  const shiftsTile: SummaryTile = {
-    label: t('event.planning.tabs.shifts'),
-    value: shifts.total === 0
-      ? t('event.planning.statusText.noneYet')
-      : t('event.planning.staffedCount', { current: shifts.fullyStaffed, required: shifts.total }),
-    icon: 'material-symbols:calendar-month-rounded',
-    variant: shifts.total === 0 ? 'neutral' : shifts.unstaffed === 0 ? 'ok' : 'warning',
-    tab: 'shifts',
-  }
-
-  const checklistsTile: SummaryTile = {
-    label: t('event.planning.tabs.checklists'),
-    value: checklists.totalItems === 0
-      ? t('event.planning.statusText.noneYet')
-      : t('event.planning.checklistItemsDone', { done: checklists.doneItems, total: checklists.totalItems }),
-    icon: 'material-symbols:checklist-rounded',
-    variant: checklists.totalItems === 0 ? 'neutral' : checklists.doneItems === checklists.totalItems ? 'ok' : 'warning',
-    tab: 'checklists',
-  }
-
-  return [masterTile, tasksTile, shiftsTile, checklistsTile]
-})
+const hasSidePanel = computed(() => Boolean(active.value?.planning || active.value?.shiftOverview))
 
 function openTab(tab: EventPlanningTabKey) {
   if (active.value?.canOpen) emit('open', active.value.id, tab)
-}
-
-function formatTime(value?: string | null) {
-  if (!value) return ''
-  const full = formatLocalDateTime(value)
-  const date = formatLocalDate(value)
-  // Strip the leading date portion to keep just the time when on the same day.
-  return full.startsWith(date) ? full.slice(date.length).trim().replace(/^[,·\s]+/, '') : full
 }
 
 async function load() {

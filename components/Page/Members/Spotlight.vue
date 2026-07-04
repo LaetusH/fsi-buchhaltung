@@ -77,7 +77,7 @@
           </p>
 
           <ul v-if="birthdays.length" class="mt-3 space-y-1">
-            <li v-for="member in birthdays" :key="member.id">
+            <li v-for="member in visibleBirthdays" :key="member.id">
               <button
                 type="button"
                 class="-mx-2 flex w-[calc(100%+1rem)] items-center justify-between gap-3 rounded-lg px-2 py-1.5 text-left transition cursor-pointer hover:bg-slate-100/80"
@@ -124,6 +124,9 @@ const stats = ref<MemberSpotlightStats | null>(null)
 const birthdays = ref<MemberBirthday[]>([])
 const horizonDays = ref(60)
 const canViewUsers = ref(false)
+
+const MAX_VISIBLE_BIRTHDAYS = 3
+const visibleBirthdays = computed(() => birthdays.value.slice(0, MAX_VISIBLE_BIRTHDAYS))
 
 async function load() {
   loading.value = true

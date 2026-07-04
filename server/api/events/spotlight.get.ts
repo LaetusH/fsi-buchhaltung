@@ -3,6 +3,7 @@ import { hasPermission, requireAuth } from '~/server/utils/api/guards'
 import { query } from '~/server/utils/db'
 import { getOrganizerEventIds, isAnyEventOrganizer, loadEventRelations } from '~/server/utils/events'
 import { buildEventPlanningSummary } from '~/server/utils/eventPlanningSummary'
+import { loadCurrentMemberIdForUser, loadEventShiftSlots } from '~/server/utils/eventShifts'
 import type { EventRow, EventSpotlight, EventSpotlightStatus } from '~/types/event'
 
 interface GetEventSpotlightSuccess {
@@ -44,9 +45,10 @@ export default defineEventHandler(async (event): Promise<GetEventSpotlightRespon
 
   const canOpenAll = hasPermission(current.user, ['events.view', 'events.edit', 'events.shifts.signup'])
   const canViewAll = hasPermission(current.user, 'events.view')
+  const canSignup = hasPermission(current.user, 'events.shifts.signup')
 
   try {
-    const [upcomingRows, latestRows, organizerEventIds] = await Promise.all([
+    const [upcomingRows, latestRows, organizerEventIds, currentMemberId] = await Promise.all([
       query<EventRow[]>(
         `SELECT id, name, starts_at, ends_at, location, expected_guests
          FROM events
@@ -61,7 +63,10 @@ export default defineEventHandler(async (event): Promise<GetEventSpotlightRespon
          ORDER BY ends_at DESC, starts_at DESC, name ASC
          LIMIT 1`,
       ),
-      canOpenAll ? Promise.resolve<number[]>([]) : getOrganizerEventIds(current.user.id),
+      // Organizer status also unlocks the planning summary, so it matters for
+      // everyone without events.view — not just for users who cannot open events.
+      canViewAll ? Promise.resolve<number[]>([]) : getOrganizerEventIds(current.user.id),
+      canSignup && !canViewAll ? loadCurrentMemberIdForUser(current.user.id) : Promise.resolve(null),
     ])
 
     const upcomingRow = upcomingRows[0] ?? null
@@ -98,6 +103,7 @@ export default defineEventHandler(async (event): Promise<GetEventSpotlightRespon
         daysToStart: daysToStart(String(row.starts_at), now),
         canOpen: canOpenAll || organizerSet.has(id),
         planning: null,
+        shiftOverview: null,
       }
 
       if (canView) {
@@ -106,6 +112,18 @@ export default defineEventHandler(async (event): Promise<GetEventSpotlightRespon
           organizerCount: memberOrganizers.length + subdivisionOrganizers.length,
           costCentreSplits,
         })
+      } else if (canSignup) {
+        // Signup-only users get a shift overview instead of the planning summary.
+        const slots = await loadEventShiftSlots(id)
+        base.shiftOverview = slots.map(slot => ({
+          id: slot.id,
+          name: slot.name,
+          starts_at: slot.starts_at,
+          ends_at: slot.ends_at,
+          required_people: slot.required_people,
+          member_count: slot.members.length,
+          is_signed_up: currentMemberId != null && slot.members.some(member => member.id === currentMemberId),
+        }))
       }
 
       return base
