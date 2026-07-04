@@ -673,7 +673,7 @@ onMounted(async () => {
 
 useAppRefresh().onRefresh(async () => {
   if (!hasAccess.value) return
-  await loadMemberOptions()
+  await Promise.all([loadMemberOptions(), entityManagerRef.value?.loadItems()])
 })
 
 onBeforeUnmount(() => {

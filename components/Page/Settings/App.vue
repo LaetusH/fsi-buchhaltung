@@ -342,6 +342,8 @@ const canRestorePreview = computed(() => {
 
 onMounted(loadInvoiceTexts)
 
+useAppRefresh().onRefresh(loadInvoiceTexts)
+
 async function loadInvoiceTexts() {
   const res = await $fetch<{ ok: boolean, settings?: InvoiceTextSettings, variables?: InvoiceTextVariable[], error?: string }>('/api/settings/app/invoice-texts')
   if (!res.ok || !res.settings) {

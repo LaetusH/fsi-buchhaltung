@@ -481,6 +481,11 @@ onMounted(async () => {
   if (!hasAccess.value) return
   await load()
 })
+
+useAppRefresh().onRefresh(async () => {
+  if (!hasAccess.value) return
+  await load()
+})
 </script>
 
 <style scoped>

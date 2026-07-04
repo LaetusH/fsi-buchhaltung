@@ -1,5 +1,6 @@
 <template>
   <PageSettingsEntityManager
+    ref="entityManagerRef"
     :title="t('settings.entities.costCentres')"
     :singular-label="t('settings.entities.costCentre')"
     :add-label="t('settings.entities.newCostCentre')"
@@ -133,6 +134,7 @@ interface ParentOption {
 const { t } = useI18n()
 const toast = useToast()
 
+const entityManagerRef = ref<{ loadItems: () => Promise<void> } | null>(null)
 const parentQuery = ref('')
 const deactivateModalOpen = ref(false)
 const deactivateTarget = ref<CostCentreRow | null>(null)
@@ -357,6 +359,10 @@ async function confirmDeactivate() {
   )
   if (ok) closeDeactivateModal()
 }
+
+useAppRefresh().onRefresh(async () => {
+  await entityManagerRef.value?.loadItems()
+})
 
 function handleError({ phase, message, error }: { phase: 'load' | 'save' | 'toggle', message?: string, error?: unknown }) {
   if (error) console.error(error)

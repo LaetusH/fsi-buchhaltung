@@ -1,5 +1,6 @@
 <template>
   <PageSettingsEntityManager
+    ref="entityManagerRef"
     :title="t('settings.entities.subdivisions')"
     :singular-label="t('settings.entities.subdivision')"
     :add-label="t('settings.entities.newSubdivision')"
@@ -127,6 +128,7 @@ const toast = useToast()
 const { hasPermission } = useAuth()
 
 const hasAccess = computed(() => hasPermission('settings.subdivisions.manage'))
+const entityManagerRef = ref<{ loadItems: () => Promise<void> } | null>(null)
 const memberOptions = ref<SubdivisionMemberOption[]>([])
 const memberQuery = ref('')
 const deactivateModalOpen = ref(false)
@@ -332,6 +334,6 @@ onMounted(async () => {
 
 useAppRefresh().onRefresh(async () => {
   if (!hasAccess.value) return
-  await loadMemberOptions()
+  await Promise.all([loadMemberOptions(), entityManagerRef.value?.loadItems()])
 })
 </script>
