@@ -34,7 +34,8 @@
       :has-file="!!file || (!!existingFile && !removeExistingFile)"
       :can-edit-company="canEditCompany"
       :saving="isSaving"
-      @submit="submit"
+      @submit="submit(false)"
+      @submit-and-exit="submit(true)"
       @cancel="cancel"
     />
   </PageFinancesEditorLayout>
@@ -102,6 +103,7 @@ const removeExistingFile = ref(false)
 const canViewFiles = computed(() => hasPermission('files.view') && (canEdit.value || existingFile.value !== null))
 const showFinalizeConfirmModal = ref(false)
 const isSaving = ref(false)
+const pendingExitAfterFinalize = ref(false)
 
 const form = ref<CreateInvoiceBody>({
   company_id: null,
@@ -153,7 +155,7 @@ function onRemoveFile() {
   removeExistingFile.value = true
 }
 
-async function submit() {
+async function submit(exit: boolean) {
   if (isSaving.value) return
   if (!canEditStatus.value) {
     toast.error(t('common.notAuthorized'))
@@ -164,20 +166,21 @@ async function submit() {
   const willBecomeLocked = previousStatus === InvoiceStatus.Draft && form.value.status !== InvoiceStatus.Draft
 
   if (willBecomeLocked) {
+    pendingExitAfterFinalize.value = exit
     showFinalizeConfirmModal.value = true
     return
   }
 
-  await saveInvoice()
+  await saveInvoice(exit)
 }
 
 async function confirmFinalizeSave() {
   if (isSaving.value) return
   showFinalizeConfirmModal.value = false
-  await saveInvoice()
+  await saveInvoice(pendingExitAfterFinalize.value)
 }
 
-async function saveInvoice() {
+async function saveInvoice(exit: boolean) {
   if (isSaving.value) return
   isSaving.value = true
   const body = new FormData()
@@ -201,11 +204,19 @@ async function saveInvoice() {
       })
       if (!res.ok) throw new Error(res.error || t('invoice.saved.failedCreate'))
       toast.success(t('invoice.saved.created'))
-      goToReturnTarget(res.invoiceId ? { newInvoiceId: res.invoiceId } : undefined)
+      if (exit) {
+        goToReturnTarget(res.invoiceId ? { newInvoiceId: res.invoiceId } : undefined)
+        return
+      }
+      if (res.invoiceId) {
+        invoiceId.value = res.invoiceId
+        isEditMode.value = true
+        await loadInvoice(res.invoiceId)
+      }
       return
     }
 
-    goToReturnTarget()
+    if (exit) goToReturnTarget()
   } catch (err: any) {
     toast.error(err?.message || t('invoice.saved.failedSave'))
   } finally {

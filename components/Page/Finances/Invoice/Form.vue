@@ -317,8 +317,10 @@
       :cancel-label="t('actions.cancel')"
       :submit-label="t('actions.save')"
       :close-label="t('actions.close')"
+      :save-and-exit-label="t('actions.saveAndExit')"
       @cancel="emit('cancel')"
       @submit="emit('submit')"
+      @submit-and-exit="emit('submitAndExit')"
     />
 
     <CommonValidationSummary :errors="validationErrors" :title="t('common.validationBlocked')" />
@@ -381,6 +383,7 @@ const props = defineProps<{
 const emit = defineEmits<{
   (e: 'update:modelValue', value: CreateInvoiceBody): void
   (e: 'submit'): void
+  (e: 'submitAndExit'): void
   (e: 'cancel'): void
 }>()
 
