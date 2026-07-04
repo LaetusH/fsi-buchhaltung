@@ -1,282 +1,270 @@
 <template>
-  <Page :headline1="t('budget.title')" @open-menu="$emit('openMenu')">
+  <Page @open-menu="$emit('openMenu')">
     <template #cards>
-      <section class="-mx-6 -mb-6 col-span-12 bg-white p-4 shadow-sm space-y-6 sm:mx-0 sm:rounded-xl sm:p-6 sm:shadow-lg">
-        <div class="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
-          <div>
+      <section class="-mx-6 -mb-6 col-span-12 isolate bg-white shadow-sm sm:m-0 sm:rounded-xl sm:shadow-lg">
+        <div ref="headerSentinelRef" class="h-px" />
+        <div
+          class="sticky top-0 z-20 flex flex-wrap items-center gap-x-4 gap-y-2 bg-slate-900 px-4 py-3 text-white transition-[border-radius] sm:px-6"
+          :class="isHeaderStuck ? '' : 'sm:rounded-t-xl'"
+        >
+          <div class="min-w-0">
             <h2 class="text-base font-semibold sm:text-lg">{{ t('budget.title') }}</h2>
-            <p class="text-sm text-slate-500">{{ t('budget.editorHint') }}</p>
+            <p v-if="periodShortLabel" class="text-xs text-slate-300">{{ periodShortLabel }}</p>
           </div>
 
-          <div class="flex flex-wrap gap-3">
-            <button
-              v-if="form.id"
-              type="button"
-              class="btn-secondary"
-              :disabled="isSaving || isDownloadingPdf"
-              @click="downloadPdf"
-            >
-              {{ isDownloadingPdf ? t('budget.downloading') : t('budget.downloadPdf') }}
-            </button>
-            <button
-              type="button"
-              class="btn-secondary"
-              :disabled="isSaving"
-              @click="cancel"
-            >
-              {{ t('actions.cancel') }}
-            </button>
-            <button
-              v-if="canEdit"
-              type="button"
-              class="btn-secondary"
-              :disabled="isSaving"
-              @click="resetCurrentBudget"
-            >
-              {{ t('actions.reset') }}
-            </button>
-            <button
-              v-if="canEdit"
-              type="button"
-              class="btn-primary"
-              :class="isSaving ? 'cursor-not-allowed opacity-70' : ''"
-              :disabled="isSaving || !hasValidPeriod"
-              @click="saveBudget"
-            >
-              {{ isSaving ? t('budget.saving') : t('actions.save') }}
-            </button>
-          </div>
-        </div>
-
-        <div v-if="isLoadingBudget" class="rounded-xl border border-slate-200 px-4 py-6 text-sm text-slate-500">
-          {{ t('budget.loading') }}
-        </div>
-
-        <template v-else>
-          <div class="grid grid-cols-1 gap-4 lg:grid-cols-2">
-            <div class="field">
-              <label>{{ t('budget.year') }}</label>
-              <select v-model="form.year" class="input" :disabled="!canEdit">
-                <option v-for="year in yearOptions" :key="year" :value="String(year)">
-                  {{ year }}
-                </option>
-              </select>
+          <div class="ml-auto flex flex-wrap items-center justify-end gap-x-4 gap-y-2">
+            <div class="hidden items-baseline gap-1.5 text-sm xl:flex">
+              <span class="text-slate-400">{{ t('budget.totalExpenses') }}</span>
+              <span class="font-medium tabular-nums text-white">{{ formatCurrency(totalSummary.totalExpense) }}</span>
             </div>
-
-            <div class="field">
-              <label>{{ t('budget.semester') }}</label>
-              <div class="grid grid-cols-2 gap-2">
-                <button
-                  type="button"
-                  :class="semesterButtonClass('summer')"
-                  :disabled="!canEdit"
-                  @click="form.semester = 'summer'"
-                >
-                  {{ t('budget.semesters.summer') }}
-                </button>
-                <button
-                  type="button"
-                  :class="semesterButtonClass('winter')"
-                  :disabled="!canEdit"
-                  @click="form.semester = 'winter'"
-                >
-                  {{ t('budget.semesters.winter') }}
-                </button>
-              </div>
+            <div class="hidden items-baseline gap-1.5 text-sm xl:flex">
+              <span class="text-slate-400">{{ t('budget.totalIncome') }}</span>
+              <span class="font-medium tabular-nums text-white">{{ formatCurrency(totalSummary.totalIncome) }}</span>
             </div>
-
-            <div class="field">
-              <label>{{ t('budget.startDate') }}</label>
-              <input :value="periodBounds.startDate" type="date" class="input bg-slate-50" disabled>
-            </div>
-
-            <div class="field">
-              <label>{{ t('budget.endDate') }}</label>
-              <input :value="periodBounds.endDate" type="date" class="input bg-slate-50" disabled>
-            </div>
-          </div>
-
-          <div class="grid grid-cols-1 gap-4 md:grid-cols-3">
-            <div class="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
-              <div class="text-sm text-slate-500">{{ t('budget.totalExpenses') }}</div>
-              <div class="mt-1 text-xl font-semibold text-slate-900">{{ formatCurrency(totalSummary.totalExpense) }}</div>
-            </div>
-
-            <div class="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
-              <div class="text-sm text-slate-500">{{ t('budget.totalIncome') }}</div>
-              <div class="mt-1 text-xl font-semibold text-slate-900">{{ formatCurrency(totalSummary.totalIncome) }}</div>
-            </div>
-
-            <div class="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
-              <div class="text-sm text-slate-500">{{ t('budget.totalSaldo') }}</div>
-              <div :class="saldoTextClass(totalSummary.totalSaldo)" class="mt-1 text-xl font-semibold">
+            <div class="flex items-baseline gap-1.5 text-sm">
+              <span class="text-slate-400">{{ t('budget.totalSaldo') }}</span>
+              <span class="font-semibold tabular-nums" :class="saldoTextClassOnDark(totalSummary.totalSaldo)">
                 {{ formatCurrency(totalSummary.totalSaldo) }}
+              </span>
+            </div>
+
+            <div class="flex flex-wrap justify-end gap-2">
+              <button
+                v-if="form.id"
+                type="button"
+                class="inline-flex items-center gap-1.5 rounded-md bg-white/10 px-4 py-2 text-sm text-white transition cursor-pointer hover:bg-white/20"
+                :class="isDownloadingPdf ? 'cursor-not-allowed opacity-70 hover:bg-white/10' : ''"
+                :disabled="isSaving || isDownloadingPdf"
+                @click="downloadPdf"
+              >
+                <Icon :name="isDownloadingPdf ? 'material-symbols:hourglass-top-rounded' : 'material-symbols:download-rounded'" class="h-4 w-4" aria-hidden="true" />
+                {{ isDownloadingPdf ? t('budget.downloading') : t('budget.downloadPdf') }}
+              </button>
+              <button
+                type="button"
+                class="rounded-md px-3 py-2 text-sm text-slate-300 transition cursor-pointer hover:text-white hover:underline"
+                :disabled="isSaving"
+                @click="cancel"
+              >
+                {{ t('actions.cancel') }}
+              </button>
+              <button
+                v-if="canEdit"
+                type="button"
+                class="btn-primary"
+                :class="isSaving ? 'cursor-not-allowed opacity-70' : ''"
+                :disabled="isSaving || !hasValidPeriod"
+                @click="saveBudget"
+              >
+                {{ isSaving ? t('budget.saving') : t('actions.save') }}
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="space-y-6 p-4 sm:p-6">
+          <div v-if="isLoadingBudget" class="rounded-xl border border-slate-200 px-4 py-6 text-sm text-slate-500">
+            {{ t('budget.loading') }}
+          </div>
+
+          <template v-else>
+            <p class="text-sm text-slate-500">{{ t('budget.editorHint') }}</p>
+
+            <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+              <div class="field">
+                <label>{{ t('budget.year') }}</label>
+                <select v-model="form.year" class="input" :disabled="!canEdit">
+                  <option v-for="year in yearOptions" :key="year" :value="String(year)">
+                    {{ year }}
+                  </option>
+                </select>
+              </div>
+
+              <div class="field">
+                <label>{{ t('budget.semester') }}</label>
+                <div class="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    :class="semesterButtonClass('summer')"
+                    :disabled="!canEdit"
+                    @click="form.semester = 'summer'"
+                  >
+                    {{ t('budget.semesters.summer') }}
+                  </button>
+                  <button
+                    type="button"
+                    :class="semesterButtonClass('winter')"
+                    :disabled="!canEdit"
+                    @click="form.semester = 'winter'"
+                  >
+                    {{ t('budget.semesters.winter') }}
+                  </button>
+                </div>
+              </div>
+
+              <div class="field">
+                <label>{{ t('budget.startDate') }}</label>
+                <input :value="periodBounds.startDate" type="date" class="input bg-slate-50" disabled>
+              </div>
+
+              <div class="field">
+                <label>{{ t('budget.endDate') }}</label>
+                <input :value="periodBounds.endDate" type="date" class="input bg-slate-50" disabled>
               </div>
             </div>
-          </div>
 
-          <div class="field">
-            <label>{{ t('budget.notes') }}</label>
-            <textarea
-              v-model="form.notes"
-              :ref="setGeneralNotesRef"
-              rows="1"
-              class="input min-h-9 overflow-hidden resize-none"
-              :disabled="!canEdit"
-              :placeholder="t('budget.notesPlaceholder')"
-              @input="autoResizeTextarea($event)"
-            />
-          </div>
-
-          <div class="overflow-hidden rounded-xl border border-slate-200">
-            <div class="border-b border-slate-200 px-4 py-3">
-              <h3 class="font-semibold text-slate-900">{{ t('budget.costCentreBudgets') }}</h3>
-              <p class="text-sm text-slate-500">{{ t('budget.structureHint') }}</p>
+            <div class="field">
+              <label>{{ t('budget.notes') }}</label>
+              <textarea
+                v-model="form.notes"
+                :ref="setGeneralNotesRef"
+                rows="1"
+                class="input min-h-9 overflow-hidden resize-none"
+                :disabled="!canEdit"
+                :placeholder="t('budget.notesPlaceholder')"
+                @input="autoResizeTextarea($event)"
+              />
             </div>
 
-            <div>
-              <div
-                v-for="costCentre in orderedCostCentres"
-                :key="costCentre.id"
-                class="border-b last:border-b-0"
-                :class="[
-                  costCentre.hasChildren ? 'bg-slate-50/70' : 'bg-white',
-                  !costCentre.is_active ? 'bg-amber-50/70' : '',
-                ]"
-              >
-                <div class="grid grid-cols-1 gap-4 p-4 sm:grid-cols-2 lg:grid-cols-3">
-                  <div class="space-y-3">
-                    <div
-                      class="space-y-1"
-                      :style="{ paddingLeft: `${costCentre.depth * 1}rem` }"
-                    >
-                      <div class="flex items-start gap-2">
-                        <span v-if="costCentre.depth > 0" class="mt-0.5 text-slate-400">|-</span>
-                        <div>
-                          <div class="font-medium text-slate-900">{{ costCentre.code }} - {{ costCentre.name }}</div>
-                          <div v-if="!costCentre.is_active" class="text-xs text-amber-700">
-                            {{ t('budget.inactiveCostCentreNotice') }}
-                          </div>
-                          <div v-if="costCentre.hasChildren" class="text-xs text-slate-500">{{ t('budget.includesChildBudgets') }}</div>
-                        </div>
-                      </div>
+            <div class="overflow-hidden rounded-xl border border-slate-200">
+              <div class="border-b border-slate-200 px-4 py-3">
+                <h3 class="font-semibold text-slate-900">{{ t('budget.costCentreBudgets') }}</h3>
+                <p class="text-sm text-slate-500">{{ t('budget.structureHint') }}</p>
+              </div>
+
+              <div class="hidden gap-x-3 border-b border-slate-200 bg-slate-50 px-4 py-2 text-xs font-semibold text-slate-600 md:grid md:grid-cols-[minmax(0,1fr)_8.5rem_8.5rem_7.5rem]">
+                <div>{{ t('budget.costCentre') }}</div>
+                <div class="pr-2 text-right">{{ t('budget.expenses') }}</div>
+                <div class="pr-2 text-right">{{ t('budget.income') }}</div>
+                <div class="pr-2 text-right">{{ t('budget.saldo') }}</div>
+              </div>
+
+              <div>
+                <div
+                  v-for="costCentre in orderedCostCentres"
+                  :key="costCentre.id"
+                  class="border-b border-slate-200 last:border-b-0"
+                  :class="!costCentre.is_active ? 'bg-amber-50/60' : costCentre.hasChildren ? 'bg-slate-50/50' : 'bg-white'"
+                >
+                  <div class="grid grid-cols-2 gap-x-3 gap-y-2 px-4 py-3 md:grid-cols-[minmax(0,1fr)_8.5rem_8.5rem_7.5rem] md:items-center md:py-2">
+                    <div class="col-span-2 flex min-w-0 items-center gap-2 md:col-span-1" :style="{ paddingLeft: `${costCentre.depth * 1.25}rem` }">
+                      <span v-if="costCentre.depth > 0" class="shrink-0 text-slate-300" aria-hidden="true">└</span>
+                      <span
+                        class="min-w-0 truncate text-sm text-slate-900"
+                        :class="costCentre.hasChildren ? 'font-semibold' : 'font-medium'"
+                        :title="`${costCentre.code} - ${costCentre.name}`"
+                      >
+                        {{ costCentre.code }} - {{ costCentre.name }}
+                      </span>
+                      <span
+                        v-if="!costCentre.is_active"
+                        class="shrink-0 rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-800"
+                        :title="t('budget.inactiveCostCentreNotice')"
+                      >
+                        {{ t('budget.inactiveShort') }}
+                      </span>
+                      <button
+                        type="button"
+                        class="ml-auto flex h-7 w-7 shrink-0 cursor-pointer items-center justify-center rounded-md transition"
+                        :class="hasLineNote(costCentre.id) ? 'text-orange-600 hover:bg-orange-100' : 'text-slate-400 hover:bg-slate-200 hover:text-slate-600'"
+                        :title="t('budget.toggleNote')"
+                        @click="toggleLineNotes(costCentre.id)"
+                      >
+                        <Icon name="material-symbols:edit-note-rounded" class="h-5 w-5" aria-hidden="true" />
+                      </button>
                     </div>
 
-                    <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                      <div class="field">
-                        <label>{{ t('budget.expenses') }}</label>
-                        <input
-                          :value="displayCurrencyField(costCentre.id, 'expense_amount')"
-                          type="text"
-                          class="input text-right"
-                          inputmode="decimal"
-                          :disabled="!canEdit"
-                          @focus="onCurrencyFocus($event, costCentre.id, 'expense_amount')"
-                          @blur="onCurrencyBlur(costCentre.id, 'expense_amount')"
-                          @input="onCurrencyInput($event, costCentre.id, 'expense_amount')"
-                        >
-                      </div>
-
-                      <div class="field">
-                        <label>{{ t('budget.income') }}</label>
-                        <input
-                          :value="displayCurrencyField(costCentre.id, 'income_amount')"
-                          type="text"
-                          class="input text-right"
-                          inputmode="decimal"
-                          :disabled="!canEdit"
-                          @focus="onCurrencyFocus($event, costCentre.id, 'income_amount')"
-                          @blur="onCurrencyBlur(costCentre.id, 'income_amount')"
-                          @input="onCurrencyInput($event, costCentre.id, 'income_amount')"
-                        >
-                      </div>
-                    </div>
-
-                    <div class="field">
-                      <label>{{ t('budget.notes') }}</label>
-                      <textarea
-                        v-model="ownLine(costCentre.id).notes"
-                        :ref="element => setLineNotesRef(element, costCentre.id)"
-                        rows="1"
-                        class="input min-h-9 overflow-hidden resize-none"
+                    <div class="space-y-1">
+                      <label class="text-xs text-slate-600 md:hidden">{{ t('budget.expenses') }}</label>
+                      <input
+                        :value="displayCurrencyField(costCentre.id, 'expense_amount')"
+                        type="text"
+                        class="input text-right"
+                        inputmode="decimal"
                         :disabled="!canEdit"
-                        :placeholder="t('budget.lineNotesPlaceholder')"
-                        @input="autoResizeTextarea($event)"
-                      />
+                        @focus="onCurrencyFocus($event, costCentre.id, 'expense_amount')"
+                        @blur="onCurrencyBlur(costCentre.id, 'expense_amount')"
+                        @input="onCurrencyInput($event, costCentre.id, 'expense_amount')"
+                      >
+                    </div>
+
+                    <div class="space-y-1">
+                      <label class="text-xs text-slate-600 md:hidden">{{ t('budget.income') }}</label>
+                      <input
+                        :value="displayCurrencyField(costCentre.id, 'income_amount')"
+                        type="text"
+                        class="input text-right"
+                        inputmode="decimal"
+                        :disabled="!canEdit"
+                        @focus="onCurrencyFocus($event, costCentre.id, 'income_amount')"
+                        @blur="onCurrencyBlur(costCentre.id, 'income_amount')"
+                        @input="onCurrencyInput($event, costCentre.id, 'income_amount')"
+                      >
+                    </div>
+
+                    <div class="col-span-2 flex items-center justify-between md:col-span-1 md:block md:pr-2 md:text-right">
+                      <span class="text-xs text-slate-600 md:hidden">{{ t('budget.saldo') }}</span>
+                      <span class="text-sm font-medium tabular-nums" :class="saldoTextClass(summaryByCostCentre[costCentre.id]?.ownSaldo ?? 0)">
+                        {{ formatCurrency(summaryByCostCentre[costCentre.id]?.ownSaldo ?? 0) }}
+                      </span>
                     </div>
                   </div>
 
-                  <div class="grid gap-3 sm:col-span-1 lg:col-span-2 md:grid-cols-1 lg:grid-cols-3">
-                    <div class="rounded-lg border border-slate-200 bg-white">
-                      <div class="border-b border-slate-200 px-3 py-2 text-xs font-semibold text-slate-600">{{ t('budget.ownBudget') }}</div>
-                      <div class="space-y-2 px-3 py-3 text-sm">
-                        <div class="flex items-center justify-between gap-3">
-                          <span class="text-slate-500">{{ t('budget.expenses') }}</span>
-                          <span class="text-right text-slate-900">{{ formatCurrency(summaryByCostCentre[costCentre.id]?.ownExpense ?? 0) }}</span>
-                        </div>
-                        <div class="flex items-center justify-between gap-3">
-                          <span class="text-slate-500">{{ t('budget.income') }}</span>
-                          <span class="text-right text-slate-900">{{ formatCurrency(summaryByCostCentre[costCentre.id]?.ownIncome ?? 0) }}</span>
-                        </div>
-                        <div class="flex items-center justify-between gap-3 border-t border-slate-100 pt-2 font-medium">
-                          <span class="text-slate-600">{{ t('budget.saldo') }}</span>
-                          <span class="text-right" :class="saldoTextClass(summaryByCostCentre[costCentre.id]?.ownSaldo ?? 0)">
-                            {{ formatCurrency(summaryByCostCentre[costCentre.id]?.ownSaldo ?? 0) }}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
+                  <div v-if="isLineNotesOpen(costCentre.id)" class="px-4 pb-3">
+                    <textarea
+                      v-model="ownLine(costCentre.id).notes"
+                      :ref="element => setLineNotesRef(element, costCentre.id)"
+                      rows="1"
+                      class="input min-h-9 overflow-hidden resize-none"
+                      :disabled="!canEdit"
+                      :placeholder="t('budget.lineNotesPlaceholder')"
+                      @input="autoResizeTextarea($event)"
+                    />
+                  </div>
 
-                    <div class="rounded-lg border border-slate-200 bg-white">
-                      <div class="border-b border-slate-200 px-3 py-2 text-xs font-semibold text-slate-600">{{ t('budget.childBudgets') }}</div>
-                      <div class="space-y-2 px-3 py-3 text-sm">
-                        <div class="flex items-center justify-between gap-3">
-                          <span class="text-slate-500">{{ t('budget.expenses') }}</span>
-                          <span class="text-right text-slate-900">
-                            {{ costCentre.hasChildren ? formatCurrency(summaryByCostCentre[costCentre.id]?.childExpense ?? 0) : commonNotAvailable }}
-                          </span>
-                        </div>
-                        <div class="flex items-center justify-between gap-3">
-                          <span class="text-slate-500">{{ t('budget.income') }}</span>
-                          <span class="text-right text-slate-900">
-                            {{ costCentre.hasChildren ? formatCurrency(summaryByCostCentre[costCentre.id]?.childIncome ?? 0) : commonNotAvailable }}
-                          </span>
-                        </div>
-                        <div class="flex items-center justify-between gap-3 border-t border-slate-100 pt-2 font-medium">
-                          <span class="text-slate-600">{{ t('budget.saldo') }}</span>
-                          <span class="text-right" :class="saldoTextClass(summaryByCostCentre[costCentre.id]?.childSaldo ?? 0)">
-                            {{ costCentre.hasChildren ? formatCurrency(summaryByCostCentre[costCentre.id]?.childSaldo ?? 0) : commonNotAvailable }}
-                          </span>
-                        </div>
-                      </div>
+                  <div
+                    v-if="costCentre.hasChildren"
+                    class="grid grid-cols-2 gap-x-3 gap-y-1 border-t border-slate-100 bg-slate-100/70 px-4 py-2 text-xs text-slate-600 md:grid-cols-[minmax(0,1fr)_8.5rem_8.5rem_7.5rem] md:items-center"
+                  >
+                    <div class="col-span-2 md:col-span-1" :style="{ paddingLeft: `${costCentre.depth * 1.25}rem` }">
+                      {{ t('budget.sumWithChildren') }}
                     </div>
-
-                    <div class="rounded-lg border border-slate-200 bg-white">
-                      <div class="border-b border-slate-200 px-3 py-2 text-xs font-semibold text-slate-600">{{ t('budget.totalBudget') }}</div>
-                      <div class="space-y-2 px-3 py-3 text-sm">
-                        <div class="flex items-center justify-between gap-3">
-                          <span class="text-slate-500">{{ t('budget.expenses') }}</span>
-                          <span class="text-right text-slate-900">{{ formatCurrency(summaryByCostCentre[costCentre.id]?.totalExpense ?? 0) }}</span>
-                        </div>
-                        <div class="flex items-center justify-between gap-3">
-                          <span class="text-slate-500">{{ t('budget.income') }}</span>
-                          <span class="text-right text-slate-900">{{ formatCurrency(summaryByCostCentre[costCentre.id]?.totalIncome ?? 0) }}</span>
-                        </div>
-                        <div class="flex items-center justify-between gap-3 border-t border-slate-100 pt-2 font-semibold">
-                          <span class="text-slate-600">{{ t('budget.saldo') }}</span>
-                          <span class="text-right" :class="saldoTextClass(summaryByCostCentre[costCentre.id]?.totalSaldo ?? 0)">
-                            {{ formatCurrency(summaryByCostCentre[costCentre.id]?.totalSaldo ?? 0) }}
-                          </span>
-                        </div>
-                      </div>
+                    <div class="flex items-baseline justify-between md:block md:pr-2 md:text-right">
+                      <span class="md:hidden">{{ t('budget.expenses') }}</span>
+                      <span class="tabular-nums">{{ formatCurrency(summaryByCostCentre[costCentre.id]?.totalExpense ?? 0) }}</span>
+                    </div>
+                    <div class="flex items-baseline justify-between md:block md:pr-2 md:text-right">
+                      <span class="md:hidden">{{ t('budget.income') }}</span>
+                      <span class="tabular-nums">{{ formatCurrency(summaryByCostCentre[costCentre.id]?.totalIncome ?? 0) }}</span>
+                    </div>
+                    <div class="col-span-2 flex items-baseline justify-between md:col-span-1 md:block md:pr-2 md:text-right">
+                      <span class="md:hidden">{{ t('budget.saldo') }}</span>
+                      <span class="font-medium tabular-nums" :class="saldoTextClass(summaryByCostCentre[costCentre.id]?.totalSaldo ?? 0)">
+                        {{ formatCurrency(summaryByCostCentre[costCentre.id]?.totalSaldo ?? 0) }}
+                      </span>
                     </div>
                   </div>
                 </div>
               </div>
-            </div>
 
-          </div>
-        </template>
+              <div class="grid grid-cols-2 gap-x-3 gap-y-1 border-t-2 border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-900 md:grid-cols-[minmax(0,1fr)_8.5rem_8.5rem_7.5rem] md:items-center">
+                <div class="col-span-2 md:col-span-1">{{ t('budget.grandTotal') }}</div>
+                <div class="flex items-baseline justify-between md:block md:pr-2 md:text-right">
+                  <span class="font-normal text-slate-500 md:hidden">{{ t('budget.expenses') }}</span>
+                  <span class="tabular-nums">{{ formatCurrency(totalSummary.totalExpense) }}</span>
+                </div>
+                <div class="flex items-baseline justify-between md:block md:pr-2 md:text-right">
+                  <span class="font-normal text-slate-500 md:hidden">{{ t('budget.income') }}</span>
+                  <span class="tabular-nums">{{ formatCurrency(totalSummary.totalIncome) }}</span>
+                </div>
+                <div class="col-span-2 flex items-baseline justify-between md:col-span-1 md:block md:pr-2 md:text-right">
+                  <span class="font-normal text-slate-500 md:hidden">{{ t('budget.saldo') }}</span>
+                  <span class="tabular-nums" :class="saldoTextClass(totalSummary.totalSaldo)">{{ formatCurrency(totalSummary.totalSaldo) }}</span>
+                </div>
+              </div>
+            </div>
+          </template>
+        </div>
       </section>
     </template>
   </Page>
@@ -348,10 +336,13 @@ const form = ref<BudgetEditorForm>(createEmptyBudgetForm())
 const focusedField = ref<string | null>(null)
 const generalNotesRef = ref<HTMLTextAreaElement | null>(null)
 const lineNotesRefs = ref<Record<number, HTMLTextAreaElement | null>>({})
+const headerSentinelRef = ref<HTMLElement | null>(null)
+const isHeaderStuck = ref(false)
+let headerStickyObserver: IntersectionObserver | null = null
 
 const currentYear = new Date().getFullYear()
-const commonNotAvailable = computed(() => t('common.notAvailable'))
 const yearOptions = computed(() => Array.from({ length: 11 }, (_, index) => currentYear + 1 - index))
+const openLineNotes = ref<Record<number, boolean>>({})
 
 const orderedCostCentres = computed<DisplayCostCentre[]>(() => {
   const itemMap = new Map(costCentres.value.map(item => [item.id, item]))
@@ -505,7 +496,22 @@ const totalSummary = computed(() => {
 const periodBounds = computed(() => getPeriodBounds(Number(form.value.year), form.value.semester))
 const hasValidPeriod = computed(() => Number.isInteger(Number(form.value.year)) && Number(form.value.year) >= 2000)
 
+const periodShortLabel = computed(() => {
+  if (!hasValidPeriod.value) return ''
+
+  const year = Number(form.value.year)
+  if (form.value.semester === 'summer') return `${t('budget.semesters.summerShort')} ${year}`
+  return `${t('budget.semesters.winterShort')} ${year}/${String(year + 1).slice(-2)}`
+})
+
 onMounted(async () => {
+  if (headerSentinelRef.value) {
+    headerStickyObserver = new IntersectionObserver((entries) => {
+      isHeaderStuck.value = !entries[0]?.isIntersecting
+    })
+    headerStickyObserver.observe(headerSentinelRef.value)
+  }
+
   await loadCostCentres()
 
   const budgetId = Number(pageMeta.value?.budgetId)
@@ -517,6 +523,10 @@ onMounted(async () => {
   resetCurrentBudget()
   await nextTick()
   resizeAllNotes()
+})
+
+onBeforeUnmount(() => {
+  headerStickyObserver?.disconnect()
 })
 
 useAppRefresh().onRefresh(loadCostCentres)
@@ -563,6 +573,8 @@ function applyBudgetDetail(budget: BudgetDetail) {
     notes: budget.notes ?? '',
     lines: createEditorLines(budget.lines),
   }
+
+  syncOpenLineNotes(true)
 }
 
 function resetCurrentBudget() {
@@ -572,9 +584,43 @@ function resetCurrentBudget() {
     lines: createEditorLines(),
   }
 
+  syncOpenLineNotes(true)
+
   nextTick().then(() => {
     resizeAllNotes()
   })
+}
+
+function hasLineNote(costCentreId: number) {
+  return Boolean(String(lineMap.value.get(costCentreId)?.notes || '').trim())
+}
+
+function isLineNotesOpen(costCentreId: number) {
+  return Boolean(openLineNotes.value[costCentreId])
+}
+
+function toggleLineNotes(costCentreId: number) {
+  const opened = !openLineNotes.value[costCentreId]
+  openLineNotes.value[costCentreId] = opened
+  if (!opened) return
+
+  nextTick().then(() => {
+    const textarea = lineNotesRefs.value[costCentreId]
+    if (!textarea) return
+    textarea.style.height = 'auto'
+    textarea.style.height = `${textarea.scrollHeight}px`
+    if (canEdit.value) textarea.focus()
+  })
+}
+
+function syncOpenLineNotes(replace = false) {
+  const next: Record<number, boolean> = replace ? {} : { ...openLineNotes.value }
+
+  for (const line of form.value.lines) {
+    if (String(line.notes || '').trim()) next[line.cost_centre_id] = true
+  }
+
+  openLineNotes.value = next
 }
 
 function ownLine(costCentreId: number) {
@@ -630,6 +676,12 @@ function saldoTextClass(value: number) {
   return 'text-slate-700'
 }
 
+function saldoTextClassOnDark(value: number) {
+  if (value > 0) return 'text-emerald-400'
+  if (value < 0) return 'text-rose-400'
+  return 'text-slate-300'
+}
+
 function semesterButtonClass(value: BudgetSemester) {
   const selected = form.value.semester === value
   return [
@@ -648,6 +700,7 @@ async function loadCostCentres() {
 
   costCentres.value = response.costCentres
   form.value.lines = createEditorLines(form.value.lines)
+  syncOpenLineNotes()
   await nextTick()
   resizeAllNotes()
 }
