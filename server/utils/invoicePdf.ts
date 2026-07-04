@@ -57,19 +57,81 @@ export function buildInvoicePdf(params: {
 }) {
   const { association, company, invoice, logo = null, boardLine = null, invoiceTextSettings = DEFAULT_INVOICE_TEXT_SETTINGS } = params
   const { netTotal, grossTotal, taxBreakdown } = calculateInvoicePositionTotals(invoice.positions)
-  const backgroundTexts: PdfText[] = []
-  const texts: PdfText[] = []
-  const lines: PdfLine[] = []
-  const images: PdfImage[] = []
 
   const imageObject = logo ? buildImageObject(logo) : null
-  const rects: PdfRect[] = []
   const pageWidth = 595.25
   const contentLeft = 55
   const contentRight = 540
+  const headingCenterX = pageWidth / 2
   const logoWidth = imageObject ? 120 : 0
   const logoHeight = imageObject ? (logoWidth * imageObject.height) / imageObject.width : 0
-  const headingCenterX = pageWidth / 2
+  // Content must stop above the footer block (separator line at y=96); continuation pages start below the repeated logo/heading.
+  const bottomLimit = 110
+  const continuationTop = imageObject ? 700 : 730
+
+  interface PageBuffer {
+    backgroundTexts: PdfText[]
+    texts: PdfText[]
+    lines: PdfLine[]
+    rects: PdfRect[]
+    images: PdfImage[]
+  }
+
+  const pageBuffers: PageBuffer[] = []
+  let backgroundTexts: PdfText[] = []
+  let texts: PdfText[] = []
+  let lines: PdfLine[] = []
+  let rects: PdfRect[] = []
+  let images: PdfImage[] = []
+
+  const startPage = () => {
+    backgroundTexts = []
+    texts = []
+    lines = []
+    rects = []
+    images = []
+    pageBuffers.push({ backgroundTexts, texts, lines, rects, images })
+
+    if (invoice.status === 'draft') {
+      const draftText = 'ENTWURF'
+      backgroundTexts.push({
+        x: (pageWidth - estimateTextWidth(draftText, 64, true)) / 2,
+        y: 415,
+        size: 64,
+        text: draftText,
+        font: 'F2',
+        gray: 0.82,
+      })
+    }
+
+    if (imageObject) {
+      images.push({
+        x: centeredImageX(headingCenterX, logoWidth, imageObject),
+        y: 750,
+        width: logoWidth,
+        height: logoHeight,
+        objectName: 'Im1',
+      })
+    } else {
+      texts.push({
+        x: 220,
+        y: 785,
+        size: 22,
+        text: association.short_name || association.name,
+        font: 'F2',
+      })
+    }
+    texts.push({ x: 255, y: imageObject ? 730 : 760, size: 16, text: 'Rechnung', font: 'F2' })
+  }
+  startPage()
+
+  /** Returns the given cursor unchanged if `requiredHeight` still fits above the footer, otherwise starts a new page and returns its top cursor. */
+  const ensureSpace = (y: number, requiredHeight: number) => {
+    if (y - requiredHeight >= bottomLimit) return y
+    startPage()
+    return continuationTop
+  }
+
   const templateContext = {
     invoice_number: invoice.invoice_number,
     association_name: association.name,
@@ -82,38 +144,7 @@ export function buildInvoicePdf(params: {
   const renderedIntroText = renderInvoiceTextTemplate(invoice.intro_text?.trim() || invoiceTextSettings.intro_text, templateContext)
   const renderedNotes = renderInvoiceTextTemplate(invoice.notes?.trim() || invoiceTextSettings.notes, templateContext)
 
-  if (invoice.status === 'draft') {
-    const draftText = 'ENTWURF'
-    backgroundTexts.push({
-      x: (pageWidth - estimateTextWidth(draftText, 64, true)) / 2,
-      y: 415,
-      size: 64,
-      text: draftText,
-      font: 'F2',
-      gray: 0.82,
-    })
-  }
-
-  if (imageObject) {
-    images.push({
-      x: centeredImageX(headingCenterX, logoWidth, imageObject),
-      y: 750,
-      width: logoWidth,
-      height: logoHeight,
-      objectName: 'Im1',
-    })
-  } else {
-    texts.push({
-      x: 220,
-      y: 785,
-      size: 22,
-      text: association.short_name || association.name,
-      font: 'F2',
-    })
-  }
-
   texts.push(
-    { x: 255, y: imageObject ? 730 : 760, size: 16, text: 'Rechnung', font: 'F2' },
     {
       x: contentLeft,
       y: 684,
@@ -163,6 +194,7 @@ export function buildInvoicePdf(params: {
         bodyY -= 10
         continue
       }
+      bodyY = ensureSpace(bodyY, 0)
       texts.push({ x: contentLeft, y: bodyY, size: 12, text: line, font: 'F2' })
       bodyY -= 15
     }
@@ -175,6 +207,7 @@ export function buildInvoicePdf(params: {
       bodyY -= 10
       continue
     }
+    bodyY = ensureSpace(bodyY, 0)
     texts.push({ x: contentLeft, y: bodyY, size: 10, text: line })
     bodyY -= 13
   }
@@ -183,7 +216,6 @@ export function buildInvoicePdf(params: {
 
   const tableLeft = contentLeft
   const tableRight = contentRight
-  const tableTop = bodyY
   const colPos = tableLeft + 4
   const colDescription = tableLeft + 34
   const taxEntries = [...taxBreakdown.entries()]
@@ -213,29 +245,70 @@ export function buildInvoicePdf(params: {
   const colUnitPriceLeft = colUnitPriceRight - unitPriceWidth
   const colUnitLeft = colUnitPriceLeft - unitWidth
   const colQuantityRight = colUnitLeft - columnGap
-  const colQuantityLeft = colQuantityRight - quantityWidth
+  /** Draws the position-table column header at `top` and returns the baseline for the first row beneath it. */
+  const drawTableHeader = (top: number) => {
+    lines.push(
+      { x1: tableLeft, y1: top, x2: tableRight, y2: top, width: 0.8 },
+      { x1: tableLeft, y1: top - 17, x2: tableRight, y2: top - 17, width: 0.8 },
+    )
+    texts.push(
+      { x: colPos, y: top - 11, size: tableFontSize, text: 'Pos.', font: 'F2' },
+      { x: colDescription, y: top - 11, size: tableFontSize, text: 'Leistung', font: 'F2' },
+      { x: colQuantityRight, y: top - 11, size: tableFontSize, text: 'Menge', font: 'F2', align: 'right' },
+      { x: colUnitLeft, y: top - 11, size: tableFontSize, text: 'Einheit', font: 'F2' },
+      { x: colUnitPriceRight, y: top - 11, size: tableFontSize, text: 'Einzelpreis', font: 'F2', align: 'right' },
+      ...(hasMixedTaxRates && colVatRight !== null ? [{ x: colVatRight, y: top - 11, size: tableFontSize, text: 'USt.', font: 'F2' as const, align: 'right' as const }] : []),
+      { x: colPriceRight, y: top - 11, size: tableFontSize, text: 'Gesamt', font: 'F2', align: 'right' },
+    )
+    return top - 31
+  }
 
-  lines.push(
-    { x1: tableLeft, y1: tableTop, x2: tableRight, y2: tableTop, width: 0.8 },
-    { x1: tableLeft, y1: tableTop - 17, x2: tableRight, y2: tableTop - 17, width: 0.8 },
-  )
-  texts.push(
-    { x: colPos, y: tableTop - 11, size: tableFontSize, text: 'Pos.', font: 'F2' },
-    { x: colDescription, y: tableTop - 11, size: tableFontSize, text: 'Leistung', font: 'F2' },
-    { x: colQuantityRight, y: tableTop - 11, size: tableFontSize, text: 'Menge', font: 'F2', align: 'right' },
-    { x: colUnitLeft, y: tableTop - 11, size: tableFontSize, text: 'Einheit', font: 'F2' },
-    { x: colUnitPriceRight, y: tableTop - 11, size: tableFontSize, text: 'Einzelpreis', font: 'F2', align: 'right' },
-    ...(hasMixedTaxRates && colVatRight !== null ? [{ x: colVatRight, y: tableTop - 11, size: tableFontSize, text: 'USt.', font: 'F2' as const, align: 'right' as const }] : []),
-    { x: colPriceRight, y: tableTop - 11, size: tableFontSize, text: 'Gesamt', font: 'F2', align: 'right' },
-  )
+  // Keep the table header together with at least the first row.
+  bodyY = ensureSpace(bodyY, 60)
+  let rowY = drawTableHeader(bodyY)
+  let rowsOnCurrentPage = 0
+  let carriedNet = 0
+  // Extra space reserved below the last row of a cut page for its Übertrag summary row.
+  const carrySummaryHeight = 18
+
+  /** Closes a cut-off table with an Übertrag subtotal row at the bottom of the current page. */
+  const closeTableWithCarry = (y: number) => {
+    lines.push({ x1: tableLeft, y1: y + 8, x2: tableRight, y2: y + 8, width: 0.5, gray: 0.82 })
+    texts.push(
+      { x: colDescription, y: y - 4, size: tableFontSize, text: 'Übertrag', font: 'F3', gray: 0.35 },
+      { x: colPriceRight, y: y - 4, size: tableFontSize, text: formatMoney(carriedNet), align: 'right', gray: 0.35 },
+    )
+    lines.push({ x1: tableLeft, y1: y - 10, x2: tableRight, y2: y - 10, width: 0.5, gray: 0.82 })
+  }
+
+  /** Draws the carried-over subtotal as the first row of a continuation page and advances the cursor. */
+  const drawCarryRow = () => {
+    texts.push(
+      { x: colDescription, y: rowY, size: tableFontSize, text: 'Übertrag', font: 'F3', gray: 0.35 },
+      { x: colPriceRight, y: rowY, size: tableFontSize, text: formatMoney(carriedNet), align: 'right', gray: 0.35 },
+    )
+    lines.push({ x1: tableLeft, y1: rowY - 6, x2: tableRight, y2: rowY - 6, width: 0.5, gray: 0.82 })
+    rowY -= 20
+  }
 
   const descriptionWidth = tableRight - colDescription - 4
   const descriptionMaxChars = Math.max(20, Math.floor(descriptionWidth / (tableFontSize * 0.58)))
-  let rowY = tableTop - 31
   invoice.positions.forEach((position, index) => {
     const nameLines = wrapText(position.name, 56)
     const detailLines = position.description ? wrapText(position.description, descriptionMaxChars) : []
     const netLineTotal = position.quantity * position.unit_price
+    const nameHeight = nameLines.length * 12
+    const descriptionHeight = detailLines.length ? (detailLines.length * 12) + 4 : 0
+    const rowHeight = Math.max(20, nameHeight + descriptionHeight + 8)
+
+    if (rowY - rowHeight < bottomLimit + carrySummaryHeight) {
+      // Close the cut-off table on this page, then continue under a repeated header with the carried-over subtotal.
+      if (rowsOnCurrentPage > 0) closeTableWithCarry(rowY)
+      startPage()
+      rowY = drawTableHeader(continuationTop)
+      drawCarryRow()
+      rowsOnCurrentPage = 0
+    }
 
     texts.push(
       { x: colPos, y: rowY, size: tableFontSize, text: String(index + 1) },
@@ -269,9 +342,9 @@ export function buildInvoicePdf(params: {
       })
     }
 
-    const nameHeight = nameLines.length * 12
-    const descriptionHeight = detailLines.length ? (detailLines.length * 12) + 4 : 0
-    rowY -= Math.max(20, nameHeight + descriptionHeight + 8)
+    rowY -= rowHeight
+    rowsOnCurrentPage += 1
+    carriedNet += netLineTotal
   })
   const isKleinunternehmer = invoice.is_kleinunternehmer
   const netByTax = new Map<number, number>()
@@ -279,6 +352,16 @@ export function buildInvoicePdf(params: {
     const key = Number(position.tax)
     netByTax.set(key, (netByTax.get(key) || 0) + (Number(position.quantity) * Number(position.unit_price)))
   }
+
+  // Keep the whole totals block (net + VAT rows + gross) on one page.
+  const totalsBlockHeight = 37 + (18 * taxEntries.length) + 10
+  if (rowY - totalsBlockHeight < bottomLimit) {
+    if (rowsOnCurrentPage > 0) closeTableWithCarry(rowY)
+    startPage()
+    rowY = drawTableHeader(continuationTop)
+    drawCarryRow()
+  }
+
   const totalsStartY = rowY - 9
   const netRowTop = totalsStartY + 12
   const netRowBottom = totalsStartY - 6
@@ -327,6 +410,7 @@ export function buildInvoicePdf(params: {
 
   let notesY = totalsY - 22
   if (isKleinunternehmer) {
+    notesY = ensureSpace(notesY, 0)
     texts.push({
       x: tableLeft,
       y: notesY,
@@ -337,11 +421,15 @@ export function buildInvoicePdf(params: {
     notesY -= 16
   }
 
-  for (const line of wrapTextByWidth(
+  const paymentLines = wrapTextByWidth(
     `Bitte überweisen Sie den vollständigen Rechnungsbetrag unter Angabe der Rechnungsnummer bis zum ${formatDate(invoice.due_date)} auf das unten angegebene Konto.`,
     contentRight - contentLeft,
     10,
-  )) {
+  )
+  // Keep the payment instruction together on one page instead of breaking it mid-sentence.
+  const paymentBlockHeight = paymentLines.reduce((height, line) => height + (line ? 12 : 10), 0)
+  notesY = ensureSpace(notesY, paymentBlockHeight - 12)
+  for (const line of paymentLines) {
     if (!line) {
       notesY -= 10
       continue
@@ -362,15 +450,13 @@ export function buildInvoicePdf(params: {
         notesY -= 10
         continue
       }
+      notesY = ensureSpace(notesY, 0)
       texts.push({ x: tableLeft, y: notesY, size: 10, text: line })
       notesY -= 12
     }
     notesY -= 8
   }
 
-  lines.push(
-    { x1: contentLeft, y1: 96, x2: contentRight, y2: 96, width: 0.8 },
-  )
   const footerColumns = [
     [
       association.name,
@@ -408,34 +494,51 @@ export function buildInvoicePdf(params: {
     footerXs[3] - footerXs[2] - footerGap,
     footerColumnWidths[3],
   ]
-  footerColumns.forEach((column, columnIndex) => {
-    let y = 82
-    column.filter(Boolean).forEach((line, lineIndex) => {
-      const isAssociationName = columnIndex === 0 && lineIndex === 0
-      const fontSize = 8.5
-      const wrappedLines = wrapTextByWidth(line, footerWidths[columnIndex]!, fontSize)
-      wrappedLines.forEach((wrappedLine) => {
-        texts.push({
-          x: footerXs[columnIndex]!,
-          y,
-          size: fontSize,
-          text: wrappedLine,
-          font: isAssociationName ? 'F2' : 'F1',
+
+  pageBuffers.forEach((buffer, pageIndex) => {
+    buffer.lines.push(
+      { x1: contentLeft, y1: 96, x2: contentRight, y2: 96, width: 0.8 },
+    )
+    footerColumns.forEach((column, columnIndex) => {
+      let y = 82
+      column.filter(Boolean).forEach((line, lineIndex) => {
+        const isAssociationName = columnIndex === 0 && lineIndex === 0
+        const fontSize = 8.5
+        const wrappedLines = wrapTextByWidth(line, footerWidths[columnIndex]!, fontSize)
+        wrappedLines.forEach((wrappedLine) => {
+          buffer.texts.push({
+            x: footerXs[columnIndex]!,
+            y,
+            size: fontSize,
+            text: wrappedLine,
+            font: isAssociationName ? 'F2' : 'F1',
+          })
+          y -= 11
         })
-        y -= 11
       })
     })
+
+    if (pageBuffers.length > 1) {
+      buffer.texts.push({
+        x: contentRight,
+        y: 100,
+        size: 8,
+        text: `Seite ${pageIndex + 1} von ${pageBuffers.length}`,
+        align: 'right',
+        gray: 0.45,
+      })
+    }
   })
 
-  const content = [
+  const pages = pageBuffers.map(buffer => [
     '0 g 0 G',
-    ...drawRects(rects),
-    ...drawText(backgroundTexts),
-    ...drawLines(lines),
-    ...drawImages(images),
+    ...drawRects(buffer.rects),
+    ...drawText(buffer.backgroundTexts),
+    ...drawLines(buffer.lines),
+    ...drawImages(buffer.images),
     '0 g 0 G',
-    ...drawText(texts),
-  ].join('\n')
+    ...drawText(buffer.texts),
+  ].join('\n'))
 
-  return buildPdfDocument({ pages: [content], imageObject })
+  return buildPdfDocument({ pages, imageObject })
 }
