@@ -19,7 +19,7 @@
         <div
           v-if="open"
           ref="menuRef"
-          class="search-select-menu absolute z-70 rounded-md border bg-white shadow-lg w-max overflow-y-auto"
+          class="search-select-menu fixed z-70 rounded-md border bg-white shadow-lg w-max overflow-y-auto"
           :class="menuWidthClass"
           :style="menuStyle"
         >
@@ -131,7 +131,7 @@ const menuStyle = ref<Record<string, string>>({
 let positionFrame: number | null = null
 
 const currentQuery = computed(() => props.modelValue || props.selectedLabel || '')
-const normalizedQuery = computed(() => currentQuery.value.trim().toLowerCase())
+const normalizedQuery = computed(() => (props.modelValue || '').trim().toLowerCase())
 const filteredOptions = computed(() => {
   if (!normalizedQuery.value) return props.options
 
@@ -163,10 +163,10 @@ function updateMenuPosition() {
   const actualMenuHeight = Math.min(menuElement?.scrollHeight ?? desiredMenuHeight, menuMaxHeight || desiredMenuHeight)
   const measuredWidth = menuRect?.width ?? Math.max(rootRect.width, menuElement?.scrollWidth ?? 0)
   const maxLeft = window.innerWidth - viewportPadding - measuredWidth
-  const left = window.scrollX + Math.min(Math.max(rootRect.left, viewportPadding), Math.max(viewportPadding, maxLeft))
+  const left = Math.min(Math.max(rootRect.left, viewportPadding), Math.max(viewportPadding, maxLeft))
   const top = shouldOpenUp
-    ? window.scrollY + Math.max(topBoundary, rootRect.top - actualMenuHeight - menuGap)
-    : window.scrollY + Math.min(bottomBoundary, rootRect.bottom + menuGap)
+    ? Math.max(topBoundary, rootRect.top - actualMenuHeight - menuGap)
+    : Math.min(bottomBoundary, rootRect.bottom + menuGap)
 
   menuStyle.value = {
     top: `${top}px`,

@@ -6,6 +6,7 @@
       role="dialog"
       aria-modal="true"
       :aria-labelledby="titleId"
+      @mousedown="onBackdropMousedown"
       @click.self="handleBackdropClick"
     >
       <section
@@ -102,6 +103,7 @@ const emit = defineEmits<{
 const titleId = `modal-title-${useId()}`
 
 let isLockedByThisInstance = false
+let backdropMousedownOnSelf = false
 
 if (import.meta.client) {
   watch(() => props.modelValue, (isOpen) => {
@@ -117,8 +119,12 @@ function close() {
   emit('close')
 }
 
+function onBackdropMousedown(event: MouseEvent) {
+  backdropMousedownOnSelf = event.target === event.currentTarget
+}
+
 function handleBackdropClick() {
-  if (props.closeOnBackdrop) close()
+  if (props.closeOnBackdrop && backdropMousedownOnSelf) close()
 }
 
 function handleKeydown(event: KeyboardEvent) {
