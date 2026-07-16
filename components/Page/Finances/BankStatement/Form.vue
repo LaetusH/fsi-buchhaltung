@@ -236,6 +236,8 @@ const props = defineProps<{
   saving?: boolean
   openingBalance: number
   hasFile?: boolean
+  file?: File | null
+  removeExistingFile?: boolean
   canCreateReceipt?: boolean
   canCreateInvoice?: boolean
   canEditReceipt?: boolean
@@ -524,6 +526,8 @@ function buildEntityReturnMeta(positionIndex: number) {
     bankStatementPositionIndex: positionIndex,
   }
   if (pageMeta.value?.bankStatementId) meta.bankStatementId = pageMeta.value.bankStatementId
+  if (props.file) meta.bankStatementFile = props.file
+  if (props.removeExistingFile) meta.bankStatementRemoveExistingFile = true
   meta.returnTarget = returnTarget.value
   return meta
 }

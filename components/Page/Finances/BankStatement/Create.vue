@@ -12,6 +12,8 @@
     <BankStatementForm
       v-model="form"
       :has-file="!!file || (!!existingFile && !removeExistingFile)"
+      :file="file"
+      :remove-existing-file="removeExistingFile"
       :disabled="!canEdit"
       :saving="isSaving"
       :opening-balance="openingBalance"
@@ -107,12 +109,15 @@ onMounted(async () => {
   if (pageMeta.value?.bankStatementDraft) {
     applyDraft(pageMeta.value.bankStatementDraft as Partial<CreateBankStatementBody>)
 
+    if (pageMeta.value?.bankStatementFile instanceof File) file.value = pageMeta.value.bankStatementFile
+    if (pageMeta.value?.bankStatementRemoveExistingFile) removeExistingFile.value = true
+
     if (bankStatementId.value) {
       isEditMode.value = true
       const res = await $fetch<GetBankStatementResponse>(String(`/api/bank_statements/${bankStatementId.value}`), { method: 'GET' })
       if (res.ok) {
         openingBalance.value = res.bankStatement.opening_balance
-        if (res.file) {
+        if (res.file && !removeExistingFile.value) {
           existingFile.value = {
             id: res.file.id,
             url: `/api/files/${res.file.id}`,

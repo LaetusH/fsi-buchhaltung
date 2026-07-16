@@ -12,6 +12,8 @@
     <ReimbursementForm
       v-model="form"
       :has-file="!!file || (!!existingFile && !removeExistingFile)"
+      :file="file"
+      :remove-existing-file="removeExistingFile"
       :disabled="!canEdit"
       :can-create-receipt="canCreateReceipt"
       :can-edit-receipt="canCreateReceipt"
@@ -136,10 +138,13 @@ onMounted(async () => {
   if (pageMeta.value?.reimbursementDraft) {
     applyDraft(pageMeta.value.reimbursementDraft as Partial<CreateReimbursementBody>)
 
+    if (pageMeta.value?.reimbursementFile instanceof File) file.value = pageMeta.value.reimbursementFile
+    if (pageMeta.value?.reimbursementRemoveExistingFile) removeExistingFile.value = true
+
     if (reimbursementId.value) {
       isEditMode.value = true
       const res = await $fetch<GetReimbursementResponse>(`/api/reimbursements/${reimbursementId.value}`, { method: 'GET' })
-      if (res.ok && res.file) {
+      if (res.ok && res.file && !removeExistingFile.value) {
         existingFile.value = {
           id: res.file.id,
           url: `/api/files/${res.file.id}`,

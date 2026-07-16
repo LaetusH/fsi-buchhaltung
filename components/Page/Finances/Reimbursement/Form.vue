@@ -224,6 +224,8 @@ const props = defineProps<{
   disabled?: boolean
   saving?: boolean
   hasFile?: boolean
+  file?: File | null
+  removeExistingFile?: boolean
   canCreateReceipt?: boolean
   canEditReceipt?: boolean
   externalValidationErrors?: string[]
@@ -499,6 +501,8 @@ function buildReceiptReturnMeta() {
     reimbursementDraft: buildDraftMeta(),
   }
   if (pageMeta.value?.reimbursementId) nestedReturnTargetMeta.reimbursementId = pageMeta.value.reimbursementId
+  if (props.file) nestedReturnTargetMeta.reimbursementFile = props.file
+  if (props.removeExistingFile) nestedReturnTargetMeta.reimbursementRemoveExistingFile = true
   nestedReturnTargetMeta.returnTarget = returnTarget.value
 
   return nestedReturnTargetMeta
