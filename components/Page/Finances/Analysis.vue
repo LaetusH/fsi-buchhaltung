@@ -286,6 +286,70 @@
                   <p class="text-xs text-slate-500">{{ t('financeAnalysis.exportOptionsHint') }}</p>
                 </div>
 
+                <section class="space-y-2 rounded-xl border border-slate-200 p-2.5">
+                  <div>
+                    <div class="text-sm font-semibold text-slate-900">{{ t('financeAnalysis.exportFormatTitle') }}</div>
+                    <p class="text-[11px] text-slate-500">{{ t('financeAnalysis.exportFormatHint') }}</p>
+                  </div>
+
+                  <div class="grid grid-cols-2 gap-2">
+                    <button
+                      type="button"
+                      :class="exportFormatButtonClass('pdf')"
+                      @click="exportFormat = 'pdf'"
+                    >
+                      <Icon name="material-symbols:picture-as-pdf-rounded" class="h-4 w-4 shrink-0" />
+                      <span>{{ t('financeAnalysis.exportFormatPdf') }}</span>
+                    </button>
+                    <button
+                      type="button"
+                      :class="exportFormatButtonClass('excel')"
+                      @click="exportFormat = 'excel'"
+                    >
+                      <Icon name="material-symbols:table-rounded" class="h-4 w-4 shrink-0" />
+                      <span>{{ t('financeAnalysis.exportFormatExcel') }}</span>
+                    </button>
+                  </div>
+                </section>
+
+                <section class="space-y-2 rounded-xl border border-slate-200 p-2.5">
+                  <div>
+                    <div class="text-sm font-semibold text-slate-900">{{ t('financeAnalysis.exportPartsTitle') }}</div>
+                    <p class="text-[11px] text-slate-500">{{ t('financeAnalysis.exportPartsHint') }}</p>
+                  </div>
+
+                  <div class="grid grid-cols-2 gap-2">
+                    <button
+                      type="button"
+                      :class="exportToggleButtonClass(exportIncludeOverview)"
+                      @click="exportIncludeOverview = !exportIncludeOverview"
+                    >
+                      {{ t('financeAnalysis.exportPartOverview') }}
+                    </button>
+                    <button
+                      type="button"
+                      :class="exportToggleButtonClass(exportIncludeReceiptList)"
+                      @click="exportIncludeReceiptList = !exportIncludeReceiptList"
+                    >
+                      {{ t('financeAnalysis.exportPartReceipts') }}
+                    </button>
+                    <button
+                      type="button"
+                      :class="exportToggleButtonClass(exportIncludeCashCountList)"
+                      @click="exportIncludeCashCountList = !exportIncludeCashCountList"
+                    >
+                      {{ t('financeAnalysis.exportPartCashCounts') }}
+                    </button>
+                    <button
+                      type="button"
+                      :class="exportToggleButtonClass(exportIncludeInvoiceList)"
+                      @click="exportIncludeInvoiceList = !exportIncludeInvoiceList"
+                    >
+                      {{ t('financeAnalysis.exportPartInvoices') }}
+                    </button>
+                  </div>
+                </section>
+
                 <section v-if="showReportPagesExportOptions" class="space-y-2 rounded-xl border border-slate-200 p-2.5">
                   <div>
                     <div class="text-sm font-semibold text-slate-900">{{ t('financeAnalysis.exportReportPagesTitle') }}</div>
@@ -400,11 +464,21 @@
                   </div>
                 </section>
 
+                <p v-if="!hasSelectedExportContent" class="text-xs text-red-700">
+                  {{ t('financeAnalysis.exportNothingSelected') }}
+                </p>
+
                 <div class="flex items-center justify-between gap-2 pt-1">
                   <button type="button" class="btn-secondary" @click="closeExportMenu">
                     {{ t('actions.cancel') }}
                   </button>
-                  <button type="button" class="btn-primary" :disabled="isExporting" @click="exportAnalysisReport">
+                  <button
+                    type="button"
+                    class="btn-primary"
+                    :class="!hasSelectedExportContent ? 'opacity-70 cursor-not-allowed' : ''"
+                    :disabled="isExporting || !hasSelectedExportContent"
+                    @click="exportAnalysisReport"
+                  >
                     {{ isExporting ? t('financeAnalysis.exportingReport') : t('financeAnalysis.exportNow') }}
                   </button>
                 </div>
@@ -804,8 +878,10 @@ import type { FinanceAnalysisData, FinanceAnalysisReceiptItem } from '~/types/fi
 import { InvoiceStatus } from '~/types/invoice'
 import { ReceiptStatus } from '~/types/receipt'
 import { downloadFinanceAnalysisReport, type FinanceAnalysisExportGrouping } from '~/utils/excel/financeAnalysisReport'
+import { downloadFinanceAnalysisPdf } from '~/utils/financeAnalysisPdfDownload'
 
 type QuickSemester = '' | 'summer' | 'winter'
+type FinanceAnalysisExportFormat = 'pdf' | 'excel'
 type ManualDateField = 'start' | 'end'
 type ComparisonValueType = 'currency' | 'count'
 type ReceiptDateField = 'receipt_date' | 'reimbursement_submitted_at'
@@ -852,11 +928,16 @@ interface PersistedFinanceAnalysisState {
 }
 
 interface PersistedFinanceAnalysisExportState {
+  exportFormat?: FinanceAnalysisExportFormat
   exportGrouping?: FinanceAnalysisExportGrouping
   exportSplitByMonth?: boolean
   exportSplitByPaymentStatus?: boolean
   reportPagesExportMode?: ReportPagesExportMode
   includeBalanceSheet?: boolean
+  exportIncludeOverview?: boolean
+  exportIncludeReceiptList?: boolean
+  exportIncludeCashCountList?: boolean
+  exportIncludeInvoiceList?: boolean
 }
 
 const emit = defineEmits<{
@@ -904,10 +985,15 @@ const exportMenuWrapper = ref<HTMLElement | null>(null)
 const exportMenuAlignment = ref<'left' | 'right'>('left')
 const isExportMenuMobile = ref(false)
 const isExportMenuOpen = ref(false)
+const exportFormat = ref<FinanceAnalysisExportFormat>('pdf')
 const exportGrouping = ref<FinanceAnalysisExportGrouping>('none')
 const exportSplitByMonth = ref(false)
 const exportSplitByPaymentStatus = ref(false)
 const includeBalanceSheet = ref(false)
+const exportIncludeOverview = ref(true)
+const exportIncludeReceiptList = ref(true)
+const exportIncludeCashCountList = ref(true)
+const exportIncludeInvoiceList = ref(true)
 const reportPagesExportMode = ref<ReportPagesExportMode>('none')
 const openFilterDropdown = ref<number | null>(null)
 const hasCostCentreAccess = computed(() => hasPermission('cost_centres.view'))
@@ -1022,6 +1108,18 @@ const compareToBudgetHint = computed(() => {
   if (!coveringBudgets.value?.length) return t('financeAnalysis.exportCompareToBudgetUnavailable')
   return t('financeAnalysis.exportCompareToBudgetAvailable', { budgets: comparisonBudgetLabel.value })
 })
+const hasSelectedExportContent = computed(() => (
+  exportIncludeOverview.value
+  || exportIncludeReceiptList.value
+  || exportIncludeCashCountList.value
+  || exportIncludeInvoiceList.value
+  || exportIncludesAnnualClosing.value
+  || exportIncludesBudgetComparison.value
+  || includeBalanceSheet.value
+  || exportGrouping.value !== 'none'
+  || exportSplitByMonth.value
+  || exportSplitByPaymentStatus.value
+))
 
 const monthOptions = computed(() => {
   return Array.from({ length: 12 }, (_, index) => ({
@@ -1240,6 +1338,9 @@ function restoreStoredExportState() {
   const state = sessionExportState.value
   if (!state) return
 
+  if (state.exportFormat === 'pdf' || state.exportFormat === 'excel') {
+    exportFormat.value = state.exportFormat
+  }
   if (state.exportGrouping === 'none' || state.exportGrouping === 'costCentres' || state.exportGrouping === 'spheres') {
     exportGrouping.value = state.exportGrouping
   }
@@ -1249,6 +1350,10 @@ function restoreStoredExportState() {
     reportPagesExportMode.value = state.reportPagesExportMode
   }
   if (typeof state.includeBalanceSheet === 'boolean') includeBalanceSheet.value = state.includeBalanceSheet
+  if (typeof state.exportIncludeOverview === 'boolean') exportIncludeOverview.value = state.exportIncludeOverview
+  if (typeof state.exportIncludeReceiptList === 'boolean') exportIncludeReceiptList.value = state.exportIncludeReceiptList
+  if (typeof state.exportIncludeCashCountList === 'boolean') exportIncludeCashCountList.value = state.exportIncludeCashCountList
+  if (typeof state.exportIncludeInvoiceList === 'boolean') exportIncludeInvoiceList.value = state.exportIncludeInvoiceList
 }
 
 function persistAnalysisState() {
@@ -1277,11 +1382,16 @@ function persistAnalysisState() {
 
 function persistExportState() {
   sessionExportState.value = {
+    exportFormat: exportFormat.value,
     exportGrouping: exportGrouping.value,
     exportSplitByMonth: exportSplitByMonth.value,
     exportSplitByPaymentStatus: exportSplitByPaymentStatus.value,
     reportPagesExportMode: reportPagesExportMode.value,
     includeBalanceSheet: includeBalanceSheet.value,
+    exportIncludeOverview: exportIncludeOverview.value,
+    exportIncludeReceiptList: exportIncludeReceiptList.value,
+    exportIncludeCashCountList: exportIncludeCashCountList.value,
+    exportIncludeInvoiceList: exportIncludeInvoiceList.value,
   } satisfies PersistedFinanceAnalysisExportState
 }
 
@@ -1450,6 +1560,16 @@ function exportGroupingButtonClass(value: FinanceAnalysisExportGrouping) {
   const selected = exportGrouping.value === value
   return [
     'rounded-lg border px-2.5 py-1.5 text-xs font-medium leading-tight transition cursor-pointer',
+    selected
+      ? 'border-orange-400 bg-orange-50 text-orange-700'
+      : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50',
+  ]
+}
+
+function exportFormatButtonClass(format: FinanceAnalysisExportFormat) {
+  const selected = exportFormat.value === format
+  return [
+    'inline-flex w-full items-center justify-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-xs font-medium leading-tight transition cursor-pointer',
     selected
       ? 'border-orange-400 bg-orange-50 text-orange-700'
       : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50',
@@ -1661,11 +1781,42 @@ function readJpegDimensions(bytes: Uint8Array) {
 }
 
 async function exportAnalysisReport() {
-  if (!summary.value || isExporting.value) return
+  if (!summary.value || isExporting.value || !hasSelectedExportContent.value) return
 
   isExporting.value = true
 
   try {
+    if (exportFormat.value === 'pdf') {
+      const result = await downloadFinanceAnalysisPdf({
+        startDate: startDate.value,
+        endDate: endDate.value,
+        statuses: selectedStatuses.value,
+        receiptDateField: receiptDateField.value,
+        invoiceStatuses: selectedInvoiceStatuses.value,
+        invoiceDateField: invoiceDateField.value,
+        costCentreId: selectedCostCentre.value?.id ?? null,
+        includeChildCostCentres: selectedCostCentre.value ? includeChildCostCentres.value : false,
+        includeComparison: compareWithPreviousYear.value,
+        annualClosing: exportIncludesAnnualClosing.value,
+        compareToBudget: exportIncludesBudgetComparison.value,
+        budgetIds: exportIncludesBudgetComparison.value
+          ? (coveringBudgets.value ?? []).map(budget => budget.id)
+          : [],
+        exportGrouping: exportGrouping.value,
+        exportSplitByMonth: exportSplitByMonth.value,
+        exportSplitByPaymentStatus: exportSplitByPaymentStatus.value,
+        includeBalanceSheet: includeBalanceSheet.value,
+        includeOverview: exportIncludeOverview.value,
+        includeReceiptList: exportIncludeReceiptList.value,
+        includeCashCountList: exportIncludeCashCountList.value,
+        includeInvoiceList: exportIncludeInvoiceList.value,
+      })
+
+      if (!result.ok) throw new Error(result.error || 'export failed')
+      closeExportMenu()
+      return
+    }
+
     let comparisonBudget: BudgetDetail[] = []
     const logo = await loadExportLogo()
 
@@ -1704,6 +1855,10 @@ async function exportAnalysisReport() {
       exportSplitByMonth: exportSplitByMonth.value,
       exportSplitByPaymentStatus: exportSplitByPaymentStatus.value,
       includeBalanceSheet: includeBalanceSheet.value,
+      includeOverview: exportIncludeOverview.value,
+      includeReceiptList: exportIncludeReceiptList.value,
+      includeCashCountList: exportIncludeCashCountList.value,
+      includeInvoiceList: exportIncludeInvoiceList.value,
       logo,
       formatCurrency,
       formatDate,
@@ -1943,11 +2098,16 @@ watch(() => ({
 }, { deep: true })
 
 watch(() => ({
+  exportFormat: exportFormat.value,
   exportGrouping: exportGrouping.value,
   exportSplitByMonth: exportSplitByMonth.value,
   exportSplitByPaymentStatus: exportSplitByPaymentStatus.value,
   reportPagesExportMode: reportPagesExportMode.value,
   includeBalanceSheet: includeBalanceSheet.value,
+  exportIncludeOverview: exportIncludeOverview.value,
+  exportIncludeReceiptList: exportIncludeReceiptList.value,
+  exportIncludeCashCountList: exportIncludeCashCountList.value,
+  exportIncludeInvoiceList: exportIncludeInvoiceList.value,
 }), () => {
   persistExportState()
 }, { deep: true })

@@ -82,6 +82,7 @@ export type FinanceLiquidityRowType =
   | 'bankStatementCheckpoint'
   | 'cashCountRegister'
   | 'cashCountRevenue'
+  | 'registerCheck'
   | 'closing'
 
 export interface FinanceLiquidityRow {
@@ -134,9 +135,9 @@ export interface FinanceAnalysisSummary {
   cash_before: number
   /** Cash pool total at the end of the period */
   cash_after: number
-  /** Sum of in-period cashCountRegister discrepancy_amount values (unexplained gaps) */
+  /** Sum of in-period cashCountRegister/registerCheck discrepancy_amount values (unexplained gaps) */
   period_discrepancy_total: number
-  /** Count of in-period cashCountRegister rows with non-zero discrepancy */
+  /** Count of in-period cashCountRegister/registerCheck rows with non-zero discrepancy */
   period_discrepancy_count: number
 }
 

@@ -613,13 +613,13 @@ export async function buildCashLedger(endDate: string): Promise<CashLedgerResult
        ORDER BY DATE(reimb.disbursed_at) ASC, reimb.id ASC, rlink.receipt_id ASC`,
       [endDate],
     ),
-    // Cash counts with per-register positions
+    // Cash counts with per-register positions (event counts and standalone register checks)
     query<any>(
       `SELECT cc.id, cc.event_id, e.name AS event_name,
               DATE(cc.counted_after_at) AS counted_after_date,
               ccp.register_number, ccp.amount_before, ccp.amount_after
        FROM cash_counts cc
-       INNER JOIN events e ON e.id = cc.event_id
+       LEFT JOIN events e ON e.id = cc.event_id
        INNER JOIN cash_count_positions ccp ON ccp.cash_count_id = cc.id
        WHERE DATE(cc.counted_after_at) <= ?
        ORDER BY cc.counted_after_at ASC, cc.id ASC, ccp.register_number ASC`,
@@ -676,7 +676,7 @@ export async function buildCashLedger(endDate: string): Promise<CashLedgerResult
   // -----------------------------------------------------------------------
 
   const anchorsByRegister = new Map<number, RegisterAnchor[]>()
-  const cashCountsById = new Map<number, { event_name: string; date: string; registers: { register_number: number; amount_before: number; amount_after: number }[] }>()
+  const cashCountsById = new Map<number, { event_name: string; date: string; isCheck: boolean; registers: { register_number: number; amount_before: number; amount_after: number }[] }>()
 
   for (const row of cashCountRows) {
     const ccId = Number(row.id)
@@ -685,7 +685,12 @@ export async function buildCashLedger(endDate: string): Promise<CashLedgerResult
     const amountBefore = Number(row.amount_before)
     const amountAfter = Number(row.amount_after)
 
-    const existing = cashCountsById.get(ccId) ?? { event_name: String(row.event_name || ''), date, registers: [] }
+    const existing = cashCountsById.get(ccId) ?? {
+      event_name: String(row.event_name || ''),
+      date,
+      isCheck: row.event_id === null || row.event_id === undefined,
+      registers: [],
+    }
     existing.registers.push({ register_number: reg, amount_before: amountBefore, amount_after: amountAfter })
     cashCountsById.set(ccId, existing)
 
@@ -996,9 +1001,10 @@ export async function buildCashLedger(endDate: string): Promise<CashLedgerResult
         expected.set(regNum, measured)
         const cashAfterSnap = cashSum()
 
+        const rowType = cc.isCheck ? 'registerCheck' : 'cashCountRegister'
         rows.push(makeLedgerRow(
-          `cashCountRegister-${evt.ccId}-${regNum}-${rowSeq}`,
-          'cashCountRegister',
+          `${rowType}-${evt.ccId}-${regNum}-${rowSeq}`,
+          rowType,
           cc.date, 'cash', cc.event_name, null, regNum,
           discrepancy ?? 0,
           bank, cashAfterSnap,
