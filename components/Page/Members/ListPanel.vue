@@ -10,6 +10,13 @@
     @update:search-value="search = $event"
     @create="createMember"
   >
+    <template #actions>
+      <button type="button" class="btn-secondary inline-flex items-center gap-2" @click="exportOpen = true">
+        <Icon name="material-symbols:download-rounded" />
+        {{ t('member.export.button') }}
+      </button>
+    </template>
+
     <CommonAdvancedTable
       v-model:search="search"
       :rows="members"
@@ -19,6 +26,8 @@
       @row-open="openMember($event.id)"
     />
   </CommonPageTableCard>
+
+  <PageMembersExportModal v-model="exportOpen" />
 </template>
 
 <script setup lang="ts">
@@ -39,6 +48,7 @@ const canViewUsers = computed(() => hasPermission(['users.view', 'users.manage']
 
 const members = ref<MemberListItem[]>([])
 const search = ref('')
+const exportOpen = ref(false)
 
 const columns = computed<AdvancedTableColumn<MemberListItem>[]>(() => [
   {

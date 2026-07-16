@@ -1,18 +1,8 @@
 import {
-  buildImageObject,
-  buildPdfDocument,
-  centeredImageX,
-  drawImages,
-  drawLines,
-  drawRects,
-  drawText,
   estimateTextWidth,
   wrapTextByWidth,
-  type PdfImage,
-  type PdfLine,
-  type PdfRect,
-  type PdfText,
 } from '~/server/utils/pdf'
+import { createPdfDocumentLayout, PDF_LAYOUT } from '~/server/utils/pdfLayout'
 import type { AssociationProfileRow } from '~/types/association'
 import type { EventShiftSlot, EventShiftTypeDescriptions } from '~/types/event'
 
@@ -133,13 +123,9 @@ export function buildEventShiftPlanPdf(params: {
   logo?: { mimeType: string, data: Buffer } | null
 }) {
   const { event, shifts, typeDescriptions, includeDescriptions, highlightMemberId = null, association, logo = null } = params
-  const imageObject = logo ? buildImageObject(logo) : null
+  const layout = createPdfDocumentLayout({ logo })
 
-  const pageWidth = 595.25
-  const contentLeft = 55
-  const contentRight = 540
-  const bottomLimit = 78
-  const continuationTop = 800
+  const { contentLeft, contentRight } = PDF_LAYOUT
 
   const timeLeft = contentLeft + 4
   const nameLeft = 165
@@ -148,72 +134,52 @@ export function buildEventShiftPlanPdf(params: {
   const nameWidth = staffedRight - 42 - nameLeft
   const membersWidth = contentRight - 4 - membersLeft
 
-  interface PageBuffer {
-    texts: PdfText[]
-    lines: PdfLine[]
-    rects: PdfRect[]
-    images: PdfImage[]
-  }
-
-  const pageBuffers: PageBuffer[] = []
-  let page: PageBuffer = { texts: [], lines: [], rects: [], images: [] }
-  pageBuffers.push(page)
-  let y = 0
   let tableHeaderDrawn = false
 
   const drawTableHeader = () => {
-    page.lines.push(
-      { x1: contentLeft, y1: y, x2: contentRight, y2: y, width: 0.8 },
-      { x1: contentLeft, y1: y - 17, x2: contentRight, y2: y - 17, width: 0.8 },
+    layout.page.lines.push(
+      { x1: contentLeft, y1: layout.y, x2: contentRight, y2: layout.y, width: 0.8 },
+      { x1: contentLeft, y1: layout.y - 17, x2: contentRight, y2: layout.y - 17, width: 0.8 },
     )
-    page.texts.push(
-      { x: timeLeft, y: y - 11, size: 9.5, text: 'Zeit', font: 'F2' },
-      { x: nameLeft, y: y - 11, size: 9.5, text: 'Schicht', font: 'F2' },
-      { x: staffedRight, y: y - 11, size: 9.5, text: 'Besetzt', font: 'F2', align: 'right' },
-      { x: membersLeft, y: y - 11, size: 9.5, text: 'Mitglieder', font: 'F2' },
+    layout.page.texts.push(
+      { x: timeLeft, y: layout.y - 11, size: 9.5, text: 'Zeit', font: 'F2' },
+      { x: nameLeft, y: layout.y - 11, size: 9.5, text: 'Schicht', font: 'F2' },
+      { x: staffedRight, y: layout.y - 11, size: 9.5, text: 'Besetzt', font: 'F2', align: 'right' },
+      { x: membersLeft, y: layout.y - 11, size: 9.5, text: 'Mitglieder', font: 'F2' },
     )
-    y -= 24
+    layout.y -= 24
   }
-
-  const startContinuationPage = () => {
-    page = { texts: [], lines: [], rects: [], images: [] }
-    pageBuffers.push(page)
-    y = continuationTop
+  layout.onContinuationPage(() => {
     drawTableHeader()
     tableHeaderDrawn = true
-  }
-
-  const ensureSpace = (requiredHeight: number) => {
-    if (y - requiredHeight >= bottomLimit) return
-    startContinuationPage()
-  }
+  })
 
   const renderDayHeading = (label: string) => {
-    ensureSpace(26)
-    page.rects.push({
+    layout.ensureSpace(26)
+    layout.page.rects.push({
       x: contentLeft,
-      y: y - 20,
+      y: layout.y - 20,
       width: contentRight - contentLeft,
       height: 20,
       fill: true,
       gray: 0.9,
     })
-    page.texts.push({ x: timeLeft, y: y - 14, size: 10, text: label, font: 'F2' })
-    y -= 20
+    layout.page.texts.push({ x: timeLeft, y: layout.y - 14, size: 10, text: label, font: 'F2' })
+    layout.y -= 20
   }
 
   const renderTimeGroupHeader = (label: string) => {
-    ensureSpace(20)
-    page.rects.push({
+    layout.ensureSpace(20)
+    layout.page.rects.push({
       x: contentLeft,
-      y: y - 16,
+      y: layout.y - 16,
       width: contentRight - contentLeft,
       height: 16,
       fill: true,
       gray: 0.95,
     })
-    page.texts.push({ x: timeLeft, y: y - 11.5, size: 9, text: label, font: 'F2', gray: 0.25 })
-    y -= 16
+    layout.page.texts.push({ x: timeLeft, y: layout.y - 11.5, size: 9, text: label, font: 'F2', gray: 0.25 })
+    layout.y -= 16
   }
 
   const renderShift = (shift: EventShiftSlot) => {
@@ -228,13 +194,13 @@ export function buildEventShiftPlanPdf(params: {
       + (descriptionLines.length ? 2 + (descriptionLines.length * 10) : 0)
     const rowHeight = contentHeight + 7
 
-    ensureSpace(rowHeight)
+    layout.ensureSpace(rowHeight)
 
-    const firstBaseline = y - 12
+    const firstBaseline = layout.y - 12
 
     nameLines.forEach((line, index) => {
       if (!line) return
-      page.texts.push({
+      layout.page.texts.push({
         x: nameLeft,
         y: firstBaseline - (index * 11),
         size: 9,
@@ -244,7 +210,7 @@ export function buildEventShiftPlanPdf(params: {
     })
 
     const isFullyStaffed = shift.members.length >= shift.required_people
-    page.texts.push({
+    layout.page.texts.push({
       x: staffedRight,
       y: firstBaseline,
       size: 9,
@@ -259,7 +225,7 @@ export function buildEventShiftPlanPdf(params: {
       const segmentY = firstBaseline - (lineIndex * 11)
 
       lineSegments.forEach((segment) => {
-        page.texts.push({
+        layout.page.texts.push({
           x: cursorX,
           y: segmentY,
           size: 9,
@@ -270,7 +236,7 @@ export function buildEventShiftPlanPdf(params: {
 
         if (segment.bold) {
           const nameOnly = segment.text.replace(/,\s*$/, '')
-          page.lines.push({
+          layout.page.lines.push({
             x1: cursorX,
             x2: cursorX + estimateTextWidth(nameOnly, 9, true),
             y1: segmentY - 2,
@@ -288,7 +254,7 @@ export function buildEventShiftPlanPdf(params: {
       const descriptionStartY = firstBaseline - (Math.max(nameLines.length, memberLineSegments.length) * 11) - 1
       descriptionLines.forEach((line, index) => {
         if (!line) return
-        page.texts.push({
+        layout.page.texts.push({
           x: nameLeft,
           y: descriptionStartY - (index * 10),
           size: 8,
@@ -299,73 +265,33 @@ export function buildEventShiftPlanPdf(params: {
       })
     }
 
-    page.lines.push({
+    layout.page.lines.push({
       x1: contentLeft,
-      y1: y - rowHeight,
+      y1: layout.y - rowHeight,
       x2: contentRight,
-      y2: y - rowHeight,
+      y2: layout.y - rowHeight,
       width: 0.5,
       gray: 0.82,
     })
 
-    y -= rowHeight
+    layout.y -= rowHeight
   }
 
-  const headingCenterX = pageWidth / 2
+  const hasLogo = layout.drawCenteredBrand(association)
 
-  if (imageObject) {
-    const logoWidth = 120
-    const logoHeight = (logoWidth * imageObject.height) / imageObject.width
-    page.images.push({
-      x: centeredImageX(headingCenterX, logoWidth, imageObject),
-      y: 750,
-      width: logoWidth,
-      height: logoHeight,
-      objectName: 'Im1',
-    })
-  } else if (association) {
-    const associationLabel = association.short_name || association.name
-    page.texts.push({
-      x: headingCenterX - (estimateTextWidth(associationLabel, 22, true) / 2),
-      y: 780,
-      size: 22,
-      text: associationLabel,
-      font: 'F2',
-    })
-  }
-
-  const title = 'Schichtplan'
-  page.texts.push({
-    x: headingCenterX - (estimateTextWidth(title, 18, true) / 2),
-    y: imageObject ? 722 : 738,
-    size: 18,
-    text: title,
-    font: 'F2',
-  })
+  layout.centeredText('Schichtplan', { y: hasLogo ? 722 : 738, size: 18, font: 'F2' })
 
   const subtitle = event.name.trim() || 'Veranstaltung'
-  page.texts.push({
-    x: headingCenterX - (estimateTextWidth(subtitle, 12) / 2),
-    y: imageObject ? 704 : 720,
-    size: 12,
-    text: subtitle,
-    gray: 0.2,
-  })
+  layout.centeredText(subtitle, { y: hasLogo ? 704 : 720, size: 12, gray: 0.2 })
 
   const metaParts = [
     `${formatDateTimeLabel(event.starts_at)} - ${formatDateTimeLabel(event.ends_at)}`,
     ...(event.location?.trim() ? [event.location.trim()] : []),
   ]
   const metaLabel = metaParts.join(' · ')
-  page.texts.push({
-    x: headingCenterX - (estimateTextWidth(metaLabel, 9.5) / 2),
-    y: imageObject ? 690 : 706,
-    size: 9.5,
-    text: metaLabel,
-    gray: 0.35,
-  })
+  layout.centeredText(metaLabel, { y: hasLogo ? 690 : 706, size: 9.5, gray: 0.35 })
 
-  y = imageObject ? 664 : 680
+  layout.y = hasLogo ? 664 : 680
 
   const sortedShifts = [...shifts].sort((left, right) => {
     return left.starts_at.localeCompare(right.starts_at)
@@ -378,25 +304,25 @@ export function buildEventShiftPlanPdf(params: {
     : new Map()
 
   if (typeLabels.size) {
-    ensureSpace(18)
-    page.texts.push({ x: timeLeft, y: y - 12, size: 10.5, text: 'Aufgaben nach Schichttyp', font: 'F2' })
-    y -= 18
+    layout.ensureSpace(18)
+    layout.page.texts.push({ x: timeLeft, y: layout.y - 12, size: 10.5, text: 'Aufgaben nach Schichttyp', font: 'F2' })
+    layout.y -= 18
 
     for (const { label, description } of typeLabels.values()) {
-      ensureSpace(13)
-      page.texts.push({ x: timeLeft, y: y - 10, size: 9, text: label, font: 'F2' })
-      y -= 12
+      layout.ensureSpace(13)
+      layout.page.texts.push({ x: timeLeft, y: layout.y - 10, size: 9, text: label, font: 'F2' })
+      layout.y -= 12
 
       const lines = wrapTextByWidth(description, contentRight - 8 - timeLeft, 8.5)
       const rowHeight = (lines.length * 10) + 4
-      ensureSpace(rowHeight)
+      layout.ensureSpace(rowHeight)
       lines.forEach((line, index) => {
-        page.texts.push({ x: timeLeft + 8, y: y - 9 - (index * 10), size: 8.5, text: line, font: 'F3', gray: 0.35 })
+        layout.page.texts.push({ x: timeLeft + 8, y: layout.y - 9 - (index * 10), size: 8.5, text: line, font: 'F3', gray: 0.35 })
       })
-      y -= rowHeight
+      layout.y -= rowHeight
     }
 
-    y -= 6
+    layout.y -= 6
   }
 
   if (!tableHeaderDrawn) drawTableHeader()
@@ -413,29 +339,12 @@ export function buildEventShiftPlanPdf(params: {
   }
 
   if (!sortedShifts.length) {
-    page.texts.push({ x: timeLeft, y: y - 14, size: 10, text: 'Keine Schichten vorhanden.', gray: 0.35 })
+    layout.page.texts.push({ x: timeLeft, y: layout.y - 14, size: 10, text: 'Keine Schichten vorhanden.', gray: 0.35 })
   }
 
   const footerLabel = [association?.short_name || association?.name, `Schichtplan ${subtitle}`]
     .filter(Boolean)
     .join(' · ')
 
-  pageBuffers.forEach((buffer, index) => {
-    buffer.lines.push({ x1: contentLeft, y1: 58, x2: contentRight, y2: 58, width: 0.8 })
-    buffer.texts.push(
-      { x: contentLeft, y: 46, size: 8.5, text: footerLabel, gray: 0.35 },
-      { x: contentRight, y: 46, size: 8.5, text: `Seite ${index + 1} von ${pageBuffers.length}`, align: 'right', gray: 0.35 },
-    )
-  })
-
-  const pages = pageBuffers.map(buffer => [
-    '0 g 0 G',
-    ...drawRects(buffer.rects),
-    ...drawLines(buffer.lines),
-    ...drawImages(buffer.images),
-    '0 g 0 G',
-    ...drawText(buffer.texts),
-  ].join('\n'))
-
-  return buildPdfDocument({ pages, imageObject })
+  return layout.finish(footerLabel)
 }

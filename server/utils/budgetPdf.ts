@@ -1,18 +1,5 @@
-import {
-  buildImageObject,
-  buildPdfDocument,
-  centeredImageX,
-  drawImages,
-  drawLines,
-  drawRects,
-  drawText,
-  estimateTextWidth,
-  wrapTextByWidth,
-  type PdfImage,
-  type PdfLine,
-  type PdfRect,
-  type PdfText,
-} from '~/server/utils/pdf'
+import { wrapTextByWidth } from '~/server/utils/pdf'
+import { createPdfDocumentLayout, PDF_LAYOUT } from '~/server/utils/pdfLayout'
 import type { AssociationProfileRow } from '~/types/association'
 import type { BudgetDetail } from '~/types/budget'
 import type { CostCentreRow } from '~/types/costCentre'
@@ -162,13 +149,9 @@ export function buildBudgetPdf(params: {
   logo?: { mimeType: string, data: Buffer } | null
 }) {
   const { budget, costCentres, association, logo = null } = params
-  const imageObject = logo ? buildImageObject(logo) : null
+  const layout = createPdfDocumentLayout({ logo })
 
-  const pageWidth = 595.25
-  const contentLeft = 55
-  const contentRight = 540
-  const bottomLimit = 78
-  const continuationTop = 800
+  const { contentLeft, contentRight } = PDF_LAYOUT
 
   const colSaldoRight = contentRight - 4
   const colIncomeRight = colSaldoRight - 68
@@ -204,43 +187,20 @@ export function buildBudgetPdf(params: {
 
   const semesterLabel = budgetSemesterLabel(budget)
 
-  interface PageBuffer {
-    texts: PdfText[]
-    lines: PdfLine[]
-    rects: PdfRect[]
-    images: PdfImage[]
-  }
-
-  const pageBuffers: PageBuffer[] = []
-  let page: PageBuffer = { texts: [], lines: [], rects: [], images: [] }
-  pageBuffers.push(page)
-  let y = 0
-
   const drawTableHeader = () => {
-    page.lines.push(
-      { x1: contentLeft, y1: y, x2: contentRight, y2: y, width: 0.8 },
-      { x1: contentLeft, y1: y - 17, x2: contentRight, y2: y - 17, width: 0.8 },
+    layout.page.lines.push(
+      { x1: contentLeft, y1: layout.y, x2: contentRight, y2: layout.y, width: 0.8 },
+      { x1: contentLeft, y1: layout.y - 17, x2: contentRight, y2: layout.y - 17, width: 0.8 },
     )
-    page.texts.push(
-      { x: nameLeft, y: y - 11, size: 9.5, text: 'Kostenstelle', font: 'F2' },
-      { x: colExpenseRight, y: y - 11, size: 9.5, text: 'Ausgaben', font: 'F2', align: 'right' },
-      { x: colIncomeRight, y: y - 11, size: 9.5, text: 'Einnahmen', font: 'F2', align: 'right' },
-      { x: colSaldoRight, y: y - 11, size: 9.5, text: 'Saldo', font: 'F2', align: 'right' },
+    layout.page.texts.push(
+      { x: nameLeft, y: layout.y - 11, size: 9.5, text: 'Kostenstelle', font: 'F2' },
+      { x: colExpenseRight, y: layout.y - 11, size: 9.5, text: 'Ausgaben', font: 'F2', align: 'right' },
+      { x: colIncomeRight, y: layout.y - 11, size: 9.5, text: 'Einnahmen', font: 'F2', align: 'right' },
+      { x: colSaldoRight, y: layout.y - 11, size: 9.5, text: 'Saldo', font: 'F2', align: 'right' },
     )
-    y -= 24
+    layout.y -= 24
   }
-
-  const startContinuationPage = () => {
-    page = { texts: [], lines: [], rects: [], images: [] }
-    pageBuffers.push(page)
-    y = continuationTop
-    drawTableHeader()
-  }
-
-  const ensureSpace = (requiredHeight: number) => {
-    if (y - requiredHeight >= bottomLimit) return
-    startContinuationPage()
-  }
+  layout.onContinuationPage(drawTableHeader)
 
   const renderRow = (params: {
     label: string
@@ -263,12 +223,12 @@ export function buildBudgetPdf(params: {
     const contentHeight = (nameLines.length * 11) + (noteLines.length ? 2 + (noteLines.length * 10) : 0)
     const rowHeight = contentHeight + 7
 
-    ensureSpace(rowHeight)
+    layout.ensureSpace(rowHeight)
 
     if (band) {
-      page.rects.push({
+      layout.page.rects.push({
         x: contentLeft,
-        y: y - rowHeight,
+        y: layout.y - rowHeight,
         width: contentRight - contentLeft,
         height: rowHeight,
         fill: true,
@@ -276,10 +236,10 @@ export function buildBudgetPdf(params: {
       })
     }
 
-    const firstBaseline = y - 12
+    const firstBaseline = layout.y - 12
     nameLines.forEach((line, index) => {
       if (!line) return
-      page.texts.push({
+      layout.page.texts.push({
         x: nameX,
         y: firstBaseline - (index * 11),
         size: rowFontSize,
@@ -289,7 +249,7 @@ export function buildBudgetPdf(params: {
     })
 
     if (category) {
-      page.texts.push({
+      layout.page.texts.push({
         x: colCategoryLeft,
         y: firstBaseline,
         size: 8.5,
@@ -298,7 +258,7 @@ export function buildBudgetPdf(params: {
       })
     }
 
-    page.texts.push(
+    layout.page.texts.push(
       { x: colExpenseRight, y: firstBaseline, size: rowFontSize, text: formatMoney(expense), font: bold ? 'F2' : 'F1', align: 'right' },
       { x: colIncomeRight, y: firstBaseline, size: rowFontSize, text: formatMoney(income), font: bold ? 'F2' : 'F1', align: 'right' },
       { x: colSaldoRight, y: firstBaseline, size: rowFontSize, text: formatMoney(saldo), font: bold ? 'F2' : 'F1', align: 'right' },
@@ -308,7 +268,7 @@ export function buildBudgetPdf(params: {
       const noteStartY = firstBaseline - (nameLines.length * 11) - 1
       noteLines.forEach((line, index) => {
         if (!line) return
-        page.texts.push({
+        layout.page.texts.push({
           x: nameX,
           y: noteStartY - (index * 10),
           size: 8,
@@ -318,60 +278,24 @@ export function buildBudgetPdf(params: {
       })
     }
 
-    page.lines.push({
+    layout.page.lines.push({
       x1: contentLeft,
-      y1: y - rowHeight,
+      y1: layout.y - rowHeight,
       x2: contentRight,
-      y2: y - rowHeight,
+      y2: layout.y - rowHeight,
       width: 0.5,
       gray: 0.82,
     })
 
-    y -= rowHeight
+    layout.y -= rowHeight
   }
 
-  const headingCenterX = pageWidth / 2
+  const hasLogo = layout.drawCenteredBrand(association)
 
-  if (imageObject) {
-    const logoWidth = 120
-    const logoHeight = (logoWidth * imageObject.height) / imageObject.width
-    page.images.push({
-      x: centeredImageX(headingCenterX, logoWidth, imageObject),
-      y: 750,
-      width: logoWidth,
-      height: logoHeight,
-      objectName: 'Im1',
-    })
-  } else if (association) {
-    const associationLabel = association.short_name || association.name
-    page.texts.push({
-      x: headingCenterX - (estimateTextWidth(associationLabel, 22, true) / 2),
-      y: 780,
-      size: 22,
-      text: associationLabel,
-      font: 'F2',
-    })
-  }
+  layout.centeredText('Haushaltsplan', { y: hasLogo ? 722 : 738, size: 18, font: 'F2' })
+  layout.centeredText(semesterLabel, { y: hasLogo ? 702 : 718, size: 13, gray: 0.25 })
 
-  const title = 'Haushaltsplan'
-  page.texts.push(
-    {
-      x: headingCenterX - (estimateTextWidth(title, 18, true) / 2),
-      y: imageObject ? 722 : 738,
-      size: 18,
-      text: title,
-      font: 'F2',
-    },
-    {
-      x: headingCenterX - (estimateTextWidth(semesterLabel, 13) / 2),
-      y: imageObject ? 702 : 718,
-      size: 13,
-      text: semesterLabel,
-      gray: 0.25,
-    },
-  )
-
-  y = imageObject ? 672 : 688
+  layout.y = hasLogo ? 672 : 688
 
   const today = new Date()
   const createdAt = `${String(today.getDate()).padStart(2, '0')}.${String(today.getMonth() + 1).padStart(2, '0')}.${today.getFullYear()}`
@@ -380,27 +304,27 @@ export function buildBudgetPdf(params: {
     ['Erstellt am:', createdAt],
   ]
   metaRows.forEach(([label, value]) => {
-    page.texts.push(
-      { x: contentLeft, y, size: 10, text: label, font: 'F2' },
-      { x: contentLeft + 75, y, size: 10, text: value },
+    layout.page.texts.push(
+      { x: contentLeft, y: layout.y, size: 10, text: label, font: 'F2' },
+      { x: contentLeft + 75, y: layout.y, size: 10, text: value },
     )
-    y -= 15
+    layout.y -= 15
   })
 
   const generalNotes = String(budget.notes || '').trim()
   if (generalNotes) {
-    y -= 4
+    layout.y -= 4
     for (const line of wrapTextByWidth(generalNotes, contentRight - contentLeft, 10)) {
       if (!line) {
-        y -= 10
+        layout.y -= 10
         continue
       }
-      page.texts.push({ x: contentLeft, y, size: 10, text: line, gray: 0.2 })
-      y -= 13
+      layout.page.texts.push({ x: contentLeft, y: layout.y, size: 10, text: line, gray: 0.2 })
+      layout.y -= 13
     }
   }
 
-  y -= 12
+  layout.y -= 12
   drawTableHeader()
 
   renderRow({
@@ -412,7 +336,7 @@ export function buildBudgetPdf(params: {
     bold: true,
     band: true,
   })
-  y -= 8
+  layout.y -= 8
 
   statementRows.forEach((row, index) => {
     const summary = summaryByCostCentre.get(row.costCentre.id) ?? {
@@ -424,7 +348,7 @@ export function buildBudgetPdf(params: {
     const label = `${row.depth > 0 ? '|- ' : ''}${row.costCentre.code} - ${row.costCentre.name}`
     const note = lineByCostCentre.get(row.costCentre.id)?.notes ?? null
 
-    if (isGroupRow && index > 0) y -= 8
+    if (isGroupRow && index > 0) layout.y -= 8
 
     if (row.hasChildren) {
       renderRow({
@@ -471,29 +395,12 @@ export function buildBudgetPdf(params: {
   })
 
   if (!statementRows.length) {
-    page.texts.push({ x: nameLeft, y: y - 14, size: 10, text: 'Keine Kostenstellen vorhanden.', gray: 0.35 })
+    layout.page.texts.push({ x: nameLeft, y: layout.y - 14, size: 10, text: 'Keine Kostenstellen vorhanden.', gray: 0.35 })
   }
 
   const footerLabel = [association?.short_name || association?.name, `Haushaltsplan ${semesterLabel}`]
     .filter(Boolean)
     .join(' · ')
 
-  pageBuffers.forEach((buffer, index) => {
-    buffer.lines.push({ x1: contentLeft, y1: 58, x2: contentRight, y2: 58, width: 0.8 })
-    buffer.texts.push(
-      { x: contentLeft, y: 46, size: 8.5, text: footerLabel, gray: 0.35 },
-      { x: contentRight, y: 46, size: 8.5, text: `Seite ${index + 1} von ${pageBuffers.length}`, align: 'right', gray: 0.35 },
-    )
-  })
-
-  const pages = pageBuffers.map(buffer => [
-    '0 g 0 G',
-    ...drawRects(buffer.rects),
-    ...drawLines(buffer.lines),
-    ...drawImages(buffer.images),
-    '0 g 0 G',
-    ...drawText(buffer.texts),
-  ].join('\n'))
-
-  return buildPdfDocument({ pages, imageObject })
+  return layout.finish(footerLabel)
 }

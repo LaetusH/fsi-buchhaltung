@@ -10,6 +10,8 @@
           @update:model-value="$emit('update:searchValue', $event)"
         />
 
+        <slot name="actions" />
+
         <button v-if="canCreate" type="button" class="btn-primary" @click="$emit('create')">
           {{ createLabel }}
         </button>

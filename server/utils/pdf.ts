@@ -321,6 +321,27 @@ export function buildImageObject(logo: { mimeType: string, data: Buffer }) {
   return buildJpegImageObject(logo.data)
 }
 
+const PNG_SIGNATURE = Buffer.from([0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A])
+
+/** Pixel dimensions of a PNG/JPEG without decoding or re-encoding it, e.g. for sizing embedded images in other formats. */
+export function readImageSize(image: { mimeType: string, data: Buffer }): { width: number, height: number } | null {
+  const normalized = image.mimeType.toLowerCase()
+
+  if (normalized === 'image/png') {
+    if (image.data.length < 24 || !image.data.subarray(0, 8).equals(PNG_SIGNATURE)) return null
+    const width = image.data.readUInt32BE(16)
+    const height = image.data.readUInt32BE(20)
+    return width && height ? { width, height } : null
+  }
+
+  if (normalized === 'image/jpeg' || normalized === 'image/jpg') {
+    const info = readJpegSize(image.data)
+    return info ? { width: info.width, height: info.height } : null
+  }
+
+  return null
+}
+
 /** x-position for the image's canvas so its visible content (not the full, possibly asymmetrically padded, canvas) is centered at centerX. */
 export function centeredImageX(centerX: number, displayWidth: number, imageObject: PdfImageObject) {
   const bounds = imageObject.contentBounds ?? { left: 0, right: 1 }

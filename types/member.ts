@@ -19,6 +19,33 @@ export interface MemberListItem {
   account_is_active?: boolean | null
 }
 
+export type MemberExportDataColumnKey =
+  | 'last_name'
+  | 'first_name'
+  | 'birthdate'
+  | 'subject'
+  | 'status'
+  | 'email'
+  | 'phone'
+  | 'address'
+  | 'joined_at'
+  | 'left_at'
+
+export type MemberExportColumnKey = MemberExportDataColumnKey | 'blank'
+
+export interface MemberExportColumn {
+  key: MemberExportColumnKey
+  label: string
+  /** Small secondary line below the column label, e.g. "(wenn anwesend)". */
+  hint?: string
+}
+
+export interface MemberExportConfig {
+  title: string
+  columns: MemberExportColumn[]
+  statuses: MemberStatus[]
+}
+
 export interface MemberSpotlightStats {
   total: number
   active: number
