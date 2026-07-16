@@ -87,7 +87,7 @@
         <label>{{ t('invoice.invoiceNumber') }}</label>
         <input v-model="form.invoice_number" class="input" :placeholder="invoiceNumberPlaceholder" :disabled="invoiceNumberDisabled">
       </div>
-      <div class="field">
+      <div v-if="!isUpload" class="field">
         <label>{{ t('invoice.subject') }}</label>
         <input v-model="form.subject" class="input" :placeholder="subjectPlaceholder" :disabled="disabled">
       </div>
@@ -103,13 +103,13 @@
         <label>{{ t('invoice.dueDate') }}</label>
         <CommonDateInput v-model="form.due_date" :disabled="disabled" />
       </div>
-      <div class="field">
+      <div v-if="!isUpload" class="field">
         <label>{{ t('invoice.contactPerson') }}</label>
         <input v-model="form.contact_person" class="input" :disabled="disabled">
       </div>
     </section>
 
-    <section class="-mx-6 bg-white shadow-sm sm:mx-0 sm:rounded-xl sm:shadow-lg p-4 space-y-3">
+    <section v-if="!isUpload" class="-mx-6 bg-white shadow-sm sm:mx-0 sm:rounded-xl sm:shadow-lg p-4 space-y-3">
       <div class="field">
         <label>{{ t('invoice.introText') }}</label>
         <textarea
@@ -284,7 +284,7 @@
       </div>
 
       <div class="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-        <label class="inline-flex items-center gap-3 text-sm text-slate-700 select-none cursor-pointer">
+        <label v-if="!isUpload" class="inline-flex items-center gap-3 text-sm text-slate-700 select-none cursor-pointer">
           <input
             v-model="form.is_kleinunternehmer"
             type="checkbox"
@@ -293,6 +293,7 @@
           >
           <span>{{ t('invoice.kleinunternehmerregelung') }}</span>
         </label>
+        <div v-else />
 
         <div class="md:ml-auto md:max-w-xs w-full space-y-1 text-sm">
           <div class="flex justify-between text-slate-500">
@@ -396,6 +397,7 @@ const form = computed({
 })
 
 const disabled = computed(() => Boolean(props.disabled))
+const isUpload = computed(() => form.value.source_type === InvoiceSourceType.Upload)
 const statusDisabled = computed(() => Boolean(props.statusDisabled))
 const statusTargets = computed(() => props.statusTargets)
 const canEditCompany = computed(() => props.canEditCompany === true)
@@ -571,6 +573,18 @@ function removePosition(index: number) {
 
 function setSourceType(sourceType: InvoiceSourceType) {
   if (disabled.value) return
+  if (sourceType === InvoiceSourceType.Upload) {
+    form.value = {
+      ...form.value,
+      source_type: sourceType,
+      is_kleinunternehmer: false,
+      contact_person: null,
+      subject: null,
+      intro_text: null,
+      notes: null,
+    }
+    return
+  }
   form.value = { ...form.value, source_type: sourceType }
 }
 
