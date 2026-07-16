@@ -111,6 +111,19 @@ function defaultFilters<T, K extends string>(columns: TableColumnConfig<T, K>[])
   }, {})
 }
 
+export type AdvancedTableViewMode = 'table' | 'compact'
+
+/**
+ * Shared between `CommonAdvancedTable` and `CommonAdvancedTableViewToggle`, which usually live in
+ * different parent components (the toggle sits in the search-bar row above the table) — keying
+ * both by the same `persistKey` via `useState` keeps them in sync without prop/event plumbing.
+ */
+export function useAdvancedTableViewMode(persistKey?: string) {
+  return persistKey
+    ? useState<AdvancedTableViewMode>(`table:${persistKey}:viewMode`, () => 'compact')
+    : ref<AdvancedTableViewMode>('compact')
+}
+
 /**
  * Optional `persistKey` backs sort/filter/search state with `useState` (instead of a plain `ref`)
  * so it survives the component remounts caused by SPA page navigation (see PageRenderer).

@@ -1,6 +1,7 @@
 <template>
   <CommonPageTableCard
     :title="t('bankStatement.stored')"
+    persist-key="bank-statements-list"
     :search-value="search"
     :search-placeholder="t('bankStatement.search')"
     :can-create="canEdit"

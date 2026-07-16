@@ -1,6 +1,7 @@
 <template>
   <CommonPageTableCard
     :title="t('receipt.stored')"
+    persist-key="receipts-list"
     :search-value="search"
     :search-placeholder="t('receipt.search')"
     :can-create="canEdit"

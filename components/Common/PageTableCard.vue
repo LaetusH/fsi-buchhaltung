@@ -4,6 +4,8 @@
       <h2 class="text-base font-semibold sm:text-lg">{{ title }}</h2>
 
       <div class="flex items-center gap-2 flex-wrap justify-end">
+        <CommonAdvancedTableViewToggle v-if="persistKey" :persist-key="persistKey" />
+
         <CommonGlobalSearchBar
           :model-value="searchValue"
           :placeholder="searchPlaceholder"
@@ -29,6 +31,8 @@ withDefaults(defineProps<{
   searchPlaceholder?: string
   canCreate?: boolean
   createLabel?: string
+  /** Same key passed to the paired `CommonAdvancedTable`'s `persist-key`; shows the table/compact view toggle when set. */
+  persistKey?: string
 }>(), {
   searchPlaceholder: '',
   canCreate: false,

@@ -1,6 +1,7 @@
 <template>
   <CommonPageTableCard
     :title="t('reimbursement.stored')"
+    persist-key="reimbursements-list"
     :search-value="search"
     :search-placeholder="t('reimbursement.search')"
     :can-create="canEdit"

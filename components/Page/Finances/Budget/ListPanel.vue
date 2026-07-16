@@ -1,6 +1,7 @@
 <template>
   <CommonPageTableCard
     :title="t('budget.listTitle')"
+    persist-key="budgets-list"
     :search-value="search"
     :search-placeholder="t('budget.search')"
     :can-create="canEdit"

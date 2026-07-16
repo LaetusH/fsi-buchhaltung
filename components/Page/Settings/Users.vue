@@ -2,6 +2,7 @@
   <CommonPageTableCard
     v-if="hasAccess"
     :title="t('settings.users.title')"
+    persist-key="settings-users"
     :search-value="search"
     :can-create="true"
     :create-label="`+ ${t('settings.users.newUser')}`"

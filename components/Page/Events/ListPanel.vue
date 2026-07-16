@@ -3,6 +3,7 @@
 
   <CommonPageTableCard
     :title="t('event.stored')"
+    persist-key="events-list"
     :search-value="search"
     :search-placeholder="t('event.search')"
     :can-create="canEdit"

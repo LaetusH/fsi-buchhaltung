@@ -2,6 +2,7 @@
   <CommonPageTableCard
     v-if="canManage"
     :title="title"
+    :persist-key="persistKey"
     :search-value="search"
     :can-create="true"
     :create-label="`+ ${addLabel}`"

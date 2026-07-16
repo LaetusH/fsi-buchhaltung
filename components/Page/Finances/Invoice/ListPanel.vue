@@ -1,6 +1,7 @@
 <template>
   <CommonPageTableCard
     :title="t('invoice.stored')"
+    persist-key="invoices-list"
     :search-value="search"
     :search-placeholder="t('invoice.search')"
     :can-create="canEdit"

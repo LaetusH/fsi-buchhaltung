@@ -3,6 +3,7 @@
 
   <CommonPageTableCard
     :title="t('member.stored')"
+    persist-key="members-list"
     :search-value="search"
     :search-placeholder="t('member.search')"
     :can-create="canEdit"

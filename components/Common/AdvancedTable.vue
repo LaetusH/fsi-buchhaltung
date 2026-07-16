@@ -1,7 +1,11 @@
 <template>
   <div class="space-y-3">
     <!-- Mobile toolbar: sorting, filtering, active filter chips -->
-    <div v-if="sortableColumns.length > 0 || filterableColumns.length > 0" class="flex flex-wrap items-center gap-2 xl:hidden">
+    <div
+      v-if="sortableColumns.length > 0 || filterableColumns.length > 0"
+      class="flex flex-wrap items-center gap-2"
+      :class="{ 'xl:hidden': viewMode === 'table' }"
+    >
       <button
         v-if="sortableColumns.length > 0"
         type="button"
@@ -44,7 +48,7 @@
     </div>
 
     <!-- Desktop table -->
-    <div class="hidden overflow-x-auto xl:block">
+    <div class="hidden overflow-x-auto" :class="{ 'xl:block': viewMode === 'table' }">
       <table class="w-full text-sm border-collapse" :class="tableClass">
         <thead>
           <tr class="text-left border-b">
@@ -111,7 +115,10 @@
     </div>
 
     <!-- Compact mobile list -->
-    <ul class="overflow-hidden rounded-xl border border-slate-200 divide-y divide-slate-200 bg-white xl:hidden">
+    <ul
+      class="overflow-hidden rounded-xl border border-slate-200 divide-y divide-slate-200 bg-white"
+      :class="{ 'xl:hidden': viewMode === 'table' }"
+    >
       <li v-for="(row, index) in processedRows" :key="rowKeyOf(row, index)">
         <button
           type="button"
@@ -122,7 +129,12 @@
           <div class="min-w-0 flex-1">
             <slot name="mobile-row" :row="row">
               <p class="truncate font-medium text-slate-800">
-                <slot name="mobile-title" :row="row">{{ mobileTitle(row) }}</slot>
+                <slot name="mobile-title" :row="row">
+                  <slot v-if="mobileTitleColumns.length === 1" :name="`cell-${mobileTitleColumns[0]!.key}`" :row="row">
+                    {{ mobileTitle(row) }}
+                  </slot>
+                  <template v-else>{{ mobileTitle(row) }}</template>
+                </slot>
               </p>
               <p
                 v-if="mobileMetaColumns.length > 0 || $slots['mobile-meta']"
@@ -134,7 +146,9 @@
                       <span v-if="metaIndex > 0" class="text-slate-300">·</span>
                       <span class="inline-flex max-w-full items-baseline gap-1">
                         <span v-if="column.mobileLabel" class="shrink-0 text-slate-400">{{ column.label }}:</span>
-                        <span class="truncate">{{ cellText(column, row) }}</span>
+                        <slot :name="`cell-${column.key}`" :row="row">
+                          <span class="truncate">{{ cellText(column, row) }}</span>
+                        </slot>
                       </span>
                     </span>
                   </template>
@@ -226,7 +240,7 @@
 <script setup lang="ts" generic="T">
 import { computed, ref, toRef, watchEffect } from 'vue'
 import { useI18n } from '~/composables/useI18n'
-import { useAdvancedTable, type AdvancedTableColumn } from '~/composables/useAdvancedTable'
+import { useAdvancedTable, useAdvancedTableViewMode, type AdvancedTableColumn } from '~/composables/useAdvancedTable'
 
 const props = withDefaults(defineProps<{
   rows: T[]
@@ -287,6 +301,7 @@ watchEffect(() => {
 const sortOpen = ref(false)
 const filterOpen = ref(false)
 const expandedFilterKey = ref<string | null>(null)
+const viewMode = useAdvancedTableViewMode(props.persistKey)
 
 const visibleColumns = computed(() => props.columns.filter(column => column.hidden !== true))
 const sortableColumns = computed(() => visibleColumns.value.filter(column => column.sortable !== false))

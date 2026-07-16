@@ -7,6 +7,7 @@
         <div class="flex items-center justify-between gap-3 flex-wrap">
           <h3 class="font-semibold">{{ t('settings.permissions.rolesTitle') }}</h3>
           <div class="flex items-center gap-2 flex-wrap justify-end">
+            <CommonAdvancedTableViewToggle persist-key="settings-permissions-roles" />
             <CommonGlobalSearchBar
               v-model="roleSearchInput"
             />
@@ -43,9 +44,12 @@
       <section class="rounded-xl border border-slate-300 p-4 space-y-4">
         <div class="flex items-center justify-between gap-3 flex-wrap">
           <h3 class="font-semibold">{{ t('settings.permissions.positionsTitle') }}</h3>
-          <CommonGlobalSearchBar
-            v-model="positionSearchInput"
-          />
+          <div class="flex items-center gap-2 flex-wrap justify-end">
+            <CommonAdvancedTableViewToggle persist-key="settings-permissions-positions" />
+            <CommonGlobalSearchBar
+              v-model="positionSearchInput"
+            />
+          </div>
         </div>
 
         <CommonAdvancedTable
@@ -67,9 +71,12 @@
       <section class="rounded-xl border border-slate-300 p-4 space-y-4">
         <div class="flex items-center justify-between gap-3 flex-wrap">
           <h3 class="font-semibold">{{ t('settings.permissions.usersTitle') }}</h3>
-          <CommonGlobalSearchBar
-            v-model="userSearchInput"
-          />
+          <div class="flex items-center gap-2 flex-wrap justify-end">
+            <CommonAdvancedTableViewToggle persist-key="settings-permissions-users" />
+            <CommonGlobalSearchBar
+              v-model="userSearchInput"
+            />
+          </div>
         </div>
 
         <CommonAdvancedTable

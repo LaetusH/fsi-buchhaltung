@@ -1,6 +1,7 @@
 <template>
   <CommonPageTableCard
     :title="t('cashCount.stored')"
+    persist-key="cash-counts-list"
     :search-value="search"
     :search-placeholder="t('cashCount.search')"
     :can-create="canEdit"
