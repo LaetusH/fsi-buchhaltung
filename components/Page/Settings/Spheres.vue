@@ -5,6 +5,7 @@
     :singular-label="t('settings.entities.sphere')"
     :add-label="t('settings.entities.newSphere')"
     :empty-label="t('settings.entities.noSpheres')"
+    persist-key="settings-spheres"
     list-endpoint="/api/spheres"
     save-endpoint="/api/spheres/save"
     activate-endpoint="/api/spheres/activate"

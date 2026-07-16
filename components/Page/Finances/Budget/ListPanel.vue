@@ -10,6 +10,7 @@
   >
     <CommonAdvancedTable
       v-model:search="search"
+      persist-key="budgets-list"
       :rows="budgets"
       :columns="columns"
       :empty-text="t('budget.none')"

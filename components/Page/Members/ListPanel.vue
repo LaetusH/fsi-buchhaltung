@@ -19,6 +19,7 @@
 
     <CommonAdvancedTable
       v-model:search="search"
+      persist-key="members-list"
       :rows="members"
       :columns="columns"
       :empty-text="t('member.none')"

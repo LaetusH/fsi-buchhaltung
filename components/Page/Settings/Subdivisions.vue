@@ -5,6 +5,7 @@
     :singular-label="t('settings.entities.subdivision')"
     :add-label="t('settings.entities.newSubdivision')"
     :empty-label="t('settings.entities.noSubdivisions')"
+    persist-key="settings-subdivisions"
     list-endpoint="/api/subdivisions"
     save-endpoint="/api/subdivisions/save"
     activate-endpoint="/api/subdivisions/activate"

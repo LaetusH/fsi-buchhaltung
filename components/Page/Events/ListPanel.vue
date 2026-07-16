@@ -12,6 +12,7 @@
   >
     <CommonAdvancedTable
       v-model:search="search"
+      persist-key="events-list"
       :rows="events"
       :columns="columns"
       :empty-text="t('event.none')"

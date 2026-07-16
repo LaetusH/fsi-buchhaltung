@@ -238,6 +238,8 @@ const props = withDefaults(defineProps<{
   /** Gate for opening a row (disables the action button and the mobile row). */
   canOpenRow?: (row: T) => boolean
   tableClass?: string
+  /** Unique, stable key to persist sort/filter/search state across page navigation. Omit to keep state local to this mount. */
+  persistKey?: string
 }>(), {
   showActions: true,
   tableClass: 'min-w-5xl',
@@ -271,7 +273,12 @@ const {
   setTextFilter,
   setRangeFilter,
   resetFilter,
-} = useAdvancedTable<T, string>(toRef(props, 'rows'), props.columns)
+} = useAdvancedTable<T, string>(toRef(props, 'rows'), props.columns, props.persistKey)
+
+// Seed the header search box from restored persisted state; afterwards the box drives it.
+if (props.persistKey && globalSearchInput.value !== search.value) {
+  search.value = globalSearchInput.value
+}
 
 watchEffect(() => {
   globalSearchInput.value = search.value

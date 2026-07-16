@@ -18,6 +18,7 @@
 
         <CommonAdvancedTable
           v-model:search="roleSearchInput"
+          persist-key="settings-permissions-roles"
           :rows="roles"
           :columns="roleColumns"
           :empty-text="t('settings.permissions.noRoles')"
@@ -49,6 +50,7 @@
 
         <CommonAdvancedTable
           v-model:search="positionSearchInput"
+          persist-key="settings-permissions-positions"
           :rows="positions"
           :columns="positionColumns"
           :empty-text="t('settings.permissions.noPositions')"
@@ -72,6 +74,7 @@
 
         <CommonAdvancedTable
           v-model:search="userSearchInput"
+          persist-key="settings-permissions-users"
           :rows="users"
           :columns="userColumns"
           :empty-text="t('settings.permissions.noUsers')"

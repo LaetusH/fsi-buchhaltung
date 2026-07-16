@@ -10,6 +10,7 @@
   >
     <CommonAdvancedTable
       v-model:search="search"
+      :persist-key="persistKey"
       :rows="displayItems"
       :columns="columns"
       :empty-text="emptyLabel"
@@ -151,6 +152,8 @@ const props = withDefaults(defineProps<{
   singularLabel: string
   addLabel: string
   emptyLabel: string
+  /** Unique, stable key to persist this table's sort/filter/search state across page navigation. */
+  persistKey?: string
   listEndpoint: string
   saveEndpoint: string
   activateEndpoint: string
@@ -165,6 +168,7 @@ const props = withDefaults(defineProps<{
   modalWidthClass?: string
 }>(), {
   extraColumns: () => [],
+  persistKey: undefined,
   canManage: true,
   showDescriptionField: true,
   createItem: () => ({

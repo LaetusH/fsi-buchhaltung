@@ -10,6 +10,7 @@
   >
     <CommonAdvancedTable
       v-model:search="search"
+      persist-key="reimbursements-list"
       :rows="reimbursements"
       :columns="columns"
       :empty-text="t('reimbursement.none')"

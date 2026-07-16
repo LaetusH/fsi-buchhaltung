@@ -10,6 +10,7 @@
   >
     <CommonAdvancedTable
       v-model:search="search"
+      persist-key="bank-statements-list"
       :rows="bankStatements"
       :columns="columns"
       :empty-text="t('bankStatement.none')"

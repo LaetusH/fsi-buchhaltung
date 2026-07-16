@@ -10,6 +10,7 @@
   >
     <CommonAdvancedTable
       v-model:search="search"
+      persist-key="cash-counts-list"
       :rows="cashCounts"
       :columns="columns"
       :empty-text="t('cashCount.none')"

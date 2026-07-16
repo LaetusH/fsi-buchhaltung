@@ -5,6 +5,7 @@
     :singular-label="t('settings.entities.costCentre')"
     :add-label="t('settings.entities.newCostCentre')"
     :empty-label="t('settings.entities.noCostCentres')"
+    persist-key="settings-cost-centres"
     list-endpoint="/api/cost_centres"
     save-endpoint="/api/cost_centres/save"
     activate-endpoint="/api/cost_centres/activate"

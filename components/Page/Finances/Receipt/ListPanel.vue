@@ -10,6 +10,7 @@
   >
     <CommonAdvancedTable
       v-model:search="search"
+      persist-key="receipts-list"
       :rows="receipts"
       :columns="columns"
       :empty-text="t('receipt.none')"

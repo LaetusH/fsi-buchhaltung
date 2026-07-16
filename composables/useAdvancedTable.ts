@@ -99,13 +99,31 @@ function toDateSearchTokens(value: unknown): string[] {
   ]
 }
 
+function defaultFilters<T, K extends string>(columns: TableColumnConfig<T, K>[]): Record<string, ColumnFilter> {
+  return columns.reduce<Record<string, ColumnFilter>>((acc, column) => {
+    const filterType = column.filterType ?? 'text'
+    if (filterType === 'text') {
+      acc[column.key] = { type: 'text', selected: [] }
+    } else {
+      acc[column.key] = { type: filterType, min: '', max: '' }
+    }
+    return acc
+  }, {})
+}
+
+/**
+ * Optional `persistKey` backs sort/filter/search state with `useState` (instead of a plain `ref`)
+ * so it survives the component remounts caused by SPA page navigation (see PageRenderer).
+ * Give each table usage a unique, stable key.
+ */
 export function useAdvancedTable<T, K extends string>(
   rows: Readonly<Ref<T[]>>,
   columns: TableColumnConfig<T, K>[],
+  persistKey?: string,
 ) {
-  const sortKey = ref<K | null>(null)
-  const sortDirection = ref<SortDirection>(null)
-  const globalSearchInput = ref('')
+  const sortKey = persistKey ? useState<K | null>(`table:${persistKey}:sortKey`, () => null) : ref<K | null>(null)
+  const sortDirection = persistKey ? useState<SortDirection>(`table:${persistKey}:sortDirection`, () => null) : ref<SortDirection>(null)
+  const globalSearchInput = persistKey ? useState<string>(`table:${persistKey}:search`, () => '') : ref('')
   const globalSearchTerm = ref('')
 
   const columnByKey = computed(() => {
@@ -115,17 +133,9 @@ export function useAdvancedTable<T, K extends string>(
     }, {})
   })
 
-  const filters = ref<Record<string, ColumnFilter>>(
-    columns.reduce<Record<string, ColumnFilter>>((acc, column) => {
-      const filterType = column.filterType ?? 'text'
-      if (filterType === 'text') {
-        acc[column.key] = { type: 'text', selected: [] }
-      } else {
-        acc[column.key] = { type: filterType, min: '', max: '' }
-      }
-      return acc
-    }, {}),
-  )
+  const filters = persistKey
+    ? useState<Record<string, ColumnFilter>>(`table:${persistKey}:filters`, () => defaultFilters(columns))
+    : ref<Record<string, ColumnFilter>>(defaultFilters(columns))
 
   const textOptionsByColumn = computed<Record<string, string[]>>(() => {
     const result: Record<string, string[]> = {}

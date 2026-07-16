@@ -5,6 +5,7 @@
     :singular-label="t('settings.entities.position')"
     :add-label="t('settings.entities.newPosition')"
     :empty-label="t('settings.entities.noPositions')"
+    persist-key="settings-positions"
     list-endpoint="/api/positions/manage"
     save-endpoint="/api/positions/save"
     activate-endpoint="/api/positions/activate"

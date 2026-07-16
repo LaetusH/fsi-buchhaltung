@@ -10,6 +10,7 @@
   >
     <CommonAdvancedTable
       v-model:search="search"
+      persist-key="settings-users"
       :rows="users"
       :columns="columns"
       :empty-text="t('settings.permissions.noUsers')"
