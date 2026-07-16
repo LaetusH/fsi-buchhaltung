@@ -171,10 +171,10 @@ function costCentreSummary(entry: Event) {
   ].join(', ')
 }
 
-function openEvent(id: number, activeTab?: EventPlanningTabKey) {
+function openEvent(id: number, tab?: EventPlanningTabKey) {
   setPage('EventCreate', {
     eventId: id,
-    ...(activeTab ? { activeTab } : {}),
+    ...(tab ? { tab } : {}),
     returnTarget: resolvedReturnTarget.value,
   })
 }

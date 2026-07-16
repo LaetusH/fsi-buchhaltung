@@ -97,5 +97,5 @@ watch([tabs, () => pageMeta.value?.tab, () => pageMeta.value?.resetTabKey], ([av
 watch(currentTab, (tab) => {
   if (pageMeta.value?.tab === tab) return
   setPage('Finances', { tab })
-})
+}, { immediate: true })
 </script>

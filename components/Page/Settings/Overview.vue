@@ -39,7 +39,7 @@ type SettingsTab = 'general' | 'association' | 'spheres' | 'costCentres' | 'subd
 const currentTab = useState<SettingsTab>('settings-overview-current-tab', () => 'general')
 const { t } = useI18n()
 const { hasPermission } = useAuth()
-const { pageMeta } = usePage()
+const { pageMeta, setPage } = usePage()
 
 const tabs = computed(() => {
   const list = [
@@ -81,7 +81,13 @@ const activeComponent = computed(() => {
   }
 })
 
-watch([tabs, () => pageMeta.value?.resetTabKey], ([available, resetTabKey]) => {
+watch([tabs, () => pageMeta.value?.tab, () => pageMeta.value?.resetTabKey], ([available, requestedTab, resetTabKey]) => {
+  const requested = requestedTab as SettingsTab | undefined
+  if (requested && available.find(tab => tab.key === requested)) {
+    currentTab.value = requested
+    return
+  }
+
   if (resetTabKey && available[0]?.key) {
     currentTab.value = available[0].key
     return
@@ -90,5 +96,10 @@ watch([tabs, () => pageMeta.value?.resetTabKey], ([available, resetTabKey]) => {
   if (!available.find(tab => tab.key === currentTab.value)) {
     currentTab.value = 'general'
   }
+}, { immediate: true })
+
+watch(currentTab, (tab) => {
+  if (pageMeta.value?.tab === tab) return
+  setPage('Settings', { tab })
 }, { immediate: true })
 </script>

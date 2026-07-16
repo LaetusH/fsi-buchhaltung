@@ -462,16 +462,16 @@ const cashRegisterAvailable = computed(() =>
 
 const eventId = ref<number | null>(null)
 const activeTab = ref<EventPlanningTabKey>(
-  (pageMeta.value?.activeTab as EventPlanningTabKey | undefined) ?? 'overview',
+  (pageMeta.value?.tab as EventPlanningTabKey | undefined) ?? 'overview',
 )
 
 watch(
-  () => pageMeta.value?.activeTab as EventPlanningTabKey | undefined,
+  () => pageMeta.value?.tab as EventPlanningTabKey | undefined,
   (val) => { if (val) activeTab.value = val },
 )
 watch(activeTab, () => { window.scrollTo({ top: 0, behavior: 'instant' }) })
 watch([activeTab, eventId], ([tab, id]) => {
-  if (id) window.location.hash = `EventCreate?eventId=${id}&activeTab=${tab}`
+  if (id) window.location.hash = `EventCreate?eventId=${id}&tab=${tab}`
 })
 
 // ---- Options ----
@@ -658,7 +658,7 @@ async function submit() {
       })
       if (!res.ok) throw new Error(res.error || t('event.saved.failedCreate'))
       toast.success(t('event.saved.created'))
-      setPage('EventCreate', { eventId: res.eventId, activeTab: 'details', returnTarget: returnTarget.value })
+      setPage('EventCreate', { eventId: res.eventId, tab: 'details', returnTarget: returnTarget.value })
     }
   }
   catch (err: any) {

@@ -187,7 +187,7 @@ function openActive(tab?: EventPlanningTabKey) {
   if (!active.value?.canOpen) return
   setPage('EventCreate', {
     eventId: active.value.id,
-    ...(tab ? { activeTab: tab } : {}),
+    ...(tab ? { tab } : {}),
     returnTarget: buildReturnTarget('Home'),
   })
 }
