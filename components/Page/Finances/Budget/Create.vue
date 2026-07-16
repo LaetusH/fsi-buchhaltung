@@ -51,12 +51,22 @@
               <button
                 v-if="canEdit"
                 type="button"
+                class="inline-flex items-center gap-1.5 rounded-md bg-white/10 px-4 py-2 text-sm text-white transition cursor-pointer hover:bg-white/20"
+                :class="isSaving ? 'cursor-not-allowed opacity-70 hover:bg-white/10' : ''"
+                :disabled="isSaving || !hasValidPeriod"
+                @click="saveBudget(false)"
+              >
+                {{ isSaving ? t('budget.saving') : t('actions.save') }}
+              </button>
+              <button
+                v-if="canEdit"
+                type="button"
                 class="btn-primary"
                 :class="isSaving ? 'cursor-not-allowed opacity-70' : ''"
                 :disabled="isSaving || !hasValidPeriod"
-                @click="saveBudget"
+                @click="saveBudget(true)"
               >
-                {{ isSaving ? t('budget.saving') : t('actions.save') }}
+                {{ isSaving ? t('budget.saving') : t('actions.saveAndExit') }}
               </button>
             </div>
           </div>
@@ -723,7 +733,7 @@ async function loadBudget(budgetId: number) {
   }
 }
 
-async function saveBudget() {
+async function saveBudget(exit: boolean) {
   if (isSaving.value) return
   if (!canEdit.value) {
     toast.error(t('common.notAuthorized'))
@@ -760,7 +770,13 @@ async function saveBudget() {
     if (!response.ok || !response.id) throw new Error(response.error || t('budget.saveFailed'))
 
     toast.success(isEditMode ? t('budget.saved.updated') : t('budget.saved.created'))
-    goToReturnTarget()
+
+    if (exit) {
+      goToReturnTarget()
+      return
+    }
+
+    await loadBudget(response.id)
   } catch (error: any) {
     toast.error(error?.message || t('budget.saveFailed'))
   } finally {
