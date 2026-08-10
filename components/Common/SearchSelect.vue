@@ -19,34 +19,34 @@
         <div
           v-if="open"
           ref="menuRef"
-          class="search-select-menu absolute z-70 rounded-md border bg-white shadow-lg w-max overflow-y-auto"
+          class="search-select-menu absolute z-70 rounded-lg border border-slate-200 bg-white p-1 shadow-xl ring-1 ring-slate-900/5 w-max overflow-y-auto"
           :class="menuWidthClass"
           :style="menuStyle"
         >
           <button
             v-if="showCreateOption"
             type="button"
-            class="flex w-full items-center justify-between px-3 py-2 text-sm hover:bg-gray-100 rounded-md cursor-pointer whitespace-nowrap"
+            class="flex w-full items-center justify-between gap-2 px-3 py-2 text-sm transition hover:bg-slate-100 rounded-md cursor-pointer whitespace-nowrap"
             @click="onCreate"
           >
             <span v-if="!hideCreateQuery">"{{ currentQuery }}"</span>
             <span class="text-orange-500 font-semibold">{{ createActionLabel }}</span>
           </button>
 
-          <div v-if="showCreateOption" class="border-t" />
+          <div v-if="showCreateOption" class="my-1 border-t border-slate-200" />
 
           <button
             v-for="option in filteredOptions"
             :key="option.key"
             type="button"
-            class="flex w-full text-left px-3 py-2 text-sm hover:bg-gray-100 rounded-md cursor-pointer whitespace-nowrap"
+            class="flex w-full items-center gap-2 text-left px-3 py-2 text-sm transition hover:bg-slate-100 rounded-md cursor-pointer whitespace-nowrap"
             :class="optionClass"
             @click="selectOption(option)"
           >
             <span class="overflow-hidden text-ellipsis">{{ option.label }}</span>
           </button>
 
-          <div v-if="filteredOptions.length === 0" class="px-3 py-2 text-sm text-gray-500">
+          <div v-if="filteredOptions.length === 0" class="px-3 py-2 text-sm text-slate-500">
             {{ emptyText }}
           </div>
         </div>
@@ -141,7 +141,7 @@ const filteredOptions = computed(() => {
   })
 })
 const showCreateOption = computed(() => props.allowCreate && (props.hideCreateQuery || currentQuery.value.trim().length > 0))
-const menuWidthClass = computed(() => props.menuWidth === 'wide' ? 'w-full max-w-[48rem]' : 'max-w-[30vw]')
+const menuWidthClass = computed(() => props.menuWidth === 'wide' ? 'w-full max-w-[48rem]' : 'max-w-[min(30rem,calc(100vw-2rem))]')
 
 function updateMenuPosition() {
   if (!open.value || !rootRef.value) return
@@ -183,7 +183,8 @@ function updateMenuPosition() {
     left: `${left + window.scrollX}px`,
     minWidth: `${rootRect.width}px`,
     maxHeight: `${menuMaxHeight}px`,
-    maxWidth: props.menuWidth === 'wide' ? '48rem' : '30vw',
+    // Cap the width, but never below what fits on a narrow (mobile) viewport.
+    maxWidth: props.menuWidth === 'wide' ? '48rem' : 'min(30rem, calc(100vw - 2rem))',
   }
 }
 
@@ -301,12 +302,13 @@ onBeforeUnmount(() => {
 <style scoped>
 .fade-enter-active,
 .fade-leave-active {
-  transition: opacity 0.1s ease;
+  transition: opacity 0.12s ease, transform 0.12s ease;
 }
 
 .fade-enter-from,
 .fade-leave-to {
   opacity: 0;
+  transform: translateY(-0.25rem) scale(0.98);
 }
 
 .search-select-menu {

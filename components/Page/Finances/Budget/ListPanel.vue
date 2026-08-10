@@ -21,18 +21,16 @@
         <span class="font-medium" :class="saldoTextClass(row.own_saldo)">{{ formatCurrency(row.own_saldo) }}</span>
       </template>
       <template #actions="{ row }">
-        <div class="flex justify-end gap-3">
-          <button
-            class="text-blue-600 hover:underline cursor-pointer disabled:cursor-not-allowed disabled:opacity-60"
-            :disabled="downloadingBudgetId === row.id"
-            @click="downloadBudget(row)"
-          >
-            {{ t('budget.downloadPdfShort') }}
-          </button>
-          <button class="text-blue-600 hover:underline cursor-pointer" @click="openBudget(row.id)">
-            {{ t('actions.open') }}
-          </button>
-        </div>
+        <button
+          class="text-blue-600 hover:underline cursor-pointer disabled:cursor-not-allowed disabled:opacity-60"
+          :disabled="downloadingBudgetId === row.id"
+          @click="downloadBudget(row)"
+        >
+          {{ t('budget.downloadPdfShort') }}
+        </button>
+        <button class="text-blue-600 hover:underline cursor-pointer" @click="openBudget(row.id)">
+          {{ t('actions.open') }}
+        </button>
       </template>
     </CommonAdvancedTable>
   </CommonPageTableCard>

@@ -93,15 +93,17 @@
               <slot :name="`cell-${column.key}`" :row="row">{{ cellText(column, row) }}</slot>
             </td>
             <td v-if="showActions" class="py-2 text-right">
-              <slot name="actions" :row="row">
-                <button
-                  class="text-blue-600 not-disabled:hover:underline disabled:opacity-40 disabled:cursor-not-allowed not-disabled:cursor-pointer"
-                  :disabled="!canOpen(row)"
-                  @click="$emit('row-open', row)"
-                >
-                  {{ t('actions.open') }}
-                </button>
-              </slot>
+              <div class="inline-flex items-center justify-end gap-3">
+                <slot name="actions" :row="row">
+                  <button
+                    class="text-blue-600 not-disabled:hover:underline disabled:opacity-40 disabled:cursor-not-allowed not-disabled:cursor-pointer"
+                    :disabled="!canOpen(row)"
+                    @click="$emit('row-open', row)"
+                  >
+                    {{ t('actions.open') }}
+                  </button>
+                </slot>
+              </div>
             </td>
           </tr>
 
@@ -119,10 +121,10 @@
       class="overflow-hidden rounded-xl border border-slate-200 divide-y divide-slate-200 bg-white"
       :class="{ 'xl:hidden': viewMode === 'table' }"
     >
-      <li v-for="(row, index) in processedRows" :key="rowKeyOf(row, index)">
+      <li v-for="(row, index) in processedRows" :key="rowKeyOf(row, index)" class="flex items-stretch">
         <button
           type="button"
-          class="flex w-full items-center gap-3 bg-white px-3 py-2.5 text-left transition not-disabled:cursor-pointer not-disabled:hover:bg-slate-50 disabled:opacity-40"
+          class="flex min-w-0 flex-1 items-center gap-3 bg-white px-3 py-2.5 text-left transition not-disabled:cursor-pointer not-disabled:hover:bg-slate-50 disabled:cursor-default"
           :disabled="!canOpen(row)"
           @click="$emit('row-open', row)"
         >
@@ -156,8 +158,44 @@
               </p>
             </slot>
           </div>
-          <Icon name="material-symbols:chevron-right-rounded" class="shrink-0 text-xl text-slate-400" />
+          <!-- A lock instead of the chevron: the row is legible, just not openable. -->
+          <Icon
+            :name="canOpen(row) ? 'material-symbols:chevron-right-rounded' : 'material-symbols:lock-outline'"
+            class="shrink-0 text-xl"
+            :class="canOpen(row) ? 'text-slate-400' : 'text-slate-300'"
+          />
         </button>
+
+        <MenuDropdown
+          v-if="showActions && $slots.actions"
+          v-model="actionMenuKey"
+          :id="rowKeyOf(row, index)"
+          wrapper-class="relative flex shrink-0 self-stretch"
+        >
+          <template #trigger>
+            <button
+              type="button"
+              class="flex h-full w-full items-center justify-center border-l border-slate-100 px-2.5 text-slate-400 transition cursor-pointer hover:bg-slate-50 hover:text-slate-600"
+              :aria-label="t('common.actions')"
+            >
+              <Icon name="material-symbols:more-vert" class="text-xl" />
+            </button>
+          </template>
+
+          <template #default>
+            <!--
+              Action buttons come from the consumer's slot, so they are styled from the container.
+              Matched by descendant (not child) so a consumer that groups its actions in a wrapper
+              still gets one full-width row per action; `[&>div]:contents` dissolves that wrapper.
+            -->
+            <div
+              class="flex min-w-40 flex-col [&>div]:contents [&_button]:flex [&_button]:w-full [&_button]:items-center [&_button]:gap-2 [&_button]:rounded-md [&_button]:px-3 [&_button]:py-2 [&_button]:text-left [&_button]:text-sm [&_button]:whitespace-nowrap [&_button]:transition [&_button]:hover:bg-slate-100 [&_button]:hover:no-underline"
+              @click="actionMenuKey = null"
+            >
+              <slot name="actions" :row="row" />
+            </div>
+          </template>
+        </MenuDropdown>
       </li>
 
       <li v-if="processedRows.length === 0" class="py-6 text-center text-sm text-slate-500">
@@ -302,6 +340,8 @@ const sortOpen = ref(false)
 const filterOpen = ref(false)
 const expandedFilterKey = ref<string | null>(null)
 const viewMode = useAdvancedTableViewMode(props.persistKey)
+
+const actionMenuKey = ref<string | number | null>(null)
 
 const visibleColumns = computed(() => props.columns.filter(column => column.hidden !== true))
 const sortableColumns = computed(() => visibleColumns.value.filter(column => column.sortable !== false))

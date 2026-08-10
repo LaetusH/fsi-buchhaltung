@@ -29,27 +29,25 @@
         </div>
       </template>
       <template #actions="{ row }">
-        <div class="flex justify-end gap-3">
-          <button class="text-blue-600 hover:underline cursor-pointer" @click="openEditUserModal(row)">
-            {{ t('actions.edit') }}
-          </button>
+        <button class="text-blue-600 hover:underline cursor-pointer" @click="openEditUserModal(row)">
+          {{ t('actions.edit') }}
+        </button>
 
-          <button
-            v-if="!row.must_change_password"
-            class="text-amber-700 hover:underline cursor-pointer"
-            @click="requirePasswordChange(row)"
-          >
-            {{ t('settings.users.requirePasswordChange') }}
-          </button>
+        <button
+          v-if="!row.must_change_password"
+          class="text-amber-700 hover:underline cursor-pointer"
+          @click="requirePasswordChange(row)"
+        >
+          {{ t('settings.users.requirePasswordChange') }}
+        </button>
 
-          <button
-            class="hover:underline cursor-pointer"
-            :class="row.is_active ? 'text-red-500' : 'text-gray-500'"
-            @click="toggleUserActive(row)"
-          >
-            {{ row.is_active ? t('actions.deactivate') : t('actions.activate') }}
-          </button>
-        </div>
+        <button
+          class="hover:underline cursor-pointer"
+          :class="row.is_active ? 'text-red-500' : 'text-gray-500'"
+          @click="toggleUserActive(row)"
+        >
+          {{ row.is_active ? t('actions.deactivate') : t('actions.activate') }}
+        </button>
       </template>
     </CommonAdvancedTable>
   </CommonPageTableCard>

@@ -24,7 +24,7 @@
       <div
         v-if="filterable && menuOpen"
         ref="menuRef"
-        class="fixed z-100 w-72 rounded-lg border border-slate-200 bg-white shadow-xl overflow-hidden"
+        class="fixed z-100 w-72 rounded-lg border border-slate-200 bg-white shadow-xl ring-1 ring-slate-900/5 overflow-hidden"
         :style="{ top: `${menuPosition.top}px`, left: `${menuPosition.left}px` }"
         @click.stop
       >

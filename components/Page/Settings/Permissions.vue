@@ -29,14 +29,12 @@
             <span class="text-slate-600">{{ row.description || '-' }}</span>
           </template>
           <template #actions="{ row }">
-            <div class="flex justify-end gap-3">
-              <button class="text-blue-600 hover:underline cursor-pointer" @click="openRoleEditor(row)">
-                {{ t('actions.edit') }}
-              </button>
-              <button class="text-orange-600 hover:underline cursor-pointer" @click="openRolePermissions(row)">
-                {{ t('settings.permissions.editPermissions') }}
-              </button>
-            </div>
+            <button class="text-blue-600 hover:underline cursor-pointer" @click="openRoleEditor(row)">
+              {{ t('actions.edit') }}
+            </button>
+            <button class="text-orange-600 hover:underline cursor-pointer" @click="openRolePermissions(row)">
+              {{ t('settings.permissions.editPermissions') }}
+            </button>
           </template>
         </CommonAdvancedTable>
       </section>
