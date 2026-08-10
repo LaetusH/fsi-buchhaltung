@@ -104,6 +104,8 @@
               </tr>
             </tfoot>
           </table>
+
+          <p class="mt-3 text-xs text-slate-400">{{ t('event.cashRegister.historicalPricesNotice') }}</p>
         </div>
 
         <div class="-mx-6 bg-white p-4 shadow-sm sm:mx-0 sm:rounded-xl sm:shadow-lg">
@@ -170,6 +172,22 @@ const maxHourlyRevenue = computed(() =>
   (overview.value?.hourly ?? []).reduce((max, entry) => Math.max(max, entry.revenue), 0),
 )
 
+// "à {amount}" is only truthful while every payment of the event was booked at
+// the same amount — the stored amounts decide, not the current setting.
+const fachschaftPaymentsMeta = computed(() => {
+  const payments = overview.value?.payments
+  if (!payments) return ''
+
+  if (payments.amounts.length > 1) {
+    return t('event.cashRegister.fachschaftPaymentsMetaMixed', { count: payments.count })
+  }
+
+  return t('event.cashRegister.fachschaftPaymentsMeta', {
+    count: payments.count,
+    amount: formatCurrency(payments.amounts[0]?.amount ?? payments.amount),
+  })
+})
+
 const statTiles = computed(() => {
   if (!overview.value) return []
 
@@ -187,10 +205,7 @@ const statTiles = computed(() => {
     {
       label: t('event.cashRegister.fachschaftPayments'),
       value: formatCurrency(overview.value.payments.revenue),
-      meta: t('event.cashRegister.fachschaftPaymentsMeta', {
-        count: overview.value.payments.count,
-        amount: formatCurrency(overview.value.payments.amount),
-      }),
+      meta: fachschaftPaymentsMeta.value,
       icon: 'material-symbols:savings-rounded',
     },
     {

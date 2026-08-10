@@ -1,6 +1,6 @@
 import { defineEventHandler, getRouterParam } from 'h3'
 import { requirePermission } from '~/server/utils/api/guards'
-import { cashRegisterQuery, isCashRegisterConnected } from '~/server/utils/cashRegisterDb'
+import { cashRegisterQuery, hasCashRegisterPriceSnapshots, isCashRegisterConnected } from '~/server/utils/cashRegisterDb'
 
 export interface CashRegisterOverviewItem {
   id: number
@@ -28,8 +28,12 @@ export interface CashRegisterOverview {
   }
   payments: {
     count: number
+    /** The currently configured amount — kept for backwards compatibility. */
     amount: number
+    /** SUM of the stored per-payment amounts, or count × amount on an old schema. */
     revenue: number
+    /** Distinct stored amounts; empty when the kassensystem lacks the snapshot columns. */
+    amounts: Array<{ amount: number, count: number }>
   }
   donations: {
     count: number
@@ -97,41 +101,69 @@ export default defineEventHandler(async (event): Promise<EventCashRegisterRespon
 
   const cashRegisterEventId = Number(eventRows[0].id)
 
+  // Against a migrated kassensystem every amount comes from the order line's own
+  // price snapshot; against an older schema we fall back to the live item price.
+  // These expressions are constants defined in this file, never user input.
+  const snapshots = await hasCashRegisterPriceSnapshots()
+  const valueExpr = snapshots
+    ? '(oi.unit_price + oi.unit_deposit)'
+    : '(i.price + IFNULL(i.deposit, 0))'
+  // Items given out to the Fachschaft are never paid for — no deposit changes
+  // hands either, so the worth is the price only, unlike regular sales.
+  const fachschaftValueExpr = snapshots ? 'oi.unit_price' : 'i.price'
+  const idExpr = snapshots ? 'oi.item_id' : 'i.id'
+  const nameExpr = snapshots ? 'COALESCE(MAX(i.name), MAX(oi.item_name))' : 'i.name'
+  const itemJoin = snapshots ? 'LEFT JOIN items i ON oi.item_id = i.id' : 'JOIN items i ON oi.item_id = i.id'
+  const groupBy = snapshots ? 'oi.item_id' : 'i.id'
+
   const regularRows = await cashRegisterQuery<Array<{ id: number, name: string, quantity: unknown, amount: unknown }>>(`
     SELECT
-      i.id,
-      i.name,
+      ${idExpr} AS id,
+      ${nameExpr} AS name,
       SUM(oi.quantity) AS quantity,
-      SUM(oi.quantity * (i.price + IFNULL(i.deposit, 0))) AS amount
+      SUM(oi.quantity * ${valueExpr}) AS amount
     FROM orders o
     JOIN order_items oi ON o.id = oi.order_id
-    JOIN items i ON oi.item_id = i.id
+    ${itemJoin}
     WHERE o.fachschaft = 0
       AND o.event_id = ?
-    GROUP BY i.id
-    ORDER BY i.name ASC
+    GROUP BY ${groupBy}
+    ORDER BY name ASC
   `, [cashRegisterEventId])
 
   const fachschaftRows = await cashRegisterQuery<Array<{ id: number, name: string, quantity: unknown, amount: unknown }>>(`
     SELECT
-      i.id,
-      i.name,
+      ${idExpr} AS id,
+      ${nameExpr} AS name,
       SUM(oi.quantity) AS quantity,
-      SUM(oi.quantity * (i.price + IFNULL(i.deposit, 0))) AS amount
+      SUM(oi.quantity * ${fachschaftValueExpr}) AS amount
     FROM orders o
     JOIN order_items oi ON o.id = oi.order_id
-    JOIN items i ON oi.item_id = i.id
+    ${itemJoin}
     WHERE o.fachschaft = 1
       AND o.event_id = ?
-    GROUP BY i.id
-    ORDER BY i.name ASC
+    GROUP BY ${groupBy}
+    ORDER BY name ASC
   `, [cashRegisterEventId])
 
-  const paymentRows = await cashRegisterQuery<Array<{ count: unknown }>>(`
-    SELECT COUNT(*) AS count
-    FROM fachschaft_payments
-    WHERE event_id = ?
-  `, [cashRegisterEventId])
+  const paymentRows = await cashRegisterQuery<Array<{ count: unknown, total: unknown }>>(
+    snapshots
+      ? `SELECT COUNT(*) AS count, IFNULL(SUM(amount), 0) AS total
+         FROM fachschaft_payments WHERE event_id = ?`
+      : `SELECT COUNT(*) AS count, NULL AS total
+         FROM fachschaft_payments WHERE event_id = ?`,
+    [cashRegisterEventId],
+  )
+
+  const paymentAmountRows = snapshots
+    ? await cashRegisterQuery<Array<{ amount: unknown, count: unknown }>>(`
+        SELECT amount, COUNT(*) AS count
+        FROM fachschaft_payments
+        WHERE event_id = ?
+        GROUP BY amount
+        ORDER BY amount ASC
+      `, [cashRegisterEventId])
+    : []
 
   const settingRows = await cashRegisterQuery<Array<{ setting_value: string | null }>>(`
     SELECT setting_value
@@ -149,11 +181,11 @@ export default defineEventHandler(async (event): Promise<EventCashRegisterRespon
   const hourlyRows = await cashRegisterQuery<Array<{ hour_start: string, revenue: unknown, quantity: unknown }>>(`
     SELECT
       DATE_FORMAT(o.created_at, '%Y-%m-%d %H:00:00') AS hour_start,
-      SUM(oi.quantity * (i.price + IFNULL(i.deposit, 0))) AS revenue,
+      SUM(oi.quantity * ${valueExpr}) AS revenue,
       SUM(oi.quantity) AS quantity
     FROM orders o
     JOIN order_items oi ON o.id = oi.order_id
-    JOIN items i ON oi.item_id = i.id
+    ${snapshots ? '' : 'JOIN items i ON oi.item_id = i.id'}
     WHERE o.fachschaft = 0
       AND o.event_id = ?
     GROUP BY hour_start
@@ -173,6 +205,14 @@ export default defineEventHandler(async (event): Promise<EventCashRegisterRespon
   const parsedAmount = Number(settingRows[0]?.setting_value)
   const paymentAmount = Number.isFinite(parsedAmount) && parsedAmount > 0 ? parsedAmount : 10
   const paymentCount = Number(paymentRows[0]?.count ?? 0)
+  const paymentTotal = paymentRows[0]?.total
+  const paymentRevenue = paymentTotal === null || paymentTotal === undefined
+    ? paymentCount * paymentAmount
+    : Number(paymentTotal)
+  const paymentAmounts = paymentAmountRows.map(row => ({
+    amount: Number(row.amount),
+    count: Number(row.count),
+  }))
 
   return {
     ok: true,
@@ -192,7 +232,8 @@ export default defineEventHandler(async (event): Promise<EventCashRegisterRespon
       payments: {
         count: paymentCount,
         amount: paymentAmount,
-        revenue: paymentCount * paymentAmount,
+        revenue: paymentRevenue,
+        amounts: paymentAmounts,
       },
       donations: {
         count: Number(donationRows[0]?.count ?? 0),

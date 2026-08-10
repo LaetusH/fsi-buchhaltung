@@ -29,6 +29,26 @@ function getPool() {
   return pool
 }
 
+// Both applications deploy independently, so the read side must tolerate a
+// kassensystem whose price-snapshot migration has not run yet. Cached for the
+// process lifetime — a restart picks up the migration.
+let snapshotSupport: boolean | null = null
+
+export async function hasCashRegisterPriceSnapshots(): Promise<boolean> {
+  if (snapshotSupport !== null) return snapshotSupport
+
+  const rows = await cashRegisterQuery<Array<{ n: number }>>(
+    `SELECT COUNT(*) AS n
+       FROM information_schema.COLUMNS
+      WHERE TABLE_SCHEMA = DATABASE()
+        AND ((TABLE_NAME = 'order_items' AND COLUMN_NAME IN ('unit_price', 'unit_deposit', 'item_name'))
+          OR (TABLE_NAME = 'fachschaft_payments' AND COLUMN_NAME = 'amount'))`,
+  )
+
+  snapshotSupport = Number(rows[0]?.n ?? 0) === 4
+  return snapshotSupport
+}
+
 export async function cashRegisterQuery<T = any>(sql: string, params?: unknown[]): Promise<T> {
   if (!isCashRegisterConnected()) {
     throw new Error('Cash register connection is not configured')
