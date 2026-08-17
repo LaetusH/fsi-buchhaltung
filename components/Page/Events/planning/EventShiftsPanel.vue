@@ -323,18 +323,62 @@
                           >
                             <Icon :name="isShiftDetailsExpanded(shift.id) ? 'material-symbols:expand-less-rounded' : 'material-symbols:expand-more-rounded'" />
                           </button>
-                          <button
+                          <MenuDropdown
                             v-if="canManageShift(shift)"
-                            type="button"
-                            data-shift-menu
-                            class="inline-flex h-7 w-7 items-center justify-center rounded-md border disabled:opacity-60 cursor-pointer"
-                            :class="openShiftMenuId === shift.id ? 'border-slate-300 bg-slate-100 text-slate-700' : 'border-slate-200 bg-white text-slate-500 hover:bg-slate-100'"
+                            v-model="openShiftMenuId"
+                            :id="shift.id"
                             :disabled="disabled || saving"
-                            :title="t('actions.more')"
-                            @click="toggleShiftMenu(shift.id, $event)"
+                            wrapper-class="relative shrink-0"
                           >
-                            <Icon name="material-symbols:more-vert" />
-                          </button>
+                            <template #trigger>
+                              <button
+                                type="button"
+                                class="inline-flex h-7 w-7 items-center justify-center rounded-md border disabled:opacity-60 cursor-pointer"
+                                :class="openShiftMenuId === shift.id ? 'border-slate-300 bg-slate-100 text-slate-700' : 'border-slate-200 bg-white text-slate-500 hover:bg-slate-100'"
+                                :disabled="disabled || saving"
+                                :title="t('actions.more')"
+                              >
+                                <Icon name="material-symbols:more-vert" />
+                              </button>
+                            </template>
+
+                            <template #default="{ styling }">
+                              <button
+                                type="button"
+                                :class="styling"
+                                :disabled="disabled || saving"
+                                @click="openShiftDescriptionEditor(shift.id)"
+                              >
+                                <Icon name="material-symbols:sticky-note-2-outline-rounded" class="shrink-0 text-base text-slate-400" />
+                                {{ t('event.planning.editShiftDescription') }}
+                              </button>
+                              <button
+                                v-if="canSaveTemplates"
+                                type="button"
+                                :class="[styling, isShiftSavedAsTemplate(shift) ? 'text-emerald-600' : '']"
+                                :disabled="disabled || saving || isShiftSavedAsTemplate(shift)"
+                                @click="saveShiftAsTemplate(shift); openShiftMenuId = null"
+                              >
+                                <Icon
+                                  name="material-symbols:bookmark-add-rounded"
+                                  class="shrink-0 text-base"
+                                  :class="isShiftSavedAsTemplate(shift) ? 'text-emerald-500' : 'text-slate-400'"
+                                />
+                                {{ isShiftSavedAsTemplate(shift) ? t('event.planning.savedAsTemplate') : t('event.planning.saveAsTemplate') }}
+                              </button>
+                              <div class="my-1 border-t border-slate-100" />
+                              <button
+                                type="button"
+                                :class="styling"
+                                class="text-red-600 hover:bg-red-50!"
+                                :disabled="disabled || saving"
+                                @click="removeShift(shift.id); openShiftMenuId = null"
+                              >
+                                <Icon name="material-symbols:delete-rounded" class="shrink-0 text-base" />
+                                {{ t('actions.remove') }}
+                              </button>
+                            </template>
+                          </MenuDropdown>
                         </div>
                       </div>
 
@@ -437,46 +481,6 @@
         {{ t('event.planning.noMatchingShifts') }}
       </div>
     </div>
-
-    <Teleport to="body">
-      <div
-        v-if="shiftMenuShift && shiftMenuPosition"
-        data-shift-menu
-        class="fixed z-50 w-52 overflow-hidden rounded-lg border border-slate-200 bg-white py-1.5 shadow-xl"
-        :style="{ top: `${shiftMenuPosition.top}px`, left: `${shiftMenuPosition.left}px` }"
-      >
-        <button
-          type="button"
-          class="flex w-full items-center gap-2.5 px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-50 disabled:opacity-60 cursor-pointer"
-          :disabled="disabled || saving"
-          @click="openShiftDescriptionEditor(shiftMenuShift.id)"
-        >
-          <Icon name="material-symbols:sticky-note-2-outline-rounded" class="shrink-0 text-base text-slate-400" />
-          {{ t('event.planning.editShiftDescription') }}
-        </button>
-        <button
-          v-if="canSaveTemplates"
-          type="button"
-          class="flex w-full items-center gap-2.5 px-3 py-2 text-left text-sm disabled:opacity-60"
-          :class="isShiftSavedAsTemplate(shiftMenuShift) ? 'text-emerald-600 cursor-not-allowed' : 'text-slate-700 hover:bg-slate-50 cursor-pointer'"
-          :disabled="disabled || saving || isShiftSavedAsTemplate(shiftMenuShift)"
-          @click="saveShiftAsTemplate(shiftMenuShift); closeShiftMenu()"
-        >
-          <Icon name="material-symbols:bookmark-add-rounded" class="shrink-0 text-base" :class="isShiftSavedAsTemplate(shiftMenuShift) ? 'text-emerald-500' : 'text-slate-400'" />
-          {{ isShiftSavedAsTemplate(shiftMenuShift) ? t('event.planning.savedAsTemplate') : t('event.planning.saveAsTemplate') }}
-        </button>
-        <div class="my-1 border-t border-slate-100" />
-        <button
-          type="button"
-          class="flex w-full items-center gap-2.5 px-3 py-2 text-left text-sm text-red-600 hover:bg-red-50 disabled:opacity-60 cursor-pointer"
-          :disabled="disabled || saving"
-          @click="removeShift(shiftMenuShift.id); closeShiftMenu()"
-        >
-          <Icon name="material-symbols:delete-rounded" class="shrink-0 text-base" />
-          {{ t('actions.remove') }}
-        </button>
-      </div>
-    </Teleport>
 
     <CommonModal v-model="templateBrowserOpen" :title="t('event.planning.shiftTemplates')" width-class="max-w-lg">
       <p class="text-sm text-slate-500">{{ t('event.planning.shiftTemplateBrowserHint') }}</p>
@@ -623,7 +627,6 @@ const nextTemporaryShiftId = ref(-1)
 const nextTemplateId = ref(-1)
 const templateBrowserOpen = ref(false)
 const openShiftMenuId = ref<number | null>(null)
-const shiftMenuPosition = ref<{ top: number, left: number } | null>(null)
 const pdfExportOpen = ref(false)
 const pdfIncludeDescriptions = ref(true)
 const pdfDownloading = ref(false)
@@ -655,35 +658,15 @@ function updateNarrowViewport() {
   isNarrowViewport.value = narrowViewportQuery?.matches ?? false
 }
 
-function handleWindowClickForShiftMenu(event: MouseEvent) {
-  if (openShiftMenuId.value === null) return
-  const target = event.target as HTMLElement | null
-  if (target?.closest('[data-shift-menu]')) return
-  closeShiftMenu()
-}
-
-function handleScrollForShiftMenu(event: Event) {
-  if (openShiftMenuId.value === null) return
-  const target = event.target as HTMLElement | null
-  if (target?.closest?.('[data-shift-menu]')) return
-  closeShiftMenu()
-}
-
 onMounted(() => {
   if (typeof window === 'undefined') return
   narrowViewportQuery = window.matchMedia('(max-width: 639px)')
   updateNarrowViewport()
   narrowViewportQuery.addEventListener('change', updateNarrowViewport)
-  window.addEventListener('click', handleWindowClickForShiftMenu)
-  window.addEventListener('scroll', handleScrollForShiftMenu, true)
-  window.addEventListener('resize', closeShiftMenu)
 })
 
 onBeforeUnmount(() => {
   narrowViewportQuery?.removeEventListener('change', updateNarrowViewport)
-  window.removeEventListener('click', handleWindowClickForShiftMenu)
-  window.removeEventListener('scroll', handleScrollForShiftMenu, true)
-  window.removeEventListener('resize', closeShiftMenu)
 })
 
 const currentMemberOption = computed(() => props.currentMemberId
@@ -1056,35 +1039,9 @@ function createRegularShift(name: string, startsAt: string, endsAt: string, requ
   }
 }
 
-const shiftMenuShift = computed(() => openShiftMenuId.value !== null
-  ? slots.value.find(shift => shift.id === openShiftMenuId.value) ?? null
-  : null)
-
-function toggleShiftMenu(shiftId: number, event: MouseEvent) {
-  if (openShiftMenuId.value === shiftId) {
-    closeShiftMenu()
-    return
-  }
-
-  const trigger = event.currentTarget as HTMLElement
-  const rect = trigger.getBoundingClientRect()
-  const menuWidth = 208
-
-  shiftMenuPosition.value = {
-    top: rect.bottom + 4,
-    left: Math.max(8, Math.min(rect.right - menuWidth, window.innerWidth - menuWidth - 8)),
-  }
-  openShiftMenuId.value = shiftId
-}
-
-function closeShiftMenu() {
-  openShiftMenuId.value = null
-  shiftMenuPosition.value = null
-}
-
 function openShiftDescriptionEditor(shiftId: number) {
   if (!isDescriptionExpanded(shiftId)) toggleDescription(shiftId)
-  closeShiftMenu()
+  openShiftMenuId.value = null
 }
 
 function removeShift(shiftId: number) {
