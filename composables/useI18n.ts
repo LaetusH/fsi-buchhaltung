@@ -671,7 +671,6 @@ const messages = {
         saveSuccessApproval: 'Deine Änderung wurde eingereicht und wartet auf Freigabe.',
         saveError: 'Deine Daten konnten nicht gespeichert werden.',
         noChanges: 'Es gibt keine Änderungen zum Speichern.',
-        calendarFeedTitle: 'Kalender-Abo',
       },
       fieldConfig: {
         title: 'Bearbeitbare Felder',
@@ -2253,7 +2252,6 @@ const messages = {
         saveSuccessApproval: 'Your change was submitted and is awaiting approval.',
         saveError: 'Your data could not be saved.',
         noChanges: 'There are no changes to save.',
-        calendarFeedTitle: 'Calendar subscription',
       },
       fieldConfig: {
         title: 'Editable fields',
