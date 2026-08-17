@@ -51,7 +51,7 @@ function normalizeDeadline(value: unknown): string | null {
   if (value === null || value === undefined || value === '') return null
   const str = String(value).trim()
   if (!str) return null
-  return /^\d{4}-\d{2}-\d{2}(T\d{2}:\d{2})?$/.test(str) ? str : null
+  return /^\d{4}-\d{2}-\d{2}([ T]\d{2}:\d{2}(:\d{2})?)?$/.test(str) ? str : null
 }
 
 function normalizeStatus(value: unknown): 'open' | 'in_progress' | 'done' | null {
