@@ -87,7 +87,37 @@
       <div class="grid md:grid-cols-3 gap-4 items-end">
         <div class="md:col-span-3">
           <label class="text-sm font-medium text-slate-600">{{ t('member.subject') }}</label>
+
+          <div v-if="renamingSubject" class="flex items-center gap-2">
+            <input
+              v-model="renameSubjectValue"
+              class="input w-full"
+              :disabled="renamingSubjectSaving"
+              @keydown.enter.prevent="confirmRenameSubject"
+              @keydown.escape.prevent="cancelRenameSubject"
+            >
+            <button
+              type="button"
+              class="flex items-center justify-center h-10 w-10 shrink-0 rounded-md hover:bg-slate-100 text-emerald-600 cursor-pointer disabled:opacity-50"
+              :disabled="renamingSubjectSaving"
+              :title="t('actions.save')"
+              @click="confirmRenameSubject"
+            >
+              <Icon name="material-symbols:check-rounded" class="text-xl" />
+            </button>
+            <button
+              type="button"
+              class="flex items-center justify-center h-10 w-10 shrink-0 rounded-md hover:bg-slate-100 text-slate-500 cursor-pointer disabled:opacity-50"
+              :disabled="renamingSubjectSaving"
+              :title="t('actions.cancel')"
+              @click="cancelRenameSubject"
+            >
+              <Icon name="material-symbols:close-rounded" class="text-xl" />
+            </button>
+          </div>
+
           <CommonSearchSelect
+            v-else
             v-model="subjectQuery"
             :options="subjectOptions"
             :selected-label="form.subject_name || ''"
@@ -99,7 +129,19 @@
             @select="onSubjectSelect"
             @create="createSubjectFromQuery"
             @clear-selection="form.subject_name = ''"
-          />
+          >
+            <template #after-trigger>
+              <button
+                v-if="canEditSubjects && !disabled && selectedSubject"
+                type="button"
+                class="flex items-center justify-center h-10 w-10 rounded-md hover:bg-slate-100 text-orange-500 cursor-pointer"
+                :title="t('member.renameSubject')"
+                @click.stop.prevent="startRenameSubject"
+              >
+                <Icon name="material-symbols:edit-square-outline-rounded" class="text-xl" />
+              </button>
+            </template>
+          </CommonSearchSelect>
         </div>
 
         <div>
@@ -334,6 +376,10 @@ const subjectOptions = computed<SearchSelectOption<string>[]>(() => subjects.val
   label: subject.name,
   value: subject.name,
 })))
+const selectedSubject = computed(() => subjects.value.find(subject => subject.name === form.value.subject_name) || null)
+const renamingSubject = ref(false)
+const renamingSubjectSaving = ref(false)
+const renameSubjectValue = ref('')
 const positions = ref<PositionRow[]>([])
 const subdivisions = ref<SubdivisionOption[]>([])
 const positionQueries = ref<Record<string, string>>({})
@@ -521,6 +567,47 @@ function onSubjectSelect(value: unknown) {
   const name = value as string
   form.value.subject_name = name
   subjectQuery.value = name
+}
+
+function startRenameSubject() {
+  if (!selectedSubject.value) return
+  renameSubjectValue.value = selectedSubject.value.name
+  renamingSubject.value = true
+}
+
+function cancelRenameSubject() {
+  renamingSubject.value = false
+  renameSubjectValue.value = ''
+}
+
+async function confirmRenameSubject() {
+  const subject = selectedSubject.value
+  if (!subject || renamingSubjectSaving.value) return
+
+  const name = renameSubjectValue.value.trim()
+  if (!name) return
+
+  if (name === subject.name) {
+    cancelRenameSubject()
+    return
+  }
+
+  renamingSubjectSaving.value = true
+  try {
+    const res = await $fetch<{ ok: boolean, error?: string }>(`/api/subjects/${subject.id}`, {
+      method: 'PUT',
+      body: { name },
+    })
+
+    if (!res.ok) return
+
+    subject.name = name
+    form.value.subject_name = name
+    subjectQuery.value = name
+    renamingSubject.value = false
+  } finally {
+    renamingSubjectSaving.value = false
+  }
 }
 
 function selectSubdivision(value: unknown) {
