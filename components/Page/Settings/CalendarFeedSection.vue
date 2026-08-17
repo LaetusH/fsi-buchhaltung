@@ -1,18 +1,21 @@
 <template>
-  <PageHomeWidgetFrame
-    :title="t('home.widgets.calendarFeed.title')"
-    icon="material-symbols:calendar-month-rounded"
-    :loading="loading"
-  >
-    <div class="flex h-full flex-col gap-4">
-      <p class="text-sm text-slate-500">
+  <section class="rounded-xl border border-slate-200 p-4 space-y-3">
+    <div>
+      <h3 class="font-semibold">{{ t('home.widgets.calendarFeed.title') }}</h3>
+      <p class="text-sm text-slate-600">
         {{ t('home.widgets.calendarFeed.description') }}
       </p>
+    </div>
 
-      <div v-if="!url && !hasToken" class="mt-auto">
+    <div v-if="loading" class="flex items-center justify-center p-6 text-slate-400">
+      <Icon name="material-symbols:progress-activity" class="animate-spin text-2xl" />
+    </div>
+
+    <template v-else>
+      <div v-if="!url && !hasToken">
         <button
           type="button"
-          class="btn-primary w-full justify-center"
+          class="btn-primary w-full justify-center sm:w-auto"
           :disabled="generating"
           @click="generate"
         >
@@ -20,13 +23,13 @@
         </button>
       </div>
 
-      <div v-else-if="!url" class="mt-auto space-y-3">
+      <div v-else-if="!url" class="space-y-3">
         <p class="text-xs text-slate-400">
           {{ t('home.widgets.calendarFeed.alreadyExists') }}
         </p>
         <button
           type="button"
-          class="btn-secondary w-full justify-center"
+          class="btn-secondary w-full justify-center sm:w-auto"
           :disabled="generating"
           @click="confirmingRegenerate = true"
         >
@@ -34,7 +37,7 @@
         </button>
       </div>
 
-      <template v-else>
+      <div v-else class="space-y-3">
         <div class="flex items-center gap-2">
           <input
             type="text"
@@ -59,15 +62,15 @@
 
         <button
           type="button"
-          class="btn-secondary mt-auto w-full justify-center"
+          class="btn-secondary w-full justify-center sm:w-auto"
           :disabled="generating"
           @click="confirmingRegenerate = true"
         >
           {{ t('home.widgets.calendarFeed.regenerate') }}
         </button>
-      </template>
-    </div>
-  </PageHomeWidgetFrame>
+      </div>
+    </template>
+  </section>
 
   <CommonModal
     v-model="confirmingRegenerate"

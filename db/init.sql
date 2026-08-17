@@ -114,6 +114,24 @@ CREATE TABLE IF NOT EXISTS members (
   FOREIGN KEY (subject) REFERENCES subjects(id)
 );
 
+CREATE TABLE IF NOT EXISTS member_self_edit_field_config (
+  field_name VARCHAR(63) NOT NULL PRIMARY KEY,
+  mode VARCHAR(16) NOT NULL DEFAULT 'locked'
+);
+
+CREATE TABLE IF NOT EXISTS member_pending_field_changes (
+  id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  member_id BIGINT UNSIGNED NOT NULL,
+  field_name VARCHAR(63) NOT NULL,
+  old_value TEXT NULL,
+  new_value TEXT NULL,
+  requested_by BIGINT UNSIGNED NOT NULL,
+  requested_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (member_id) REFERENCES members(id) ON DELETE CASCADE,
+  FOREIGN KEY (requested_by) REFERENCES users(id),
+  UNIQUE KEY uq_member_field (member_id, field_name)
+);
+
 CREATE TABLE IF NOT EXISTS member_positions (
   id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
   member_id BIGINT UNSIGNED NOT NULL,

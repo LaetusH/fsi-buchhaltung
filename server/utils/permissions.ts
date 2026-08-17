@@ -106,10 +106,18 @@ export async function getUserPermissions(userId: number, roles: number[], positi
     Array.from(permissions).filter(isValidPermissionKey) as PermissionKey[]
   )
 
-  for (const key of Array.from(validated)) {
-    const impliedKeys = implied[key]
-    if (!impliedKeys) continue
-    impliedKeys.forEach(impliedKey => validated.add(impliedKey))
+  let grew = true
+  while (grew) {
+    grew = false
+    for (const key of Array.from(validated)) {
+      const impliedKeys = implied[key]
+      if (!impliedKeys) continue
+      for (const impliedKey of impliedKeys) {
+        if (validated.has(impliedKey)) continue
+        validated.add(impliedKey)
+        grew = true
+      }
+    }
   }
 
   return Array.from(validated)

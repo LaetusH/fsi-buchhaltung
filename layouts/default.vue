@@ -36,6 +36,10 @@ const filteredMenuItems = computed(() => {
     if (it.allowGuest) return !user.value
     if (!user.value) return false
     if (user.value.must_change_password) return false
+    // Members who can already reach the Members overview page (via members.view,
+    // members.approveChanges or members.configureSelfEditFields) get the same self-edit
+    // form via its "Meine Daten" tab, so hide this otherwise-redundant main-nav entry.
+    if (it.name === 'MemberSelfService' && hasPermission(['members.view', 'members.approveChanges', 'members.configureSelfEditFields'])) return false
     if (!it.permissions.length) return true
     return it.requireAllPermissions ? hasAllPermissions(it.permissions) : hasPermission(it.permissions)
   })

@@ -1,6 +1,5 @@
 import type { Component } from 'vue'
 import type { PermissionKey } from '~/config/permissions'
-import CalendarFeedWidget from '~/components/Page/Home/Widget/CalendarFeed.vue'
 import EventsWidget from '~/components/Page/Home/Widget/Events.vue'
 import MembersWidget from '~/components/Page/Home/Widget/Members.vue'
 
@@ -35,6 +34,4 @@ export const DASHBOARD_WIDGETS: DashboardWidget[] = [
   // Same gate as the Events page — the widget links into it, so broader visibility would dead-end.
   { id: 'events', component: EventsWidget, size: 'medium', permissions: ['events.access'] },
   { id: 'members', component: MembersWidget, size: 'medium', permissions: ['members.view'] },
-  // Self-service, every authenticated user manages their own feed — no permission gate.
-  { id: 'calendar-feed', component: CalendarFeedWidget, size: 'small', permissions: [] },
 ]

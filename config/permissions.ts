@@ -4,6 +4,9 @@ export type PermissionKey =
   | 'pages.home.view'
   | 'members.view'
   | 'members.edit'
+  | 'members.editOwnData'
+  | 'members.approveChanges'
+  | 'members.configureSelfEditFields'
   | 'subjects.view'
   | 'subjects.edit'
   | 'positions.view'
@@ -54,6 +57,9 @@ export const PERMISSIONS: PermissionDefinition[] = [
   { key: 'pages.home.view', labelKey: 'permissions.items.pagesHomeView', categoryKey: 'permissions.categories.pages' },
   { key: 'members.view', labelKey: 'permissions.items.membersView', categoryKey: 'permissions.categories.members' },
   { key: 'members.edit', labelKey: 'permissions.items.membersEdit', categoryKey: 'permissions.categories.members' },
+  { key: 'members.editOwnData', labelKey: 'permissions.items.membersEditOwnData', categoryKey: 'permissions.categories.members' },
+  { key: 'members.approveChanges', labelKey: 'permissions.items.membersApproveChanges', categoryKey: 'permissions.categories.members' },
+  { key: 'members.configureSelfEditFields', labelKey: 'permissions.items.membersConfigureSelfEditFields', categoryKey: 'permissions.categories.members' },
   { key: 'subjects.view', labelKey: 'permissions.items.subjectsView', categoryKey: 'permissions.categories.members' },
   { key: 'subjects.edit', labelKey: 'permissions.items.subjectsEdit', categoryKey: 'permissions.categories.members' },
   { key: 'positions.view', labelKey: 'permissions.items.positionsView', categoryKey: 'permissions.categories.members' },
@@ -94,7 +100,7 @@ export const PERMISSIONS: PermissionDefinition[] = [
 
 export const implied: Partial<Record<PermissionKey, PermissionKey[]>> = {
   'cash_register.manage': ['cash_register.use'],
-  'members.edit': ['members.view'],
+  'members.edit': ['members.view', 'members.approveChanges'],
   'receipts.edit': ['receipts.view'],
   'invoices.edit': ['invoices.view'],
   'reimbursements.edit': ['reimbursements.view'],

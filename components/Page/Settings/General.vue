@@ -47,6 +47,8 @@
         </button>
       </div>
     </section>
+
+    <PageSettingsCalendarFeedSection />
   </div>
 
   <CommonModal

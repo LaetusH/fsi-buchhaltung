@@ -32,6 +32,9 @@ const ALL_PERMISSION_KEYS = [
   'pages.home.view',
   'members.view',
   'members.edit',
+  'members.editOwnData',
+  'members.approveChanges',
+  'members.configureSelfEditFields',
   'subjects.view',
   'subjects.edit',
   'positions.view',
@@ -75,6 +78,7 @@ const DEFAULT_ROLE_PERMISSIONS = {
   user: [
     'pages.home.view',
     'members.view',
+    'members.editOwnData',
     'receipts.view',
     'invoices.view',
     'reimbursements.view',

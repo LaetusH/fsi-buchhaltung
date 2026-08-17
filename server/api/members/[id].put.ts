@@ -6,6 +6,8 @@ import { getNumericRouteParam } from '~/server/utils/api/request'
 import { ensureSubjectId, validateMemberPayload, applyMemberStatusActions } from '~/server/utils/members'
 import { getSubdivisionLabels, normalizeRelationIds, syncSubdivisionAssignments, validateSubdivisionSelection } from '~/server/utils/subdivisions'
 import { normalizePositionAssignments, syncPositionAssignments, type PositionAssignmentRow } from '~/server/utils/positions'
+import { clearPendingChangeForField } from '~/server/utils/memberSelfEdit'
+import { SELF_EDIT_ELIGIBLE_FIELDS } from '~/config/memberSelfEdit'
 
 interface UpdateMemberSuccess {
   ok: true
@@ -94,6 +96,10 @@ export default defineEventHandler(async (event): Promise<UpdateMemberResponse> =
           memberId,
         ],
         conn
+      )
+
+      await Promise.all(
+        SELF_EDIT_ELIGIBLE_FIELDS.map(field => clearPendingChangeForField(memberId, field, conn)),
       )
 
       const existingPositionRows = await query<PositionAssignmentRow[]>(
