@@ -4,7 +4,9 @@ CREATE TABLE IF NOT EXISTS users (
   username VARCHAR(255) NOT NULL UNIQUE,
   password_hash VARCHAR(255) NOT NULL,
   is_active TINYINT(1) NOT NULL DEFAULT 1,
-  must_change_password TINYINT(1) NOT NULL DEFAULT 0
+  must_change_password TINYINT(1) NOT NULL DEFAULT 0,
+  calendar_token_hash CHAR(64) NULL,
+  calendar_token_created_at DATETIME NULL
 );
 
 CREATE TABLE IF NOT EXISTS roles (

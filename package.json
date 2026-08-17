@@ -17,6 +17,7 @@
     "setup:migrate:checklist-task-link": "node --env-file=.env scripts/migrate-checklist-task-link.mjs",
     "setup:migrate:bank-statements": "node --env-file=.env scripts/migrate-bank-statements.mjs",
     "setup:migrate:shift-templates": "node --env-file=.env scripts/migrate-shift-templates.mjs",
+    "setup:migrate:calendar-token": "node --env-file=.env scripts/migrate-calendar-token.mjs",
     "setup:seed-admin": "node --env-file=.env scripts/seed-admin.mjs",
     "setup:audit": "node --env-file=.env scripts/ensure-audit-infrastructure.mjs",
     "setup:connection-db-user": "node --env-file=.env scripts/create-connection-db-user.mjs",
