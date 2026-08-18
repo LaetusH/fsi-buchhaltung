@@ -19,6 +19,7 @@
               :can-edit="!isSaving"
               :normalize-images="false"
               :allowed-file-types="['png', 'jpg', 'jpeg']"
+              compact
               @update:model-value="logoFile = $event"
               @remove-existing="removeExistingLogo"
             />

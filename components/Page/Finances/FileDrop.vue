@@ -1,5 +1,5 @@
 <template>
-  <div ref="rootRef" class="text-slate-700 lg:w-full" :class="previewUrl ? '-mx-6 lg:mx-0' : ''">
+  <div ref="rootRef" class="text-slate-700 lg:w-full" :class="previewUrl && !compact ? '-mx-6 lg:mx-0' : ''">
     <div
       v-if="!modelValue && !existingFile"
       @dragover.prevent="isDragging = true"
@@ -30,8 +30,8 @@
 
     <div
       v-else-if="previewUrl"
-      class="relative flex flex-col w-full border-y border-slate-200 lg:border lg:rounded-lg overflow-hidden bg-slate-800 group shadow-lg"
-      :style="{ height: `${previewHeight}px` }"
+      :class="compact ? 'relative flex flex-col w-full border border-slate-200 rounded-lg overflow-hidden bg-slate-800 group shadow-lg' : 'relative flex flex-col w-full border-y border-slate-200 lg:border lg:rounded-lg overflow-hidden bg-slate-800 group shadow-lg'"
+      :style="compact ? {} : { height: `${previewHeight}px` }"
     >
       <div class="file-preview-toolbar z-20 flex items-center justify-between gap-3 p-3 bg-black/70 backdrop-blur-sm">
         <div class="flex items-center space-x-3 text-white">
@@ -90,7 +90,11 @@
         </div>
       </div>
 
-      <div ref="containerRef" class="file-preview-content w-full flex-1 min-h-0 overflow-auto bg-slate-800 custom-scrollbar">
+      <div
+        ref="containerRef"
+        class="file-preview-content w-full flex-1 min-h-0 overflow-auto bg-slate-800 custom-scrollbar"
+        :style="compact ? { maxHeight: `${COMPACT_MAX_HEIGHT}px` } : {}"
+      >
         <div v-if="isPdf" class="relative shadow-2xl bg-white transition-all duration-200">
           <VuePdfEmbed
             :source="previewUrl"
@@ -147,6 +151,10 @@ const props = withDefaults(defineProps<{
   canEdit?: boolean
   normalizeImages?: boolean
   allowedFileTypes?: SupportedFileType[]
+  /** Use when embedding outside the full-page receipt/invoice editor layout: skips the
+   * viewport/`data-finance-form-column`-aware height calculation (which assumes it sits
+   * directly in that page's cards grid) and caps the preview to a fixed max height instead. */
+  compact?: boolean
   existingFile?: {
     id: number
     url: string
@@ -157,6 +165,7 @@ const props = withDefaults(defineProps<{
 }>(), {
   normalizeImages: true,
   allowedFileTypes: () => ['pdf', 'png', 'jpg', 'jpeg'],
+  compact: false,
 })
 
 const emit = defineEmits<{
@@ -269,8 +278,16 @@ const getViewportAvailableHeight = (): number => {
   return Math.max(0, window.innerHeight - mainPadding - pagePadding - headerFootprint)
 }
 
+const COMPACT_MAX_HEIGHT = 480
+
 const updatePreviewHeight = (): void => {
   if (!rootRef.value || !previewUrl.value) return
+
+  if (props.compact) {
+    previewHeight.value = Math.max(1, Math.min(intrinsicContentHeight.value, COMPACT_MAX_HEIGHT))
+    return
+  }
+
   const viewportAvailableHeight = getViewportAvailableHeight()
   const formHeight = getFormContentHeight()
   const targetHeight = formHeight > viewportAvailableHeight ? formHeight : viewportAvailableHeight
