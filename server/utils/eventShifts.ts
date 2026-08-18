@@ -1,6 +1,9 @@
 import type mariadb from 'mariadb'
 import { query } from '~/server/utils/db'
 import type { EventShiftMember, EventShiftSlot, EventShiftTemplate, EventShiftTypeDescriptions, SaveEventShiftSlot, SaveEventShiftTemplate } from '~/types/event'
+import { enqueueNotification, dropFutureReminders } from '~/server/utils/notifications/enqueue'
+import { pickChangedFields, type ChangedField } from '~/server/utils/notifications/changeDescription'
+import { formatLocalDateTime } from '~/server/utils/notifications/render'
 
 interface EventShiftSlotRow {
   id: number
@@ -449,11 +452,19 @@ export async function replaceEventShiftSlots({
   eventId,
   slots,
   conn,
+  actingUserId,
 }: {
   eventId: number
   slots: SaveEventShiftSlot[]
   conn: mariadb.PoolConnection
+  actingUserId?: number | null
 }) {
+  const [eventRow] = await query<Array<{ name: string, location: string | null }>>(
+    `SELECT name, location FROM events WHERE id = ?`,
+    [eventId],
+    conn,
+  )
+
   const existingRows = await query<EventShiftSlotRow[]>(
     `SELECT id, name, description, starts_at, ends_at, required_people
      FROM event_shift_slots
@@ -488,6 +499,8 @@ export async function replaceEventShiftSlots({
 
   for (const slot of slots) {
     let shiftId = slot.id ?? null
+    let timingOrNameChanged = false
+    let shiftChanges: ChangedField[] = []
 
     if (shiftId) {
       const existing = existingRows.find(row => Number(row.id) === shiftId)
@@ -501,6 +514,16 @@ export async function replaceEventShiftSlots({
           || Number(existing.required_people) !== slot.required_people
         )
       ) {
+        timingOrNameChanged = String(existing.starts_at) !== slot.starts_at
+          || String(existing.ends_at) !== slot.ends_at
+          || String(existing.name) !== slot.name
+
+        shiftChanges = pickChangedFields([
+          { field: 'name', from: existing.name, to: slot.name },
+          { field: 'start', from: formatLocalDateTime(existing.starts_at), to: formatLocalDateTime(slot.starts_at) },
+          { field: 'end', from: formatLocalDateTime(existing.ends_at), to: formatLocalDateTime(slot.ends_at) },
+        ])
+
         await query(
           `UPDATE event_shift_slots
            SET name = ?, description = ?, starts_at = ?, ends_at = ?, required_people = ?
@@ -542,9 +565,51 @@ export async function replaceEventShiftSlots({
       conn,
     )
 
+    const existingMemberIds = memberRows.map(row => Number(row.member_id))
+    const addedMemberIds = slot.member_ids.filter(id => !existingMemberIds.includes(id))
+    const removedMemberIds = existingMemberIds.filter(id => !slot.member_ids.includes(id))
+    const keptMemberIds = slot.member_ids.filter(id => existingMemberIds.includes(id))
+
+    const shiftPayload = {
+      event_id: eventId,
+      event_name: eventRow?.name ?? '',
+      shift_name: slot.name,
+      shift_start: slot.starts_at,
+      shift_end: slot.ends_at,
+      location: eventRow?.location ?? null,
+    }
+
+    if (addedMemberIds.length) {
+      await enqueueNotification({
+        type: 'shift.assigned',
+        payload: shiftPayload,
+        recipients: { kind: 'members', memberIds: addedMemberIds },
+        createdByUserId: actingUserId ?? null,
+      }, conn)
+    }
+
+    if (removedMemberIds.length) {
+      await enqueueNotification({
+        type: 'shift.removed',
+        payload: shiftPayload,
+        recipients: { kind: 'members', memberIds: removedMemberIds },
+        createdByUserId: actingUserId ?? null,
+      }, conn)
+    }
+
+    if (timingOrNameChanged && keptMemberIds.length) {
+      await enqueueNotification({
+        type: 'shift.changed',
+        payload: { ...shiftPayload, changes: shiftChanges },
+        recipients: { kind: 'members', memberIds: keptMemberIds },
+        createdByUserId: actingUserId ?? null,
+      }, conn)
+      await dropFutureReminders({ type: 'shift.reminder', entityId: shiftId }, conn)
+    }
+
     await syncShiftMembers({
       shiftId,
-      existingIds: memberRows.map(row => Number(row.member_id)),
+      existingIds: existingMemberIds,
       nextIds: slot.member_ids,
       conn,
     })

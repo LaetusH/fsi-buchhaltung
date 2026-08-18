@@ -1,6 +1,7 @@
 import type mariadb from 'mariadb'
 import { query } from '~/server/utils/db'
 import type { EventTask, EventTaskMember, EventTaskSubdivision, SaveEventTask } from '~/types/event'
+import { enqueueNotification, dropFutureReminders } from '~/server/utils/notifications/enqueue'
 
 interface EventTaskRow {
   id: number
@@ -47,7 +48,7 @@ function normalizeIds(value: unknown): number[] | null {
   return ids
 }
 
-function normalizeDeadline(value: unknown): string | null {
+export function normalizeDeadline(value: unknown): string | null {
   if (value === null || value === undefined || value === '') return null
   const str = String(value).trim()
   if (!str) return null
@@ -263,11 +264,19 @@ export async function replaceEventTasks({
   eventId,
   tasks,
   conn,
+  actingUserId,
 }: {
   eventId: number
   tasks: SaveEventTask[]
   conn: mariadb.PoolConnection
+  actingUserId?: number | null
 }): Promise<string | null> {
+  const [eventRow] = await query<Array<{ name: string }>>(
+    `SELECT name FROM events WHERE id = ?`,
+    [eventId],
+    conn,
+  )
+
   const existingRows = await query<EventTaskRow[]>(
     `SELECT id, title, status, deadline, position FROM event_tasks WHERE event_id = ?`,
     [eventId],
@@ -296,6 +305,8 @@ export async function replaceEventTasks({
   for (const task of tasks) {
     let taskId = task.id ?? null
 
+    let deadlineChanged = false
+
     if (taskId) {
       const existing = existingById.get(taskId)
       if (
@@ -307,6 +318,8 @@ export async function replaceEventTasks({
           || Number(existing.position) !== task.position
         )
       ) {
+        deadlineChanged = (existing.deadline ?? null) !== task.deadline
+
         await query(
           `UPDATE event_tasks
            SET title = ?, status = ?, deadline = ?, position = ?
@@ -336,8 +349,40 @@ export async function replaceEventTasks({
       conn,
     )
 
-    await syncTaskMembers(taskId, memberRows.map(r => Number(r.member_id)), task.member_ids, conn)
-    await syncTaskSubdivisions(taskId, subdivisionRows.map(r => Number(r.subdivision_id)), task.subdivision_ids, conn)
+    const existingMemberIds = memberRows.map(r => Number(r.member_id))
+    const existingSubdivisionIds = subdivisionRows.map(r => Number(r.subdivision_id))
+    const addedMemberIds = task.member_ids.filter(id => !existingMemberIds.includes(id))
+    const addedSubdivisionIds = task.subdivision_ids.filter(id => !existingSubdivisionIds.includes(id))
+
+    const taskPayload = {
+      event_id: eventId,
+      event_name: eventRow?.name ?? '',
+      task_title: task.title,
+      task_deadline: task.deadline,
+    }
+
+    if (addedMemberIds.length) {
+      await enqueueNotification({
+        type: 'task.assigned',
+        payload: taskPayload,
+        recipients: { kind: 'members', memberIds: addedMemberIds },
+        createdByUserId: actingUserId ?? null,
+      }, conn)
+    }
+    if (addedSubdivisionIds.length) {
+      await enqueueNotification({
+        type: 'task.assigned',
+        payload: taskPayload,
+        recipients: { kind: 'subdivisions', subdivisionIds: addedSubdivisionIds },
+        createdByUserId: actingUserId ?? null,
+      }, conn)
+    }
+    if (deadlineChanged) {
+      await dropFutureReminders({ type: 'task.deadline_reminder', entityId: taskId }, conn)
+    }
+
+    await syncTaskMembers(taskId, existingMemberIds, task.member_ids, conn)
+    await syncTaskSubdivisions(taskId, existingSubdivisionIds, task.subdivision_ids, conn)
   }
 
   return null

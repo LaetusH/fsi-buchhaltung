@@ -37,6 +37,27 @@ body > #hiddenCopyElement,
         @apply cursor-pointer;
     }
 
+    /* Shared target for v-html'd notification bodies (markdown-lite rendered via notificationFormatting.ts). */
+    .notification-body-html p {
+        @apply mb-2;
+    }
+
+    .notification-body-html p:last-child {
+        @apply mb-0;
+    }
+
+    .notification-body-html ul {
+        @apply mb-2 list-disc pl-5;
+    }
+
+    .notification-body-html ol {
+        @apply mb-2 list-decimal pl-5;
+    }
+
+    .notification-body-html hr {
+        @apply my-2 border-slate-200;
+    }
+
     .checkbox:disabled {
         @apply opacity-70 cursor-default;
     }

@@ -21,6 +21,8 @@ import MemberOverviewPage from '~/components/Page/Members/Overview.vue'
 import MemberCreatePage from '~/components/Page/Members/Create.vue'
 import MemberSelfServicePage from '~/components/Page/Members/SelfService.vue'
 import SettingsPage from '~/components/Page/Settings/Overview.vue'
+import NotificationListPage from '~/components/Page/Notifications/List.vue'
+import NotificationCreatePage from '~/components/Page/Notifications/Create.vue'
 
 // Do not display more than 8 pages at once
 export const PAGES: Record<string, AppPage> = {
@@ -46,4 +48,6 @@ export const PAGES: Record<string, AppPage> = {
   Settings: { main: true, labelKey: 'pages.settings', component: SettingsPage, icon: 'material-symbols:settings-rounded', permissions: ['settings.access'], preserveOnRefresh: true },
   BankStatementList: { main: false, labelKey: 'pages.bankStatements', component: BankStatementListPage, permissions: ['bank_statements.view'] },
   BankStatementCreate: { main: false, labelKey: 'pages.createBankStatement', component: BankStatementCreatePage, permissions: ['bank_statements.view'], preserveOnRefresh: true },
+  NotificationList: { main: false, labelKey: 'pages.notifications', component: NotificationListPage, permissions: [] },
+  NotificationCreate: { main: false, labelKey: 'pages.createNotification', component: NotificationCreatePage, permissions: ['notifications.send'], preserveOnRefresh: true },
 }

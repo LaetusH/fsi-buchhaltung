@@ -8,8 +8,10 @@ export default defineNuxtConfig({
   runtimeConfig: {
     public: {
       cashRegisterMode: process.env.CASH_REGISTER_MODE || 'standalone',
+      vapidPublicKey: process.env.VAPID_PUBLIC_KEY || '',
     },
   },
+  ignore: ['service-worker/**'],
   app: {
     // Allow hosting under a subpath like /buchhaltung
     baseURL: process.env.APP_BASE_URL || '/'
@@ -19,7 +21,21 @@ export default defineNuxtConfig({
   },
   pages: false,
   pwa: {
+    strategies: 'injectManifest',
+    srcDir: 'service-worker',
+    filename: 'sw.ts',
+    injectManifest: {
+      globPatterns: ['**/*.{js,css,html,png,svg,ico,webmanifest}'],
+      maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,
+    },
     registerType: 'autoUpdate',
+    // Without this there is no service worker under `npm run dev`, so `navigator.serviceWorker.ready`
+    // never resolves and web push cannot be subscribed to or received while developing.
+    devOptions: {
+      enabled: true,
+      type: 'module',
+      suppressWarnings: true,
+    },
     manifest: {
       name: 'Buchhaltung',
       short_name: 'Buchhaltung',

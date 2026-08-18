@@ -38,7 +38,7 @@ export default defineEventHandler(async (event): Promise<UpdateEventTasksRespons
     return await withAuditTransaction(current.user, async (conn) => {
       if (!await eventExists(eventId, conn)) return { ok: false, error: 'Event not found' }
 
-      const validationError = await replaceEventTasks({ eventId, tasks, conn })
+      const validationError = await replaceEventTasks({ eventId, tasks, conn, actingUserId: current.user.id })
       if (validationError) return { ok: false, error: validationError }
 
       return {

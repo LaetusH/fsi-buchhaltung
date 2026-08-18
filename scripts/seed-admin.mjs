@@ -71,6 +71,9 @@ const ALL_PERMISSION_KEYS = [
   'users.manage',
   'bank_statements.view',
   'bank_statements.edit',
+  'notifications.send',
+  'notifications.view',
+  'settings.notifications.manage',
 ]
 
 const DEFAULT_ROLE_PERMISSIONS = {

@@ -29,12 +29,22 @@ services:
       - ADMIN_USERNAME=${ADMIN_USERNAME:-}
       - ADMIN_PASSWORD=${ADMIN_PASSWORD:-}
       - APP_BASE_URL=${APP_BASE_URL:-/}
+      - NOTIFICATIONS_DISPATCH_DISABLED=${NOTIFICATIONS_DISPATCH_DISABLED:-false}
+      - SMTP_HOST=${SMTP_HOST:-}
+      - SMTP_PORT=${SMTP_PORT:-587}
+      - SMTP_SECURE=${SMTP_SECURE:-false}
+      - SMTP_USER=${SMTP_USER:-}
+      - SMTP_PASSWORD=${SMTP_PASSWORD:-}
+      - SMTP_FROM=${SMTP_FROM:-noreply@example.com}
+      - VAPID_PUBLIC_KEY=${VAPID_PUBLIC_KEY:-}
+      - VAPID_PRIVATE_KEY=${VAPID_PRIVATE_KEY:-}
+      - VAPID_SUBJECT=${VAPID_SUBJECT:-mailto:vorstand@example.com}
     ports:
       - "3002:3002"
     networks:
       - default
       - fsi-shared
-    command: sh -c "npm ci && node scripts/migrate-event-cost-centre-splits.mjs && node scripts/migrate-event-planning.mjs && node scripts/migrate-invoice-paid-at.mjs && node scripts/migrate-invoice-position-description-nullable.mjs && node scripts/migrate-app-settings.mjs && node scripts/migrate-cash-count-register-checks.mjs && node scripts/migrate-user-password-change-required.mjs && node scripts/migrate-checklist-task-link.mjs && node scripts/migrate-bank-statements.mjs && node scripts/migrate-shift-templates.mjs && node scripts/migrate-calendar-token.mjs && node scripts/migrate-member-self-service.mjs && npm run setup:audit && node scripts/create-connection-db-user.mjs && node scripts/seed-admin.mjs && npm run build && node .output/server/index.mjs"
+    command: sh -c "npm ci && node scripts/migrate-event-cost-centre-splits.mjs && node scripts/migrate-event-planning.mjs && node scripts/migrate-invoice-paid-at.mjs && node scripts/migrate-invoice-position-description-nullable.mjs && node scripts/migrate-app-settings.mjs && node scripts/migrate-cash-count-register-checks.mjs && node scripts/migrate-user-password-change-required.mjs && node scripts/migrate-checklist-task-link.mjs && node scripts/migrate-bank-statements.mjs && node scripts/migrate-shift-templates.mjs && node scripts/migrate-calendar-token.mjs && node scripts/migrate-member-self-service.mjs && node scripts/migrate-notifications.mjs && npm run setup:audit && node scripts/create-connection-db-user.mjs && node scripts/seed-admin.mjs && npm run build && node .output/server/index.mjs"
     depends_on:
       db:
         condition: service_healthy

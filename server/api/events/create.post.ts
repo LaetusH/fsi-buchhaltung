@@ -9,6 +9,7 @@ import {
   validateEventPayload,
   validateEventRelations,
 } from '~/server/utils/events'
+import { enqueueNotification } from '~/server/utils/notifications/enqueue'
 
 interface CreateEventSuccess {
   ok: true
@@ -70,6 +71,13 @@ export default defineEventHandler(async (event): Promise<CreateEventResponse> =>
         nextRows: body.cost_centre_splits,
         conn,
       })
+
+      await enqueueNotification({
+        type: 'event.created',
+        payload: { event_id: eventId, event_name: body.name, event_start: body.starts_at, event_end: body.ends_at, location: body.location },
+        recipients: { kind: 'eventOrganizers', eventId },
+        createdByUserId: current.user.id,
+      }, conn)
 
       return { ok: true, eventId }
     })

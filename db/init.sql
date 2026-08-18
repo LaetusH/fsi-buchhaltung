@@ -541,3 +541,72 @@ CREATE TABLE IF NOT EXISTS bank_statement_positions (
   FOREIGN KEY (invoice_id) REFERENCES invoices(id),
   FOREIGN KEY (event_id) REFERENCES events(id)
 );
+
+CREATE TABLE IF NOT EXISTS notifications (
+  id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  type_key VARCHAR(63) NOT NULL,
+  status VARCHAR(20) NOT NULL DEFAULT 'scheduled',
+  scheduled_for DATETIME NOT NULL,
+  created_by BIGINT UNSIGNED NULL,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  sent_at DATETIME NULL,
+  cancelled_at DATETIME NULL,
+  recipient_rule TEXT NOT NULL,
+  channels VARCHAR(127) NULL,
+  payload TEXT NULL,
+  subject_override VARCHAR(255) NULL,
+  body_override TEXT NULL,
+  link_page VARCHAR(63) NULL,
+  link_meta VARCHAR(255) NULL,
+  dedupe_key VARCHAR(191) NULL,
+  UNIQUE KEY uq_notification_dedupe (dedupe_key),
+  KEY idx_notification_due (status, scheduled_for),
+  FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL
+);
+
+CREATE TABLE IF NOT EXISTS notification_deliveries (
+  id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  notification_id BIGINT UNSIGNED NOT NULL,
+  member_id BIGINT UNSIGNED NULL,
+  user_id BIGINT UNSIGNED NULL,
+  channel VARCHAR(20) NOT NULL,
+  address VARCHAR(255) NULL,
+  status VARCHAR(20) NOT NULL DEFAULT 'pending',
+  subject VARCHAR(255) NULL,
+  body TEXT NULL,
+  attempts TINYINT UNSIGNED NOT NULL DEFAULT 0,
+  next_attempt_at DATETIME NULL,
+  sent_at DATETIME NULL,
+  read_at DATETIME NULL,
+  error VARCHAR(500) NULL,
+  unsubscribe_token CHAR(64) NULL,
+  KEY idx_delivery_inbox (user_id, channel, read_at, id),
+  KEY idx_delivery_retry (status, next_attempt_at),
+  UNIQUE KEY uq_delivery (notification_id, channel, member_id, user_id),
+  FOREIGN KEY (notification_id) REFERENCES notifications(id) ON DELETE CASCADE,
+  FOREIGN KEY (member_id) REFERENCES members(id) ON DELETE CASCADE,
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS notification_preferences (
+  id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  subject_type VARCHAR(10) NOT NULL,
+  subject_id BIGINT UNSIGNED NOT NULL,
+  type_key VARCHAR(63) NOT NULL,
+  channel VARCHAR(20) NOT NULL,
+  enabled TINYINT(1) NOT NULL,
+  UNIQUE KEY uq_preference (subject_type, subject_id, type_key, channel)
+);
+
+CREATE TABLE IF NOT EXISTS notification_push_subscriptions (
+  id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  user_id BIGINT UNSIGNED NOT NULL,
+  endpoint VARCHAR(500) NOT NULL,
+  p256dh VARCHAR(255) NOT NULL,
+  auth VARCHAR(255) NOT NULL,
+  user_agent VARCHAR(255) NULL,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  last_used_at DATETIME NULL,
+  UNIQUE KEY uq_push_endpoint (endpoint),
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);

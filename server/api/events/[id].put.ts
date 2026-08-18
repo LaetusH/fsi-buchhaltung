@@ -11,6 +11,9 @@ import {
   validateEventRelations,
 } from '~/server/utils/events'
 import type { EventRow } from '~/types/event'
+import { enqueueNotification, dropFutureReminders } from '~/server/utils/notifications/enqueue'
+import { pickChangedFields } from '~/server/utils/notifications/changeDescription'
+import { formatLocalDateTime } from '~/server/utils/notifications/render'
 
 interface UpdateEventSuccess {
   ok: true
@@ -125,6 +128,33 @@ export default defineEventHandler(async (event): Promise<UpdateEventResponse> =>
         nextRows: body.cost_centre_splits,
         conn,
       })
+
+      const timingChanged = String(existing.starts_at) !== body.starts_at
+        || String(existing.ends_at) !== body.ends_at
+        || String(existing.location ?? '') !== String(body.location ?? '')
+
+      if (timingChanged) {
+        const changes = pickChangedFields([
+          { field: 'start', from: formatLocalDateTime(existing.starts_at), to: formatLocalDateTime(body.starts_at) },
+          { field: 'end', from: formatLocalDateTime(existing.ends_at), to: formatLocalDateTime(body.ends_at) },
+          { field: 'location', from: existing.location, to: body.location },
+        ])
+
+        await enqueueNotification({
+          type: 'event.changed',
+          payload: {
+            event_id: eventId,
+            event_name: body.name,
+            event_start: body.starts_at,
+            event_end: body.ends_at,
+            location: body.location,
+            changes,
+          },
+          recipients: { kind: 'eventParticipants', eventId },
+          createdByUserId: current.user.id,
+        }, conn)
+        await dropFutureReminders({ type: 'event.reminder', entityId: eventId }, conn)
+      }
 
       return { ok: true }
     })

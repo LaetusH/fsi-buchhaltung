@@ -46,6 +46,7 @@ export default defineEventHandler(async (event): Promise<UpdateEventShiftsRespon
         eventId,
         slots: shifts,
         conn,
+        actingUserId: current.user.id,
       })
       if (validationError) return { ok: false, error: validationError }
 

@@ -142,13 +142,13 @@ export async function getAssociationProfileForInvoice(conn?: any): Promise<Assoc
   if (!rows.length) return null
 
   return {
-    ...rows[0],
+    ...rows[0]!,
     responsible_member_ids: [],
     responsible_position_ids: [],
   }
 }
 
-export async function getAssociationBoardLineForInvoice(conn?: any): Promise<string | null> {
+export async function getAssociationResponsibleMemberNames(conn?: any): Promise<string[]> {
   const [memberRows, positionRows] = await Promise.all([
     query<Array<{ full_name: string }>>(
       `SELECT DISTINCT TRIM(CONCAT(m.first_name, ' ', m.last_name)) AS full_name
@@ -176,7 +176,11 @@ export async function getAssociationBoardLineForInvoice(conn?: any): Promise<str
     .map(row => String(row.full_name || '').trim())
     .filter(Boolean)
 
-  const uniqueNames = Array.from(new Set(names))
+  return Array.from(new Set(names))
+}
+
+export async function getAssociationBoardLineForInvoice(conn?: any): Promise<string | null> {
+  const uniqueNames = await getAssociationResponsibleMemberNames(conn)
   return uniqueNames.length ? `Vorstand gem. §26 BGB: ${uniqueNames.join(', ')}` : null
 }
 

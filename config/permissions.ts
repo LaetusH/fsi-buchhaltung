@@ -43,6 +43,9 @@ export type PermissionKey =
   | 'users.manage'
   | 'bank_statements.view'
   | 'bank_statements.edit'
+  | 'notifications.view'
+  | 'notifications.send'
+  | 'settings.notifications.manage'
 
 export interface PermissionDefinition {
   key: PermissionKey
@@ -96,6 +99,9 @@ export const PERMISSIONS: PermissionDefinition[] = [
   { key: 'users.manage', labelKey: 'permissions.items.usersManage', categoryKey: 'permissions.categories.users' },
   { key: 'bank_statements.view', labelKey: 'permissions.items.bankStatementsView', categoryKey: 'permissions.categories.bankStatements' },
   { key: 'bank_statements.edit', labelKey: 'permissions.items.bankStatementsEdit', categoryKey: 'permissions.categories.bankStatements' },
+  { key: 'notifications.view', labelKey: 'permissions.items.notificationsView', categoryKey: 'permissions.categories.notifications' },
+  { key: 'notifications.send', labelKey: 'permissions.items.notificationsSend', categoryKey: 'permissions.categories.notifications' },
+  { key: 'settings.notifications.manage', labelKey: 'permissions.items.settingsNotificationsManage', categoryKey: 'permissions.categories.notifications' },
 ]
 
 export const implied: Partial<Record<PermissionKey, PermissionKey[]>> = {
@@ -122,4 +128,6 @@ export const implied: Partial<Record<PermissionKey, PermissionKey[]>> = {
   'permissions.manage': ['settings.access', 'users.view'],
   'users.manage': ['users.view'],
   'bank_statements.edit': ['bank_statements.view'],
+  'notifications.send': ['notifications.view'],
+  'settings.notifications.manage': ['settings.access'],
 }

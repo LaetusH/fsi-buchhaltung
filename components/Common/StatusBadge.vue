@@ -7,7 +7,7 @@
 <script setup lang="ts">
 const props = withDefaults(defineProps<{
   label: string
-  tone?: 'slate' | 'yellow' | 'green' | 'red' | 'gray'
+  tone?: 'slate' | 'yellow' | 'green' | 'red' | 'redSolid' | 'gray'
 }>(), {
   tone: 'gray',
 })
@@ -17,6 +17,7 @@ const toneClass = computed(() => {
   if (props.tone === 'yellow') return 'bg-yellow-300 text-yellow-900'
   if (props.tone === 'green') return 'bg-green-300 text-green-900'
   if (props.tone === 'red') return 'bg-red-300 text-red-900 line-through'
+  if (props.tone === 'redSolid') return 'bg-red-300 text-red-900'
   return 'bg-gray-100 text-gray-500'
 })
 </script>

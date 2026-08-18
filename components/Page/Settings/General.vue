@@ -49,6 +49,7 @@
     </section>
 
     <PageSettingsCalendarFeedSection />
+    <PageSettingsNotificationPreferencesSection />
   </div>
 
   <CommonModal
