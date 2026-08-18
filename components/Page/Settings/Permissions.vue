@@ -1,6 +1,6 @@
 <template>
   <div v-if="hasAccess" class="contents">
-    <div class="-mx-6 -mb-6 bg-white p-4 shadow-sm space-y-4 col-span-12 sm:mx-0 sm:space-y-8 sm:rounded-xl sm:p-6 sm:shadow-lg">
+    <div class="-mx-6 -mb-6 bg-white p-4 shadow-sm space-y-4 col-span-12 sm:mx-0 sm:mb-0 sm:space-y-8 sm:rounded-xl sm:p-6 sm:shadow-lg">
       <h2 class="text-base font-semibold sm:text-lg">{{ t('settings.permissions.title') }}</h2>
 
       <section class="rounded-xl border border-slate-300 p-4 space-y-4">
