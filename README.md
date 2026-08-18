@@ -1,4 +1,4 @@
-# FSi Buchhaltung
+# FSi Portal
 
 ## Cash register connection (Kassensystem)
 

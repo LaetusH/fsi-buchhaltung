@@ -105,7 +105,7 @@ export function buildIcsFeed(
 
   lines.push('BEGIN:VCALENDAR')
   lines.push('VERSION:2.0')
-  lines.push('PRODID:-//FSi Buchhaltung//Calendar Feed//DE')
+  lines.push('PRODID:-//FSi Portal//Calendar Feed//DE')
   lines.push('CALSCALE:GREGORIAN')
   lines.push('METHOD:PUBLISH')
   lines.push(`X-WR-CALNAME:${escapeIcsText(calendarName)}`)

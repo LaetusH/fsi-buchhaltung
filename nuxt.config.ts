@@ -37,8 +37,8 @@ export default defineNuxtConfig({
       suppressWarnings: true,
     },
     manifest: {
-      name: 'Buchhaltung',
-      short_name: 'Buchhaltung',
+      name: 'FSi Portal',
+      short_name: 'FSi Portal',
       theme_color: '#ffffff',
       background_color: '#ffffff',
       display: 'standalone',

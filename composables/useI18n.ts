@@ -10,7 +10,7 @@ const STORAGE_KEY = 'fsi-language'
 
 const messages = {
   de: {
-    app: { title: 'FSi Buchhaltung' },
+    app: { title: 'FSi Portal' },
     language: {
       current: 'Deutsch',
       switchTo: 'Zu Englisch wechseln',
@@ -1866,7 +1866,7 @@ const messages = {
     },
   },
   en: {
-    app: { title: 'FSi Accounting' },
+    app: { title: 'FSi Portal' },
     language: {
       current: 'English',
       switchTo: 'Switch to German',
