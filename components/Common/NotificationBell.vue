@@ -37,7 +37,7 @@
         role="dialog"
         :aria-label="t('notifications.title')"
         :style="panelStyle"
-        class="fixed inset-x-2 bottom-2 z-50 flex max-h-[80vh] flex-col overflow-hidden rounded-2xl bg-white shadow-2xl sm:inset-x-auto sm:bottom-auto sm:max-h-128 sm:w-96 sm:rounded-xl"
+        class="fixed z-50 flex flex-col overflow-hidden rounded-2xl bg-white shadow-2xl sm:max-h-128 sm:w-96 sm:rounded-xl"
       >
         <div class="flex items-center justify-between gap-2 border-b border-slate-200 px-4 py-3">
           <div class="flex min-w-0 items-center gap-2">
@@ -183,6 +183,7 @@ import { useNotifications } from '~/composables/useNotifications'
 import { useNotificationDisplay, NOTIFICATION_PREFERENCES_SECTION } from '~/composables/useNotificationDisplay'
 import { usePage } from '~/composables/usePage'
 import { useAuth } from '~/composables/useAuth'
+import { useBodyScrollLock } from '~/composables/useBodyScrollLock'
 import { renderNotificationInlineHtml } from '~/utils/notificationFormatting'
 import type { NotificationInboxItem } from '~/types/notification'
 
@@ -192,6 +193,10 @@ withDefaults(defineProps<{
   collapsed: false,
 })
 
+const emit = defineEmits<{
+  (e: 'navigate'): void
+}>()
+
 const { t } = useI18n()
 const { items, unreadCount, loading, fetchInbox, markRead, markAllRead, startPolling, stopPolling } = useNotifications()
 const { typeIcon, typeColorClass, typeLabel, relativeTime, absoluteTime, receivedAt } = useNotificationDisplay()
@@ -200,19 +205,30 @@ const { hasPermission } = useAuth()
 
 const open = ref(false)
 const triggerRef = ref<HTMLElement | null>(null)
-const anchor = ref({ left: 0, bottom: 0 })
+const anchor = ref({ left: 0, right: 0, bottom: 0 })
 const isWideScreen = ref(false)
 
 const canOpenSettings = computed(() => hasPermission(['settings.access']))
 
+useBodyScrollLock(open)
+
 const panelStyle = computed(() => isWideScreen.value
   ? { left: `${anchor.value.left}px`, bottom: `${anchor.value.bottom}px` }
-  : undefined)
+  : {
+      left: `${anchor.value.left}px`,
+      right: `${anchor.value.right}px`,
+      bottom: `${anchor.value.bottom}px`,
+      maxHeight: `calc(100dvh - ${anchor.value.bottom}px - 0.5rem)`,
+    })
 
 function updateAnchor() {
   const rect = triggerRef.value?.getBoundingClientRect()
   if (!rect) return
-  anchor.value = { left: rect.right + 12, bottom: window.innerHeight - rect.bottom }
+  anchor.value = isWideScreen.value
+    // Desktop: opens beside the trigger, aligned with its bottom edge.
+    ? { left: rect.right + 12, right: 0, bottom: window.innerHeight - rect.bottom }
+    // Mobile: opens directly above the trigger, spanning the screen width with a small margin.
+    : { left: 8, right: 8, bottom: window.innerHeight - rect.top + 8 }
 }
 
 function toggleOpen() {
@@ -226,12 +242,16 @@ function toggleOpen() {
 function openItem(item: NotificationInboxItem) {
   if (!item.readAt) markRead([item.deliveryId])
   open.value = false
-  if (item.linkPage) setPage(item.linkPage as any, item.linkMeta || undefined)
+  if (item.linkPage) {
+    setPage(item.linkPage as any, item.linkMeta || undefined)
+    emit('navigate')
+  }
 }
 
 function openList() {
   open.value = false
   setPage('NotificationList' as any)
+  emit('navigate')
 }
 
 function openPreferences() {
@@ -239,6 +259,7 @@ function openPreferences() {
   // The personal preference matrix lives in the general settings tab — jump straight to it.
   // `sectionKey` re-triggers the scroll when the settings page is already open on that section.
   setPage('Settings' as any, { tab: 'general', section: NOTIFICATION_PREFERENCES_SECTION, sectionKey: Date.now() })
+  emit('navigate')
 }
 
 function onKeydown(event: KeyboardEvent) {

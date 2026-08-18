@@ -219,7 +219,7 @@
         </div>
       </div>
 
-      <div class="max-h-64 overflow-y-auto rounded-xl border border-slate-200">
+      <div class="max-h-64 overflow-auto rounded-xl border border-slate-200">
         <table class="w-full text-xs">
           <thead class="sticky top-0 z-10 bg-slate-50 text-left text-slate-500">
             <tr>
@@ -232,7 +232,7 @@
             <tr v-for="d in detail.deliveries" :key="d.id" class="border-t border-slate-100 align-top">
               <td class="p-2">
                 <p class="font-medium text-slate-800">{{ d.recipientName }}</p>
-                <p v-if="d.address" class="truncate text-[11px] text-slate-400">{{ d.address }}</p>
+                <p v-if="d.address" class="break-all text-[11px] text-slate-400">{{ d.address }}</p>
               </td>
               <td class="p-2">
                 <span class="inline-flex items-center gap-1 text-slate-600">

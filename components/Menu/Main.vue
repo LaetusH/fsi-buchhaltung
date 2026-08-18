@@ -41,7 +41,7 @@
     </ul>
 
     <div class="mt-auto flex flex-col gap-2">
-      <CommonNotificationBell v-if="user" :collapsed="collapsed" />
+      <CommonNotificationBell v-if="user" :collapsed="collapsed" @navigate="emit('close')" />
 
       <button
         v-if="user"

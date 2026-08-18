@@ -37,40 +37,9 @@
   </Teleport>
 </template>
 
-<script lang="ts">
-let bodyScrollLockCount = 0
-let bodyScrollLockY = 0
-
-function lockBodyScroll() {
-  bodyScrollLockCount += 1
-  if (bodyScrollLockCount > 1) return
-
-  bodyScrollLockY = window.scrollY
-  const body = document.body.style
-  body.position = 'fixed'
-  body.top = `-${bodyScrollLockY}px`
-  body.left = '0'
-  body.right = '0'
-  body.overflow = 'hidden'
-}
-
-function unlockBodyScroll() {
-  if (bodyScrollLockCount === 0) return
-  bodyScrollLockCount -= 1
-  if (bodyScrollLockCount > 0) return
-
-  const body = document.body.style
-  body.position = ''
-  body.top = ''
-  body.left = ''
-  body.right = ''
-  body.overflow = ''
-  window.scrollTo(0, bodyScrollLockY)
-}
-</script>
-
 <script setup lang="ts">
-import { onBeforeUnmount, onMounted, useId, watch } from 'vue'
+import { onBeforeUnmount, onMounted, toRef, useId } from 'vue'
+import { useBodyScrollLock } from '~/composables/useBodyScrollLock'
 
 const props = withDefaults(defineProps<{
   modelValue: boolean
@@ -102,17 +71,9 @@ const emit = defineEmits<{
 
 const titleId = `modal-title-${useId()}`
 
-let isLockedByThisInstance = false
 let backdropMousedownOnSelf = false
 
-if (import.meta.client) {
-  watch(() => props.modelValue, (isOpen) => {
-    if (isOpen === isLockedByThisInstance) return
-    isLockedByThisInstance = isOpen
-    if (isOpen) lockBodyScroll()
-    else unlockBodyScroll()
-  }, { immediate: true })
-}
+useBodyScrollLock(toRef(props, 'modelValue'))
 
 function close() {
   emit('update:modelValue', false)
@@ -138,9 +99,5 @@ onMounted(() => {
 
 onBeforeUnmount(() => {
   window.removeEventListener('keydown', handleKeydown)
-  if (isLockedByThisInstance) {
-    isLockedByThisInstance = false
-    unlockBodyScroll()
-  }
 })
 </script>

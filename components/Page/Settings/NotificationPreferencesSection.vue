@@ -10,7 +10,7 @@
         <h3 class="font-semibold">{{ t('settings.notifications.preferencesTitle') }}</h3>
         <p class="text-sm text-slate-600">{{ t('settings.notifications.preferencesHelp') }}</p>
       </div>
-      <div class="flex shrink-0 flex-wrap gap-2">
+      <div class="flex w-full flex-wrap gap-2 sm:w-auto sm:shrink-0">
         <button type="button" class="btn-secondary inline-flex items-center gap-2" @click="openNotificationCentre">
           <Icon name="material-symbols:notifications-rounded" class="h-4 w-4" aria-hidden="true" />
           {{ t('notifications.title') }}
@@ -47,7 +47,7 @@
       >
         {{ push.subscribed.value ? t('settings.notifications.pushDisable') : t('settings.notifications.pushEnable') }}
       </button>
-      <span v-else class="shrink-0 text-xs text-amber-600">{{ t('settings.notifications.pushUnsupported') }}</span>
+      <span v-else class="min-w-0 text-xs text-amber-600 sm:text-right">{{ t('settings.notifications.pushUnsupported') }}</span>
     </div>
 
     <CommonModal
