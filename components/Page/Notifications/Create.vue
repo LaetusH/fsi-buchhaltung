@@ -149,7 +149,7 @@
               class="flex items-start gap-3 rounded-xl border p-3 transition"
               :class="[
                 form.channels.includes(channel.key) ? 'border-cyan-500 bg-cyan-50' : 'border-slate-200',
-                channel.key === 'in_app' ? 'cursor-not-allowed opacity-80' : 'cursor-pointer hover:border-slate-300',
+                channel.key === 'in_app' || channelOffGlobally(channel.key) ? 'cursor-not-allowed opacity-60' : 'cursor-pointer hover:border-slate-300',
               ]"
             >
               <input
@@ -157,7 +157,7 @@
                 type="checkbox"
                 :value="channel.key"
                 class="checkbox mt-0.5"
-                :disabled="channel.key === 'in_app'"
+                :disabled="channel.key === 'in_app' || channelOffGlobally(channel.key)"
               >
               <span class="min-w-0">
                 <span class="flex items-center gap-1.5 text-sm font-medium text-slate-800">
@@ -165,7 +165,7 @@
                   {{ t(channel.labelKey) }}
                 </span>
                 <span class="block text-xs text-slate-500">
-                  {{ t(`notifications.compose.channelHelp.${channel.key}`) }}
+                  {{ channelOffGlobally(channel.key) ? t('settings.notifications.channelOffGlobally') : t(`notifications.compose.channelHelp.${channel.key}`) }}
                 </span>
               </span>
             </label>
@@ -321,6 +321,11 @@ const timingOptions = computed(() => [
 
 const memberCount = computed(() => options.value?.members.length || 0)
 
+/** in_app can't be switched off association-wide, so only email/push are ever gated here. */
+function channelOffGlobally(channel: NotificationChannelKey) {
+  return channel !== 'in_app' && options.value?.channelsEnabled[channel] === false
+}
+
 function filterOptions<T>(list: T[], query: string, label: (item: T) => string) {
   const q = query.trim().toLowerCase()
   if (!q) return list
@@ -429,8 +434,13 @@ function onRemoveUser(id: string | number) {
 
 async function loadOptions() {
   const res = await $fetch<GetNotificationRecipientOptionsResponse>('/api/notifications/recipient-options')
-  if (res.ok) options.value = res
-  else toast.error(res.error)
+  if (res.ok) {
+    options.value = res
+    // A duplicated draft may carry a channel that has since been switched off association-wide.
+    form.channels = form.channels.filter(channel => !channelOffGlobally(channel))
+  } else {
+    toast.error(res.error)
+  }
 }
 
 function validate(): string[] {

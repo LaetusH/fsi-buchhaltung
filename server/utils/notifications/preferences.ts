@@ -51,8 +51,11 @@ export async function getEffectiveChannels(
       continue
     }
 
+    // Switched off association-wide: no personal override, even an explicit one, can bring it back.
+    if (!settings.channels_enabled[channel]) continue
+
     if (!definition.userConfigurable) {
-      if (settings.channels_enabled[channel]) channels.push(channel)
+      channels.push(channel)
       continue
     }
 
@@ -67,8 +70,6 @@ export async function getEffectiveChannels(
       if (memberOverride.enabled) channels.push(channel)
       continue
     }
-
-    if (!settings.channels_enabled[channel]) continue
 
     if (definition.defaultChannels.includes(channel)) channels.push(channel)
   }
@@ -90,7 +91,9 @@ export async function getPreferenceMatrix(subjectType: 'user' | 'member', subjec
     for (const channel of (['email', 'push'] as NotificationChannelKey[])) {
       const key = `${definition.key}:${channel}`
       const override = overrideMap.get(key)
-      const blocked = !isTypeChannelEnabled(settings, definition.key, channel)
+      // Either the type-channel switch or the association-wide channel switch can block this —
+      // a personal override must not be able to defeat either one.
+      const blocked = !isTypeChannelEnabled(settings, definition.key, channel) || !settings.channels_enabled[channel]
       const effective = override !== undefined ? override : (settings.channels_enabled[channel] && definition.defaultChannels.includes(channel))
       entries.push({
         typeKey: definition.key,
