@@ -610,3 +610,234 @@ CREATE TABLE IF NOT EXISTS notification_push_subscriptions (
   UNIQUE KEY uq_push_endpoint (endpoint),
   FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
+
+CREATE TABLE IF NOT EXISTS wiki_spaces (
+  id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  slug VARCHAR(100) NOT NULL UNIQUE,
+  title VARCHAR(150) NOT NULL,
+  description VARCHAR(500) NOT NULL DEFAULT '',
+  icon VARCHAR(100) NOT NULL DEFAULT 'material-symbols:menu-book-rounded',
+  position SMALLINT UNSIGNED NOT NULL DEFAULT 0,
+  requires_review TINYINT(1) NOT NULL DEFAULT 0,
+  is_archived TINYINT(1) NOT NULL DEFAULT 0,
+  owner_position_id BIGINT UNSIGNED NULL,
+  owner_subdivision_id MEDIUMINT UNSIGNED NULL,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  FOREIGN KEY (owner_position_id) REFERENCES positions(id) ON DELETE SET NULL,
+  FOREIGN KEY (owner_subdivision_id) REFERENCES subdivisions(id) ON DELETE SET NULL
+);
+
+CREATE TABLE IF NOT EXISTS wiki_articles (
+  id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  space_id BIGINT UNSIGNED NOT NULL,
+  parent_id BIGINT UNSIGNED NULL,
+  slug VARCHAR(120) NOT NULL,
+  title VARCHAR(200) NOT NULL,
+  summary VARCHAR(500) NOT NULL DEFAULT '',
+  icon VARCHAR(100) NULL,
+  position SMALLINT UNSIGNED NOT NULL DEFAULT 0,
+  status ENUM('draft','in_review','published','archived') NOT NULL DEFAULT 'draft',
+  content_md MEDIUMTEXT NULL,
+  content_html MEDIUMTEXT NULL,
+  content_text MEDIUMTEXT NULL,
+  draft_md MEDIUMTEXT NULL,
+  draft_updated_at TIMESTAMP NULL,
+  draft_updated_by BIGINT UNSIGNED NULL,
+  review_interval_days SMALLINT UNSIGNED NULL,
+  reviewed_at TIMESTAMP NULL,
+  reviewed_by BIGINT UNSIGNED NULL,
+  published_at TIMESTAMP NULL,
+  owner_position_id BIGINT UNSIGNED NULL,
+  owner_subdivision_id MEDIUMINT UNSIGNED NULL,
+  created_by BIGINT UNSIGNED NOT NULL,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  UNIQUE KEY uq_wiki_article_slug (space_id, slug),
+  KEY idx_wiki_article_parent (parent_id),
+  FULLTEXT KEY ft_wiki_article (title, summary, content_text),
+  FOREIGN KEY (space_id) REFERENCES wiki_spaces(id) ON DELETE CASCADE,
+  FOREIGN KEY (parent_id) REFERENCES wiki_articles(id) ON DELETE CASCADE,
+  FOREIGN KEY (created_by) REFERENCES users(id),
+  FOREIGN KEY (draft_updated_by) REFERENCES users(id),
+  FOREIGN KEY (reviewed_by) REFERENCES users(id),
+  FOREIGN KEY (owner_position_id) REFERENCES positions(id) ON DELETE SET NULL,
+  FOREIGN KEY (owner_subdivision_id) REFERENCES subdivisions(id) ON DELETE SET NULL
+);
+
+CREATE TABLE IF NOT EXISTS wiki_access_grants (
+  id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  scope_type ENUM('space','article') NOT NULL,
+  scope_id BIGINT UNSIGNED NOT NULL,
+  include_descendants TINYINT(1) NOT NULL DEFAULT 1,
+  subject_type ENUM('user','role','position','subdivision','permission') NOT NULL,
+  subject_id BIGINT UNSIGNED NOT NULL DEFAULT 0,
+  subject_key VARCHAR(100) NOT NULL DEFAULT '',
+  access_level ENUM('read','write','admin') NOT NULL,
+  created_by BIGINT UNSIGNED NOT NULL,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE KEY uq_wiki_grant (scope_type, scope_id, subject_type, subject_id, subject_key, access_level),
+  KEY idx_wiki_grant_scope (scope_type, scope_id),
+  FOREIGN KEY (created_by) REFERENCES users(id)
+);
+
+CREATE TABLE IF NOT EXISTS wiki_tags (
+  id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  slug VARCHAR(60) NOT NULL UNIQUE,
+  label VARCHAR(80) NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS wiki_article_tags (
+  article_id BIGINT UNSIGNED NOT NULL,
+  tag_id BIGINT UNSIGNED NOT NULL,
+  PRIMARY KEY (article_id, tag_id),
+  FOREIGN KEY (article_id) REFERENCES wiki_articles(id) ON DELETE CASCADE,
+  FOREIGN KEY (tag_id) REFERENCES wiki_tags(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS wiki_article_revisions (
+  id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  article_id BIGINT UNSIGNED NOT NULL,
+  revision_number INT UNSIGNED NOT NULL,
+  title VARCHAR(200) NOT NULL,
+  summary VARCHAR(500) NOT NULL DEFAULT '',
+  content_md MEDIUMTEXT NOT NULL,
+  change_note VARCHAR(300) NOT NULL DEFAULT '',
+  created_by BIGINT UNSIGNED NOT NULL,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE KEY uq_wiki_revision (article_id, revision_number),
+  FOREIGN KEY (article_id) REFERENCES wiki_articles(id) ON DELETE CASCADE,
+  FOREIGN KEY (created_by) REFERENCES users(id)
+);
+
+CREATE TABLE IF NOT EXISTS wiki_paths (
+  id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  slug VARCHAR(100) NOT NULL UNIQUE,
+  title VARCHAR(200) NOT NULL,
+  description VARCHAR(1000) NOT NULL DEFAULT '',
+  icon VARCHAR(100) NOT NULL DEFAULT 'material-symbols:footprint-rounded',
+  position SMALLINT UNSIGNED NOT NULL DEFAULT 0,
+  is_published TINYINT(1) NOT NULL DEFAULT 0,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS wiki_path_items (
+  id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  path_id BIGINT UNSIGNED NOT NULL,
+  article_id BIGINT UNSIGNED NOT NULL,
+  position SMALLINT UNSIGNED NOT NULL,
+  note VARCHAR(300) NOT NULL DEFAULT '',
+  FOREIGN KEY (path_id) REFERENCES wiki_paths(id) ON DELETE CASCADE,
+  FOREIGN KEY (article_id) REFERENCES wiki_articles(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS wiki_path_audiences (
+  id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  path_id BIGINT UNSIGNED NOT NULL,
+  position_id BIGINT UNSIGNED NULL,
+  subdivision_id MEDIUMINT UNSIGNED NULL,
+  FOREIGN KEY (path_id) REFERENCES wiki_paths(id) ON DELETE CASCADE,
+  FOREIGN KEY (position_id) REFERENCES positions(id) ON DELETE CASCADE,
+  FOREIGN KEY (subdivision_id) REFERENCES subdivisions(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS wiki_path_progress (
+  user_id BIGINT UNSIGNED NOT NULL,
+  path_item_id BIGINT UNSIGNED NOT NULL,
+  completed_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (user_id, path_item_id),
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+  FOREIGN KEY (path_item_id) REFERENCES wiki_path_items(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS wiki_checklists (
+  id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  article_id BIGINT UNSIGNED NOT NULL,
+  key_slug VARCHAR(80) NOT NULL,
+  title VARCHAR(200) NOT NULL,
+  mode ENUM('personal','shared') NOT NULL DEFAULT 'personal',
+  UNIQUE KEY uq_wiki_checklist (article_id, key_slug),
+  FOREIGN KEY (article_id) REFERENCES wiki_articles(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS wiki_checklist_items (
+  id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  checklist_id BIGINT UNSIGNED NOT NULL,
+  label VARCHAR(300) NOT NULL,
+  hint VARCHAR(500) NOT NULL DEFAULT '',
+  target_page VARCHAR(80) NULL,
+  target_meta TEXT NULL,
+  position SMALLINT UNSIGNED NOT NULL,
+  FOREIGN KEY (checklist_id) REFERENCES wiki_checklists(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS wiki_checklist_personal_state (
+  user_id BIGINT UNSIGNED NOT NULL,
+  item_id BIGINT UNSIGNED NOT NULL,
+  completed_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (user_id, item_id),
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+  FOREIGN KEY (item_id) REFERENCES wiki_checklist_items(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS wiki_checklist_runs (
+  id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  checklist_id BIGINT UNSIGNED NOT NULL,
+  title VARCHAR(200) NOT NULL,
+  due_date DATE NULL,
+  closed_at TIMESTAMP NULL,
+  created_by BIGINT UNSIGNED NOT NULL,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (checklist_id) REFERENCES wiki_checklists(id) ON DELETE CASCADE,
+  FOREIGN KEY (created_by) REFERENCES users(id)
+);
+
+CREATE TABLE IF NOT EXISTS wiki_checklist_run_state (
+  run_id BIGINT UNSIGNED NOT NULL,
+  item_id BIGINT UNSIGNED NOT NULL,
+  completed_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  completed_by BIGINT UNSIGNED NOT NULL,
+  PRIMARY KEY (run_id, item_id),
+  FOREIGN KEY (run_id) REFERENCES wiki_checklist_runs(id) ON DELETE CASCADE,
+  FOREIGN KEY (item_id) REFERENCES wiki_checklist_items(id) ON DELETE CASCADE,
+  FOREIGN KEY (completed_by) REFERENCES users(id)
+);
+
+CREATE TABLE IF NOT EXISTS wiki_glossary_terms (
+  id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  term VARCHAR(120) NOT NULL UNIQUE,
+  short_definition VARCHAR(500) NOT NULL,
+  article_id BIGINT UNSIGNED NULL,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  FOREIGN KEY (article_id) REFERENCES wiki_articles(id) ON DELETE SET NULL
+);
+
+CREATE TABLE IF NOT EXISTS wiki_glossary_aliases (
+  id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  term_id BIGINT UNSIGNED NOT NULL,
+  alias VARCHAR(120) NOT NULL UNIQUE,
+  FOREIGN KEY (term_id) REFERENCES wiki_glossary_terms(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS wiki_page_help (
+  id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  page_name VARCHAR(80) NOT NULL,
+  section_key VARCHAR(80) NOT NULL DEFAULT '',
+  article_id BIGINT UNSIGNED NOT NULL,
+  position SMALLINT UNSIGNED NOT NULL DEFAULT 0,
+  UNIQUE KEY uq_wiki_page_help (page_name, section_key, article_id),
+  FOREIGN KEY (article_id) REFERENCES wiki_articles(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS wiki_article_views (
+  user_id BIGINT UNSIGNED NOT NULL,
+  article_id BIGINT UNSIGNED NOT NULL,
+  last_viewed_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  view_count INT UNSIGNED NOT NULL DEFAULT 1,
+  PRIMARY KEY (user_id, article_id),
+  KEY idx_wiki_view_recent (user_id, last_viewed_at),
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+  FOREIGN KEY (article_id) REFERENCES wiki_articles(id) ON DELETE CASCADE
+);

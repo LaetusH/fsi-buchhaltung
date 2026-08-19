@@ -2,6 +2,7 @@ import type { Component } from 'vue'
 import type { PermissionKey } from '~/config/permissions'
 import EventsWidget from '~/components/Page/Home/Widget/Events.vue'
 import MembersWidget from '~/components/Page/Home/Widget/Members.vue'
+import WikiWidget from '~/components/Page/Home/Widget/Wiki.vue'
 
 /**
  * Available widget sizes. The dashboard is a 12-column grid (see Page.vue #cards):
@@ -31,7 +32,7 @@ export interface DashboardWidget {
 
 // Widgets render in this order; the grid packs them left to right.
 export const DASHBOARD_WIDGETS: DashboardWidget[] = [
-  // Same gate as the Events page — the widget links into it, so broader visibility would dead-end.
   { id: 'events', component: EventsWidget, size: 'medium', permissions: ['events.access'] },
   { id: 'members', component: MembersWidget, size: 'medium', permissions: ['members.view'] },
+  { id: 'wiki', component: WikiWidget, size: 'small', permissions: ['wiki.view'] },
 ]

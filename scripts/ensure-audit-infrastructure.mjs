@@ -14,6 +14,11 @@ const {
 const EXCLUDED_AUDIT_TABLES = new Set([
   'entity_versions',
   'sessions',
+  // High-churn, low-value wiki state -- auditing it would only bloat entity_versions.
+  'wiki_path_progress',
+  'wiki_checklist_personal_state',
+  'wiki_checklist_run_state',
+  'wiki_article_views',
 ])
 
 function quoteIdentifier(value) {

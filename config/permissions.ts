@@ -46,6 +46,10 @@ export type PermissionKey =
   | 'notifications.view'
   | 'notifications.send'
   | 'settings.notifications.manage'
+  | 'wiki.view'
+  | 'wiki.edit'
+  | 'wiki.review'
+  | 'wiki.manage'
 
 export interface PermissionDefinition {
   key: PermissionKey
@@ -102,6 +106,10 @@ export const PERMISSIONS: PermissionDefinition[] = [
   { key: 'notifications.view', labelKey: 'permissions.items.notificationsView', categoryKey: 'permissions.categories.notifications' },
   { key: 'notifications.send', labelKey: 'permissions.items.notificationsSend', categoryKey: 'permissions.categories.notifications' },
   { key: 'settings.notifications.manage', labelKey: 'permissions.items.settingsNotificationsManage', categoryKey: 'permissions.categories.notifications' },
+  { key: 'wiki.view', labelKey: 'permissions.items.wikiView', categoryKey: 'permissions.categories.wiki' },
+  { key: 'wiki.edit', labelKey: 'permissions.items.wikiEdit', categoryKey: 'permissions.categories.wiki' },
+  { key: 'wiki.review', labelKey: 'permissions.items.wikiReview', categoryKey: 'permissions.categories.wiki' },
+  { key: 'wiki.manage', labelKey: 'permissions.items.wikiManage', categoryKey: 'permissions.categories.wiki' },
 ]
 
 export const implied: Partial<Record<PermissionKey, PermissionKey[]>> = {
@@ -130,4 +138,7 @@ export const implied: Partial<Record<PermissionKey, PermissionKey[]>> = {
   'bank_statements.edit': ['bank_statements.view'],
   'notifications.send': ['notifications.view'],
   'settings.notifications.manage': ['settings.access'],
+  'wiki.edit': ['wiki.view'],
+  'wiki.review': ['wiki.edit', 'wiki.view'],
+  'wiki.manage': ['wiki.review', 'wiki.edit', 'wiki.view'],
 }

@@ -23,6 +23,9 @@ import MemberSelfServicePage from '~/components/Page/Members/SelfService.vue'
 import SettingsPage from '~/components/Page/Settings/Overview.vue'
 import NotificationListPage from '~/components/Page/Notifications/List.vue'
 import NotificationCreatePage from '~/components/Page/Notifications/Create.vue'
+import WikiHomePage from '~/components/Page/Wiki/Home.vue'
+import WikiArticlePage from '~/components/Page/Wiki/Article.vue'
+import WikiArticleEditPage from '~/components/Page/Wiki/Edit.vue'
 
 // Do not display more than 8 pages at once
 export const PAGES: Record<string, AppPage> = {
@@ -50,4 +53,7 @@ export const PAGES: Record<string, AppPage> = {
   BankStatementCreate: { main: false, labelKey: 'pages.createBankStatement', component: BankStatementCreatePage, permissions: ['bank_statements.view'], preserveOnRefresh: true },
   NotificationList: { main: false, labelKey: 'pages.notifications', component: NotificationListPage, permissions: [] },
   NotificationCreate: { main: false, labelKey: 'pages.createNotification', component: NotificationCreatePage, permissions: ['notifications.send'], preserveOnRefresh: true },
+  Wiki: { main: true, labelKey: 'pages.wiki', component: WikiHomePage, icon: 'material-symbols:menu-book-rounded', permissions: ['wiki.view'] },
+  WikiArticle: { main: false, labelKey: 'pages.wikiArticle', component: WikiArticlePage, permissions: ['wiki.view'], preserveOnRefresh: true },
+  WikiArticleEdit: { main: false, labelKey: 'pages.wikiArticleEdit', component: WikiArticleEditPage, permissions: ['wiki.view'], preserveOnRefresh: true },
 }

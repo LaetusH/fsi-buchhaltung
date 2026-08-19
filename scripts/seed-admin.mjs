@@ -74,6 +74,10 @@ const ALL_PERMISSION_KEYS = [
   'notifications.send',
   'notifications.view',
   'settings.notifications.manage',
+  'wiki.view',
+  'wiki.edit',
+  'wiki.review',
+  'wiki.manage',
 ]
 
 const DEFAULT_ROLE_PERMISSIONS = {
@@ -91,6 +95,7 @@ const DEFAULT_ROLE_PERMISSIONS = {
     'spheres.view',
     'cost_centres.view',
     'settings.access',
+    'wiki.view',
   ],
 }
 

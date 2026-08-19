@@ -86,6 +86,121 @@ body > #hiddenCopyElement,
         @apply bg-orange-50;
     }
 
+    /* Shared target for the v-html'd wiki article HTML (rendered + sanitized server-side by
+       server/utils/wiki/render.ts). Tables scroll inside their own box so the page never does. */
+    .wiki-article-body {
+        @apply text-sm text-slate-800 leading-relaxed;
+    }
+
+    .wiki-article-body h1 {
+        @apply mt-6 mb-2 text-xl font-bold text-slate-900 first:mt-0;
+    }
+
+    .wiki-article-body h2 {
+        @apply mt-6 mb-2 text-lg font-semibold text-slate-900 first:mt-0;
+    }
+
+    .wiki-article-body h3 {
+        @apply mt-4 mb-2 text-base font-semibold text-slate-900 first:mt-0;
+    }
+
+    .wiki-article-body h4 {
+        @apply mt-4 mb-1 text-sm font-semibold text-slate-900 first:mt-0;
+    }
+
+    .wiki-article-body p {
+        @apply mb-3;
+    }
+
+    .wiki-article-body ul {
+        @apply mb-3 list-disc pl-5 space-y-1;
+    }
+
+    .wiki-article-body ol {
+        @apply mb-3 list-decimal pl-5 space-y-1;
+    }
+
+    .wiki-article-body blockquote {
+        @apply mb-3 border-l-4 border-slate-200 pl-3 text-slate-600;
+    }
+
+    .wiki-article-body pre {
+        @apply mb-3 overflow-x-auto rounded-lg bg-slate-900 p-3 text-xs text-slate-100;
+    }
+
+    .wiki-article-body code {
+        @apply rounded bg-slate-100 px-1 py-0.5 text-xs;
+    }
+
+    .wiki-article-body pre code {
+        @apply bg-transparent p-0 text-slate-100;
+    }
+
+    .wiki-article-body hr {
+        @apply my-4 border-slate-200;
+    }
+
+    .wiki-article-body img {
+        @apply my-3 max-w-full rounded-lg;
+    }
+
+    .wiki-article-body table {
+        @apply mb-3 w-full border-collapse text-left text-sm;
+    }
+
+    .wiki-article-body th,
+    .wiki-article-body td {
+        @apply border border-slate-200 px-2 py-1 align-top;
+    }
+
+    .wiki-article-body th {
+        @apply bg-slate-50 font-semibold;
+    }
+
+    .wiki-article-body a {
+        @apply text-orange-700 underline cursor-pointer;
+    }
+
+    .wiki-article-body .wiki-link-broken {
+        @apply text-red-600 no-underline decoration-dotted cursor-default;
+    }
+
+    .wiki-article-body .wiki-glossary {
+        @apply underline decoration-dotted underline-offset-2 cursor-help;
+    }
+
+    .wiki-article-body .wiki-callout {
+        @apply mb-3 rounded-lg border-l-4 px-3 py-2;
+    }
+
+    .wiki-article-body .wiki-callout p:last-child {
+        @apply mb-0;
+    }
+
+    .wiki-article-body .wiki-callout-hinweis {
+        @apply border-sky-400 bg-sky-50 text-sky-900;
+    }
+
+    .wiki-article-body .wiki-callout-warnung {
+        @apply border-amber-400 bg-amber-50 text-amber-900;
+    }
+
+    .wiki-article-body .wiki-callout-tipp {
+        @apply border-emerald-400 bg-emerald-50 text-emerald-900;
+    }
+
+    .wiki-article-body .wiki-placeholder {
+        @apply mb-3 rounded-lg border border-dashed border-slate-300 bg-slate-50 px-3 py-2 text-xs text-slate-500;
+    }
+
+    .wiki-toolbar-btn {
+        @apply flex items-center gap-1 rounded-md border border-slate-200 bg-white px-2 py-1 text-xs text-slate-700 cursor-pointer transition-colors;
+    }
+
+    .wiki-toolbar-btn:hover {
+        @apply bg-slate-100;
+    }
+
     .section-title {
         @apply text-sm font-semibold text-slate-800 mb-1
     }
