@@ -8,7 +8,7 @@
     ></div>
 
     <Teleport v-for="tool in toolMounts" :key="tool.id" :to="tool.el">
-      <PageWikiToolLink
+      <PageWikiArticleToolLink
         :page="tool.page"
         :meta="tool.meta"
         :label="tool.label"
@@ -18,7 +18,7 @@
     </Teleport>
 
     <Teleport v-for="entry in checklistMounts" :key="entry.id" :to="entry.el">
-      <PageWikiChecklist
+      <PageWikiArticleChecklist
         :checklist="checklistByKey[entry.keySlug] ?? null"
         :key-slug="entry.keySlug"
         :article-id="articleId ?? null"
@@ -27,7 +27,7 @@
     </Teleport>
 
     <Teleport v-for="embed in embedMounts" :key="embed.id" :to="embed.el">
-      <PageWikiEmbedHost
+      <PageWikiArticleEmbedHost
         :embed-key="embed.key"
         :result="embedResults[embed.id] ?? null"
         :loading="embedsLoading"

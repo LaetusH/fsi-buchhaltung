@@ -20,7 +20,7 @@
             <h2 class="section-title">{{ t('wiki.admin.stale.title') }}</h2>
             <p class="text-sm text-slate-600">{{ t('wiki.admin.stale.hint') }}</p>
           </div>
-          <PageWikiStaleList return-page="WikiAdmin" :return-meta="{ tab: 'stale' }" />
+          <PageWikiAdminStaleList return-page="WikiAdmin" :return-meta="{ tab: 'stale' }" />
         </div>
       </div>
 

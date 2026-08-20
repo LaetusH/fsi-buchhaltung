@@ -45,7 +45,7 @@
       <aside class="hidden xl:col-span-3 xl:block">
         <div class="scroll-panel sticky top-6 max-h-[calc(100vh-3rem)] overflow-y-auto rounded-xl bg-white p-4 pr-2 shadow-lg">
           <h2 class="section-title">{{ t('wiki.tree.title') }}</h2>
-          <PageWikiTreeSidebar
+          <PageWikiNavigationTreeSidebar
             :spaces="spaces"
             :current-article-id="article?.id ?? null"
             :editable="canEdit"
@@ -175,7 +175,7 @@
               <span class="text-xs font-normal text-slate-400">({{ article.headings.length }})</span>
             </summary>
             <div class="mt-3">
-              <PageWikiTableOfContents :headings="article.headings" />
+              <PageWikiArticleTableOfContents :headings="article.headings" />
             </div>
           </details>
 
@@ -211,7 +211,7 @@
                   <Icon name="material-symbols:toc-rounded" class="text-base text-slate-400" aria-hidden="true" />
                   {{ t('wiki.article.toc') }}
                 </h3>
-                <PageWikiTableOfContents :headings="article.headings" />
+                <PageWikiArticleTableOfContents :headings="article.headings" />
               </div>
 
               <div v-if="article.children.length" class="-mx-6 bg-white p-4 shadow-sm sm:mx-0 sm:rounded-xl sm:p-6 sm:shadow-lg">
@@ -329,7 +329,7 @@
   </Page>
 
   <CommonModal v-model="treeOpen" :title="t('wiki.tree.title')" width-class="max-w-lg">
-    <PageWikiTreeSidebar :spaces="spaces" :current-article-id="article?.id ?? null" @select="openFromDrawer" />
+    <PageWikiNavigationTreeSidebar :spaces="spaces" :current-article-id="article?.id ?? null" @select="openFromDrawer" />
   </CommonModal>
 </template>
 
@@ -340,7 +340,7 @@ import { useLocaleFormatters } from '~/composables/useLocaleFormatters'
 import { usePage } from '~/composables/usePage'
 import { buildReturnTarget, useReturnTarget } from '~/composables/useReturnTarget'
 import { useToast } from '~/composables/useToast'
-import type { WikiReorderItem } from './TreeSidebar.vue'
+import type { WikiReorderItem } from '../Navigation/TreeSidebar.vue'
 import type { WikiArticleDetailPayload, WikiArticleDetailResult } from '~/server/utils/wiki/detail'
 import type { WikiTreeResponse } from '~/server/api/wiki/tree.get'
 import type { WikiPathDetailResponse } from '~/server/api/wiki/paths/[id].get'

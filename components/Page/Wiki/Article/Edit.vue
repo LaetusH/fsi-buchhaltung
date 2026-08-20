@@ -91,7 +91,7 @@
               </div>
             </div>
 
-            <PageWikiEditorMarkdown v-model="form.markdown" :checklists="checklists" />
+            <PageWikiArticleEditorMarkdown v-model="form.markdown" :checklists="checklists" />
 
             <p v-if="draftStateLabel" class="flex items-center gap-1.5 text-xs text-slate-500">
               <span
@@ -206,7 +206,7 @@
           </div>
 
           <div v-show="activeTab === 'checklists'">
-            <PageWikiChecklistsTab
+            <PageWikiArticleChecklistsTab
               v-if="articleId"
               :article-id="articleId"
               v-model="checklists"
@@ -254,11 +254,11 @@
           </div>
 
           <div v-show="activeTab === 'access'">
-            <PageWikiAccessTab v-if="articleId" scope-type="article" :scope-id="articleId" />
+            <PageWikiArticleAccessTab v-if="articleId" scope-type="article" :scope-id="articleId" />
           </div>
 
           <div v-show="activeTab === 'history'">
-            <PageWikiRevisionList
+            <PageWikiArticleRevisionList
               v-if="articleId"
               ref="revisionListRef"
               :article-id="articleId"

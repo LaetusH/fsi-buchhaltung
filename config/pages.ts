@@ -24,11 +24,11 @@ import SettingsPage from '~/components/Page/Settings/Overview.vue'
 import NotificationListPage from '~/components/Page/Notifications/List.vue'
 import NotificationCreatePage from '~/components/Page/Notifications/Create.vue'
 import WikiHomePage from '~/components/Page/Wiki/Home.vue'
-import WikiArticlePage from '~/components/Page/Wiki/Article.vue'
-import WikiArticleEditPage from '~/components/Page/Wiki/Edit.vue'
+import WikiArticlePage from '~/components/Page/Wiki/Article/Article.vue'
+import WikiArticleEditPage from '~/components/Page/Wiki/Article/Edit.vue'
 import WikiPathPage from '~/components/Page/Wiki/Path.vue'
-import WikiAdminPage from '~/components/Page/Wiki/Admin.vue'
-import WikiGlossaryPage from '~/components/Page/Wiki/Glossary.vue'
+import WikiAdminPage from '~/components/Page/Wiki/Admin/Admin.vue'
+import WikiGlossaryPage from '~/components/Page/Wiki/Glossary/Glossary.vue'
 
 // Do not display more than 8 pages at once
 export const PAGES: Record<string, AppPage> = {

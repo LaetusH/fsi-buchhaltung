@@ -80,7 +80,7 @@
     </div>
 
     <ul v-if="expanded && article.children.length" class="ml-3 space-y-0.5 border-l border-slate-100 pl-1">
-      <PageWikiTreeSidebarNode
+      <PageWikiNavigationTreeSidebarNode
         v-for="child in article.children"
         :key="child.id"
         :article="child"

@@ -25,7 +25,7 @@
     <template #cards>
       <div class="-mx-6 space-y-3 bg-white p-4 shadow-sm col-span-12 sm:mx-0 sm:rounded-xl sm:p-6 sm:shadow-lg">
         <p class="text-base text-slate-600">{{ t('wiki.subtitle') }}</p>
-        <PageWikiSearchPanel :spaces="spaces" @open="openArticle" />
+        <PageWikiNavigationSearchPanel :spaces="spaces" @open="openArticle" />
         <p class="flex items-center gap-1 text-xs text-slate-400">
           <Icon name="material-symbols:translate-rounded" class="text-sm" aria-hidden="true" />
           {{ t('wiki.contentLanguageHint') }}
@@ -55,7 +55,7 @@
             />
           </button>
         </div>
-        <PageWikiStaleList v-if="staleOpen" return-page="Wiki" />
+        <PageWikiAdminStaleList v-if="staleOpen" return-page="Wiki" />
       </div>
 
       <div

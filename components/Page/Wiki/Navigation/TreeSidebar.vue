@@ -22,7 +22,7 @@
       </button>
 
       <ul v-if="expandedSpaces.has(space.id)" class="ml-4 space-y-0.5 border-l border-slate-100 pl-1">
-        <PageWikiTreeSidebarNode
+        <PageWikiNavigationTreeSidebarNode
           v-for="article in space.articles"
           :key="article.id"
           :article="article"
@@ -42,7 +42,7 @@
 <script setup lang="ts">
 import { reactive, watch } from 'vue'
 import { useI18n } from '~/composables/useI18n'
-import PageWikiTreeSidebarNode from './TreeSidebarNode.vue'
+import PageWikiNavigationTreeSidebarNode from './TreeSidebarNode.vue'
 import type { WikiTreeArticle, WikiTreeSpace } from '~/types/wiki'
 
 export interface WikiReorderItem {

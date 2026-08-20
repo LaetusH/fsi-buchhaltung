@@ -91,7 +91,7 @@
               <span v-if="attribution(item)" class="mt-0.5 block text-xs text-emerald-700">{{ attribution(item) }}</span>
             </span>
 
-            <PageWikiToolLink
+            <PageWikiArticleToolLink
               v-if="item.targetPage"
               :page="item.targetPage"
               :meta="item.targetMeta ?? { returnTarget: 'self' }"

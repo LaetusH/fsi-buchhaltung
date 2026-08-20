@@ -74,7 +74,7 @@
     </ul>
   </div>
 
-  <PageWikiSpaceEditModal v-model="modalOpen" :space="editing" @saved="load" />
+  <PageWikiAdminSpaceEditModal v-model="modalOpen" :space="editing" @saved="load" />
 
   <CommonModal
     v-if="deleteTarget"

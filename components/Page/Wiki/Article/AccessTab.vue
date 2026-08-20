@@ -8,7 +8,7 @@
 
     <p v-if="!canManage" class="text-sm text-slate-500">{{ t('wiki.access.readOnlyHint') }}</p>
 
-    <PageWikiAccessSubjectSelect v-if="canManage" :max-level="maxLevel" @add="addGrant" />
+    <PageWikiArticleAccessSubjectSelect v-if="canManage" :max-level="maxLevel" @add="addGrant" />
 
     <p v-if="!grants.length" class="text-sm text-slate-500">{{ t('wiki.access.empty') }}</p>
 
