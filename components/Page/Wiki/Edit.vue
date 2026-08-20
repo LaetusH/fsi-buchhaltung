@@ -298,7 +298,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
 import { useI18n } from '~/composables/useI18n'
 import { usePage } from '~/composables/usePage'
 import { useReturnTarget } from '~/composables/useReturnTarget'
@@ -364,6 +364,19 @@ const dirty = ref(false)
 const savingDraft = ref(false)
 const lastSavedAt = ref<Date | null>(null)
 let autosaveTimer: ReturnType<typeof setTimeout> | null = null
+let suppressAutosave = false
+let savedSnapshot = ''
+
+function snapshotForm() {
+  return JSON.stringify({
+    title: form.title,
+    slug: form.slug,
+    summary: form.summary,
+    parentId: form.parentId,
+    markdown: form.markdown,
+    reviewIntervalDays: form.reviewIntervalDays,
+  })
+}
 // Once the author edits the slug by hand, the title stops rewriting it.
 const slugTouched = ref(false)
 
@@ -470,6 +483,8 @@ async function loadArticle() {
     return
   }
 
+  suppressAutosave = true
+
   const article = res.article
   form.spaceId = article.spaceId
   form.parentId = article.parentId
@@ -489,6 +504,10 @@ async function loadArticle() {
   slugTouched.value = true
   dirty.value = false
   loading.value = false
+  savedSnapshot = snapshotForm()
+
+  await nextTick()
+  suppressAutosave = false
 }
 
 async function reload() {
@@ -497,7 +516,7 @@ async function reload() {
 }
 
 function scheduleAutosave() {
-  if (isCreate.value || readOnly.value) return
+  if (suppressAutosave || isCreate.value || readOnly.value) return
   dirty.value = true
   if (autosaveTimer) clearTimeout(autosaveTimer)
   autosaveTimer = setTimeout(() => { saveDraft(false) }, AUTOSAVE_DELAY)
@@ -506,6 +525,11 @@ function scheduleAutosave() {
 async function saveDraft(explicit: boolean) {
   if (isCreate.value || readOnly.value || articleId.value === null) return
   if (!explicit && !dirty.value) return
+
+  if (snapshotForm() === savedSnapshot) {
+    dirty.value = false
+    return
+  }
 
   savingDraft.value = true
   errors.value = []
@@ -529,6 +553,7 @@ async function saveDraft(explicit: boolean) {
     }
 
     dirty.value = false
+    savedSnapshot = snapshotForm()
     lastSavedAt.value = new Date()
     if (explicit) toast.success(t('wiki.editor.savedToast'))
   } finally {

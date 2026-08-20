@@ -19,6 +19,7 @@ const EXCLUDED_AUDIT_TABLES = new Set([
   'wiki_checklist_personal_state',
   'wiki_checklist_run_state',
   'wiki_article_views',
+  'wiki_articles',
 ])
 
 function quoteIdentifier(value) {
@@ -179,6 +180,12 @@ async function ensureAuditInfrastructure() {
     }
 
     const metadata = await loadAuditedTableMetadata(conn, databaseName)
+
+    for (const tableName of EXCLUDED_AUDIT_TABLES) {
+      await conn.query(`DROP TRIGGER IF EXISTS ${buildTriggerName(tableName, 'ai')}`)
+      await conn.query(`DROP TRIGGER IF EXISTS ${buildTriggerName(tableName, 'au')}`)
+      await conn.query(`DROP TRIGGER IF EXISTS ${buildTriggerName(tableName, 'ad')}`)
+    }
 
     for (const table of metadata.values()) {
       const tableName = quoteIdentifier(table.name)
