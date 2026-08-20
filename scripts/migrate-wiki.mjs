@@ -1,4 +1,13 @@
 import mariadb from 'mariadb'
+import {
+  SPACES,
+  ARTICLES,
+  SUBDIVISION_ARTICLE,
+  CHECKLISTS,
+  GLOSSARY,
+  PATHS,
+  PAGE_HELP,
+} from './wiki-seed-content.mjs'
 
 const {
   DB_HOST = 'buchhaltung-db-local',
@@ -268,15 +277,6 @@ const TABLES = [
   `],
 ]
 
-const SPACES = [
-  ['app', 'Die App', 'Wie das FSi Portal funktioniert: Anmeldung, Startseite, Benachrichtigungen und deine eigenen Daten.', 'material-symbols:smartphone', 10],
-  ['finanzen', 'Finanzen', 'Belege, Rechnungen, Erstattungen, Kassenzählungen, Budgets und der Jahresabschluss.', 'material-symbols:euro-rounded', 20],
-  ['veranstaltungen', 'Veranstaltungen', 'Von der ersten Idee über die Schichtplanung bis zur Nachbereitung.', 'material-symbols:event-rounded', 30],
-  ['aemter', 'Ämter & Gremien', 'Wer macht was: Vorstand, Kassenwart, Schriftführung, Referate, Sitzungen und Wahlen.', 'material-symbols:gavel-rounded', 40],
-  ['mitglied', 'Mitglied sein', 'Erste Schritte, Rechte und Pflichten, Satzung und Ordnungen, Datenschutz.', 'material-symbols:groups-rounded', 50],
-  ['referate', 'Referate & Untergliederungen', 'Jedes Referat dokumentiert hier seine eigenen Abläufe.', 'material-symbols:diversity-3-rounded', 60],
-]
-
 async function tableExists(conn, databaseName, tableName) {
   const rows = await conn.query(
     `SELECT TABLE_NAME
@@ -369,229 +369,299 @@ async function seedSpaces(conn) {
   console.log('migrate-wiki: seeded wiki spaces')
 }
 
-// Starter articles. Markdown only: `content_html` is rendered and cached by the app on first read
-// (server/utils/wiki/detail.ts), which keeps this script free of the TypeScript render pipeline.
-// `content_text` is seeded with the markdown so search finds these articles before anyone opens them.
-const ARTICLES = [
-  {
-    space: 'app',
-    slug: 'ueberblick',
-    title: 'Überblick über das FSi Portal',
-    summary: 'Was die App kann und wie du dich darin zurechtfindest.',
-    position: 10,
-    markdown: [
-      '# Überblick über das FSi Portal',
-      '',
-      'Das FSi Portal bündelt die Verwaltung der Fachschaft an einer Stelle: Finanzen, Mitglieder,',
-      'Veranstaltungen und Einstellungen. Was du siehst, hängt von deinen Berechtigungen ab – wenn dir',
-      'ein Menüpunkt fehlt, fehlt dir die passende Berechtigung, nicht die Funktion.',
-      '',
-      '## Die Bereiche',
-      '',
-      '- **Finanzen** – Belege, Rechnungen, Erstattungen, Kassenzählungen, Kontoauszüge und Haushaltspläne.',
-      '- **Veranstaltungen** – Planung, Schichten, Aufgaben und Checklisten.',
-      '- **Mitglieder** – Stammdaten, Ämter und Untergliederungen.',
-      '- **Einstellungen** – Vereinsdaten, Sphären, Kostenstellen, Benutzer und Berechtigungen.',
-      '- **Wiki** – diese Sammlung: wie die App funktioniert und wie die FSi arbeitet.',
-      '',
-      ':::hinweis',
-      'Das Wiki liegt nur auf Deutsch vor. Der Sprachumschalter oben übersetzt die Oberfläche,',
-      'nicht die Artikel.',
-      ':::',
-      '',
-      '## Weiterlesen',
-      '',
-      'Als Einstieg eignen sich [[wiki:app/anmeldung|Anmeldung und Passwort]] und',
-      '[[wiki:mitglied/erste-schritte|Erste Schritte als Mitglied]].',
-    ].join('\n'),
-  },
-  {
-    space: 'app',
-    slug: 'anmeldung',
-    title: 'Anmeldung und Passwort',
-    summary: 'Wie du dich anmeldest, dein Passwort änderst und was bei Problemen hilft.',
-    position: 20,
-    markdown: [
-      '# Anmeldung und Passwort',
-      '',
-      'Du meldest dich mit deinem Benutzernamen und deinem Passwort an. Beides bekommst du von der',
-      'Person, die im Vorstand die Benutzerverwaltung betreut.',
-      '',
-      '## Erstes Anmelden',
-      '',
-      '1. Benutzername und Startpasswort eingeben.',
-      '2. Die App fordert dich auf, ein eigenes Passwort zu setzen.',
-      '3. Danach landest du auf der Startseite.',
-      '',
-      ':::warnung',
-      'Gib dein Passwort niemals weiter. Wer für dich etwas erledigen soll, bekommt einen eigenen',
-      'Zugang mit den passenden Berechtigungen.',
-      ':::',
-      '',
-      '## Passwort vergessen',
-      '',
-      'Es gibt bewusst keinen automatischen Zurücksetzen-Link. Melde dich beim Vorstand, dort wird dir',
-      'ein neues Startpasswort gesetzt.',
-    ].join('\n'),
-  },
-  {
-    space: 'finanzen',
-    slug: 'belege-erfassen',
-    title: 'Beleg erfassen',
-    summary: 'Wie ein Kassenbeleg in die Buchhaltung kommt – Schritt für Schritt.',
-    position: 10,
-    markdown: [
-      '# Beleg erfassen',
-      '',
-      'Jede Ausgabe der Fachschaft braucht einen Beleg. Ohne Beleg gibt es keine Buchung und keine',
-      'Erstattung – das ist keine Schikane, sondern die Grundlage für den Jahresabschluss und die',
-      'Kassenprüfung.',
-      '',
-      '## So gehst du vor',
-      '',
-      '1. Beleg fotografieren oder als PDF bereithalten.',
-      '2. Unter **Finanzen → Belege** einen neuen Beleg anlegen.',
-      '3. Datum, Firma und Beschreibung eintragen.',
-      '4. Die Positionen mit Betrag und Kostenstelle erfassen.',
-      '5. Die Datei anhängen und speichern.',
-      '',
-      ':::tool{page="ReceiptCreate" meta=\'{"returnTarget":"self"}\' label="Beleg erfassen"}',
-      '',
-      '## Was ist eine Kostenstelle?',
-      '',
-      'Die Kostenstelle sagt, aus welchem Topf das Geld kommt. Ohne Kostenstelle lässt sich eine',
-      'Ausgabe später keinem Haushaltsplan zuordnen.',
-      '',
-      ':::tipp',
-      'Fotografiere den Beleg direkt an der Kasse. Thermopapier verblasst innerhalb weniger Wochen.',
-      ':::',
-      '',
-      '## Wenn du das Geld ausgelegt hast',
-      '',
-      'Dann brauchst du zusätzlich eine Erstattung – siehe [[wiki:finanzen/erstattung-beantragen|Erstattung beantragen]].',
-    ].join('\n'),
-  },
-  {
-    space: 'finanzen',
-    slug: 'erstattung-beantragen',
-    title: 'Erstattung beantragen',
-    summary: 'Geld zurückbekommen, das du für die Fachschaft ausgelegt hast.',
-    position: 20,
-    markdown: [
-      '# Erstattung beantragen',
-      '',
-      'Hast du etwas aus eigener Tasche bezahlt, beantragst du eine Erstattung. Grundlage ist immer ein',
-      'Beleg – lege ihn zuerst an, siehe [[wiki:finanzen/belege-erfassen|Beleg erfassen]].',
-      '',
-      '## Ablauf',
-      '',
-      '| Schritt | Wer |',
-      '| --- | --- |',
-      '| Beleg erfassen | du |',
-      '| Erstattung anlegen und Kontodaten prüfen | du |',
-      '| Freigabe | Kassenwart |',
-      '| Überweisung | Kassenwart |',
-      '',
-      ':::hinweis',
-      'Reiche Erstattungen innerhalb von vier Wochen ein. Später wird die Zuordnung zum richtigen',
-      'Wirtschaftsjahr schwierig.',
-      ':::',
-    ].join('\n'),
-  },
-  {
-    space: 'mitglied',
-    slug: 'erste-schritte',
-    title: 'Erste Schritte als Mitglied',
-    summary: 'Was du in den ersten Wochen in der Fachschaft wissen solltest.',
-    position: 10,
-    markdown: [
-      '# Erste Schritte als Mitglied',
-      '',
-      'Willkommen in der Fachschaft. Die wichtigsten Dinge zuerst:',
-      '',
-      '## 1. Zugang einrichten',
-      '',
-      'Du bekommst einen Zugang zum FSi Portal. Wie das abläuft, steht unter',
-      '[[wiki:app/anmeldung|Anmeldung und Passwort]].',
-      '',
-      '## 2. Eigene Daten prüfen',
-      '',
-      'Unter **Meine Daten** siehst du, was über dich gespeichert ist. Adresse, Telefonnummer und',
-      'E-Mail solltest du aktuell halten – die Einladungen zu Sitzungen gehen dorthin.',
-      '',
-      '## 3. Mitmachen',
-      '',
-      'Die Arbeit passiert in den Referaten und bei Veranstaltungen. Such dir ein Thema, das dich',
-      'interessiert, und sprich die zuständige Person an.',
-      '',
-      ':::tipp',
-      'Niemand erwartet, dass du am ersten Tag alles verstehst. Dieses Wiki ist genau dafür da.',
-      ':::',
-    ].join('\n'),
-  },
-  {
-    space: 'aemter',
-    slug: 'vorstandsinterna',
-    title: 'Interna des Vorstands',
-    summary: 'Beispielartikel mit eingeschränktem Zugriff.',
-    position: 90,
-    // Deliberately restricted, so the ACL is demonstrable from the first minute: a `read` grant
-    // anywhere in the chain closes the article for everyone who does not match it.
-    restrictTo: 'wiki.manage',
-    markdown: [
-      '# Interna des Vorstands',
-      '',
-      'Dieser Artikel ist ein Beispiel für einen eingeschränkten Bereich. Sichtbar ist er nur für',
-      'Personen mit der Berechtigung „Wiki verwalten".',
-      '',
-      'So funktioniert der Zugriffsschutz im Wiki: Sobald irgendwo in der Kette – am Bereich, an einem',
-      'übergeordneten Artikel oder am Artikel selbst – eine Berechtigung eingetragen ist, ist der',
-      'Artikel nur noch für die eingetragenen Personen sichtbar. Ohne Eintrag ist er für alle mit',
-      'Wiki-Zugang lesbar.',
-    ].join('\n'),
-  },
-]
+const UMLAUTS = { ä: 'ae', ö: 'oe', ü: 'ue', ß: 'ss' }
 
-async function seedArticles(conn) {
-  const userRows = await conn.query('SELECT id FROM users ORDER BY id LIMIT 1')
-  if (!userRows.length) {
-    console.warn('migrate-wiki: no users yet, skipping the starter articles (run this migration again after seed-admin)')
-    return
-  }
-  const authorId = Number(userRows[0].id)
+/** Mirrors slugifyTitle() in server/utils/wiki/articles.ts — slugs must match what the app produces. */
+function slugify(value) {
+  return String(value ?? '')
+    .toLowerCase()
+    .replace(/[äöüß]/g, char => UMLAUTS[char] ?? char)
+    .normalize('NFKD')
+    .replace(/[̀-ͯ]/g, '')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 120)
+}
 
+function findPosition(positions, wantedWords) {
+  return positions.find((row) => {
+    const words = new Set([...slugify(row.code).split('-'), ...slugify(row.name).split('-')])
+    return wantedWords.some(word => words.has(word))
+  }) ?? null
+}
+
+async function insertArticle(conn, spaceId, article, authorId, parentId) {
+  await conn.query(
+    `INSERT IGNORE INTO wiki_articles
+       (space_id, parent_id, slug, title, summary, position, status, content_md, content_text,
+        review_interval_days, published_at, created_by)
+     VALUES (?, ?, ?, ?, ?, ?, 'published', ?, ?, ?, CURRENT_TIMESTAMP, ?)`,
+    [
+      spaceId,
+      parentId ?? null,
+      article.slug,
+      article.title,
+      article.summary,
+      article.position,
+      article.markdown,
+      article.markdown,
+      article.reviewIntervalDays ?? null,
+      authorId,
+    ],
+  )
+
+  const rows = await conn.query(
+    'SELECT id FROM wiki_articles WHERE space_id = ? AND slug = ? LIMIT 1',
+    [spaceId, article.slug],
+  )
+  return rows.length ? Number(rows[0].id) : null
+}
+
+async function insertGrant(conn, scopeType, scopeId, subjectType, subjectId, subjectKey, level, authorId) {
+  await conn.query(
+    `INSERT IGNORE INTO wiki_access_grants
+       (scope_type, scope_id, include_descendants, subject_type, subject_id, subject_key, access_level, created_by)
+     VALUES (?, ?, 1, ?, ?, ?, ?, ?)`,
+    [scopeType, scopeId, subjectType, subjectId, subjectKey, level, authorId],
+  )
+}
+
+async function seedArticles(conn, authorId) {
   const spaceRows = await conn.query('SELECT id, slug FROM wiki_spaces')
   const spaceIdBySlug = new Map(spaceRows.map(row => [row.slug, Number(row.id)]))
+  const articleIds = new Map()
 
   for (const article of ARTICLES) {
     const spaceId = spaceIdBySlug.get(article.space)
     if (!spaceId) continue
 
+    const parentId = article.parentSlug
+      ? articleIds.get(`${article.space}/${article.parentSlug}`) ?? null
+      : null
+
+    const articleId = await insertArticle(conn, spaceId, article, authorId, parentId)
+    if (!articleId) continue
+    articleIds.set(`${article.space}/${article.slug}`, articleId)
+
+    if (article.restrictTo) {
+      await insertGrant(conn, 'article', articleId, 'permission', 0, article.restrictTo, 'read', authorId)
+    }
+  }
+
+  console.log(`migrate-wiki: seeded ${articleIds.size} articles`)
+  return { articleIds, spaceIdBySlug }
+}
+
+async function seedSubdivisionArticles(conn, authorId, articleIds, spaceIdBySlug) {
+  const spaceId = spaceIdBySlug.get(SUBDIVISION_ARTICLE.space)
+  const parentId = articleIds.get(`${SUBDIVISION_ARTICLE.space}/${SUBDIVISION_ARTICLE.parentSlug}`)
+  if (!spaceId || !parentId) return
+
+  const subdivisions = await conn.query('SELECT id, name FROM subdivisions ORDER BY name')
+  let position = 10
+
+  for (const row of subdivisions) {
+    const slug = slugify(row.name)
+    if (!slug) continue
+
+    const articleId = await insertArticle(
+      conn,
+      spaceId,
+      {
+        slug,
+        title: row.name,
+        summary: SUBDIVISION_ARTICLE.summary,
+        position,
+        markdown: SUBDIVISION_ARTICLE.markdown(row.name),
+      },
+      authorId,
+      parentId,
+    )
+    position += 10
+    if (!articleId) continue
+
     await conn.query(
-      `INSERT IGNORE INTO wiki_articles
-         (space_id, slug, title, summary, position, status, content_md, content_text, published_at, created_by)
-       VALUES (?, ?, ?, ?, ?, 'published', ?, ?, CURRENT_TIMESTAMP, ?)`,
-      [spaceId, article.slug, article.title, article.summary, article.position, article.markdown, article.markdown, authorId],
+      'UPDATE wiki_articles SET owner_subdivision_id = ? WHERE id = ? AND owner_subdivision_id IS NULL',
+      [Number(row.id), articleId],
+    )
+    await insertGrant(conn, 'article', articleId, 'subdivision', Number(row.id), '', 'write', authorId)
+  }
+
+  if (subdivisions.length) console.log(`migrate-wiki: seeded ${subdivisions.length} subdivision articles`)
+}
+
+async function seedPositionOwners(conn, authorId, articleIds) {
+  const positions = await conn.query('SELECT id, code, name FROM positions')
+  if (!positions.length) return
+
+  for (const article of ARTICLES) {
+    if (!article.positionCodes?.length) continue
+    const articleId = articleIds.get(`${article.space}/${article.slug}`)
+    if (!articleId) continue
+
+    const match = findPosition(positions, article.positionCodes)
+    if (!match) continue
+
+    await conn.query(
+      'UPDATE wiki_articles SET owner_position_id = ? WHERE id = ? AND owner_position_id IS NULL',
+      [Number(match.id), articleId],
+    )
+    await insertGrant(conn, 'article', articleId, 'position', Number(match.id), '', 'write', authorId)
+  }
+
+  console.log('migrate-wiki: linked Ämter to their articles')
+}
+
+async function seedChecklists(conn, articleIds) {
+  for (const checklist of CHECKLISTS) {
+    const articleId = articleIds.get(`${checklist.space}/${checklist.articleSlug}`)
+    if (!articleId) continue
+
+    await conn.query(
+      'INSERT IGNORE INTO wiki_checklists (article_id, key_slug, title, mode) VALUES (?, ?, ?, ?)',
+      [articleId, checklist.keySlug, checklist.title, checklist.mode],
     )
 
-    if (!article.restrictTo) continue
-
-    const idRows = await conn.query(
-      'SELECT id FROM wiki_articles WHERE space_id = ? AND slug = ? LIMIT 1',
-      [spaceId, article.slug],
+    const rows = await conn.query(
+      'SELECT id FROM wiki_checklists WHERE article_id = ? AND key_slug = ? LIMIT 1',
+      [articleId, checklist.keySlug],
     )
-    if (!idRows.length) continue
+    if (!rows.length) continue
+    const checklistId = Number(rows[0].id)
+
+    const existing = await conn.query(
+      'SELECT COUNT(*) AS item_count FROM wiki_checklist_items WHERE checklist_id = ?',
+      [checklistId],
+    )
+    if (Number(existing[0]?.item_count ?? 0) > 0) continue
+
+    let position = 0
+    for (const item of checklist.items) {
+      await conn.query(
+        `INSERT INTO wiki_checklist_items (checklist_id, label, hint, target_page, target_meta, position)
+         VALUES (?, ?, ?, ?, ?, ?)`,
+        [
+          checklistId,
+          item.label,
+          item.hint ?? '',
+          item.targetPage ?? null,
+          item.targetPage ? JSON.stringify({ returnTarget: 'self' }) : null,
+          position,
+        ],
+      )
+      position += 1
+    }
+  }
+
+  console.log('migrate-wiki: seeded checklists')
+}
+
+async function seedGlossary(conn, articleIds) {
+  for (const entry of GLOSSARY) {
+    const articleId = articleIds.get(`${entry.articleSpace}/${entry.articleSlug}`) ?? null
 
     await conn.query(
-      `INSERT IGNORE INTO wiki_access_grants
-         (scope_type, scope_id, include_descendants, subject_type, subject_id, subject_key, access_level, created_by)
-       VALUES ('article', ?, 1, 'permission', 0, ?, 'read', ?)`,
-      [Number(idRows[0].id), article.restrictTo, authorId],
+      'INSERT IGNORE INTO wiki_glossary_terms (term, short_definition, article_id) VALUES (?, ?, ?)',
+      [entry.term, entry.definition, articleId],
+    )
+
+    const rows = await conn.query('SELECT id FROM wiki_glossary_terms WHERE term = ? LIMIT 1', [entry.term])
+    if (!rows.length) continue
+
+    for (const alias of entry.aliases) {
+      await conn.query(
+        'INSERT IGNORE INTO wiki_glossary_aliases (term_id, alias) VALUES (?, ?)',
+        [Number(rows[0].id), alias],
+      )
+    }
+  }
+
+  console.log(`migrate-wiki: seeded ${GLOSSARY.length} glossary terms`)
+}
+
+async function seedPaths(conn, articleIds) {
+  const positions = await conn.query('SELECT id, code, name FROM positions')
+
+  for (const path of PATHS) {
+    await conn.query(
+      `INSERT IGNORE INTO wiki_paths (slug, title, description, icon, position, is_published)
+       VALUES (?, ?, ?, ?, ?, 1)`,
+      [path.slug, path.title, path.description, path.icon, path.position],
+    )
+
+    const rows = await conn.query('SELECT id FROM wiki_paths WHERE slug = ? LIMIT 1', [path.slug])
+    if (!rows.length) continue
+    const pathId = Number(rows[0].id)
+
+    const existing = await conn.query(
+      'SELECT COUNT(*) AS item_count FROM wiki_path_items WHERE path_id = ?',
+      [pathId],
+    )
+    if (Number(existing[0]?.item_count ?? 0) === 0) {
+      let position = 0
+      for (const item of path.items) {
+        const articleId = articleIds.get(`${item.space}/${item.slug}`)
+        if (!articleId) continue
+        await conn.query(
+          'INSERT INTO wiki_path_items (path_id, article_id, position, note) VALUES (?, ?, ?, ?)',
+          [pathId, articleId, position, item.note ?? ''],
+        )
+        position += 1
+      }
+    }
+
+    if (!path.audiencePositionCodes?.length) continue
+    const match = findPosition(positions, path.audiencePositionCodes)
+    if (!match) continue
+
+    const audience = await conn.query(
+      'SELECT id FROM wiki_path_audiences WHERE path_id = ? AND position_id = ? LIMIT 1',
+      [pathId, Number(match.id)],
+    )
+    if (!audience.length) {
+      await conn.query(
+        'INSERT INTO wiki_path_audiences (path_id, position_id) VALUES (?, ?)',
+        [pathId, Number(match.id)],
+      )
+    }
+  }
+
+  console.log(`migrate-wiki: seeded ${PATHS.length} learning paths`)
+}
+
+async function seedPageHelp(conn, articleIds) {
+  for (const entry of PAGE_HELP) {
+    const articleId = articleIds.get(`${entry.space}/${entry.slug}`)
+    if (!articleId) continue
+
+    await conn.query(
+      `INSERT IGNORE INTO wiki_page_help (page_name, section_key, article_id, position)
+       VALUES (?, '', ?, ?)`,
+      [entry.page, articleId, entry.position ?? 0],
     )
   }
 
-  console.log('migrate-wiki: seeded starter articles')
+  console.log('migrate-wiki: seeded page help mapping')
 }
+
+async function seedContent(conn) {
+  const userRows = await conn.query('SELECT id FROM users ORDER BY id LIMIT 1')
+  if (!userRows.length) {
+    console.warn('migrate-wiki: no users yet, skipping the seed content (run this migration again after seed-admin)')
+    return
+  }
+  const authorId = Number(userRows[0].id)
+
+  const { articleIds, spaceIdBySlug } = await seedArticles(conn, authorId)
+  await seedSubdivisionArticles(conn, authorId, articleIds, spaceIdBySlug)
+  await seedPositionOwners(conn, authorId, articleIds)
+  await seedChecklists(conn, articleIds)
+  await seedGlossary(conn, articleIds)
+  await seedPaths(conn, articleIds)
+  await seedPageHelp(conn, articleIds)
+}
+
+const SEED_CONTENT = process.argv.includes('--seed-content') || process.env.WIKI_SEED_CONTENT === '1'
 
 async function migrateWiki() {
   const migrationUser = DB_AUDIT_SETUP_USER || DB_USER
@@ -625,8 +695,13 @@ async function migrateWiki() {
 
     await ensureFulltextIndex(conn, databaseName)
     await grantPermissions(conn)
-    await seedSpaces(conn)
-    await seedArticles(conn)
+
+    if (SEED_CONTENT) {
+      await seedSpaces(conn)
+      await seedContent(conn)
+    } else {
+      console.log('migrate-wiki: skipped example content (pass --seed-content to seed it)')
+    }
 
     console.log('migrate-wiki: complete')
   } finally {
