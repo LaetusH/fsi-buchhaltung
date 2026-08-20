@@ -37,7 +37,7 @@
       <MenuDropdown v-model="openInsertMenu" id="insert" wrapper-class="relative w-auto">
         <template #trigger="{ styling }">
           <button type="button" :class="[styling, 'w-auto cursor-pointer py-1 text-xs']">
-            <span>{{ t('wiki.editor.toolbar.insertTool') }} / {{ t('wiki.editor.toolbar.insertEmbed') }}</span>
+            <span>{{ t('wiki.editor.toolbar.insert') }}</span>
             <Icon name="material-symbols:keyboard-arrow-down-rounded" class="text-lg" />
           </button>
         </template>
@@ -65,6 +65,20 @@
             <span v-if="embed.argsSchema" class="ml-1 text-xs text-slate-400">
               {{ Object.keys(embed.argsSchema).join(', ') }}
             </span>
+          </button>
+          <div class="px-3 py-1 text-xs font-semibold text-slate-500">{{ t('wiki.editor.toolbar.insertChecklist') }}</div>
+          <p v-if="!checklists.length" class="px-3 py-1 text-xs text-slate-400">
+            {{ t('wiki.editor.toolbar.noChecklists') }}
+          </p>
+          <button
+            v-for="checklist in checklists"
+            :key="`checklist:${checklist.keySlug}`"
+            type="button"
+            :class="styling"
+            @click="chooseInsert(`checklist:${checklist.keySlug}`)"
+          >
+            {{ checklist.title }}
+            <span class="ml-1 text-xs text-slate-400">{{ checklist.keySlug }}</span>
           </button>
         </template>
       </MenuDropdown>
@@ -104,7 +118,7 @@
             :errors="[previewError]"
             :title="t('common.validationBlocked')"
           />
-          <PageWikiArticleBody v-else-if="previewHtml" :html="previewHtml" preview />
+          <PageWikiArticleBody v-else-if="previewHtml" :html="previewHtml" :checklists="checklists" preview />
           <p v-else class="text-sm text-slate-400">{{ t('wiki.editor.previewEmpty') }}</p>
         </div>
       </div>
@@ -113,17 +127,20 @@
 </template>
 
 <script setup lang="ts">
-import { onBeforeUnmount, ref, useId, watch } from 'vue'
+import { computed, onBeforeUnmount, ref, useId, watch } from 'vue'
 import { useI18n } from '~/composables/useI18n'
 import { PAGES } from '~/config/pages'
 import { WIKI_EMBEDS } from '~/config/wikiEmbeds'
 import { useAuth } from '~/composables/useAuth'
 import type { PreviewResponse } from '~/server/api/wiki/preview.post'
+import type { WikiChecklistView } from '~/types/wiki'
 
-const props = defineProps<{
+const props = withDefaults(defineProps<{
   modelValue: string
-  knownChecklists?: string[]
-}>()
+  checklists?: WikiChecklistView[]
+}>(), {
+  checklists: () => [],
+})
 
 const emit = defineEmits<{
   (e: 'update:modelValue', value: string): void
@@ -141,6 +158,7 @@ const openInsertMenu = ref<string | null>(null)
 const previewHtml = ref('')
 const previewError = ref('')
 const embeds = WIKI_EMBEDS
+const checklists = computed(() => props.checklists)
 
 const toolPages = Object.entries(PAGES)
   .filter(([, page]) => !page.permissions.length || hasPermission(page.permissions))
@@ -187,6 +205,10 @@ function chooseInsert(value: string) {
   openInsertMenu.value = null
 
   const [kind, key = ''] = value.split(':')
+  if (kind === 'checklist') {
+    insertBlock(`:::checklist{id="${key}"}`)
+    return
+  }
   if (kind === 'tool') {
     const page = PAGES[key]
     insertBlock(`:::tool{page="${key}" meta='{"returnTarget":"self"}' label="${page ? t(page.labelKey) : key}"}`)
@@ -207,7 +229,7 @@ async function refreshPreview() {
 
   const res = await $fetch<PreviewResponse>('/api/wiki/preview', {
     method: 'POST',
-    body: { markdown: props.modelValue, knownChecklists: props.knownChecklists },
+    body: { markdown: props.modelValue, knownChecklists: props.checklists.map(entry => entry.keySlug) },
   })
 
   if (res.ok) {
@@ -219,7 +241,7 @@ async function refreshPreview() {
 }
 
 watch(
-  () => props.modelValue,
+  () => [props.modelValue, props.checklists.map(entry => entry.keySlug).join(',')],
   () => {
     if (previewTimer) clearTimeout(previewTimer)
     previewTimer = setTimeout(refreshPreview, 400)

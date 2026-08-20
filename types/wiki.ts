@@ -149,6 +149,66 @@ export interface WikiChecklistRun {
   created_at: string
 }
 
+export interface WikiChecklistItemView {
+  id: number
+  label: string
+  hint: string
+  targetPage: string | null
+  targetMeta: Record<string, any> | null
+  position: number
+  /** Personal mode only: whether the current reader has ticked it. */
+  done: boolean
+  doneAt: string | null
+}
+
+export interface WikiChecklistRunEntry {
+  itemId: number
+  completedAt: string
+  completedBy: number
+  completedByName: string
+}
+
+export interface WikiChecklistRunView {
+  id: number
+  title: string
+  dueDate: string | null
+  closedAt: string | null
+  createdBy: number
+  createdByName: string
+  createdAt: string
+  entries: WikiChecklistRunEntry[]
+  /** The reader may close/reopen this run (its creator, or someone with `write` on the article). */
+  canClose: boolean
+}
+
+/** A checklist plus everything needed to render it — items, personal state and the shared runs. */
+export interface WikiChecklistView {
+  id: number
+  keySlug: string
+  title: string
+  mode: 'personal' | 'shared'
+  items: WikiChecklistItemView[]
+  runs: WikiChecklistRunView[]
+}
+
+/** The editor side of a checklist: definitions only, no tick state. */
+export interface WikiChecklistItemInput {
+  /** Existing item id — kept so personal/shared tick state survives an edit. */
+  id?: number | null
+  label: string
+  hint: string
+  targetPage: string | null
+  targetMeta: Record<string, any> | null
+}
+
+export interface WikiChecklistInput {
+  id?: number | null
+  keySlug: string
+  title: string
+  mode: 'personal' | 'shared'
+  items: WikiChecklistItemInput[]
+}
+
 export interface WikiGlossaryTerm {
   id: number
   term: string

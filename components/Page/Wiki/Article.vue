@@ -112,6 +112,7 @@
                   :html="article.contentHtml"
                   :links="article.links"
                   :article-id="article.id"
+                  :checklists="article.checklists"
                 />
                 <p v-else class="text-sm text-slate-500">{{ t('wiki.article.emptyContent') }}</p>
               </div>

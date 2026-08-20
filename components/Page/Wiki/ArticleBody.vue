@@ -17,6 +17,15 @@
       />
     </Teleport>
 
+    <Teleport v-for="entry in checklistMounts" :key="entry.id" :to="entry.el">
+      <PageWikiChecklist
+        :checklist="checklistByKey[entry.keySlug] ?? null"
+        :key-slug="entry.keySlug"
+        :article-id="articleId ?? null"
+        :preview="preview"
+      />
+    </Teleport>
+
     <Teleport v-for="embed in embedMounts" :key="embed.id" :to="embed.el">
       <PageWikiEmbedHost
         :embed-key="embed.key"
@@ -28,19 +37,21 @@
 </template>
 
 <script setup lang="ts">
-import { nextTick, onMounted, ref, watch } from 'vue'
+import { computed, nextTick, onMounted, ref, watch } from 'vue'
 import { useI18n } from '~/composables/useI18n'
 import { usePage } from '~/composables/usePage'
 import { buildReturnTarget } from '~/composables/useReturnTarget'
 import type { WikiLinkResolution } from '~/server/utils/wiki/detail'
 import type { WikiEmbedsResolveResponse } from '~/server/api/wiki/embeds/resolve.post'
-import type { WikiEmbedRequestItem, WikiEmbedResult } from '~/types/wiki'
+import type { WikiChecklistView, WikiEmbedRequestItem, WikiEmbedResult } from '~/types/wiki'
 
 const props = defineProps<{
   html: string
   links?: WikiLinkResolution
   /** The article being read, so `returnTarget: "self"` on a tool link can come back here. */
   articleId?: number | null
+  /** Definitions + tick state for the `:::checklist{id="…"}` blocks in `html`. */
+  checklists?: WikiChecklistView[]
   preview?: boolean
 }>()
 
@@ -55,6 +66,12 @@ interface ToolMount {
   label: string
 }
 
+interface ChecklistMount {
+  id: number
+  el: HTMLElement
+  keySlug: string
+}
+
 interface EmbedMount {
   id: number
   el: HTMLElement
@@ -65,8 +82,15 @@ interface EmbedMount {
 const containerRef = ref<HTMLElement | null>(null)
 const toolMounts = ref<ToolMount[]>([])
 const embedMounts = ref<EmbedMount[]>([])
+const checklistMounts = ref<ChecklistMount[]>([])
 const embedResults = ref<Record<number, WikiEmbedResult | null>>({})
 const embedsLoading = ref(false)
+
+const checklistByKey = computed(() => {
+  const map: Record<string, WikiChecklistView> = {}
+  for (const checklist of props.checklists ?? []) map[checklist.keySlug] = checklist
+  return map
+})
 
 function parseJsonAttribute(node: HTMLElement, attribute: string): Record<string, any> {
   const raw = node.getAttribute(attribute)
@@ -103,6 +127,7 @@ function hydrateArticleLinks(container: HTMLElement) {
 function collectMounts(container: HTMLElement) {
   const tools: ToolMount[] = []
   const embeds: EmbedMount[] = []
+  const checklists: ChecklistMount[] = []
   let nextId = 0
 
   for (const node of container.querySelectorAll<HTMLElement>('[data-wiki-tool]')) {
@@ -126,18 +151,18 @@ function collectMounts(container: HTMLElement) {
     })
   }
 
+  for (const node of container.querySelectorAll<HTMLElement>('[data-wiki-checklist]')) {
+    node.textContent = ''
+    checklists.push({
+      id: nextId++,
+      el: node,
+      keySlug: node.getAttribute('data-wiki-checklist') ?? '',
+    })
+  }
+
   toolMounts.value = tools
   embedMounts.value = embeds
-}
-
-function hydrateRemainingPlaceholders(container: HTMLElement) {
-  // Checklists arrive in Phase 6; until then they stay a neutral placeholder.
-  for (const node of container.querySelectorAll<HTMLElement>('[data-wiki-checklist]')) {
-    if (node.dataset.wikiHydrated) continue
-    node.dataset.wikiHydrated = '1'
-    node.className = 'wiki-placeholder'
-    node.textContent = t('wiki.placeholders.checklist', { key: node.getAttribute('data-wiki-checklist') ?? '' })
-  }
+  checklistMounts.value = checklists
 }
 
 async function resolveEmbeds() {
@@ -182,7 +207,6 @@ async function hydrate() {
 
   hydrateArticleLinks(container)
   collectMounts(container)
-  hydrateRemainingPlaceholders(container)
   await resolveEmbeds()
 }
 
@@ -203,6 +227,7 @@ function onClick(event: MouseEvent) {
 watch(() => props.html, () => {
   toolMounts.value = []
   embedMounts.value = []
+  checklistMounts.value = []
   embedResults.value = {}
 })
 

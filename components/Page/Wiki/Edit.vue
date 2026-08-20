@@ -90,7 +90,7 @@
               </div>
             </div>
 
-            <PageWikiEditorMarkdown v-model="form.markdown" />
+            <PageWikiEditorMarkdown v-model="form.markdown" :checklists="checklists" />
 
             <p class="text-xs text-slate-500">{{ draftStateLabel }}</p>
           </div>
@@ -198,6 +198,16 @@
             </div>
           </div>
 
+          <div v-show="activeTab === 'checklists'">
+            <PageWikiChecklistsTab
+              v-if="articleId"
+              :article-id="articleId"
+              v-model="checklists"
+              :read-only="readOnly"
+            />
+            <p v-else class="text-sm text-slate-500">{{ t('wiki.checklist.saveArticleFirst') }}</p>
+          </div>
+
           <div v-show="activeTab === 'attachments'" class="space-y-3">
             <input
               v-if="!readOnly"
@@ -298,7 +308,7 @@ import type { WikiTreeResponse } from '~/server/api/wiki/tree.get'
 import type { CreateWikiArticleResponse } from '~/server/api/wiki/articles/create.post'
 import type { UploadWikiAttachmentResponse } from '~/server/api/wiki/articles/[id]/attachments.post'
 import type { WikiSubjectOptionsResponse } from '~/server/api/wiki/access/subject-options.get'
-import type { WikiAttachment, WikiTreeArticle, WikiTreeSpace } from '~/types/wiki'
+import type { WikiAttachment, WikiChecklistView, WikiTreeArticle, WikiTreeSpace } from '~/types/wiki'
 
 defineEmits<{
   (e: 'openMenu'): void
@@ -321,6 +331,7 @@ const errors = ref<string[]>([])
 const activeTab = ref('content')
 const confirmArchive = ref(false)
 const attachments = ref<WikiAttachment[]>([])
+const checklists = ref<WikiChecklistView[]>([])
 const spaces = ref<WikiTreeSpace[]>([])
 const status = ref<string>('draft')
 const requiresReview = ref(false)
@@ -357,6 +368,7 @@ const slugTouched = ref(false)
 
 const tabs = computed<TabOverviewItem[]>(() => [
   { key: 'content', label: t('wiki.editor.tabs.content') },
+  { key: 'checklists', label: t('wiki.editor.tabs.checklists') },
   { key: 'settings', label: t('wiki.editor.tabs.settings') },
   { key: 'attachments', label: t('wiki.editor.tabs.attachments') },
   { key: 'access', label: t('wiki.editor.tabs.access') },
@@ -468,6 +480,7 @@ async function loadArticle() {
   owner.positionId = article.owner.position_id
   owner.subdivisionId = article.owner.subdivision_id
   attachments.value = article.attachments
+  checklists.value = article.checklists
   status.value = article.status
   requiresReview.value = article.requiresReview
   accessLevel.value = article.accessLevel
