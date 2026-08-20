@@ -261,3 +261,120 @@ export interface WikiSearchHit {
   summary: string
   snippet: string
 }
+
+export interface WikiEmbedOpenReimbursementsData {
+  count: number
+  uncheckedCount: number
+  total: number
+  oldestSubmittedAt: string | null
+}
+
+export interface WikiEmbedBudgetStatusData {
+  year: number
+  budgetCount: number
+  periodStart: string | null
+  periodEnd: string | null
+  costCentre: { id: number, code: string, name: string } | null
+  plannedExpense: number
+  plannedIncome: number
+  actualExpense: number
+  actualIncome: number
+}
+
+export interface WikiEmbedCashPositionData {
+  date: string
+  bankBalance: number
+  cashTotal: number
+  totalMoney: number
+}
+
+export interface WikiEmbedEventItem {
+  id: number
+  name: string
+  startsAt: string
+  endsAt: string
+  location: string | null
+}
+
+export interface WikiEmbedNextEventsData {
+  events: WikiEmbedEventItem[]
+}
+
+export interface WikiEmbedShiftItem {
+  id: number
+  name: string
+  startsAt: string
+  endsAt: string
+  eventId: number
+  eventName: string
+}
+
+export interface WikiEmbedMyShiftsData {
+  memberLinked: boolean
+  shifts: WikiEmbedShiftItem[]
+}
+
+export interface WikiEmbedTaskItem {
+  id: number
+  title: string
+  status: 'open' | 'in_progress'
+  deadline: string | null
+  eventId: number
+  eventName: string
+  viaSubdivision: string | null
+}
+
+export interface WikiEmbedMyOpenTasksData {
+  memberLinked: boolean
+  tasks: WikiEmbedTaskItem[]
+}
+
+export interface WikiEmbedContactPosition {
+  id: number
+  code: string
+  name: string
+  holders: string[]
+}
+
+export interface WikiEmbedAssociationContactData {
+  associationName: string | null
+  email: string | null
+  positions: WikiEmbedContactPosition[]
+  members: string[]
+}
+
+export interface WikiEmbedPendingChange {
+  memberName: string
+  fieldName: string
+  requestedAt: string
+}
+
+export interface WikiEmbedPendingMemberChangesData {
+  count: number
+  memberCount: number
+  latest: WikiEmbedPendingChange[]
+}
+
+export type WikiEmbedData =
+  | WikiEmbedOpenReimbursementsData
+  | WikiEmbedBudgetStatusData
+  | WikiEmbedCashPositionData
+  | WikiEmbedNextEventsData
+  | WikiEmbedMyShiftsData
+  | WikiEmbedMyOpenTasksData
+  | WikiEmbedAssociationContactData
+  | WikiEmbedPendingMemberChangesData
+
+export interface WikiEmbedRequestItem {
+  key: string
+  args?: Record<string, string | number | boolean>
+}
+
+export interface WikiEmbedResult {
+  key: string
+  args: Record<string, string | number | boolean>
+  /** false = the reader lacks the widget's permission; the client shows a neutral placeholder. */
+  visible: boolean
+  data: WikiEmbedData | null
+  error: string | null
+}

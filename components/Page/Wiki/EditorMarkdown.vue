@@ -62,6 +62,9 @@
             @click="chooseInsert(`embed:${embed.key}`)"
           >
             {{ t(embed.labelKey) }}
+            <span v-if="embed.argsSchema" class="ml-1 text-xs text-slate-400">
+              {{ Object.keys(embed.argsSchema).join(', ') }}
+            </span>
           </button>
         </template>
       </MenuDropdown>
@@ -101,7 +104,7 @@
             :errors="[previewError]"
             :title="t('common.validationBlocked')"
           />
-          <PageWikiArticleBody v-else-if="previewHtml" :html="previewHtml" />
+          <PageWikiArticleBody v-else-if="previewHtml" :html="previewHtml" preview />
           <p v-else class="text-sm text-slate-400">{{ t('wiki.editor.previewEmpty') }}</p>
         </div>
       </div>
@@ -184,8 +187,13 @@ function chooseInsert(value: string) {
   openInsertMenu.value = null
 
   const [kind, key = ''] = value.split(':')
-  if (kind === 'tool') insertBlock(`:::tool{page="${key}" meta='{"returnTarget":"self"}' label="${pageLabel(key)}"}`)
-  else insertBlock(`:::embed{widget="${key}"}`)
+  if (kind === 'tool') {
+    const page = PAGES[key]
+    insertBlock(`:::tool{page="${key}" meta='{"returnTarget":"self"}' label="${page ? t(page.labelKey) : key}"}`)
+    return
+  }
+
+  insertBlock(`:::embed{widget="${key}"}`)
 }
 
 let previewTimer: ReturnType<typeof setTimeout> | null = null
