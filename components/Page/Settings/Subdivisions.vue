@@ -69,13 +69,13 @@
       {{ t('settings.subdivisions.deactivateConfirm.intro', { subdivision: `${deactivateTarget.code} - ${deactivateTarget.name}` }) }}
     </p>
 
-    <label class="flex items-start gap-3 rounded-lg border border-slate-200 p-3">
+    <label class="flex cursor-pointer items-center gap-3 rounded-lg border border-slate-200 p-3 transition-colors hover:border-slate-300 hover:bg-slate-50">
       <input
         v-model="removeAssignedMembers"
         type="checkbox"
-        class="checkbox mt-0.5"
+        class="checkbox"
       >
-      <span class="text-sm text-slate-700 cursor-pointer">
+      <span class="text-sm text-slate-700">
         {{ t('settings.subdivisions.deactivateConfirm.removeMembers') }}
       </span>
     </label>

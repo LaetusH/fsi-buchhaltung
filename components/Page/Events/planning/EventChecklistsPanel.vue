@@ -258,16 +258,20 @@
             <label
               v-for="item in sortedItems(checklist)"
               :key="item.id"
-              class="flex cursor-pointer items-center gap-2 rounded-md border border-slate-200 px-2 py-1.5 text-sm hover:bg-slate-50"
+              class="flex items-center gap-2 rounded-md border px-2 py-1.5 text-sm transition-colors"
+              :class="[
+                item.done ? 'border-emerald-200 bg-emerald-50/50' : 'border-slate-200',
+                disabled ? 'cursor-default' : 'cursor-pointer hover:bg-slate-50',
+              ]"
             >
               <input
                 type="checkbox"
-                class="checkbox cursor-pointer"
+                class="checkbox"
                 :checked="item.done"
                 :disabled="disabled"
                 @change="setChecklistItemDone(checklist.id, item.id, ($event.target as HTMLInputElement).checked)"
               >
-              <span class="cursor-pointer" :class="item.done ? 'line-through text-slate-400' : 'text-slate-700'">{{ item.label }}</span>
+              <span :class="item.done ? 'line-through text-slate-400' : 'text-slate-700'">{{ item.label }}</span>
             </label>
           </div>
         </div>

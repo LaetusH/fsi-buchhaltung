@@ -1,7 +1,7 @@
 <template>
-  <div class="my-3 rounded-xl border border-slate-200 bg-slate-50/70 p-4">
-    <p class="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-slate-500">
-      <Icon name="material-symbols:checklist-rounded" class="text-base" aria-hidden="true" />
+  <div class="my-4 rounded-xl border border-slate-200 bg-slate-50/70 p-4">
+    <p class="flex items-center gap-2 text-sm font-semibold text-slate-800">
+      <Icon name="material-symbols:checklist-rounded" class="text-lg text-slate-400" aria-hidden="true" />
       {{ checklist ? checklist.title : t('wiki.checklist.unknownTitle') }}
     </p>
 
@@ -11,7 +11,20 @@
 
     <template v-else>
       <div class="mt-3 flex flex-wrap items-center justify-between gap-2">
-        <p class="text-sm text-slate-600">
+        <p class="flex items-center gap-2 text-sm text-slate-600">
+          <span
+            class="h-1.5 w-16 shrink-0 overflow-hidden rounded-full bg-slate-200"
+            role="progressbar"
+            :aria-valuenow="doneCount"
+            aria-valuemin="0"
+            :aria-valuemax="checklist.items.length"
+            :aria-label="t('wiki.checklist.progress', { done: doneCount, total: checklist.items.length })"
+          >
+            <span
+              class="block h-full rounded-full bg-emerald-500 transition-all"
+              :style="{ width: `${checklist.items.length ? Math.round((doneCount / checklist.items.length) * 100) : 0}%` }"
+            ></span>
+          </span>
           {{ t('wiki.checklist.progress', { done: doneCount, total: checklist.items.length }) }}
           <span v-if="checklist.mode === 'shared'" class="text-slate-400"> · {{ t('wiki.checklist.sharedHint') }}</span>
         </p>
@@ -54,35 +67,39 @@
       </p>
 
       <ul class="mt-3 space-y-2">
-        <li
-          v-for="item in checklist.items"
-          :key="item.id"
-          class="flex flex-wrap items-start gap-x-3 gap-y-1 rounded-lg border border-slate-200 bg-white p-3"
-        >
-          <input
-            type="checkbox"
-            class="checkbox mt-0.5"
-            :checked="isDone(item)"
-            :disabled="!canTick"
-            @change="toggle(item, ($event.target as HTMLInputElement).checked)"
-          />
+        <li v-for="item in checklist.items" :key="item.id">
+          <label
+            class="flex flex-wrap items-start gap-x-3 gap-y-1 rounded-lg border p-3 transition-colors"
+            :class="[
+              isDone(item) ? 'border-emerald-200 bg-emerald-50/40' : 'border-slate-200 bg-white',
+              canTick ? 'cursor-pointer hover:border-orange-300 hover:bg-orange-50/40' : 'cursor-default',
+            ]"
+          >
+            <input
+              type="checkbox"
+              class="checkbox mt-0.5"
+              :checked="isDone(item)"
+              :disabled="!canTick"
+              @change="toggle(item, ($event.target as HTMLInputElement).checked)"
+            />
 
-          <div class="min-w-0 flex-1">
-            <p class="text-sm" :class="isDone(item) ? 'text-slate-400 line-through' : 'text-slate-800'">
-              {{ item.label }}
-            </p>
-            <p v-if="item.hint" class="text-xs text-slate-500">{{ item.hint }}</p>
-            <p v-if="attribution(item)" class="text-xs text-emerald-700">{{ attribution(item) }}</p>
-          </div>
+            <span class="min-w-0 flex-1">
+              <span class="block text-sm" :class="isDone(item) ? 'text-slate-400 line-through' : 'text-slate-800'">
+                {{ item.label }}
+              </span>
+              <span v-if="item.hint" class="mt-0.5 block text-xs text-slate-500">{{ item.hint }}</span>
+              <span v-if="attribution(item)" class="mt-0.5 block text-xs text-emerald-700">{{ attribution(item) }}</span>
+            </span>
 
-          <PageWikiToolLink
-            v-if="item.targetPage"
-            :page="item.targetPage"
-            :meta="item.targetMeta ?? { returnTarget: 'self' }"
-            :label="t('wiki.checklist.open')"
-            :article-id="articleId ?? null"
-            :disabled="preview"
-          />
+            <PageWikiToolLink
+              v-if="item.targetPage"
+              :page="item.targetPage"
+              :meta="item.targetMeta ?? { returnTarget: 'self' }"
+              :label="t('wiki.checklist.open')"
+              :article-id="articleId ?? null"
+              :disabled="preview"
+            />
+          </label>
         </li>
       </ul>
 

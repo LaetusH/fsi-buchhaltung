@@ -2,10 +2,17 @@
   <Page :headline1="path?.title ?? t('wiki.path.title')" @open-menu="$emit('openMenu')">
     <template #header>
       <div class="flex flex-1 flex-wrap justify-end gap-2">
-        <button type="button" class="btn-secondary" @click="goToReturnTarget()">
+        <button type="button" class="btn-secondary inline-flex items-center gap-1.5" @click="goToReturnTarget()">
+          <Icon name="material-symbols:arrow-back-rounded" class="text-base" aria-hidden="true" />
           {{ t('wiki.article.backToWiki') }}
         </button>
-        <button v-if="path?.nextItem" type="button" class="btn-primary" @click="openItem(path.nextItem)">
+        <button
+          v-if="path?.nextItem"
+          type="button"
+          class="btn-primary inline-flex items-center gap-1.5"
+          @click="openItem(path.nextItem)"
+        >
+          <Icon name="material-symbols:play-arrow-rounded" class="text-base" aria-hidden="true" />
           {{ path.doneCount ? t('wiki.path.continue') : t('wiki.path.start') }}
         </button>
       </div>
@@ -23,10 +30,15 @@
 
         <template v-else-if="path">
           <div class="flex items-start gap-3">
-            <Icon :name="path.icon" class="mt-0.5 shrink-0 text-2xl text-slate-500" aria-hidden="true" />
+            <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-orange-50 text-orange-600">
+              <Icon :name="path.icon" class="text-2xl" aria-hidden="true" />
+            </span>
             <div class="min-w-0">
-              <p v-if="path.description" class="text-sm text-slate-600">{{ path.description }}</p>
-              <p v-if="!path.isPublished" class="mt-1 text-xs text-amber-700">{{ t('wiki.path.unpublished') }}</p>
+              <p v-if="path.description" class="max-w-[70ch] text-base leading-relaxed text-slate-600">{{ path.description }}</p>
+              <p v-if="!path.isPublished" class="mt-1 inline-flex items-center gap-1 text-xs text-amber-700">
+                <Icon name="material-symbols:visibility-off-outline-rounded" class="text-sm" aria-hidden="true" />
+                {{ t('wiki.path.unpublished') }}
+              </p>
             </div>
           </div>
 
@@ -35,45 +47,72 @@
               <span class="font-medium text-slate-700">
                 {{ t('wiki.path.progress', { done: path.doneCount, total: path.totalCount }) }}
               </span>
-              <span v-if="isComplete" class="text-emerald-700">{{ t('wiki.path.completed') }}</span>
+              <span v-if="isComplete" class="inline-flex items-center gap-1 font-medium text-emerald-700">
+                <Icon name="material-symbols:check-circle-rounded" class="text-base" aria-hidden="true" />
+                {{ t('wiki.path.completed') }}
+              </span>
+              <span v-else class="font-semibold text-slate-500">{{ progressPercent }} %</span>
             </div>
-            <div class="mt-1 h-2 w-full overflow-hidden rounded-full bg-slate-200">
-              <div class="h-full rounded-full bg-orange-500 transition-all" :style="{ width: `${progressPercent}%` }"></div>
+            <div
+              class="mt-1 h-2.5 w-full overflow-hidden rounded-full bg-slate-200"
+              role="progressbar"
+              :aria-valuenow="progressPercent"
+              aria-valuemin="0"
+              aria-valuemax="100"
+              :aria-label="t('wiki.path.progress', { done: path.doneCount, total: path.totalCount })"
+            >
+              <div
+                class="h-full rounded-full transition-all"
+                :class="isComplete ? 'bg-emerald-500' : 'bg-orange-500'"
+                :style="{ width: `${progressPercent}%` }"
+              ></div>
             </div>
           </div>
 
           <p v-if="!path.items.length" class="text-sm text-slate-500">{{ t('wiki.path.empty') }}</p>
 
           <ol v-else class="space-y-2">
-            <li
-              v-for="(item, position) in path.items"
-              :key="item.id"
-              class="flex flex-wrap items-start gap-3 rounded-lg border p-3"
-              :class="item.done ? 'border-emerald-200 bg-emerald-50/50' : 'border-slate-200'"
-            >
-              <input
-                :id="`wiki-path-item-${item.id}`"
-                type="checkbox"
-                class="checkbox mt-1"
-                :checked="item.done"
-                @change="toggle(item, ($event.target as HTMLInputElement).checked)"
-              />
+            <li v-for="(item, position) in path.items" :key="item.id">
+              <label
+                class="flex cursor-pointer flex-wrap items-start gap-3 rounded-xl border p-3 transition-colors"
+                :class="item.done
+                  ? 'border-emerald-200 bg-emerald-50/50 hover:border-emerald-300'
+                  : 'border-slate-200 hover:border-orange-300 hover:bg-orange-50/40'"
+              >
+                <span
+                  class="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-semibold"
+                  :class="item.done ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-500'"
+                  aria-hidden="true"
+                >
+                  <Icon v-if="item.done" name="material-symbols:check-rounded" class="text-base" />
+                  <template v-else>{{ position + 1 }}</template>
+                </span>
 
-              <label :for="`wiki-path-item-${item.id}`" class="min-w-0 flex-1 cursor-pointer">
-                <span class="block text-xs text-slate-500">
-                  {{ t('wiki.path.step', { number: position + 1 }) }} · {{ item.spaceTitle }}
+                <input
+                  type="checkbox"
+                  class="checkbox mt-0.5"
+                  :checked="item.done"
+                  :aria-label="t('wiki.path.markDone')"
+                  @change="toggle(item, ($event.target as HTMLInputElement).checked)"
+                />
+
+                <span class="min-w-0 flex-1">
+                  <span class="block text-xs text-slate-500">
+                    {{ t('wiki.path.step', { number: position + 1 }) }} · {{ item.spaceTitle }}
+                  </span>
+                  <span class="block font-medium" :class="item.done ? 'text-slate-500' : 'text-slate-900'">{{ item.title }}</span>
+                  <span v-if="item.note" class="mt-0.5 block text-sm leading-relaxed text-slate-600">{{ item.note }}</span>
+                  <span v-else-if="item.summary" class="mt-0.5 block text-sm leading-relaxed text-slate-600">{{ item.summary }}</span>
+                  <span v-if="item.done && item.completedAt" class="mt-1 block text-xs text-emerald-700">
+                    {{ t('wiki.path.doneAt', { date: formatDate(item.completedAt) }) }}
+                  </span>
                 </span>
-                <span class="block font-medium text-slate-900">{{ item.title }}</span>
-                <span v-if="item.note" class="mt-0.5 block text-sm text-slate-600">{{ item.note }}</span>
-                <span v-else-if="item.summary" class="mt-0.5 block text-sm text-slate-600">{{ item.summary }}</span>
-                <span v-if="item.done && item.completedAt" class="mt-0.5 block text-xs text-emerald-700">
-                  {{ t('wiki.path.doneAt', { date: formatDate(item.completedAt) }) }}
-                </span>
+
+                <button type="button" class="btn-secondary inline-flex shrink-0 items-center gap-1.5" @click="openItem(item)">
+                  {{ t('wiki.checklist.open') }}
+                  <Icon name="material-symbols:arrow-forward-rounded" class="text-base" aria-hidden="true" />
+                </button>
               </label>
-
-              <button type="button" class="btn-secondary shrink-0" @click="openItem(item)">
-                {{ t('wiki.checklist.open') }}
-              </button>
             </li>
           </ol>
         </template>

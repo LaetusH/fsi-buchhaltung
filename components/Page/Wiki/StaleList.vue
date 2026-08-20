@@ -6,8 +6,13 @@
     <ul v-else class="divide-y divide-slate-100">
       <li v-for="entry in articles" :key="entry.id" class="flex flex-wrap items-start gap-2 py-3">
         <div class="min-w-0 flex-1">
-          <button type="button" class="cursor-pointer text-left font-medium text-slate-800 hover:underline" @click="open(entry.id)">
+          <button
+            type="button"
+            class="inline-flex cursor-pointer items-center gap-1 text-left font-medium text-slate-800 underline decoration-slate-300 underline-offset-2 transition-colors hover:text-orange-700 hover:decoration-orange-400"
+            @click="open(entry.id)"
+          >
             {{ entry.title }}
+            <Icon name="material-symbols:chevron-right-rounded" class="text-base text-slate-400" aria-hidden="true" />
           </button>
           <p class="text-xs text-slate-500">
             {{ entry.spaceTitle }}

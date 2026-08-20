@@ -1,73 +1,85 @@
 <template>
-  <div class="flex flex-wrap items-end gap-2">
-    <div class="field min-w-36">
-      <label :for="`${id}-type`">{{ t('wiki.access.subjectTypes.user') }} / {{ t('wiki.access.subjectTypes.role') }}</label>
-      <MenuDropdown :id="`${id}-type`" v-model="openDropdown">
-        <template #trigger="{ styling }">
-          <button type="button" :class="[styling, 'cursor-pointer']">
-            <span class="truncate">{{ t(`wiki.access.subjectTypes.${subjectType}`) }}</span>
-            <Icon name="material-symbols:keyboard-arrow-down-rounded" class="text-lg" />
-          </button>
-        </template>
-        <template #default="{ styling }">
-          <button
-            v-for="type in availableTypes"
-            :key="type"
-            type="button"
-            :class="styling"
-            @click="selectSubjectType(type)"
-          >
-            {{ t(`wiki.access.subjectTypes.${type}`) }}
-          </button>
-        </template>
-      </MenuDropdown>
+  <div class="space-y-3">
+    <div class="flex flex-wrap items-end gap-2">
+      <div class="field min-w-36">
+        <label :for="`${id}-type`">{{ t('wiki.access.subjectTypes.user') }} / {{ t('wiki.access.subjectTypes.role') }}</label>
+        <MenuDropdown :id="`${id}-type`" v-model="openDropdown">
+          <template #trigger="{ styling }">
+            <button type="button" :class="[styling, 'cursor-pointer']">
+              <span class="truncate">{{ t(`wiki.access.subjectTypes.${subjectType}`) }}</span>
+              <Icon name="material-symbols:keyboard-arrow-down-rounded" class="text-lg" />
+            </button>
+          </template>
+          <template #default="{ styling }">
+            <button
+              v-for="type in availableTypes"
+              :key="type"
+              type="button"
+              :class="styling"
+              @click="selectSubjectType(type)"
+            >
+              {{ t(`wiki.access.subjectTypes.${type}`) }}
+            </button>
+          </template>
+        </MenuDropdown>
+      </div>
+
+      <div class="field min-w-56 flex-1">
+        <label>{{ t('wiki.access.add') }}</label>
+        <CommonSearchSelect
+          :model-value="queryText"
+          :options="options"
+          :placeholder="t('wiki.access.subjectPlaceholder')"
+          :empty-text="t('wiki.search.empty')"
+          :selected-label="selectedLabel"
+          @update:model-value="onQuery"
+          @select="onSelect"
+          @clear-selection="clearSelection"
+        />
+      </div>
+
+      <div class="field min-w-36">
+        <label :for="`${id}-level`">{{ t('wiki.access.levels.read') }}</label>
+        <MenuDropdown :id="`${id}-level`" v-model="openDropdown">
+          <template #trigger="{ styling }">
+            <button type="button" :class="[styling, 'cursor-pointer']">
+              <span class="truncate">{{ t(`wiki.access.levels.${accessLevel}`) }}</span>
+              <Icon name="material-symbols:keyboard-arrow-down-rounded" class="text-lg" />
+            </button>
+          </template>
+          <template #default="{ styling }">
+            <button
+              v-for="level in levels"
+              :key="level"
+              type="button"
+              :class="styling"
+              @click="selectAccessLevel(level)"
+            >
+              {{ t(`wiki.access.levels.${level}`) }}
+            </button>
+          </template>
+        </MenuDropdown>
+      </div>
     </div>
 
-    <div class="field min-w-56 flex-1">
-      <label>{{ t('wiki.access.add') }}</label>
-      <CommonSearchSelect
-        :model-value="queryText"
-        :options="options"
-        :placeholder="t('wiki.access.subjectPlaceholder')"
-        :empty-text="t('wiki.search.empty')"
-        :selected-label="selectedLabel"
-        @update:model-value="onQuery"
-        @select="onSelect"
-        @clear-selection="clearSelection"
-      />
+    <!-- The option belongs to the grant being built, so it sits on its own line together with the
+         action instead of floating between two full-height dropdowns. -->
+    <div class="flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 pt-3">
+      <label class="flex cursor-pointer items-center gap-2 text-sm text-slate-600">
+        <input v-model="includeDescendants" type="checkbox" class="checkbox" />
+        {{ t('wiki.access.includeDescendants') }}
+      </label>
+
+      <button
+        type="button"
+        class="btn-primary inline-flex items-center gap-1.5 disabled:opacity-60"
+        :disabled="!canAdd"
+        @click="submit"
+      >
+        <Icon name="material-symbols:add-rounded" class="text-base" aria-hidden="true" />
+        {{ t('wiki.access.add') }}
+      </button>
     </div>
-
-    <div class="field min-w-36">
-      <label :for="`${id}-level`">{{ t('wiki.access.levels.read') }}</label>
-      <MenuDropdown :id="`${id}-level`" v-model="openDropdown">
-        <template #trigger="{ styling }">
-          <button type="button" :class="[styling, 'cursor-pointer']">
-            <span class="truncate">{{ t(`wiki.access.levels.${accessLevel}`) }}</span>
-            <Icon name="material-symbols:keyboard-arrow-down-rounded" class="text-lg" />
-          </button>
-        </template>
-        <template #default="{ styling }">
-          <button
-            v-for="level in levels"
-            :key="level"
-            type="button"
-            :class="styling"
-            @click="selectAccessLevel(level)"
-          >
-            {{ t(`wiki.access.levels.${level}`) }}
-          </button>
-        </template>
-      </MenuDropdown>
-    </div>
-
-    <label class="flex items-center gap-2 text-xs text-slate-600">
-      <input v-model="includeDescendants" type="checkbox" class="checkbox" />
-      {{ t('wiki.access.includeDescendants') }}
-    </label>
-
-    <button type="button" class="btn-primary" :disabled="!canAdd" @click="submit">
-      {{ t('wiki.access.add') }}
-    </button>
   </div>
 </template>
 
@@ -80,7 +92,7 @@ import type { WikiSubjectOption, WikiSubjectOptionsResponse } from '~/server/api
 import type { WikiAccessLevel, WikiGrantSubjectType } from '~/types/wiki'
 
 const props = defineProps<{
-  /** The highest level the current user may hand out — nobody may grant beyond their own (§4.3.3.5). */
+  /** The highest level the current user may hand out â€” nobody may grant beyond their own (Â§4.3.3.5). */
   maxLevel: WikiAccessLevel
 }>()
 

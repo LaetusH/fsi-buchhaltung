@@ -2,10 +2,17 @@
   <Page :headline1="t('wiki.glossary.title')" @open-menu="$emit('openMenu')">
     <template #header>
       <div class="flex flex-1 flex-wrap items-center justify-end gap-2">
-        <button type="button" class="btn-secondary" @click="goToReturnTarget()">
+        <button type="button" class="btn-secondary inline-flex items-center gap-1.5" @click="goToReturnTarget()">
+          <Icon name="material-symbols:arrow-back-rounded" class="text-base" aria-hidden="true" />
           {{ t('wiki.article.backToWiki') }}
         </button>
-        <button v-if="canManage" type="button" class="btn-primary" @click="setPage('WikiAdmin', { tab: 'glossary' })">
+        <button
+          v-if="canManage"
+          type="button"
+          class="btn-primary inline-flex items-center gap-1.5"
+          @click="setPage('WikiAdmin', { tab: 'glossary' })"
+        >
+          <Icon name="material-symbols:edit-outline-rounded" class="text-base" aria-hidden="true" />
           {{ t('wiki.glossary.manage') }}
         </button>
       </div>
@@ -13,20 +20,46 @@
 
     <template #cards>
       <div class="-mx-6 space-y-4 bg-white p-4 shadow-sm col-span-12 sm:mx-0 sm:rounded-xl sm:p-6 sm:shadow-lg">
-        <p class="text-sm text-slate-600">{{ t('wiki.glossary.subtitle') }}</p>
+        <p class="text-base text-slate-600">{{ t('wiki.glossary.subtitle') }}</p>
 
         <div class="field max-w-md">
           <label for="wiki-glossary-search">{{ t('wiki.glossary.search') }}</label>
-          <input id="wiki-glossary-search" v-model="search" class="input" type="search" :placeholder="t('wiki.glossary.searchPlaceholder')" />
+          <div class="relative">
+            <Icon
+              name="material-symbols:search-rounded"
+              class="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-lg text-slate-400"
+              aria-hidden="true"
+            />
+            <input
+              id="wiki-glossary-search"
+              v-model="search"
+              class="input pl-9"
+              type="search"
+              :placeholder="t('wiki.glossary.searchPlaceholder')"
+            />
+          </div>
         </div>
+
+        <nav v-if="!loading && groups.length > 1" class="flex flex-wrap gap-1" :aria-label="t('wiki.glossary.jumpTo')">
+          <button
+            v-for="group in groups"
+            :key="`jump-${group.letter}`"
+            type="button"
+            class="flex h-7 w-7 cursor-pointer items-center justify-center rounded-md bg-slate-100 text-xs font-semibold text-slate-600 transition-colors hover:bg-orange-100 hover:text-orange-700"
+            @click="jumpTo(group.letter)"
+          >{{ group.letter }}</button>
+        </nav>
 
         <p v-if="loading" class="text-sm text-slate-500">{{ t('wiki.loading') }}</p>
         <p v-else-if="!terms.length" class="text-sm text-slate-500">{{ t('wiki.glossary.empty') }}</p>
         <p v-else-if="!filtered.length" class="text-sm text-slate-500">{{ t('wiki.search.empty') }}</p>
 
         <div v-else class="space-y-5">
-          <section v-for="group in groups" :key="group.letter">
-            <h2 class="section-title">{{ group.letter }}</h2>
+          <section v-for="group in groups" :key="group.letter" :id="`wiki-glossary-${group.letter}`" class="scroll-mt-24">
+            <h2 class="mb-1 flex items-center gap-2 border-b border-slate-100 pb-1 text-sm font-bold text-orange-600">
+              {{ group.letter }}
+              <span class="text-xs font-normal text-slate-400">({{ group.terms.length }})</span>
+            </h2>
             <dl class="divide-y divide-slate-100">
               <div v-for="term in group.terms" :key="term.id" class="py-3">
                 <dt class="flex flex-wrap items-baseline gap-2">
@@ -35,14 +68,17 @@
                     {{ t('wiki.glossary.aliasesLabel') }}: {{ term.aliases.join(', ') }}
                   </span>
                 </dt>
-                <dd class="mt-1 text-sm text-slate-600">
+                <dd class="mt-1 max-w-[70ch] text-sm leading-relaxed text-slate-600">
                   {{ term.shortDefinition }}
                   <button
                     v-if="term.articleId"
                     type="button"
-                    class="ml-1 cursor-pointer text-orange-700 hover:underline"
+                    class="ml-1 inline-flex cursor-pointer items-center gap-0.5 font-medium text-orange-700 underline decoration-orange-300 underline-offset-2 hover:decoration-orange-600"
                     @click="openArticle(term.articleId)"
-                  >{{ term.articleTitle || t('wiki.glossary.readMore') }}</button>
+                  >
+                    {{ term.articleTitle || t('wiki.glossary.readMore') }}
+                    <Icon name="material-symbols:arrow-forward-rounded" class="text-sm" aria-hidden="true" />
+                  </button>
                 </dd>
               </div>
             </dl>
@@ -98,6 +134,11 @@ const groups = computed(() => {
     .map(([letter, list]) => ({ letter, terms: list }))
     .sort((a, b) => a.letter.localeCompare(b.letter, 'de'))
 })
+
+function jumpTo(letter: string) {
+  if (!import.meta.client) return
+  document.getElementById(`wiki-glossary-${letter}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+}
 
 function openArticle(articleId: number) {
   setPage('WikiArticle', { articleId, returnTarget: buildReturnTarget('WikiGlossary') })

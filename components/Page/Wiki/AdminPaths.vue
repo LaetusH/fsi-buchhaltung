@@ -97,7 +97,7 @@
       </div>
     </div>
 
-    <label class="flex items-center gap-2 text-sm text-slate-700">
+    <label class="flex w-fit cursor-pointer items-center gap-2 text-sm text-slate-700">
       <input v-model="form.isPublished" type="checkbox" class="checkbox" />
       {{ t('wiki.admin.paths.fields.isPublished') }}
     </label>

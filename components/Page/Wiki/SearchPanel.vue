@@ -1,13 +1,32 @@
 <template>
   <div class="space-y-3">
     <div class="flex flex-wrap items-center gap-2">
-      <input
-        v-model="term"
-        type="search"
-        class="input sm:max-w-xs"
-        :placeholder="t('wiki.search.placeholder')"
-        @keyup.enter="run"
-      />
+      <div class="relative w-full sm:max-w-xs">
+        <Icon
+          name="material-symbols:search-rounded"
+          class="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-lg text-slate-400"
+          aria-hidden="true"
+        />
+        <input
+          v-model="term"
+          type="search"
+          class="input wiki-search-input pl-9"
+          :class="term ? 'pr-9' : ''"
+          :placeholder="t('wiki.search.placeholder')"
+          :aria-label="t('wiki.search.placeholder')"
+          @keyup.enter="run"
+        />
+        <button
+          v-if="term"
+          type="button"
+          class="absolute right-2 top-1/2 flex h-6 w-6 -translate-y-1/2 cursor-pointer items-center justify-center rounded-md text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-700"
+          :title="t('wiki.search.clear')"
+          :aria-label="t('wiki.search.clear')"
+          @click="clear"
+        >
+          <Icon name="material-symbols:close-rounded" class="text-base" aria-hidden="true" />
+        </button>
+      </div>
       <MenuDropdown v-model="openDropdown" id="space" wrapper-class="relative w-full sm:max-w-xs">
         <template #trigger="{ styling }">
           <button type="button" :class="[styling, 'cursor-pointer']">
@@ -28,23 +47,36 @@
           </button>
         </template>
       </MenuDropdown>
-      <button type="button" class="btn-primary h-9.5" @click="run">{{ t('wiki.search.submit') }}</button>
+      <button type="button" class="btn-primary inline-flex h-9.5 items-center gap-1.5" @click="run">
+        <Icon name="material-symbols:search-rounded" class="text-base" aria-hidden="true" />
+        {{ t('wiki.search.submit') }}
+      </button>
     </div>
+
+    <p aria-live="polite" class="sr-only">{{ statusMessage }}</p>
 
     <p v-if="term.trim().length === 1" class="text-sm text-slate-500">{{ t('wiki.search.hint') }}</p>
     <p v-else-if="searching" class="text-sm text-slate-500">{{ t('wiki.loading') }}</p>
     <p v-else-if="searched && !hits.length" class="text-sm text-slate-500">{{ t('wiki.search.empty') }}</p>
+    <p v-else-if="hits.length" class="text-xs text-slate-500">{{ t('wiki.search.results', { count: hits.length }) }}</p>
 
     <ul v-if="hits.length" class="space-y-2">
       <li v-for="hit in hits" :key="hit.id">
         <button
           type="button"
-          class="w-full cursor-pointer rounded-lg border border-slate-200 p-3 text-left transition-colors hover:bg-slate-50"
+          class="flex w-full cursor-pointer items-center gap-3 rounded-lg border border-slate-200 p-3 text-left transition-colors hover:border-orange-300 hover:bg-orange-50/60"
           @click="$emit('open', hit.id)"
         >
-          <span class="block text-xs text-slate-500">{{ hit.spaceTitle }}</span>
-          <span class="block font-semibold text-slate-900">{{ hit.title }}</span>
-          <span v-if="hit.snippet" class="mt-1 block text-sm text-slate-600">{{ hit.snippet }}</span>
+          <span class="min-w-0 flex-1">
+            <span class="block text-xs text-slate-500">{{ hit.spaceTitle }}</span>
+            <span class="block font-semibold text-slate-900" v-html="highlight(hit.title)"></span>
+            <span
+              v-if="hit.snippet"
+              class="mt-1 block text-sm leading-relaxed text-slate-600"
+              v-html="highlight(hit.snippet)"
+            ></span>
+          </span>
+          <Icon name="material-symbols:chevron-right-rounded" class="shrink-0 text-lg text-slate-300" aria-hidden="true" />
         </button>
       </li>
     </ul>
@@ -70,6 +102,7 @@ const { t } = useI18n()
 const term = ref('')
 const spaceId = ref(0)
 const hits = ref<WikiSearchHit[]>([])
+const searchedTerms = ref<string[]>([])
 const searching = ref(false)
 const searched = ref(false)
 const openDropdown = ref<string | null>(null)
@@ -81,21 +114,61 @@ function selectSpace(id: number) {
   openDropdown.value = null
 }
 
+const ESCAPE_HTML: Record<string, string> = {
+  '&': '&amp;',
+  '<': '&lt;',
+  '>': '&gt;',
+  '"': '&quot;',
+  "'": '&#39;',
+}
+
+function escapeHtml(value: string) {
+  return value.replace(/[&<>"']/g, character => ESCAPE_HTML[character]!)
+}
+
+function highlight(value: string) {
+  const escaped = escapeHtml(value)
+  const words = searchedTerms.value
+  if (!words.length) return escaped
+
+  const alternatives = words
+    .map(word => escapeHtml(word).replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
+    .join('|')
+  const pattern = new RegExp(`(${alternatives})`, 'gi')
+  return escaped.replace(pattern, '<mark class="search-hit-mark">$1</mark>')
+}
+
+function clear() {
+  term.value = ''
+  hits.value = []
+  searchedTerms.value = []
+  searched.value = false
+}
+
+const statusMessage = computed(() => {
+  if (searching.value) return t('wiki.loading')
+  if (!searched.value) return ''
+  return hits.value.length ? t('wiki.search.results', { count: hits.value.length }) : t('wiki.search.empty')
+})
+
 let debounce: ReturnType<typeof setTimeout> | null = null
 
 async function run() {
   if (term.value.trim().length < 2) {
     hits.value = []
+    searchedTerms.value = []
     searched.value = false
     return
   }
 
   searching.value = true
+  const query = term.value.trim()
   try {
     const res = await $fetch<WikiSearchResponse>('/api/wiki/search', {
-      query: { q: term.value.trim(), spaceId: spaceId.value || undefined },
+      query: { q: query, spaceId: spaceId.value || undefined },
     })
     hits.value = res.ok ? res.hits : []
+    searchedTerms.value = res.ok ? query.split(/\s+/).filter(word => word.length > 1) : []
   } finally {
     searching.value = false
     searched.value = true

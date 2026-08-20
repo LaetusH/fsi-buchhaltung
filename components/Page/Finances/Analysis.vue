@@ -116,8 +116,8 @@
               @select="selectCostCentreFromOption"
               @clear-selection="clearSelectedCostCentre"
             />
-            <label v-if="selectedCostCentreHasChildren" class="mt-3 flex items-center gap-2 text-sm text-slate-700 cursor-pointer">
-              <input v-model="includeChildCostCentres" type="checkbox" class="h-4 w-4 rounded border-slate-300 text-orange-500 focus:ring-orange-500 cursor-pointer">
+            <label v-if="selectedCostCentreHasChildren" class="mt-3 flex w-fit cursor-pointer items-center gap-2 text-sm text-slate-700">
+              <input v-model="includeChildCostCentres" type="checkbox" class="checkbox">
               <span>{{ t('financeAnalysis.includeChildCostCentres') }}</span>
             </label>
           </div>

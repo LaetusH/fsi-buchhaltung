@@ -2,13 +2,21 @@
   <Page :headline1="t('wiki.title')" @open-menu="$emit('openMenu')">
     <template #header>
       <div class="flex flex-1 flex-wrap justify-end gap-2">
-        <button type="button" class="btn-secondary" @click="openGlossary">
+        <button type="button" class="btn-secondary inline-flex items-center gap-1.5" @click="openGlossary">
+          <Icon name="material-symbols:dictionary-outline-rounded" class="text-base" aria-hidden="true" />
           {{ t('wiki.glossary.title') }}
         </button>
-        <button v-if="canManage" type="button" class="btn-secondary" @click="setPage('WikiAdmin')">
+        <button
+          v-if="canManage"
+          type="button"
+          class="btn-secondary inline-flex items-center gap-1.5"
+          @click="setPage('WikiAdmin')"
+        >
+          <Icon name="material-symbols:settings-outline-rounded" class="text-base" aria-hidden="true" />
           {{ t('wiki.admin.title') }}
         </button>
-        <button v-if="canEdit" type="button" class="btn-primary" @click="createArticle">
+        <button v-if="canEdit" type="button" class="btn-primary inline-flex items-center gap-1.5" @click="createArticle">
+          <Icon name="material-symbols:add-rounded" class="text-base" aria-hidden="true" />
           {{ t('wiki.home.newArticle') }}
         </button>
       </div>
@@ -16,19 +24,35 @@
 
     <template #cards>
       <div class="-mx-6 space-y-3 bg-white p-4 shadow-sm col-span-12 sm:mx-0 sm:rounded-xl sm:p-6 sm:shadow-lg">
-        <p class="text-sm text-slate-600">{{ t('wiki.subtitle') }}</p>
+        <p class="text-base text-slate-600">{{ t('wiki.subtitle') }}</p>
         <PageWikiSearchPanel :spaces="spaces" @open="openArticle" />
-        <p class="text-xs text-slate-400">{{ t('wiki.contentLanguageHint') }}</p>
+        <p class="flex items-center gap-1 text-xs text-slate-400">
+          <Icon name="material-symbols:translate-rounded" class="text-sm" aria-hidden="true" />
+          {{ t('wiki.contentLanguageHint') }}
+        </p>
       </div>
 
       <div
         v-if="staleCount > 0"
-        class="col-span-12 space-y-3 rounded-xl bg-amber-50 px-4 py-3 text-sm text-amber-800"
+        class="col-span-12 space-y-3 rounded-xl border-l-4 border-amber-400 bg-amber-50 px-4 py-3 text-sm text-amber-900"
       >
         <div class="flex flex-wrap items-center justify-between gap-2">
-          <span>{{ t('wiki.home.staleBanner', { count: staleCount }) }}</span>
-          <button type="button" class="cursor-pointer font-medium hover:underline" @click="staleOpen = !staleOpen">
+          <span class="flex items-center gap-2">
+            <Icon name="material-symbols:warning-outline-rounded" class="shrink-0 text-lg" aria-hidden="true" />
+            {{ t('wiki.home.staleBanner', { count: staleCount }) }}
+          </span>
+          <button
+            type="button"
+            class="inline-flex cursor-pointer items-center gap-1 rounded-lg border border-amber-300 bg-white/70 px-3 py-1 font-medium transition-colors hover:bg-white"
+            :aria-expanded="staleOpen"
+            @click="staleOpen = !staleOpen"
+          >
             {{ staleOpen ? t('wiki.home.staleHide') : t('wiki.home.staleShow') }}
+            <Icon
+              :name="staleOpen ? 'material-symbols:expand-less-rounded' : 'material-symbols:expand-more-rounded'"
+              class="text-base"
+              aria-hidden="true"
+            />
           </button>
         </div>
         <PageWikiStaleList v-if="staleOpen" return-page="Wiki" />
@@ -50,34 +74,56 @@
             v-for="path in recommendedPaths.length ? recommendedPaths : otherPaths"
             :key="path.id"
             type="button"
-            class="cursor-pointer rounded-lg border border-slate-200 p-4 text-left transition hover:bg-slate-50"
+            class="cursor-pointer rounded-xl border border-slate-200 p-4 text-left transition-colors hover:border-orange-300 hover:bg-orange-50/50"
             @click="openPath(path.id)"
           >
             <span class="flex items-center gap-2">
-              <Icon :name="path.icon" class="shrink-0 text-lg text-slate-500" aria-hidden="true" />
+              <Icon :name="path.icon" class="shrink-0 text-lg text-orange-500" aria-hidden="true" />
               <span class="min-w-0 flex-1 truncate font-semibold text-slate-900">{{ path.title }}</span>
-              <span v-if="!path.isPublished" class="shrink-0 text-xs text-amber-700">{{ t('wiki.admin.paths.draft') }}</span>
-            </span>
-            <span v-if="path.description" class="mt-1 block text-sm text-slate-600">{{ path.description }}</span>
-
-            <span class="mt-3 block text-xs text-slate-500">
-              {{ t('wiki.path.progress', { done: path.doneCount, total: path.totalCount }) }}
-            </span>
-            <span class="mt-1 block h-2 w-full overflow-hidden rounded-full bg-slate-200">
               <span
-                class="block h-full rounded-full bg-orange-500"
+                v-if="!path.isPublished"
+                class="shrink-0 rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-800"
+              >{{ t('wiki.admin.paths.draft') }}</span>
+            </span>
+            <span v-if="path.description" class="mt-1 block text-sm leading-relaxed text-slate-600">{{ path.description }}</span>
+
+            <span class="mt-3 flex items-center justify-between text-xs text-slate-500">
+              <span>{{ t('wiki.path.progress', { done: path.doneCount, total: path.totalCount }) }}</span>
+              <span class="font-semibold text-slate-600">{{ percent(path) }} %</span>
+            </span>
+            <span
+              class="mt-1 block h-2 w-full overflow-hidden rounded-full bg-slate-200"
+              role="progressbar"
+              :aria-valuenow="percent(path)"
+              aria-valuemin="0"
+              aria-valuemax="100"
+              :aria-label="t('wiki.path.progress', { done: path.doneCount, total: path.totalCount })"
+            >
+              <span
+                class="block h-full rounded-full bg-orange-500 transition-all"
                 :style="{ width: `${percent(path)}%` }"
               ></span>
+            </span>
+
+            <span class="mt-3 flex items-center gap-1 text-sm font-medium text-orange-700">
+              {{ path.doneCount ? t('wiki.path.continue') : t('wiki.path.start') }}
+              <Icon name="material-symbols:arrow-forward-rounded" class="text-base" aria-hidden="true" />
             </span>
           </button>
         </div>
 
         <details v-if="recommendedPaths.length && otherPaths.length" class="text-sm">
-          <summary class="cursor-pointer text-slate-600">{{ t('wiki.path.more') }}</summary>
-          <ul class="mt-2 space-y-1">
+          <summary class="flex cursor-pointer list-none items-center [&::-webkit-details-marker]:hidden gap-1.5 font-medium text-slate-600 hover:text-slate-900">
+            <Icon name="material-symbols:expand-more-rounded" class="text-base text-slate-400" aria-hidden="true" />
+            {{ t('wiki.path.more') }}
+            <span class="text-xs font-normal text-slate-400">({{ otherPaths.length }})</span>
+          </summary>
+          <ul class="-mx-2 mt-1">
             <li v-for="path in otherPaths" :key="path.id">
-              <button type="button" class="cursor-pointer text-left text-orange-700 hover:underline" @click="openPath(path.id)">
-                {{ path.title }}
+              <button type="button" class="wiki-link-row" @click="openPath(path.id)">
+                <Icon :name="path.icon" class="shrink-0 text-base text-slate-400" aria-hidden="true" />
+                <span class="min-w-0 flex-1 truncate">{{ path.title }}</span>
+                <Icon name="material-symbols:chevron-right-rounded" class="wiki-link-chevron" aria-hidden="true" />
               </button>
             </li>
           </ul>
@@ -86,7 +132,10 @@
 
       <div class="col-span-12 xl:col-span-8">
         <div class="-mx-6 space-y-4 bg-white p-4 shadow-sm sm:mx-0 sm:rounded-xl sm:p-6 sm:shadow-lg">
-          <h2 class="text-base font-semibold sm:text-lg">{{ t('wiki.home.spaces') }}</h2>
+          <h2 class="flex items-center gap-2 text-base font-semibold sm:text-lg">
+            <Icon name="material-symbols:folder-open-outline-rounded" class="text-lg text-slate-400" aria-hidden="true" />
+            {{ t('wiki.home.spaces') }}
+          </h2>
 
           <p v-if="loading" class="text-sm text-slate-500">{{ t('wiki.loading') }}</p>
           <p v-else-if="!spaces.length" class="text-sm text-slate-500">{{ t('wiki.home.noSpaces') }}</p>
@@ -95,33 +144,40 @@
             <section
               v-for="space in spaces"
               :key="space.id"
-              class="rounded-lg border border-slate-200 p-4"
+              class="rounded-xl border border-slate-200 p-4"
             >
               <div class="flex items-center gap-2">
-                <Icon :name="space.icon" class="h-5 w-5 text-slate-500" aria-hidden="true" />
+                <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-orange-50 text-orange-600">
+                  <Icon :name="space.icon" class="h-5 w-5" aria-hidden="true" />
+                </span>
                 <h3 class="min-w-0 flex-1 font-semibold text-slate-900">{{ space.title }}</h3>
                 <a
                   :href="`/api/wiki/spaces/${space.id}/export-pdf`"
                   target="_blank"
                   rel="noopener noreferrer"
-                  class="shrink-0 text-xs text-slate-500 hover:text-slate-800 hover:underline"
+                  class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-700"
                   :title="t('wiki.home.exportSpacePdf')"
-                >{{ t('wiki.exportPdf') }}</a>
+                  :aria-label="t('wiki.home.exportSpacePdf')"
+                >
+                  <Icon name="material-symbols:picture-as-pdf-outline-rounded" class="h-5 w-5" aria-hidden="true" />
+                </a>
               </div>
-              <p v-if="space.description" class="mt-1 text-sm text-slate-600">{{ space.description }}</p>
+              <p v-if="space.description" class="mt-2 text-sm leading-relaxed text-slate-600">{{ space.description }}</p>
 
-              <ul v-if="space.articles.length" class="mt-3 space-y-1 text-sm">
+              <ul v-if="space.articles.length" class="-mx-2 mt-2 text-sm">
                 <li v-for="article in space.articles.slice(0, 5)" :key="article.id">
-                  <button
-                    type="button"
-                    class="cursor-pointer text-left text-orange-700 hover:underline"
-                    @click="openArticle(article.id)"
-                  >
-                    {{ article.title }}
+                  <button type="button" class="wiki-link-row" @click="openArticle(article.id)">
+                    <Icon name="material-symbols:article-outline-rounded" class="shrink-0 text-base text-slate-300" aria-hidden="true" />
+                    <span class="min-w-0 flex-1 truncate">{{ article.title }}</span>
+                    <Icon name="material-symbols:chevron-right-rounded" class="wiki-link-chevron" aria-hidden="true" />
                   </button>
                 </li>
               </ul>
               <p v-else class="mt-3 text-sm text-slate-400">{{ t('wiki.home.empty') }}</p>
+
+              <p v-if="space.articles.length > 5" class="mt-1 pl-2 text-xs text-slate-400">
+                {{ t('wiki.home.moreArticles', { count: space.articles.length - 5 }) }}
+              </p>
             </section>
           </div>
         </div>
@@ -129,12 +185,18 @@
 
       <div class="col-span-12 space-y-5 xl:col-span-4">
         <section class="-mx-6 bg-white p-4 shadow-sm sm:mx-0 sm:rounded-xl sm:p-6 sm:shadow-lg">
-          <h2 class="section-title">{{ t('wiki.home.recentlyUpdated') }}</h2>
-          <ul v-if="recentlyUpdated.length" class="space-y-2 text-sm">
+          <h2 class="section-title flex items-center gap-1.5">
+            <Icon name="material-symbols:history-rounded" class="text-base text-slate-400" aria-hidden="true" />
+            {{ t('wiki.home.recentlyUpdated') }}
+          </h2>
+          <ul v-if="recentlyUpdated.length" class="-mx-2 text-sm">
             <li v-for="entry in recentlyUpdated" :key="entry.id">
-              <button type="button" class="cursor-pointer text-left" @click="openArticle(entry.id)">
-                <span class="block font-medium text-slate-800 hover:underline">{{ entry.title }}</span>
-                <span class="block text-xs text-slate-500">{{ entry.spaceTitle }} · {{ formatDate(entry.changedAt) }}</span>
+              <button type="button" class="wiki-link-row" @click="openArticle(entry.id)">
+                <span class="min-w-0 flex-1">
+                  <span class="block truncate font-medium">{{ entry.title }}</span>
+                  <span class="block truncate text-xs text-slate-500">{{ entry.spaceTitle }} · {{ formatDate(entry.changedAt) }}</span>
+                </span>
+                <Icon name="material-symbols:chevron-right-rounded" class="wiki-link-chevron" aria-hidden="true" />
               </button>
             </li>
           </ul>
@@ -142,12 +204,18 @@
         </section>
 
         <section v-if="recentlyRead.length" class="-mx-6 bg-white p-4 shadow-sm sm:mx-0 sm:rounded-xl sm:p-6 sm:shadow-lg">
-          <h2 class="section-title">{{ t('wiki.home.recentlyRead') }}</h2>
-          <ul class="space-y-2 text-sm">
+          <h2 class="section-title flex items-center gap-1.5">
+            <Icon name="material-symbols:bookmark-outline-rounded" class="text-base text-slate-400" aria-hidden="true" />
+            {{ t('wiki.home.recentlyRead') }}
+          </h2>
+          <ul class="-mx-2 text-sm">
             <li v-for="entry in recentlyRead" :key="entry.id">
-              <button type="button" class="cursor-pointer text-left" @click="openArticle(entry.id)">
-                <span class="block font-medium text-slate-800 hover:underline">{{ entry.title }}</span>
-                <span class="block text-xs text-slate-500">{{ entry.spaceTitle }}</span>
+              <button type="button" class="wiki-link-row" @click="openArticle(entry.id)">
+                <span class="min-w-0 flex-1">
+                  <span class="block truncate font-medium">{{ entry.title }}</span>
+                  <span class="block truncate text-xs text-slate-500">{{ entry.spaceTitle }}</span>
+                </span>
+                <Icon name="material-symbols:chevron-right-rounded" class="wiki-link-chevron" aria-hidden="true" />
               </button>
             </li>
           </ul>

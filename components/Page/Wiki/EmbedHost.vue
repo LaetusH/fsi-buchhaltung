@@ -1,7 +1,7 @@
 <template>
-  <div class="my-3 rounded-xl border border-slate-200 bg-slate-50/70 p-4">
-    <p class="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-slate-500">
-      <Icon :name="icon" class="text-base" aria-hidden="true" />
+  <div class="my-4 rounded-xl border border-slate-200 bg-slate-50/70 p-4">
+    <p class="flex items-center gap-2 text-sm font-semibold text-slate-800">
+      <Icon :name="icon" class="text-lg text-slate-400" aria-hidden="true" />
       {{ title }}
     </p>
 

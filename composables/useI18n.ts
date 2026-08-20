@@ -1890,6 +1890,8 @@ const messages = {
       search: {
         placeholder: 'Wiki durchsuchen',
         submit: 'Suchen',
+        clear: 'Suche zurücksetzen',
+        results: '{count} Treffer',
         allSpaces: 'Alle Bereiche',
         hint: 'Bitte mindestens zwei Zeichen eingeben.',
         empty: 'Keine Treffer.',
@@ -1904,6 +1906,7 @@ const messages = {
         staleShow: 'Anzeigen',
         staleHide: 'Ausblenden',
         exportSpacePdf: 'Alle Artikel dieses Bereichs als PDF herunterladen',
+        moreArticles: '+ {count} weitere Artikel in diesem Bereich',
         newArticle: 'Neuer Artikel',
       },
       tree: {
@@ -1914,6 +1917,7 @@ const messages = {
         collapse: 'Unterartikel ausblenden',
         moveUp: 'Nach oben verschieben',
         moveDown: 'Nach unten verschieben',
+        dragHint: 'Zum Sortieren ziehen',
         reorderedToast: 'Die Reihenfolge wurde gespeichert.',
       },
       status: {
@@ -1924,6 +1928,9 @@ const messages = {
       },
       article: {
         toc: 'Auf dieser Seite',
+        breadcrumb: 'Pfad zu diesem Artikel',
+        previous: 'Vorheriger Artikel',
+        next: 'Nächster Artikel',
         owner: 'Zuständig',
         subarticles: 'Unterartikel',
         attachments: 'Anhänge',
@@ -2209,6 +2216,7 @@ const messages = {
         unknown: 'Für „{term}" gibt es keinen Glossar-Eintrag.',
         readMore: 'Mehr erfahren',
         aliasesLabel: 'Auch',
+        jumpTo: 'Zum Anfangsbuchstaben springen',
         manage: 'Glossar verwalten',
       },
       path: {
@@ -4235,6 +4243,8 @@ const messages = {
       search: {
         placeholder: 'Search the wiki',
         submit: 'Search',
+        clear: 'Clear search',
+        results: '{count} results',
         allSpaces: 'All spaces',
         hint: 'Please enter at least two characters.',
         empty: 'No results.',
@@ -4249,6 +4259,7 @@ const messages = {
         staleShow: 'Show',
         staleHide: 'Hide',
         exportSpacePdf: 'Download every article of this space as a PDF',
+        moreArticles: '+ {count} more articles in this space',
         newArticle: 'New article',
       },
       tree: {
@@ -4259,6 +4270,7 @@ const messages = {
         collapse: 'Hide subarticles',
         moveUp: 'Move up',
         moveDown: 'Move down',
+        dragHint: 'Drag to reorder',
         reorderedToast: 'The new order has been saved.',
       },
       status: {
@@ -4269,6 +4281,9 @@ const messages = {
       },
       article: {
         toc: 'On this page',
+        breadcrumb: 'Path to this article',
+        previous: 'Previous article',
+        next: 'Next article',
         owner: 'Responsible',
         subarticles: 'Subarticles',
         attachments: 'Attachments',
@@ -4554,6 +4569,7 @@ const messages = {
         unknown: 'There is no glossary entry for "{term}".',
         readMore: 'Read more',
         aliasesLabel: 'Also',
+        jumpTo: 'Jump to a letter',
         manage: 'Manage glossary',
       },
       path: {

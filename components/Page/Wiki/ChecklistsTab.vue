@@ -72,30 +72,33 @@
             />
             <button
               type="button"
-              class="wiki-toolbar-btn disabled:cursor-not-allowed disabled:opacity-50"
+              class="icon-btn"
               :disabled="readOnly || itemIndex === 0"
               :title="t('wiki.tree.moveUp')"
+              :aria-label="t('wiki.tree.moveUp')"
               @click="moveItem(draft, itemIndex, -1)"
             >
               <Icon name="material-symbols:arrow-upward-rounded" class="h-4 w-4" aria-hidden="true" />
             </button>
             <button
               type="button"
-              class="wiki-toolbar-btn disabled:cursor-not-allowed disabled:opacity-50"
+              class="icon-btn"
               :disabled="readOnly || itemIndex === draft.items.length - 1"
               :title="t('wiki.tree.moveDown')"
+              :aria-label="t('wiki.tree.moveDown')"
               @click="moveItem(draft, itemIndex, 1)"
             >
               <Icon name="material-symbols:arrow-downward-rounded" class="h-4 w-4" aria-hidden="true" />
             </button>
             <button
               type="button"
-              class="wiki-toolbar-btn disabled:cursor-not-allowed disabled:opacity-50"
+              class="icon-btn icon-btn-danger"
               :disabled="readOnly"
               :title="t('wiki.checklist.removeItem')"
+              :aria-label="t('wiki.checklist.removeItem')"
               @click="draft.items.splice(itemIndex, 1)"
             >
-              <Icon name="material-symbols:close-rounded" class="h-4 w-4" aria-hidden="true" />
+              <Icon name="material-symbols:delete-outline-rounded" class="h-4 w-4" aria-hidden="true" />
             </button>
           </div>
 
@@ -147,18 +150,41 @@
       </div>
 
       <div class="flex flex-wrap justify-between gap-2">
-        <button type="button" class="btn-secondary" :disabled="readOnly" @click="addItem(draft)">
+        <button
+          type="button"
+          class="btn-secondary inline-flex items-center gap-1.5 disabled:opacity-60"
+          :disabled="readOnly"
+          @click="addItem(draft)"
+        >
+          <Icon name="material-symbols:add-rounded" class="text-base" aria-hidden="true" />
           {{ t('wiki.checklist.addItem') }}
         </button>
-        <button type="button" class="btn-secondary" :disabled="readOnly" @click="drafts.splice(listIndex, 1)">
+        <button
+          type="button"
+          class="inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-red-200 px-4 py-2 text-sm text-red-700 transition-colors hover:bg-red-50 disabled:cursor-default disabled:opacity-60"
+          :disabled="readOnly"
+          @click="drafts.splice(listIndex, 1)"
+        >
+          <Icon name="material-symbols:delete-outline-rounded" class="text-base" aria-hidden="true" />
           {{ t('wiki.checklist.removeChecklist') }}
         </button>
       </div>
     </div>
 
     <div v-if="!readOnly" class="flex flex-wrap justify-between gap-2 border-t border-slate-200 pt-4">
-      <button type="button" class="btn-secondary" @click="addChecklist">{{ t('wiki.checklist.addChecklist') }}</button>
-      <button type="button" class="btn-primary" :disabled="saving" @click="save">{{ t('wiki.checklist.saveChecklists') }}</button>
+      <button type="button" class="btn-secondary inline-flex items-center gap-1.5" @click="addChecklist">
+        <Icon name="material-symbols:playlist-add-rounded" class="text-base" aria-hidden="true" />
+        {{ t('wiki.checklist.addChecklist') }}
+      </button>
+      <button
+        type="button"
+        class="btn-primary inline-flex items-center gap-1.5 disabled:opacity-60"
+        :disabled="saving"
+        @click="save"
+      >
+        <Icon name="material-symbols:save-outline-rounded" class="text-base" aria-hidden="true" />
+        {{ t('wiki.checklist.saveChecklists') }}
+      </button>
     </div>
   </div>
 </template>

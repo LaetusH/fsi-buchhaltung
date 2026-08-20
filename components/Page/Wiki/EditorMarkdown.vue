@@ -1,42 +1,55 @@
 <template>
   <div class="space-y-3">
-    <div class="flex flex-wrap items-center gap-1">
-      <button type="button" class="wiki-toolbar-btn" :title="t('wiki.editor.toolbar.bold')" @click="wrap('**', '**')">
-        <Icon name="material-symbols:format-bold-rounded" class="h-4 w-4" aria-hidden="true" />
-      </button>
-      <button type="button" class="wiki-toolbar-btn" :title="t('wiki.editor.toolbar.italic')" @click="wrap('*', '*')">
-        <Icon name="material-symbols:format-italic-rounded" class="h-4 w-4" aria-hidden="true" />
-      </button>
-      <button type="button" class="wiki-toolbar-btn" :title="t('wiki.editor.toolbar.heading')" @click="prefixLine('## ')">
-        <Icon name="material-symbols:format-h2-rounded" class="h-4 w-4" aria-hidden="true" />
-      </button>
-      <button type="button" class="wiki-toolbar-btn" :title="t('wiki.editor.toolbar.list')" @click="prefixLine('- ')">
-        <Icon name="material-symbols:format-list-bulleted-rounded" class="h-4 w-4" aria-hidden="true" />
-      </button>
-      <button type="button" class="wiki-toolbar-btn" :title="t('wiki.editor.toolbar.numberedList')" @click="prefixLine('1. ')">
-        <Icon name="material-symbols:format-list-numbered-rounded" class="h-4 w-4" aria-hidden="true" />
-      </button>
-      <button type="button" class="wiki-toolbar-btn" :title="t('wiki.editor.toolbar.link')" @click="wrap('[', '](https://)')">
-        <Icon name="material-symbols:link-rounded" class="h-4 w-4" aria-hidden="true" />
-      </button>
-      <button type="button" class="wiki-toolbar-btn" :title="t('wiki.editor.toolbar.code')" @click="wrap('`', '`')">
-        <Icon name="material-symbols:code-rounded" class="h-4 w-4" aria-hidden="true" />
-      </button>
-      <button type="button" class="wiki-toolbar-btn" :title="t('wiki.editor.toolbar.table')" @click="insertBlock(TABLE_SNIPPET)">
-        <Icon name="material-symbols:table-rounded" class="h-4 w-4" aria-hidden="true" />
-      </button>
+    <div class="flex flex-wrap items-center gap-2">
+      <div class="wiki-toolbar-group">
+        <button type="button" class="wiki-toolbar-btn" :title="t('wiki.editor.toolbar.bold')" :aria-label="t('wiki.editor.toolbar.bold')" @click="wrap('**', '**')">
+          <Icon name="material-symbols:format-bold-rounded" class="h-5 w-5" aria-hidden="true" />
+        </button>
+        <button type="button" class="wiki-toolbar-btn" :title="t('wiki.editor.toolbar.italic')" :aria-label="t('wiki.editor.toolbar.italic')" @click="wrap('*', '*')">
+          <Icon name="material-symbols:format-italic-rounded" class="h-5 w-5" aria-hidden="true" />
+        </button>
+        <button type="button" class="wiki-toolbar-btn" :title="t('wiki.editor.toolbar.heading')" :aria-label="t('wiki.editor.toolbar.heading')" @click="prefixLine('## ')">
+          <Icon name="material-symbols:format-h2-rounded" class="h-5 w-5" aria-hidden="true" />
+        </button>
+        <button type="button" class="wiki-toolbar-btn" :title="t('wiki.editor.toolbar.code')" :aria-label="t('wiki.editor.toolbar.code')" @click="wrap('`', '`')">
+          <Icon name="material-symbols:code-rounded" class="h-5 w-5" aria-hidden="true" />
+        </button>
+        <button type="button" class="wiki-toolbar-btn" :title="t('wiki.editor.toolbar.link')" :aria-label="t('wiki.editor.toolbar.link')" @click="wrap('[', '](https://)')">
+          <Icon name="material-symbols:link-rounded" class="h-5 w-5" aria-hidden="true" />
+        </button>
+      </div>
 
-      <span class="mx-1 h-5 w-px bg-slate-200" aria-hidden="true"></span>
+      <div class="wiki-toolbar-group">
+        <button type="button" class="wiki-toolbar-btn" :title="t('wiki.editor.toolbar.list')" :aria-label="t('wiki.editor.toolbar.list')" @click="prefixLine('- ')">
+          <Icon name="material-symbols:format-list-bulleted-rounded" class="h-5 w-5" aria-hidden="true" />
+        </button>
+        <button type="button" class="wiki-toolbar-btn" :title="t('wiki.editor.toolbar.numberedList')" :aria-label="t('wiki.editor.toolbar.numberedList')" @click="prefixLine('1. ')">
+          <Icon name="material-symbols:format-list-numbered-rounded" class="h-5 w-5" aria-hidden="true" />
+        </button>
+        <button type="button" class="wiki-toolbar-btn" :title="t('wiki.editor.toolbar.table')" :aria-label="t('wiki.editor.toolbar.table')" @click="insertBlock(TABLE_SNIPPET)">
+          <Icon name="material-symbols:table-rounded" class="h-5 w-5" aria-hidden="true" />
+        </button>
+      </div>
 
-      <button type="button" class="wiki-toolbar-btn" @click="insertBlock(':::hinweis\n\n:::')">{{ t('wiki.editor.toolbar.hint') }}</button>
-      <button type="button" class="wiki-toolbar-btn" @click="insertBlock(':::warnung\n\n:::')">{{ t('wiki.editor.toolbar.warning') }}</button>
-      <button type="button" class="wiki-toolbar-btn" @click="insertBlock(':::tipp\n\n:::')">{{ t('wiki.editor.toolbar.tip') }}</button>
-
-      <span class="mx-1 h-5 w-px bg-slate-200" aria-hidden="true"></span>
+      <div class="wiki-toolbar-group">
+        <button type="button" class="wiki-toolbar-btn" @click="insertBlock(':::hinweis\n\n:::')">
+          <Icon name="material-symbols:info-outline-rounded" class="h-4 w-4 text-sky-500" aria-hidden="true" />
+          {{ t('wiki.editor.toolbar.hint') }}
+        </button>
+        <button type="button" class="wiki-toolbar-btn" @click="insertBlock(':::warnung\n\n:::')">
+          <Icon name="material-symbols:warning-outline-rounded" class="h-4 w-4 text-amber-500" aria-hidden="true" />
+          {{ t('wiki.editor.toolbar.warning') }}
+        </button>
+        <button type="button" class="wiki-toolbar-btn" @click="insertBlock(':::tipp\n\n:::')">
+          <Icon name="material-symbols:lightbulb-outline-rounded" class="h-4 w-4 text-emerald-500" aria-hidden="true" />
+          {{ t('wiki.editor.toolbar.tip') }}
+        </button>
+      </div>
 
       <MenuDropdown v-model="openInsertMenu" id="insert" wrapper-class="relative w-auto">
         <template #trigger="{ styling }">
-          <button type="button" :class="[styling, 'w-auto cursor-pointer py-1 text-xs']">
+          <button type="button" :class="[styling, 'w-auto cursor-pointer gap-1.5 py-2 text-sm']">
+            <Icon name="material-symbols:add-circle-outline-rounded" class="text-base text-slate-500" aria-hidden="true" />
             <span>{{ t('wiki.editor.toolbar.insert') }}</span>
             <Icon name="material-symbols:keyboard-arrow-down-rounded" class="text-lg" />
           </button>
@@ -98,15 +111,19 @@
       </MenuDropdown>
     </div>
 
-    <div class="flex gap-2 xl:hidden">
+    <div class="segmented xl:hidden" role="group">
       <button
         type="button"
-        :class="mobileView === 'editor' ? 'btn-primary' : 'btn-secondary'"
+        class="segmented-option"
+        :class="mobileView === 'editor' ? 'segmented-option-active' : ''"
+        :aria-pressed="mobileView === 'editor'"
         @click="mobileView = 'editor'"
       >{{ t('wiki.editor.showEditor') }}</button>
       <button
         type="button"
-        :class="mobileView === 'preview' ? 'btn-primary' : 'btn-secondary'"
+        class="segmented-option"
+        :class="mobileView === 'preview' ? 'segmented-option-active' : ''"
+        :aria-pressed="mobileView === 'preview'"
         @click="mobileView = 'preview'"
       >{{ t('wiki.editor.showPreview') }}</button>
     </div>
@@ -118,7 +135,7 @@
           :id="textareaId"
           ref="textareaRef"
           :value="modelValue"
-          class="input min-h-104 flex-1 font-mono text-xs leading-relaxed"
+          class="input min-h-104 flex-1 font-mono text-sm leading-relaxed"
           spellcheck="false"
           @input="$emit('update:modelValue', ($event.target as HTMLTextAreaElement).value)"
         ></textarea>
@@ -126,7 +143,7 @@
 
       <div class="flex flex-col" :class="mobileView === 'editor' ? 'hidden xl:flex' : ''">
         <p class="section-title">{{ t('wiki.editor.preview') }}</p>
-        <div class="min-h-104 flex-1 overflow-y-auto rounded-lg border border-slate-200 p-3">
+        <div class="min-h-104 flex-1 overflow-y-auto rounded-lg border border-slate-200 bg-white p-4">
           <CommonValidationSummary
             v-if="previewError"
             :errors="[previewError]"

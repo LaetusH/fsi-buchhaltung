@@ -95,17 +95,17 @@
       </div>
     </div>
 
-    <label class="flex items-center gap-2 text-sm text-slate-700">
+    <label class="flex w-fit cursor-pointer items-center gap-2 text-sm text-slate-700">
       <input v-model="form.createGrant" type="checkbox" class="checkbox" />
       {{ t('wiki.editor.fields.createOwnerGrant') }}
     </label>
 
-    <label class="flex items-center gap-2 text-sm text-slate-700">
+    <label class="flex w-fit cursor-pointer items-center gap-2 text-sm text-slate-700">
       <input v-model="form.requiresReview" type="checkbox" class="checkbox" />
       {{ t('wiki.space.fields.requiresReview') }}
     </label>
 
-    <label v-if="!isCreate" class="flex items-center gap-2 text-sm text-slate-700">
+    <label v-if="!isCreate" class="flex w-fit cursor-pointer items-center gap-2 text-sm text-slate-700">
       <input v-model="form.isArchived" type="checkbox" class="checkbox" />
       {{ t('wiki.space.fields.isArchived') }}
     </label>

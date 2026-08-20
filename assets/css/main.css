@@ -8,6 +8,30 @@ html {
     overscroll-behavior: none;
 }
 
+.scroll-panel {
+    scrollbar-width: thin;
+    scrollbar-color: rgb(203 213 225) transparent;
+}
+
+.scroll-panel::-webkit-scrollbar {
+    display: block;
+    width: 0.5rem;
+    height: 0.5rem;
+}
+
+.scroll-panel::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.scroll-panel::-webkit-scrollbar-thumb {
+    background-color: rgb(203 213 225);
+    border-radius: 9999px;
+}
+
+.scroll-panel::-webkit-scrollbar-thumb:hover {
+    background-color: rgb(148 163 184);
+}
+
 body > .hiddenCanvasElement,
 body > #hiddenCopyElement,
 .hiddenCanvasElement,
@@ -34,7 +58,27 @@ body > #hiddenCopyElement,
     }
 
     .checkbox {
-        @apply cursor-pointer;
+        @apply relative h-[1.15rem] w-[1.15rem] shrink-0 cursor-pointer appearance-none rounded-md border border-slate-300 bg-white transition-colors;
+    }
+
+    .checkbox:hover:not(:disabled) {
+        @apply border-orange-400 bg-orange-50;
+    }
+
+    .checkbox:checked {
+        @apply border-orange-500 bg-orange-500;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M3.5 8.4l3 3 6-6' fill='none' stroke='white' stroke-width='2.25' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+        background-repeat: no-repeat;
+        background-position: center;
+        background-size: 0.85rem;
+    }
+
+    .checkbox:checked:hover:not(:disabled) {
+        @apply border-orange-600 bg-orange-600;
+    }
+
+    .checkbox:focus-visible {
+        @apply outline-none ring-2 ring-orange-400 ring-offset-1;
     }
 
     /* Shared target for v-html'd notification bodies (markdown-lite rendered via notificationFormatting.ts). */
@@ -59,7 +103,15 @@ body > #hiddenCopyElement,
     }
 
     .checkbox:disabled {
-        @apply opacity-70 cursor-default;
+        @apply cursor-default border-slate-200 bg-slate-100 opacity-70;
+    }
+
+    .checkbox:disabled:checked {
+        @apply border-slate-300 bg-slate-400;
+    }
+
+    .checkbox-row {
+        @apply cursor-pointer;
     }
     
     .btn-primary {
@@ -86,79 +138,98 @@ body > #hiddenCopyElement,
         @apply bg-orange-50;
     }
 
-    /* Shared target for the v-html'd wiki article HTML (rendered + sanitized server-side by
-       server/utils/wiki/render.ts). Tables scroll inside their own box so the page never does. */
     .wiki-article-body {
-        @apply text-sm text-slate-800 leading-relaxed;
+        @apply text-base text-slate-800 leading-7;
+    }
+
+    .wiki-article-measure {
+        @apply max-w-[72ch];
+    }
+
+    .wiki-article-body :is(h1, h2, h3, h4) {
+        @apply scroll-mt-24;
     }
 
     .wiki-article-body h1 {
-        @apply mt-6 mb-2 text-xl font-bold text-slate-900 first:mt-0;
+        @apply mt-8 mb-3 text-2xl font-bold text-slate-900 first:mt-0;
     }
 
     .wiki-article-body h2 {
-        @apply mt-6 mb-2 text-lg font-semibold text-slate-900 first:mt-0;
+        @apply mt-8 mb-3 border-b border-slate-100 pb-1 text-xl font-semibold text-slate-900 first:mt-0;
     }
 
     .wiki-article-body h3 {
-        @apply mt-4 mb-2 text-base font-semibold text-slate-900 first:mt-0;
+        @apply mt-6 mb-2 text-lg font-semibold text-slate-900 first:mt-0;
     }
 
     .wiki-article-body h4 {
-        @apply mt-4 mb-1 text-sm font-semibold text-slate-900 first:mt-0;
+        @apply mt-5 mb-1 text-base font-semibold text-slate-900 first:mt-0;
     }
 
     .wiki-article-body p {
-        @apply mb-3;
+        @apply mb-4;
     }
 
     .wiki-article-body ul {
-        @apply mb-3 list-disc pl-5 space-y-1;
+        @apply mb-4 list-disc pl-6 space-y-1.5 marker:text-slate-400;
     }
 
     .wiki-article-body ol {
-        @apply mb-3 list-decimal pl-5 space-y-1;
+        @apply mb-4 list-decimal pl-6 space-y-1.5 marker:text-slate-400;
+    }
+
+    .wiki-article-body li > ul,
+    .wiki-article-body li > ol {
+        @apply mt-1.5 mb-0;
     }
 
     .wiki-article-body blockquote {
-        @apply mb-3 border-l-4 border-slate-200 pl-3 text-slate-600;
+        @apply mb-4 rounded-r-lg border-l-4 border-slate-200 bg-slate-50 py-2 pl-4 pr-3 text-slate-600;
     }
 
     .wiki-article-body pre {
-        @apply mb-3 overflow-x-auto rounded-lg bg-slate-900 p-3 text-xs text-slate-100;
+        @apply mb-4 overflow-x-auto rounded-lg bg-slate-900 p-4 text-xs leading-relaxed text-slate-100;
     }
 
     .wiki-article-body code {
-        @apply rounded bg-slate-100 px-1 py-0.5 text-xs;
+        @apply rounded border border-slate-200 bg-slate-100 px-1 py-0.5 text-[0.85em] text-slate-800;
     }
 
     .wiki-article-body pre code {
-        @apply bg-transparent p-0 text-slate-100;
+        @apply border-0 bg-transparent p-0 text-slate-100;
     }
 
     .wiki-article-body hr {
-        @apply my-4 border-slate-200;
+        @apply my-6 border-slate-200;
     }
 
     .wiki-article-body img {
-        @apply my-3 max-w-full rounded-lg;
+        @apply my-4 max-w-full rounded-lg border border-slate-200;
     }
 
     .wiki-article-body table {
-        @apply mb-3 w-full border-collapse text-left text-sm;
+        @apply mb-4 block w-max max-w-full overflow-x-auto border-collapse text-left text-sm;
     }
 
     .wiki-article-body th,
     .wiki-article-body td {
-        @apply border border-slate-200 px-2 py-1 align-top;
+        @apply border border-slate-200 px-3 py-2 align-top;
     }
 
     .wiki-article-body th {
-        @apply bg-slate-50 font-semibold;
+        @apply bg-slate-50 font-semibold text-slate-800;
+    }
+
+    .wiki-article-body tbody tr:nth-child(even) {
+        @apply bg-slate-50/50;
     }
 
     .wiki-article-body a {
-        @apply text-orange-700 underline cursor-pointer;
+        @apply text-orange-700 underline decoration-orange-300 decoration-2 underline-offset-2 cursor-pointer transition-colors;
+    }
+
+    .wiki-article-body a:hover {
+        @apply text-orange-800 decoration-orange-600;
     }
 
     .wiki-article-body .wiki-link-broken {
@@ -166,7 +237,7 @@ body > #hiddenCopyElement,
     }
 
     .wiki-article-body .wiki-glossary {
-        @apply underline decoration-dotted underline-offset-2 cursor-help;
+        @apply underline decoration-dotted decoration-teal-400 underline-offset-2 cursor-help;
     }
 
     .wiki-article-body .wiki-callout {
@@ -193,12 +264,104 @@ body > #hiddenCopyElement,
         @apply mb-3 rounded-lg border border-dashed border-slate-300 bg-slate-50 px-3 py-2 text-xs text-slate-500;
     }
 
+    .wiki-link-row {
+        @apply flex w-full items-center gap-2 rounded-lg px-2 py-2 text-left text-slate-700 cursor-pointer transition-colors;
+    }
+
+    .wiki-link-row:hover {
+        @apply bg-orange-50 text-orange-800;
+    }
+
+    .wiki-link-row:focus-visible {
+        @apply outline-none ring-2 ring-orange-400 ring-offset-1;
+    }
+
+    .wiki-link-chevron {
+        @apply shrink-0 text-base text-slate-300 transition-transform;
+    }
+
+    .wiki-link-row:hover .wiki-link-chevron {
+        @apply translate-x-0.5 text-orange-500;
+    }
+
+    .wiki-toc-link {
+        @apply block w-full border-l-2 border-slate-100 py-1 pl-3 text-left text-slate-600 cursor-pointer transition-colors;
+    }
+
+    .wiki-toc-link:hover {
+        @apply border-orange-200 text-orange-700;
+    }
+
+    .wiki-toc-link:focus-visible {
+        @apply outline-none ring-2 ring-orange-400;
+    }
+
+    .wiki-toc-link-active {
+        @apply border-orange-500 font-semibold text-orange-700;
+    }
+
+    .wiki-search-input::-webkit-search-cancel-button {
+        @apply hidden;
+    }
+
+    .search-hit-mark {
+        @apply rounded bg-orange-100 px-0.5 font-semibold text-orange-900;
+    }
+
+    .wiki-toolbar-group {
+        @apply flex items-center gap-0.5 rounded-lg border border-slate-200 bg-white p-0.5;
+    }
+
     .wiki-toolbar-btn {
-        @apply flex items-center gap-1 rounded-md border border-slate-200 bg-white px-2 py-1 text-xs text-slate-700 cursor-pointer transition-colors;
+        @apply flex h-8 min-w-8 items-center justify-center gap-1 rounded-md px-2 text-xs font-medium text-slate-600 cursor-pointer transition-colors;
     }
 
     .wiki-toolbar-btn:hover {
-        @apply bg-slate-100;
+        @apply bg-slate-100 text-slate-900;
+    }
+
+    .wiki-toolbar-btn:active {
+        @apply bg-slate-200;
+    }
+
+    .wiki-toolbar-btn:focus-visible {
+        @apply outline-none ring-2 ring-orange-400;
+    }
+
+    .icon-btn {
+        @apply flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 cursor-pointer transition-colors;
+    }
+
+    .icon-btn:hover:not(:disabled) {
+        @apply border-slate-300 bg-slate-100 text-slate-800;
+    }
+
+    .icon-btn:focus-visible {
+        @apply outline-none ring-2 ring-orange-400;
+    }
+
+    .icon-btn:disabled {
+        @apply cursor-not-allowed opacity-40;
+    }
+
+    .icon-btn-danger:hover:not(:disabled) {
+        @apply border-red-200 bg-red-50 text-red-700;
+    }
+
+    .segmented {
+        @apply flex items-center gap-0.5 rounded-lg border border-slate-200 bg-slate-100 p-0.5;
+    }
+
+    .segmented-option {
+        @apply flex-1 rounded-md px-3 py-1.5 text-sm font-medium text-slate-600 cursor-pointer transition-colors;
+    }
+
+    .segmented-option:hover {
+        @apply text-slate-900;
+    }
+
+    .segmented-option-active {
+        @apply bg-white text-slate-900 shadow-sm;
     }
 
     .section-title {

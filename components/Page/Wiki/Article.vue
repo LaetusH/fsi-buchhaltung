@@ -2,10 +2,12 @@
   <Page :headline1="article?.title || t('wiki.title')" @open-menu="$emit('openMenu')">
     <template #header>
       <div class="flex flex-1 flex-wrap items-center justify-end gap-2">
-        <button type="button" class="btn-secondary xl:hidden" @click="treeOpen = true">
+        <button type="button" class="btn-secondary inline-flex items-center gap-1.5 xl:hidden" @click="treeOpen = true">
+          <Icon name="material-symbols:menu-book-outline-rounded" class="text-base" aria-hidden="true" />
           {{ t('wiki.tree.open') }}
         </button>
-        <button type="button" class="btn-secondary" @click="goBack">
+        <button type="button" class="btn-secondary inline-flex items-center gap-1.5" @click="goBack">
+          <Icon name="material-symbols:arrow-back-rounded" class="text-base" aria-hidden="true" />
           {{ hasExplicitReturn ? t('wiki.article.back') : t('wiki.article.backToWiki') }}
         </button>
         <a
@@ -13,22 +15,27 @@
           :href="`/api/wiki/articles/${article.id}/export-pdf`"
           target="_blank"
           rel="noopener noreferrer"
-          class="btn-secondary"
-        >{{ t('wiki.exportPdf') }}</a>
+          class="btn-secondary inline-flex items-center gap-1.5"
+        >
+          <Icon name="material-symbols:picture-as-pdf-outline-rounded" class="text-base" aria-hidden="true" />
+          {{ t('wiki.exportPdf') }}
+        </a>
         <button
           v-if="article && canEdit"
           type="button"
-          class="btn-secondary"
+          class="btn-secondary inline-flex items-center gap-1.5"
           @click="createSubarticle"
         >
+          <Icon name="material-symbols:note-add-outline-rounded" class="text-base" aria-hidden="true" />
           {{ t('wiki.article.newSubarticle') }}
         </button>
         <button
           v-if="article && canEdit"
           type="button"
-          class="btn-primary"
+          class="btn-primary inline-flex items-center gap-1.5"
           @click="editArticle"
         >
+          <Icon name="material-symbols:edit-outline-rounded" class="text-base" aria-hidden="true" />
           {{ t('wiki.article.edit') }}
         </button>
       </div>
@@ -36,7 +43,7 @@
 
     <template #cards>
       <aside class="hidden xl:col-span-3 xl:block">
-        <div class="rounded-xl bg-white p-4 shadow-lg">
+        <div class="scroll-panel sticky top-6 max-h-[calc(100vh-3rem)] overflow-y-auto rounded-xl bg-white p-4 pr-2 shadow-lg">
           <h2 class="section-title">{{ t('wiki.tree.title') }}</h2>
           <PageWikiTreeSidebar
             :spaces="spaces"
@@ -72,7 +79,14 @@
               </span>
             </div>
 
-            <div class="h-2 w-full overflow-hidden rounded-full bg-slate-200">
+            <div
+              class="h-2 w-full overflow-hidden rounded-full bg-slate-200"
+              role="progressbar"
+              :aria-valuenow="pathPercent"
+              aria-valuemin="0"
+              aria-valuemax="100"
+              :aria-label="t('wiki.path.progress', { done: path.doneCount, total: path.totalCount })"
+            >
               <div class="h-full rounded-full bg-orange-500 transition-all" :style="{ width: `${pathPercent}%` }"></div>
             </div>
 
@@ -80,13 +94,21 @@
           </div>
 
           <div class="-mx-6 space-y-4 bg-white p-4 shadow-sm sm:mx-0 sm:rounded-xl sm:p-6 sm:shadow-lg">
-            <nav class="flex flex-wrap items-center gap-1 text-xs text-slate-500">
+            <nav
+              class="flex flex-wrap items-center gap-x-1 gap-y-0.5 text-sm text-slate-500"
+              :aria-label="t('wiki.article.breadcrumb')"
+            >
               <template v-for="(crumb, position) in article.breadcrumbs" :key="`${crumb.type}-${crumb.id}`">
-                <span v-if="position > 0" aria-hidden="true">/</span>
+                <Icon
+                  v-if="position > 0"
+                  name="material-symbols:chevron-right-rounded"
+                  class="text-base text-slate-300"
+                  aria-hidden="true"
+                />
                 <button
                   v-if="crumb.type === 'article'"
                   type="button"
-                  class="cursor-pointer hover:text-slate-800"
+                  class="cursor-pointer rounded underline decoration-slate-300 underline-offset-2 transition-colors hover:text-orange-700 hover:decoration-orange-400"
                   @click="openArticleById(crumb.id!)"
                 >
                   {{ crumb.title }}
@@ -97,8 +119,8 @@
 
             <div class="flex flex-wrap items-start justify-between gap-3">
               <div class="min-w-0">
-                <h2 class="text-xl font-bold text-slate-900">{{ article.title }}</h2>
-                <p v-if="article.summary" class="mt-1 text-sm text-slate-600">{{ article.summary }}</p>
+                <h2 class="text-2xl font-bold tracking-tight text-slate-900">{{ article.title }}</h2>
+                <p v-if="article.summary" class="mt-2 max-w-[70ch] text-base leading-relaxed text-slate-600">{{ article.summary }}</p>
               </div>
               <CommonStatusBadge
                 v-if="article.status !== 'published'"
@@ -107,38 +129,70 @@
               />
             </div>
 
-            <div class="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-slate-500">
-              <span v-if="ownerLabel">{{ t('wiki.article.owner') }}: {{ ownerLabel }}</span>
-              <span v-if="article.publishedAt">{{ t('wiki.article.updatedAt', { date: formatDate(article.publishedAt) }) }}</span>
-              <span v-if="article.reviewedAt">{{ t('wiki.article.reviewedAt', { date: formatDate(article.reviewedAt) }) }}</span>
-              <span v-for="tag in article.tags" :key="tag.id" class="rounded-md bg-slate-100 px-2 py-0.5">{{ tag.label }}</span>
+            <div class="flex flex-wrap items-center gap-x-4 gap-y-1.5 border-t border-slate-100 pt-3 text-xs text-slate-500">
+              <span v-if="ownerLabel" class="inline-flex items-center gap-1">
+                <Icon name="material-symbols:person-outline-rounded" class="text-sm text-slate-400" aria-hidden="true" />
+                {{ t('wiki.article.owner') }}: {{ ownerLabel }}
+              </span>
+              <span v-if="article.publishedAt" class="inline-flex items-center gap-1">
+                <Icon name="material-symbols:update-rounded" class="text-sm text-slate-400" aria-hidden="true" />
+                {{ t('wiki.article.updatedAt', { date: formatDate(article.publishedAt) }) }}
+              </span>
+              <span v-if="article.reviewedAt" class="inline-flex items-center gap-1">
+                <Icon name="material-symbols:verified-outline-rounded" class="text-sm text-slate-400" aria-hidden="true" />
+                {{ t('wiki.article.reviewedAt', { date: formatDate(article.reviewedAt) }) }}
+              </span>
+              <span
+                v-for="tag in article.tags"
+                :key="tag.id"
+                class="rounded-full bg-slate-100 px-2 py-0.5 font-medium text-slate-600"
+              >{{ tag.label }}</span>
             </div>
 
-            <p v-if="article.isStale" class="rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-800">
+            <p
+              v-if="article.isStale"
+              class="flex items-start gap-2 rounded-lg border-l-4 border-amber-400 bg-amber-50 px-3 py-2 text-sm text-amber-900"
+            >
+              <Icon name="material-symbols:warning-outline-rounded" class="mt-0.5 shrink-0 text-base" aria-hidden="true" />
               {{ t('wiki.article.stale') }}
             </p>
-            <p v-if="article.hasDraft && canEdit" class="rounded-lg bg-sky-50 px-3 py-2 text-sm text-sky-800">
+            <p
+              v-if="article.hasDraft && canEdit"
+              class="flex items-start gap-2 rounded-lg border-l-4 border-sky-400 bg-sky-50 px-3 py-2 text-sm text-sky-900"
+            >
+              <Icon name="material-symbols:edit-note-rounded" class="mt-0.5 shrink-0 text-base" aria-hidden="true" />
               {{ t('wiki.article.hasDraft') }}
             </p>
           </div>
 
-          <div
+          <details
             v-if="article.headings.length > 1"
             class="-mx-6 bg-white p-4 shadow-sm sm:mx-0 sm:rounded-xl sm:p-6 sm:shadow-lg xl:hidden"
           >
-            <h3 class="section-title">{{ t('wiki.article.toc') }}</h3>
-            <PageWikiTableOfContents :headings="article.headings" />
-          </div>
+            <summary class="flex cursor-pointer list-none items-center [&::-webkit-details-marker]:hidden gap-2 text-sm font-semibold text-slate-800">
+              <Icon name="material-symbols:toc-rounded" class="text-base text-slate-400" aria-hidden="true" />
+              {{ t('wiki.article.toc') }}
+              <span class="text-xs font-normal text-slate-400">({{ article.headings.length }})</span>
+            </summary>
+            <div class="mt-3">
+              <PageWikiTableOfContents :headings="article.headings" />
+            </div>
+          </details>
 
           <div class="grid grid-cols-12 gap-5">
             <div class="col-span-12 xl:col-span-8">
-              <div class="-mx-6 bg-white p-4 shadow-sm sm:mx-0 sm:rounded-xl sm:p-6 sm:shadow-lg">
-                <p v-if="article.status !== 'published'" class="mb-4 rounded-lg bg-slate-100 px-3 py-2 text-sm text-slate-700">
+              <div class="-mx-6 bg-white p-4 shadow-sm sm:mx-0 sm:rounded-xl sm:p-6 sm:shadow-lg lg:p-8">
+                <p
+                  v-if="article.status !== 'published'"
+                  class="mb-5 flex items-start gap-2 rounded-lg bg-slate-100 px-3 py-2 text-sm text-slate-700"
+                >
+                  <Icon name="material-symbols:visibility-off-outline-rounded" class="mt-0.5 shrink-0 text-base text-slate-500" aria-hidden="true" />
                   {{ t('wiki.article.notPublished') }}
                 </p>
 
                 <PageWikiArticleBody
                   v-if="article.contentHtml"
+                  class="wiki-article-measure"
                   :html="article.contentHtml"
                   :links="article.links"
                   :article-id="article.id"
@@ -151,33 +205,47 @@
             <div class="col-span-12 space-y-5 xl:col-span-4">
               <div
                 v-if="article.headings.length > 1"
-                class="hidden rounded-xl bg-white p-6 shadow-lg xl:block"
+                class="scroll-panel hidden max-h-[calc(100vh-3rem)] overflow-y-auto rounded-xl bg-white p-6 shadow-lg xl:sticky xl:top-6 xl:block"
               >
-                <h3 class="section-title">{{ t('wiki.article.toc') }}</h3>
+                <h3 class="section-title flex items-center gap-1.5">
+                  <Icon name="material-symbols:toc-rounded" class="text-base text-slate-400" aria-hidden="true" />
+                  {{ t('wiki.article.toc') }}
+                </h3>
                 <PageWikiTableOfContents :headings="article.headings" />
               </div>
 
               <div v-if="article.children.length" class="-mx-6 bg-white p-4 shadow-sm sm:mx-0 sm:rounded-xl sm:p-6 sm:shadow-lg">
-                <h3 class="section-title">{{ t('wiki.article.subarticles') }}</h3>
-                <ul class="space-y-1 text-sm">
+                <h3 class="section-title flex items-center gap-1.5">
+                  <Icon name="material-symbols:account-tree-outline-rounded" class="text-base text-slate-400" aria-hidden="true" />
+                  {{ t('wiki.article.subarticles') }}
+                </h3>
+                <ul class="-mx-2 text-sm">
                   <li v-for="child in article.children" :key="child.id">
-                    <button type="button" class="cursor-pointer text-left text-orange-700 hover:underline" @click="openArticleById(child.id)">
-                      {{ child.title }}
+                    <button type="button" class="wiki-link-row" @click="openArticleById(child.id)">
+                      <span class="min-w-0 flex-1 truncate font-medium">{{ child.title }}</span>
+                      <Icon name="material-symbols:chevron-right-rounded" class="wiki-link-chevron" aria-hidden="true" />
                     </button>
                   </li>
                 </ul>
               </div>
 
               <div v-if="article.attachments.length" class="-mx-6 bg-white p-4 shadow-sm sm:mx-0 sm:rounded-xl sm:p-6 sm:shadow-lg">
-                <h3 class="section-title">{{ t('wiki.article.attachments') }}</h3>
-                <ul class="space-y-1 text-sm">
+                <h3 class="section-title flex items-center gap-1.5">
+                  <Icon name="material-symbols:attach-file-rounded" class="text-base text-slate-400" aria-hidden="true" />
+                  {{ t('wiki.article.attachments') }}
+                </h3>
+                <ul class="-mx-2 text-sm">
                   <li v-for="attachment in article.attachments" :key="attachment.attachmentId">
                     <a
                       :href="`/api/files/${attachment.fileId}`"
                       target="_blank"
                       rel="noopener noreferrer"
-                      class="text-orange-700 hover:underline"
-                    >{{ attachment.name }}</a>
+                      class="wiki-link-row"
+                    >
+                      <Icon name="material-symbols:draft-outline-rounded" class="shrink-0 text-base text-slate-400" aria-hidden="true" />
+                      <span class="min-w-0 flex-1 truncate font-medium">{{ attachment.name }}</span>
+                      <Icon name="material-symbols:download-rounded" class="wiki-link-chevron" aria-hidden="true" />
+                    </a>
                   </li>
                 </ul>
               </div>
@@ -187,49 +255,72 @@
           <div v-if="path && currentStep" class="flex flex-wrap items-center justify-between gap-3">
             <button
               type="button"
-              class="btn-secondary min-w-0 max-w-[45%]"
+              class="btn-secondary inline-flex min-w-0 max-w-[45%] items-center gap-1.5 disabled:opacity-60"
               :disabled="savingStep"
               @click="goToStep(-1)"
             >
-              <span class="block truncate">← {{ prevStep ? prevStep.title : t('wiki.path.prevStep') }}</span>
+              <Icon name="material-symbols:arrow-back-rounded" class="shrink-0 text-base" aria-hidden="true" />
+              <span class="truncate">{{ prevStep ? prevStep.title : t('wiki.path.prevStep') }}</span>
             </button>
 
             <button
               type="button"
-              class="text-sm cursor-pointer"
-              :class="currentStep.done ? 'text-emerald-700' : 'text-slate-500 hover:text-slate-800'"
+              class="inline-flex cursor-pointer items-center gap-1.5 rounded-lg border px-3 py-2 text-sm transition-colors disabled:opacity-60"
+              :class="currentStep.done
+                ? 'border-emerald-300 bg-emerald-50 text-emerald-700'
+                : 'border-slate-300 text-slate-600 hover:border-slate-400 hover:bg-slate-50'"
+              :aria-pressed="currentStep.done"
               :disabled="savingStep"
               @click="setStepDone(currentStep, !currentStep.done)"
             >
               <Icon
                 :name="currentStep.done ? 'material-symbols:check-circle-rounded' : 'material-symbols:circle-outline'"
-                class="mr-1 align-text-bottom text-base"
+                class="text-base"
+                aria-hidden="true"
               />
               {{ currentStep.done ? t('wiki.path.stepDone') : t('wiki.path.markDone') }}
             </button>
 
-            <button type="button" class="btn-primary" :disabled="savingStep" @click="goToStep(1)">
-              {{ nextStep ? t('wiki.path.nextStep') : t('wiki.path.finish') }} →
+            <button
+              type="button"
+              class="btn-primary inline-flex items-center gap-1.5 disabled:opacity-60"
+              :disabled="savingStep"
+              @click="goToStep(1)"
+            >
+              {{ nextStep ? t('wiki.path.nextStep') : t('wiki.path.finish') }}
+              <Icon
+                :name="nextStep ? 'material-symbols:arrow-forward-rounded' : 'material-symbols:flag-rounded'"
+                class="text-base"
+                aria-hidden="true"
+              />
             </button>
           </div>
 
-          <div v-else-if="article.prev || article.next" class="flex flex-wrap justify-between gap-3">
+          <div v-else-if="article.prev || article.next" class="grid gap-3 sm:grid-cols-2">
             <button
               v-if="article.prev"
               type="button"
-              class="btn-secondary"
+              class="flex cursor-pointer items-center gap-3 rounded-xl border border-slate-200 bg-white p-4 text-left transition-colors hover:border-orange-300 hover:bg-orange-50"
               @click="openArticleById(article.prev.id)"
             >
-              ← {{ article.prev.title }}
+              <Icon name="material-symbols:arrow-back-rounded" class="shrink-0 text-lg text-slate-400" aria-hidden="true" />
+              <span class="min-w-0">
+                <span class="block text-xs uppercase tracking-wide text-slate-400">{{ t('wiki.article.previous') }}</span>
+                <span class="block truncate font-medium text-slate-800">{{ article.prev.title }}</span>
+              </span>
             </button>
-            <span v-else></span>
+            <span v-else class="hidden sm:block"></span>
             <button
               v-if="article.next"
               type="button"
-              class="btn-secondary"
+              class="flex cursor-pointer items-center justify-end gap-3 rounded-xl border border-slate-200 bg-white p-4 text-right transition-colors hover:border-orange-300 hover:bg-orange-50 sm:col-start-2"
               @click="openArticleById(article.next.id)"
             >
-              {{ article.next.title }} →
+              <span class="min-w-0">
+                <span class="block text-xs uppercase tracking-wide text-slate-400">{{ t('wiki.article.next') }}</span>
+                <span class="block truncate font-medium text-slate-800">{{ article.next.title }}</span>
+              </span>
+              <Icon name="material-symbols:arrow-forward-rounded" class="shrink-0 text-lg text-slate-400" aria-hidden="true" />
             </button>
           </div>
         </template>

@@ -93,7 +93,14 @@
 
             <PageWikiEditorMarkdown v-model="form.markdown" :checklists="checklists" />
 
-            <p class="text-xs text-slate-500">{{ draftStateLabel }}</p>
+            <p v-if="draftStateLabel" class="flex items-center gap-1.5 text-xs text-slate-500">
+              <span
+                class="h-1.5 w-1.5 rounded-full"
+                :class="savingDraft ? 'bg-amber-400' : dirty ? 'bg-orange-500' : 'bg-emerald-500'"
+                aria-hidden="true"
+              ></span>
+              {{ draftStateLabel }}
+            </p>
           </div>
 
           <div v-show="activeTab === 'settings'" class="space-y-4">
@@ -189,14 +196,13 @@
               </div>
             </div>
 
-            <label class="flex items-center gap-2 text-sm text-slate-700">
+            <label
+              class="flex w-fit items-center gap-2 text-sm text-slate-700"
+              :class="readOnly ? 'cursor-default' : 'cursor-pointer'"
+            >
               <input v-model="owner.createGrant" type="checkbox" class="checkbox" :disabled="readOnly" />
               {{ t('wiki.editor.fields.createOwnerGrant') }}
             </label>
-
-            <div v-if="!readOnly" class="flex justify-end">
-              <button type="button" class="btn-secondary" @click="saveOwner">{{ t('wiki.editor.save') }}</button>
-            </div>
           </div>
 
           <div v-show="activeTab === 'checklists'">
@@ -214,7 +220,7 @@
               v-if="!readOnly"
               ref="fileInputRef"
               type="file"
-              class="input"
+              class="input cursor-pointer file:mr-3 file:cursor-pointer file:rounded-md file:border-0 file:bg-slate-100 file:px-3 file:py-1 file:text-sm file:font-medium file:text-slate-700 hover:file:bg-slate-200"
               accept="application/pdf,image/png,image/jpeg"
               @change="uploadAttachment"
             />
@@ -233,8 +239,15 @@
                   rel="noopener noreferrer"
                   class="min-w-0 truncate text-orange-700 hover:underline"
                 >{{ attachment.name }}</a>
-                <button v-if="!readOnly" type="button" class="btn-secondary" @click="removeAttachment(attachment.attachmentId)">
-                  {{ t('wiki.attachments.remove') }}
+                <button
+                  v-if="!readOnly"
+                  type="button"
+                  class="inline-flex shrink-0 cursor-pointer items-center gap-1.5 rounded-lg px-2 py-1 text-red-700 transition-colors hover:bg-red-50"
+                  :title="t('wiki.attachments.remove')"
+                  :aria-label="t('wiki.attachments.remove')"
+                  @click="removeAttachment(attachment.attachmentId)"
+                >
+                  <Icon name="material-symbols:delete-outline-rounded" class="text-base" aria-hidden="true" />
                 </button>
               </li>
             </ul>
@@ -254,29 +267,73 @@
             />
           </div>
 
-          <div class="flex flex-wrap justify-end gap-2 border-t border-slate-200 pt-4">
-            <button type="button" class="btn-secondary" @click="cancel">{{ t('wiki.editor.cancel') }}</button>
+          <div class="flex flex-wrap items-center gap-2 border-t border-slate-200 pt-4">
+            <button
+              v-if="!isCreate && !readOnly"
+              type="button"
+              class="inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-red-200 px-4 py-2 text-sm text-red-700 transition-colors hover:bg-red-50"
+              @click="confirmArchive = true"
+            >
+              <Icon name="material-symbols:archive-outline-rounded" class="text-base" aria-hidden="true" />
+              {{ t('wiki.editor.archive') }}
+            </button>
+
+            <span class="flex-1"></span>
+
+            <button type="button" class="btn-secondary inline-flex items-center gap-1.5" @click="cancel">
+              <Icon name="material-symbols:close-rounded" class="text-base" aria-hidden="true" />
+              {{ t('wiki.editor.cancel') }}
+            </button>
 
             <template v-if="isCreate">
-              <button type="button" class="btn-primary" :disabled="saving" @click="create">
+              <button
+                type="button"
+                class="btn-primary inline-flex items-center gap-1.5 disabled:opacity-60"
+                :disabled="saving"
+                @click="create"
+              >
+                <Icon name="material-symbols:add-rounded" class="text-base" aria-hidden="true" />
                 {{ t('wiki.editor.create') }}
               </button>
             </template>
 
             <template v-else-if="!readOnly">
-              <button type="button" class="btn-secondary" :disabled="saving" @click="saveDraft(true)">
+              <button
+                type="button"
+                class="btn-secondary inline-flex items-center gap-1.5 disabled:opacity-60"
+                :disabled="saving"
+                @click="saveDraft(true)"
+              >
+                <Icon name="material-symbols:save-outline-rounded" class="text-base" aria-hidden="true" />
                 {{ t('wiki.editor.save') }}
               </button>
-              <button type="button" class="btn-secondary" @click="confirmArchive = true">
-                {{ t('wiki.editor.archive') }}
-              </button>
-              <button v-if="canMarkReviewed" type="button" class="btn-secondary" @click="markReviewed">
+              <button
+                v-if="canMarkReviewed"
+                type="button"
+                class="btn-secondary inline-flex items-center gap-1.5"
+                @click="markReviewed"
+              >
+                <Icon name="material-symbols:verified-outline-rounded" class="text-base" aria-hidden="true" />
                 {{ t('wiki.editor.markReviewed') }}
               </button>
-              <button v-if="mustSubmit" type="button" class="btn-primary" :disabled="saving" @click="submitReview">
+              <button
+                v-if="mustSubmit"
+                type="button"
+                class="btn-primary inline-flex items-center gap-1.5 disabled:opacity-60"
+                :disabled="saving"
+                @click="submitReview"
+              >
+                <Icon name="material-symbols:send-outline-rounded" class="text-base" aria-hidden="true" />
                 {{ t('wiki.editor.submitReview') }}
               </button>
-              <button v-else type="button" class="btn-primary" :disabled="saving" @click="publish">
+              <button
+                v-else
+                type="button"
+                class="btn-primary inline-flex items-center gap-1.5 disabled:opacity-60"
+                :disabled="saving"
+                @click="publish"
+              >
+                <Icon name="material-symbols:publish-rounded" class="text-base" aria-hidden="true" />
                 {{ t('wiki.editor.publish') }}
               </button>
             </template>
@@ -359,6 +416,18 @@ const owner = reactive({
   subdivisionId: null as number | null,
   createGrant: true,
 })
+
+function snapshotOwner() {
+  return JSON.stringify({
+    positionId: owner.positionId,
+    subdivisionId: owner.subdivisionId,
+    createGrant: owner.createGrant,
+  })
+}
+
+// The owner lives behind its own endpoint, so it is tracked separately but saved together with
+// the draft - one "save" for the whole editor.
+let savedOwnerSnapshot = snapshotOwner()
 
 const dirty = ref(false)
 const savingDraft = ref(false)
@@ -505,6 +574,7 @@ async function loadArticle() {
   dirty.value = false
   loading.value = false
   savedSnapshot = snapshotForm()
+  savedOwnerSnapshot = snapshotOwner()
 
   await nextTick()
   suppressAutosave = false
@@ -526,7 +596,10 @@ async function saveDraft(explicit: boolean) {
   if (isCreate.value || readOnly.value || articleId.value === null) return
   if (!explicit && !dirty.value) return
 
-  if (snapshotForm() === savedSnapshot) {
+  const contentChanged = snapshotForm() !== savedSnapshot
+  const ownerChanged = snapshotOwner() !== savedOwnerSnapshot
+
+  if (!contentChanged && !ownerChanged) {
     dirty.value = false
     return
   }
@@ -535,25 +608,30 @@ async function saveDraft(explicit: boolean) {
   errors.value = []
 
   try {
-    const res = await $fetch<{ ok: boolean, error?: string }>(`/api/wiki/articles/${articleId.value}`, {
-      method: 'PUT',
-      body: {
-        title: form.title,
-        slug: form.slug,
-        summary: form.summary,
-        parentId: form.parentId,
-        draftMd: form.markdown,
-        reviewIntervalDays: form.reviewIntervalDays === '' ? null : Number(form.reviewIntervalDays),
-      },
-    })
+    if (!await persistOwner()) return
 
-    if (!res.ok) {
-      errors.value = [res.error ?? t('wiki.errors.saveFailed')]
-      return
+    if (contentChanged) {
+      const res = await $fetch<{ ok: boolean, error?: string }>(`/api/wiki/articles/${articleId.value}`, {
+        method: 'PUT',
+        body: {
+          title: form.title,
+          slug: form.slug,
+          summary: form.summary,
+          parentId: form.parentId,
+          draftMd: form.markdown,
+          reviewIntervalDays: form.reviewIntervalDays === '' ? null : Number(form.reviewIntervalDays),
+        },
+      })
+
+      if (!res.ok) {
+        errors.value = [res.error ?? t('wiki.errors.saveFailed')]
+        return
+      }
+
+      savedSnapshot = snapshotForm()
     }
 
     dirty.value = false
-    savedSnapshot = snapshotForm()
     lastSavedAt.value = new Date()
     if (explicit) toast.success(t('wiki.editor.savedToast'))
   } finally {
@@ -670,8 +748,10 @@ async function archive() {
   goToReturnTarget()
 }
 
-async function saveOwner() {
-  if (articleId.value === null) return
+/** Persists the owner assignment when it changed. Returns false when the server rejected it. */
+async function persistOwner() {
+  if (articleId.value === null) return false
+  if (snapshotOwner() === savedOwnerSnapshot) return true
 
   const res = await $fetch<{ ok: boolean, error?: string }>(`/api/wiki/articles/${articleId.value}/owner`, {
     method: 'PUT',
@@ -684,10 +764,11 @@ async function saveOwner() {
 
   if (!res.ok) {
     errors.value = [res.error ?? t('wiki.errors.saveFailed')]
-    return
+    return false
   }
 
-  await saveDraft(true)
+  savedOwnerSnapshot = snapshotOwner()
+  return true
 }
 
 async function uploadAttachment(event: Event) {
@@ -735,7 +816,13 @@ function onBeforeUnload(event: BeforeUnloadEvent) {
   event.returnValue = ''
 }
 
-watch(() => [form.title, form.slug, form.summary, form.markdown, form.parentId, form.reviewIntervalDays], scheduleAutosave)
+watch(
+  () => [
+    form.title, form.slug, form.summary, form.markdown, form.parentId, form.reviewIntervalDays,
+    owner.positionId, owner.subdivisionId, owner.createGrant,
+  ],
+  scheduleAutosave,
+)
 
 onMounted(() => {
   if (import.meta.client) window.addEventListener('beforeunload', onBeforeUnload)

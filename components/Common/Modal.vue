@@ -12,7 +12,7 @@
       <section
         :class="[
           'w-full rounded-xl bg-white p-4 sm:p-6 shadow-xl',
-          'max-h-[calc(100vh-2rem)] overflow-y-auto overscroll-none',
+          'scroll-panel max-h-[calc(100vh-2rem)] overflow-y-auto overscroll-none',
           widthClass,
           panelClass,
         ]"
