@@ -2,6 +2,7 @@ import { defineEventHandler, readBody } from 'h3'
 import { query, withAuditTransaction } from '~/server/utils/db'
 import { requirePermission } from '~/server/utils/api/guards'
 import { requireArticleWrite } from '~/server/utils/wiki/access'
+import { applyOwnerGrants } from '~/server/utils/wiki/grants'
 
 export type SetWikiOwnerResponse = { ok: true } | { ok: false, error: string }
 
@@ -42,16 +43,13 @@ export default defineEventHandler(async (event): Promise<SetWikiOwnerResponse> =
 
       if (!createGrant) return
 
-      for (const [subjectType, subjectId] of [['position', positionId], ['subdivision', subdivisionId]] as const) {
-        if (!subjectId) continue
-        await query(
-          `INSERT IGNORE INTO wiki_access_grants
-             (scope_type, scope_id, include_descendants, subject_type, subject_id, subject_key, access_level, created_by)
-           VALUES ('article', ?, 1, ?, ?, '', 'write', ?)`,
-          [articleId, subjectType, subjectId, current.user.id],
-          conn,
-        )
-      }
+      await applyOwnerGrants(
+        'article',
+        articleId,
+        { ownerPositionId: positionId, ownerSubdivisionId: subdivisionId },
+        Number(current.user.id),
+        conn,
+      )
     })
 
     return { ok: true }

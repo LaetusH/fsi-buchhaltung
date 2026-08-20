@@ -1,5 +1,5 @@
 <template>
-  <Page :headline1="headline" :flush-header-with-cards="tabs.length > 1" @open-menu="$emit('openMenu')">
+  <Page :headline1="headline" :flush-header-with-cards="tabs.length > 1" :help-section="currentTab" @open-menu="$emit('openMenu')">
     <template v-if="tabs.length > 1" #header="{ headerContainerRef, headlineGroupRef }">
       <CommonTabOverview
         v-model="currentTab"

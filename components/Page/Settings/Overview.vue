@@ -1,5 +1,5 @@
 <template>
-  <Page :headline1="t('settings.title')" flush-header-with-cards @open-menu="$emit('openMenu')">
+  <Page :headline1="t('settings.title')" flush-header-with-cards :help-section="currentTab" @open-menu="$emit('openMenu')">
     <template #header="{ headerContainerRef, headlineGroupRef }">
       <CommonTabOverview
         v-model="currentTab"

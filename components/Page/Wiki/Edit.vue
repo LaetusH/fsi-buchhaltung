@@ -2,6 +2,7 @@
   <Page
     :headline1="isCreate ? t('wiki.editor.titleNew') : t('wiki.editor.titleEdit')"
     :flush-header-with-cards="!isCreate"
+    :help-section="activeTab"
     @open-menu="$emit('openMenu')"
   >
     <template #header="{ headerContainerRef, headlineGroupRef }">

@@ -1,5 +1,5 @@
 <template>
-  <Page @open-menu="$emit('openMenu')">
+  <Page no-help @open-menu="$emit('openMenu')">
     <template #cards>
       <div class="col-span-12 min-w-0">
         <div class="-mb-6 space-y-6">
@@ -35,19 +35,23 @@
                   </div>
                 </div>
 
-                <div class="grid min-w-48 gap-2 text-sm">
-                  <div class="rounded-lg bg-white/10 px-3 py-2">
-                    <p class="text-xs text-slate-300">{{ t('event.planning.readiness') }}</p>
-                    <p class="text-lg font-semibold">{{ planningProgress }}%</p>
-                    <div class="mt-2 h-2 rounded-full bg-white/15">
-                      <div class="h-2 rounded-full bg-orange-400" :style="{ width: `${planningProgress}%` }" />
+                <div class="flex min-w-48 items-start gap-2">
+                  <PageWikiHelpButton dark :section="helpSection" />
+
+                  <div class="grid flex-1 gap-2 text-sm">
+                    <div class="rounded-lg bg-white/10 px-3 py-2">
+                      <p class="text-xs text-slate-300">{{ t('event.planning.readiness') }}</p>
+                      <p class="text-lg font-semibold">{{ planningProgress }}%</p>
+                      <div class="mt-2 h-2 rounded-full bg-white/15">
+                        <div class="h-2 rounded-full bg-orange-400" :style="{ width: `${planningProgress}%` }" />
+                      </div>
+                      <p v-if="daysToEvent !== null" class="mt-2 flex items-center gap-1.5 text-xs font-semibold text-slate-300">
+                        <Icon name="material-symbols:schedule-rounded" class="text-sm text-slate-400" />
+                        <template v-if="daysToEvent > 0">{{ t('event.planning.daysUntilEvent', { days: daysToEvent }) }}</template>
+                        <template v-else-if="daysToEvent === 0">{{ t('event.planning.eventToday') }}</template>
+                        <template v-else>{{ t('event.planning.daysPastEvent', { days: Math.abs(daysToEvent) }) }}</template>
+                      </p>
                     </div>
-                    <p v-if="daysToEvent !== null" class="mt-2 flex items-center gap-1.5 text-xs font-semibold text-slate-300">
-                      <Icon name="material-symbols:schedule-rounded" class="text-sm text-slate-400" />
-                      <template v-if="daysToEvent > 0">{{ t('event.planning.daysUntilEvent', { days: daysToEvent }) }}</template>
-                      <template v-else-if="daysToEvent === 0">{{ t('event.planning.eventToday') }}</template>
-                      <template v-else>{{ t('event.planning.daysPastEvent', { days: Math.abs(daysToEvent) }) }}</template>
-                    </p>
                   </div>
                 </div>
               </div>
@@ -469,6 +473,8 @@ watch(
   () => pageMeta.value?.tab as EventPlanningTabKey | undefined,
   (val) => { if (val) activeTab.value = val },
 )
+const helpSection = computed(() => (eventId.value ? activeTab.value : 'details'))
+
 watch(activeTab, () => { window.scrollTo({ top: 0, behavior: 'instant' }) })
 watch([activeTab, eventId], ([tab, id]) => {
   if (id) window.location.hash = `EventCreate?eventId=${id}&tab=${tab}`

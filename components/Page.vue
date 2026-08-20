@@ -25,6 +25,7 @@
           />
         </button>
         <h1 v-if="headline1" class="text-2xl font-bold">{{ headline1 }}</h1>
+        <PageWikiHelpButton v-if="!noHelp" :section="helpSection" />
       </div>
 
       <slot name="header" v-bind="{ headerContainerRef, headlineGroupRef }"></slot>
@@ -49,6 +50,11 @@ defineEmits<{
 defineProps({
   headline1: String,
   flushHeaderWithCards: {
+    type: Boolean,
+    default: false,
+  },
+  helpSection: String,
+  noHelp: {
     type: Boolean,
     default: false,
   },

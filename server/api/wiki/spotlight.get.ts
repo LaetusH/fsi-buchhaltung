@@ -2,10 +2,12 @@ import { defineEventHandler } from 'h3'
 import { query } from '~/server/utils/db'
 import { requirePermission } from '~/server/utils/api/guards'
 import { filterVisibleArticles, getWikiAccess } from '~/server/utils/wiki/access'
+import { loadPathViews, pickRecommendedPath } from '~/server/utils/wiki/paths'
 import type { WikiHomeArticle } from '~/server/api/wiki/home.get'
+import type { WikiPathView } from '~/types/wiki'
 
 export type WikiSpotlightResponse =
-  | { ok: true, recentlyPublished: WikiHomeArticle[] }
+  | { ok: true, recentlyPublished: WikiHomeArticle[], recommendedPath: WikiPathView | null }
   | { ok: false, error: string }
 
 interface SpotlightRow {
@@ -36,8 +38,11 @@ export default defineEventHandler(async (event): Promise<WikiSpotlightResponse> 
        LIMIT 60`,
     )
 
+    const paths = await loadPathViews(index, subjects)
+
     return {
       ok: true,
+      recommendedPath: pickRecommendedPath(paths),
       recentlyPublished: filterVisibleArticles(index, subjects, rows).slice(0, 3).map(row => ({
         id: Number(row.id),
         title: row.title,

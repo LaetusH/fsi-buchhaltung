@@ -4,7 +4,7 @@ const currentPage = ref<PageName>('Home')
 const pageMeta = ref<Record<string, any> | null>(null)
 
 // Only these meta keys are persisted in the URL hash; ephemeral keys like returnTarget are excluded
-const HASH_META_KEYS = ['eventId', 'tab', 'articleId', 'slug']
+const HASH_META_KEYS = ['eventId', 'tab', 'articleId', 'slug', 'pathId']
 
 function buildHash(page: PageName, meta: Record<string, any> | null): string {
   const params = new URLSearchParams()

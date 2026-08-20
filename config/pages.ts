@@ -26,6 +26,8 @@ import NotificationCreatePage from '~/components/Page/Notifications/Create.vue'
 import WikiHomePage from '~/components/Page/Wiki/Home.vue'
 import WikiArticlePage from '~/components/Page/Wiki/Article.vue'
 import WikiArticleEditPage from '~/components/Page/Wiki/Edit.vue'
+import WikiPathPage from '~/components/Page/Wiki/Path.vue'
+import WikiAdminPage from '~/components/Page/Wiki/Admin.vue'
 
 // Do not display more than 8 pages at once
 export const PAGES: Record<string, AppPage> = {
@@ -56,4 +58,6 @@ export const PAGES: Record<string, AppPage> = {
   Wiki: { main: true, labelKey: 'pages.wiki', component: WikiHomePage, icon: 'material-symbols:menu-book-rounded', permissions: ['wiki.view'] },
   WikiArticle: { main: false, labelKey: 'pages.wikiArticle', component: WikiArticlePage, permissions: ['wiki.view'], preserveOnRefresh: true },
   WikiArticleEdit: { main: false, labelKey: 'pages.wikiArticleEdit', component: WikiArticleEditPage, permissions: ['wiki.view'], preserveOnRefresh: true },
+  WikiPath: { main: false, labelKey: 'pages.wikiPath', component: WikiPathPage, permissions: ['wiki.view'], preserveOnRefresh: true },
+  WikiAdmin: { main: false, labelKey: 'pages.wikiAdmin', component: WikiAdminPage, permissions: ['wiki.manage'], preserveOnRefresh: true },
 }

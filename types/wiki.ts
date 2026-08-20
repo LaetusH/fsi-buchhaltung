@@ -121,6 +121,87 @@ export interface WikiPathAudience {
   subdivision_id: number | null
 }
 
+export interface WikiPathItemView {
+  id: number
+  articleId: number
+  title: string
+  summary: string
+  note: string
+  spaceTitle: string
+  position: number
+  done: boolean
+  completedAt: string | null
+}
+
+export interface WikiPathAudienceView {
+  positionId: number | null
+  positionName: string | null
+  subdivisionId: number | null
+  subdivisionName: string | null
+}
+
+export interface WikiPathView {
+  id: number
+  slug: string
+  title: string
+  description: string
+  icon: string
+  position: number
+  isPublished: boolean
+  /** The path's audience matches the reader (or it has no audience at all). */
+  recommended: boolean
+  items: WikiPathItemView[]
+  audiences: WikiPathAudienceView[]
+  doneCount: number
+  totalCount: number
+  /** First not-yet-completed step — what the "weiter" button opens. */
+  nextItem: WikiPathItemView | null
+}
+
+export interface WikiPathItemInput {
+  /** Existing item id — kept so progress survives an edit. */
+  id?: number | null
+  articleId: number
+  note: string
+}
+
+export interface WikiPathAudienceInput {
+  positionId: number | null
+  subdivisionId: number | null
+}
+
+export interface WikiPathInput {
+  slug: string
+  title: string
+  description: string
+  icon: string
+  isPublished: boolean
+  items: WikiPathItemInput[]
+  audiences: WikiPathAudienceInput[]
+}
+
+export interface WikiPathAdminView extends WikiPathInput {
+  id: number
+  position: number
+  items: Array<WikiPathItemInput & { id: number, title: string, spaceTitle: string, missing: boolean }>
+}
+
+export interface WikiSpaceAdminView {
+  id: number
+  slug: string
+  title: string
+  description: string
+  icon: string
+  position: number
+  requiresReview: boolean
+  isArchived: boolean
+  ownerPositionId: number | null
+  ownerPositionName: string | null
+  ownerSubdivisionId: number | null
+  ownerSubdivisionName: string | null
+  articleCount: number
+}
+
 export interface WikiChecklist {
   id: number
   article_id: number

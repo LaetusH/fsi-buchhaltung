@@ -16,13 +16,17 @@ export default defineEventHandler(async (event): Promise<DeleteWikiSpaceResponse
   const { index } = await getWikiAccess(event, current.user)
   if (!index.spaceIds.has(spaceId)) return { ok: false, error: 'Der Bereich wurde nicht gefunden.' }
 
-  const articleIds = [...index.articles.values()]
-    .filter(article => article.spaceId === spaceId)
-    .map(article => article.id)
+  const articleCount = [...index.articles.values()].filter(article => article.spaceId === spaceId).length
+
+  if (articleCount) {
+    return {
+      ok: false,
+      error: 'Dieser Bereich enthält noch Artikel. Bitte archiviere ihn, statt ihn zu löschen.',
+    }
+  }
 
   try {
     await withAuditTransaction(current.user, async (conn) => {
-      await deleteScopeGrants('article', articleIds, conn)
       await deleteScopeGrants('space', [spaceId], conn)
       await query('DELETE FROM wiki_spaces WHERE id = ?', [spaceId], conn)
     })

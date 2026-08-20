@@ -216,5 +216,17 @@ export async function resolveArticleIdBySlug(spaceSlug: string, slug: string): P
      LIMIT 1`,
     [spaceSlug, slug],
   )
-  return rows[0] ? Number(rows[0].id) : null
+  if (rows[0]) return Number(rows[0].id)
+
+  const spaceRows = await query<Array<{ id: number }>>(
+    'SELECT id FROM wiki_spaces WHERE slug = ? LIMIT 1',
+    [spaceSlug],
+  )
+  if (spaceRows.length) return null
+
+  const fallback = await query<Array<{ id: number }>>(
+    `SELECT id FROM wiki_articles WHERE slug = ? ORDER BY status = 'published' DESC, id LIMIT 1`,
+    [slug],
+  )
+  return fallback[0] ? Number(fallback[0].id) : null
 }

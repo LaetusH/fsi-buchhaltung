@@ -127,7 +127,7 @@ const TABLES = [
       slug VARCHAR(100) NOT NULL UNIQUE,
       title VARCHAR(200) NOT NULL,
       description VARCHAR(1000) NOT NULL DEFAULT '',
-      icon VARCHAR(100) NOT NULL DEFAULT 'material-symbols:footprint-rounded',
+      icon VARCHAR(100) NOT NULL DEFAULT 'material-symbols:hiking-rounded',
       position SMALLINT UNSIGNED NOT NULL DEFAULT 0,
       is_published TINYINT(1) NOT NULL DEFAULT 0,
       created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,

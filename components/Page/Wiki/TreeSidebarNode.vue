@@ -46,7 +46,7 @@
       <span v-if="canMove" class="flex shrink-0">
         <button
           type="button"
-          class="rounded-md p-0.5 text-slate-400 hover:bg-slate-100 cursor-pointer"
+          class="inline-flex items-center justify-center rounded-md p-0.5 text-slate-400 hover:bg-slate-100 cursor-pointer"
           :aria-label="t('wiki.tree.moveUp')"
           @click="$emit('nudge', { id: article.id, direction: -1 })"
         >
@@ -54,7 +54,7 @@
         </button>
         <button
           type="button"
-          class="rounded-md p-0.5 text-slate-400 hover:bg-slate-100 cursor-pointer"
+          class="inline-flex items-center justify-center rounded-md p-0.5 text-slate-400 hover:bg-slate-100 cursor-pointer"
           :aria-label="t('wiki.tree.moveDown')"
           @click="$emit('nudge', { id: article.id, direction: 1 })"
         >

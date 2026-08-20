@@ -3,7 +3,8 @@ import { query } from '~/server/utils/db'
 import { requirePermission } from '~/server/utils/api/guards'
 import { filterVisibleArticles, getEffectiveLevel, getWikiAccess, levelAtLeast } from '~/server/utils/wiki/access'
 import { buildVisibleTree, isStale, loadSpaceRows, loadTreeArticleRows } from '~/server/utils/wiki/articles'
-import type { WikiTreeSpace } from '~/types/wiki'
+import { loadPathViews } from '~/server/utils/wiki/paths'
+import type { WikiPathView, WikiTreeSpace } from '~/types/wiki'
 
 export interface WikiHomeArticle {
   id: number
@@ -19,6 +20,7 @@ export type WikiHomeResponse =
   | {
       ok: true
       spaces: WikiTreeSpace[]
+      paths: WikiPathView[]
       recentlyUpdated: WikiHomeArticle[]
       recentlyRead: WikiHomeArticle[]
       staleCount: number
@@ -54,7 +56,11 @@ export default defineEventHandler(async (event): Promise<WikiHomeResponse> => {
 
   try {
     const { index, subjects } = await getWikiAccess(event, current.user)
-    const [spaceRows, treeRows] = await Promise.all([loadSpaceRows(), loadTreeArticleRows()])
+    const [spaceRows, treeRows, paths] = await Promise.all([
+      loadSpaceRows(),
+      loadTreeArticleRows(),
+      loadPathViews(index, subjects, { includeUnpublished: subjects.canManage }),
+    ])
 
     const canEditSomewhere = levelAtLeast(subjects.globalLevel, 'write')
       || treeRows.some(row => levelAtLeast(getEffectiveLevel(index, subjects, Number(row.id)), 'write'))
@@ -99,6 +105,7 @@ export default defineEventHandler(async (event): Promise<WikiHomeResponse> => {
     return {
       ok: true,
       spaces,
+      paths: paths.filter(path => path.totalCount > 0),
       recentlyUpdated: filterVisibleArticles(index, subjects, updatedRows).slice(0, 6).map(toHomeArticle),
       recentlyRead: filterVisibleArticles(index, subjects, readRows).slice(0, 6).map(toHomeArticle),
       staleCount,

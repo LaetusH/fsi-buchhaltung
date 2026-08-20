@@ -5,8 +5,8 @@
         <button type="button" class="btn-secondary xl:hidden" @click="treeOpen = true">
           {{ t('wiki.tree.open') }}
         </button>
-        <button type="button" class="btn-secondary" @click="goToWiki">
-          {{ t('wiki.article.backToWiki') }}
+        <button type="button" class="btn-secondary" @click="goBack">
+          {{ hasExplicitReturn ? t('wiki.article.back') : t('wiki.article.backToWiki') }}
         </button>
         <button
           v-if="article && canEdit"
@@ -49,6 +49,29 @@
         <CommonValidationSummary v-else-if="error" :errors="[error]" :title="t('wiki.article.notFoundTitle')" />
 
         <template v-else-if="article">
+          <div
+            v-if="path && currentStep"
+            class="-mx-6 space-y-3 bg-white p-4 shadow-sm sm:mx-0 sm:rounded-xl sm:p-6 sm:shadow-lg"
+          >
+            <div class="flex flex-wrap items-center justify-between gap-2">
+              <div class="flex min-w-0 items-center gap-2">
+                <Icon :name="path.icon" class="shrink-0 text-lg text-slate-500" aria-hidden="true" />
+                <button type="button" class="cursor-pointer truncate font-semibold text-slate-900 hover:underline" @click="openPath">
+                  {{ path.title }}
+                </button>
+              </div>
+              <span class="text-xs text-slate-500">
+                {{ t('wiki.path.stepOf', { number: currentIndex + 1, total: path.items.length }) }}
+              </span>
+            </div>
+
+            <div class="h-2 w-full overflow-hidden rounded-full bg-slate-200">
+              <div class="h-full rounded-full bg-orange-500 transition-all" :style="{ width: `${pathPercent}%` }"></div>
+            </div>
+
+            <p v-if="currentStep.note" class="text-sm text-slate-600">{{ currentStep.note }}</p>
+          </div>
+
           <div class="-mx-6 space-y-4 bg-white p-4 shadow-sm sm:mx-0 sm:rounded-xl sm:p-6 sm:shadow-lg">
             <nav class="flex flex-wrap items-center gap-1 text-xs text-slate-500">
               <template v-for="(crumb, position) in article.breadcrumbs" :key="`${crumb.type}-${crumb.id}`">
@@ -154,7 +177,36 @@
             </div>
           </div>
 
-          <div v-if="article.prev || article.next" class="flex flex-wrap justify-between gap-3">
+          <div v-if="path && currentStep" class="flex flex-wrap items-center justify-between gap-3">
+            <button
+              type="button"
+              class="btn-secondary min-w-0 max-w-[45%]"
+              :disabled="savingStep"
+              @click="goToStep(-1)"
+            >
+              <span class="block truncate">← {{ prevStep ? prevStep.title : t('wiki.path.prevStep') }}</span>
+            </button>
+
+            <button
+              type="button"
+              class="text-sm cursor-pointer"
+              :class="currentStep.done ? 'text-emerald-700' : 'text-slate-500 hover:text-slate-800'"
+              :disabled="savingStep"
+              @click="setStepDone(currentStep, !currentStep.done)"
+            >
+              <Icon
+                :name="currentStep.done ? 'material-symbols:check-circle-rounded' : 'material-symbols:circle-outline'"
+                class="mr-1 align-text-bottom text-base"
+              />
+              {{ currentStep.done ? t('wiki.path.stepDone') : t('wiki.path.markDone') }}
+            </button>
+
+            <button type="button" class="btn-primary" :disabled="savingStep" @click="goToStep(1)">
+              {{ nextStep ? t('wiki.path.nextStep') : t('wiki.path.finish') }} →
+            </button>
+          </div>
+
+          <div v-else-if="article.prev || article.next" class="flex flex-wrap justify-between gap-3">
             <button
               v-if="article.prev"
               type="button"
@@ -193,7 +245,8 @@ import { useToast } from '~/composables/useToast'
 import type { WikiReorderItem } from './TreeSidebar.vue'
 import type { WikiArticleDetailPayload, WikiArticleDetailResult } from '~/server/utils/wiki/detail'
 import type { WikiTreeResponse } from '~/server/api/wiki/tree.get'
-import type { WikiTreeSpace } from '~/types/wiki'
+import type { WikiPathDetailResponse } from '~/server/api/wiki/paths/[id].get'
+import type { WikiPathItemView, WikiPathView, WikiTreeSpace } from '~/types/wiki'
 
 defineEmits<{
   (e: 'openMenu'): void
@@ -203,13 +256,34 @@ const { t } = useI18n()
 const { formatDate } = useLocaleFormatters()
 const { pageMeta, setPage } = usePage()
 const toast = useToast()
-useReturnTarget('Wiki')
+const { goToReturnTarget } = useReturnTarget('Wiki')
+
+const hasExplicitReturn = computed(() => Boolean(pageMeta.value?.returnTarget))
 
 const article = ref<WikiArticleDetailPayload | null>(null)
 const spaces = ref<WikiTreeSpace[]>([])
 const loading = ref(true)
 const error = ref('')
 const treeOpen = ref(false)
+
+const pathId = computed(() => (pageMeta.value?.pathId ? Number(pageMeta.value.pathId) : null))
+const path = ref<WikiPathView | null>(null)
+const savingStep = ref(false)
+
+const currentIndex = computed(() => {
+  if (!path.value || !article.value) return -1
+  return path.value.items.findIndex(item => item.articleId === article.value!.id)
+})
+const currentStep = computed(() => (currentIndex.value >= 0 ? path.value!.items[currentIndex.value] : null))
+const prevStep = computed(() => (currentIndex.value > 0 ? path.value!.items[currentIndex.value - 1] : null))
+const nextStep = computed(() => {
+  if (!path.value || currentIndex.value < 0) return null
+  return path.value.items[currentIndex.value + 1] ?? null
+})
+const pathPercent = computed(() => {
+  if (!path.value?.totalCount) return 0
+  return Math.round((path.value.doneCount / path.value.totalCount) * 100)
+})
 
 const canEdit = computed(() => article.value?.accessLevel === 'write' || article.value?.accessLevel === 'admin')
 
@@ -267,8 +341,68 @@ function openFromDrawer(target: { id: number, slug: string, spaceSlug: string })
   openArticle(target)
 }
 
-function goToWiki() {
-  setPage('Wiki')
+function goBack() {
+  goToReturnTarget()
+}
+
+async function loadPath() {
+  if (pathId.value === null) {
+    path.value = null
+    return
+  }
+
+  const res = await $fetch<WikiPathDetailResponse>(`/api/wiki/paths/${pathId.value}`)
+  path.value = res.ok ? res.path : null
+}
+
+async function setStepDone(step: WikiPathItemView, done: boolean) {
+  if (pathId.value === null) return false
+
+  savingStep.value = true
+  try {
+    const res = await $fetch<{ ok: boolean, error?: string }>(`/api/wiki/paths/${pathId.value}/progress`, {
+      method: 'POST',
+      body: { itemId: step.id, done },
+    })
+
+    if (!res.ok) {
+      toast.error(res.error ?? t('wiki.errors.saveFailed'))
+      return false
+    }
+
+    await loadPath()
+    return true
+  } finally {
+    savingStep.value = false
+  }
+}
+
+async function goToStep(direction: -1 | 1) {
+  const step = currentStep.value
+  if (!step || pathId.value === null) return
+
+  if (direction === 1 && !step.done && !await setStepDone(step, true)) return
+
+  const target = direction === 1 ? nextStep.value : prevStep.value
+
+  if (!target) {
+    if (direction === 1) {
+      const complete = path.value && path.value.doneCount === path.value.totalCount
+      if (complete) toast.success(t('wiki.path.completedToast'))
+    }
+    setPage('WikiPath', { pathId: pathId.value })
+    return
+  }
+
+  setPage('WikiArticle', {
+    articleId: target.articleId,
+    pathId: pathId.value,
+    returnTarget: buildReturnTarget('WikiPath', { pathId: pathId.value }),
+  })
+}
+
+function openPath() {
+  if (pathId.value !== null) setPage('WikiPath', { pathId: pathId.value })
 }
 
 async function saveOrder(items: WikiReorderItem[]) {
@@ -308,6 +442,8 @@ watch(
   () => { loadArticle() },
   { immediate: true },
 )
+
+watch(pathId, () => { loadPath() }, { immediate: true })
 
 loadTree()
 </script>

@@ -2,8 +2,8 @@
   <Page :headline1="t('wiki.title')" @open-menu="$emit('openMenu')">
     <template #header>
       <div class="flex flex-1 flex-wrap justify-end gap-2">
-        <button v-if="canManage" type="button" class="btn-secondary" @click="spaceModalOpen = true">
-          {{ t('wiki.space.create') }}
+        <button v-if="canManage" type="button" class="btn-secondary" @click="setPage('WikiAdmin')">
+          {{ t('wiki.admin.title') }}
         </button>
         <button v-if="canEdit" type="button" class="btn-primary" @click="createArticle">
           {{ t('wiki.home.newArticle') }}
@@ -23,6 +23,56 @@
         class="col-span-12 rounded-xl bg-amber-50 px-4 py-3 text-sm text-amber-800"
       >
         {{ t('wiki.home.staleBanner', { count: staleCount }) }}
+      </div>
+
+      <div
+        v-if="visiblePaths.length"
+        class="-mx-6 space-y-4 bg-white p-4 shadow-sm col-span-12 sm:mx-0 sm:rounded-xl sm:p-6 sm:shadow-lg"
+      >
+        <div>
+          <h2 class="text-base font-semibold sm:text-lg">
+            {{ recommendedPaths.length ? t('wiki.path.recommended') : t('wiki.path.more') }}
+          </h2>
+          <p class="text-sm text-slate-600">{{ t('wiki.path.recommendedHint') }}</p>
+        </div>
+
+        <div class="grid gap-3 sm:grid-cols-2">
+          <button
+            v-for="path in recommendedPaths.length ? recommendedPaths : otherPaths"
+            :key="path.id"
+            type="button"
+            class="cursor-pointer rounded-lg border border-slate-200 p-4 text-left transition hover:bg-slate-50"
+            @click="openPath(path.id)"
+          >
+            <span class="flex items-center gap-2">
+              <Icon :name="path.icon" class="shrink-0 text-lg text-slate-500" aria-hidden="true" />
+              <span class="min-w-0 flex-1 truncate font-semibold text-slate-900">{{ path.title }}</span>
+              <span v-if="!path.isPublished" class="shrink-0 text-xs text-amber-700">{{ t('wiki.admin.paths.draft') }}</span>
+            </span>
+            <span v-if="path.description" class="mt-1 block text-sm text-slate-600">{{ path.description }}</span>
+
+            <span class="mt-3 block text-xs text-slate-500">
+              {{ t('wiki.path.progress', { done: path.doneCount, total: path.totalCount }) }}
+            </span>
+            <span class="mt-1 block h-2 w-full overflow-hidden rounded-full bg-slate-200">
+              <span
+                class="block h-full rounded-full bg-orange-500"
+                :style="{ width: `${percent(path)}%` }"
+              ></span>
+            </span>
+          </button>
+        </div>
+
+        <details v-if="recommendedPaths.length && otherPaths.length" class="text-sm">
+          <summary class="cursor-pointer text-slate-600">{{ t('wiki.path.more') }}</summary>
+          <ul class="mt-2 space-y-1">
+            <li v-for="path in otherPaths" :key="path.id">
+              <button type="button" class="cursor-pointer text-left text-orange-700 hover:underline" @click="openPath(path.id)">
+                {{ path.title }}
+              </button>
+            </li>
+          </ul>
+        </details>
       </div>
 
       <div class="col-span-12 xl:col-span-8">
@@ -89,8 +139,6 @@
       </div>
     </template>
   </Page>
-
-  <PageWikiSpaceCreateModal v-model="spaceModalOpen" @created="load" />
 </template>
 
 <script setup lang="ts">
@@ -101,7 +149,7 @@ import { useAuth } from '~/composables/useAuth'
 import { usePage } from '~/composables/usePage'
 import { buildReturnTarget } from '~/composables/useReturnTarget'
 import type { WikiHomeArticle, WikiHomeResponse } from '~/server/api/wiki/home.get'
-import type { WikiTreeSpace } from '~/types/wiki'
+import type { WikiPathView, WikiTreeSpace } from '~/types/wiki'
 
 defineEmits<{
   (e: 'openMenu'): void
@@ -115,12 +163,23 @@ const { setPage } = usePage()
 const spaces = ref<WikiTreeSpace[]>([])
 const recentlyUpdated = ref<WikiHomeArticle[]>([])
 const recentlyRead = ref<WikiHomeArticle[]>([])
+const paths = ref<WikiPathView[]>([])
 const staleCount = ref(0)
 const loading = ref(true)
 const canEdit = ref(false)
-const spaceModalOpen = ref(false)
-
 const canManage = computed(() => hasPermission('wiki.manage'))
+
+const recommendedPaths = computed(() => paths.value.filter(path => path.recommended))
+const otherPaths = computed(() => paths.value.filter(path => !path.recommended))
+const visiblePaths = computed(() => paths.value)
+
+function percent(path: WikiPathView) {
+  return path.totalCount ? Math.round((path.doneCount / path.totalCount) * 100) : 0
+}
+
+function openPath(pathId: number) {
+  setPage('WikiPath', { pathId })
+}
 
 function openArticle(articleId: number) {
   setPage('WikiArticle', { articleId })
@@ -136,6 +195,7 @@ async function load() {
     const res = await $fetch<WikiHomeResponse>('/api/wiki/home')
     if (!res.ok) return
     spaces.value = res.spaces
+    paths.value = res.paths
     recentlyUpdated.value = res.recentlyUpdated
     recentlyRead.value = res.recentlyRead
     staleCount.value = res.staleCount

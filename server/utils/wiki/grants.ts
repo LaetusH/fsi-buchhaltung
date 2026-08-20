@@ -140,6 +140,30 @@ export async function loadScopeOwner(
   }
 }
 
+export async function applyOwnerGrants(
+  scopeType: WikiScopeType,
+  scopeId: number,
+  owner: ScopeOwner,
+  createdBy: number,
+  conn: mariadb.PoolConnection,
+) {
+  const subjects = [
+    ['position', owner.ownerPositionId],
+    ['subdivision', owner.ownerSubdivisionId],
+  ] as const
+
+  for (const [subjectType, subjectId] of subjects) {
+    if (!subjectId) continue
+    await query(
+      `INSERT IGNORE INTO wiki_access_grants
+         (scope_type, scope_id, include_descendants, subject_type, subject_id, subject_key, access_level, created_by)
+       VALUES (?, ?, 1, ?, ?, '', 'write', ?)`,
+      [scopeType, scopeId, subjectType, subjectId, createdBy],
+      conn,
+    )
+  }
+}
+
 export function isOwnerDerivedGrant(grant: WikiAccessGrant, owner: ScopeOwner): boolean {
   if (grant.access_level !== 'write' || !grant.include_descendants) return false
   if (grant.subject_type === 'position') return owner.ownerPositionId !== null && Number(grant.subject_id) === owner.ownerPositionId

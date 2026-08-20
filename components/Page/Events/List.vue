@@ -1,5 +1,5 @@
 <template>
-  <Page @open-menu="$emit('openMenu')">
+  <Page no-help @open-menu="$emit('openMenu')">
     <template #cards>
       <PageEventsListPanel :return-target="returnTarget" />
     </template>
