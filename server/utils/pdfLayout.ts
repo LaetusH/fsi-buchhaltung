@@ -10,6 +10,7 @@ import {
   wrapTextByWidth,
   type PdfImage,
   type PdfImageObject,
+  type PdfColor,
   type PdfLine,
   type PdfRect,
   type PdfText,
@@ -84,14 +85,15 @@ export function createPdfDocumentLayout(params: {
     },
 
     /** Pushes a horizontally centered text line at the given baseline. */
-    centeredText(text: string, options: { y: number, size: number, font?: PdfText['font'], gray?: number }) {
+    centeredText(text: string, options: { y: number, size: number, font?: PdfText['font'], gray?: number, color?: PdfColor }) {
       page.texts.push({
-        x: PDF_LAYOUT.headingCenterX - (estimateTextWidth(text, options.size, options.font === 'F2') / 2),
+        x: PDF_LAYOUT.headingCenterX - (estimateTextWidth(text, options.size, false, options.font) / 2),
         y: options.y,
         size: options.size,
         text,
         font: options.font,
         gray: options.gray,
+        color: options.color,
       })
     },
 

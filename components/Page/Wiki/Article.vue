@@ -8,6 +8,13 @@
         <button type="button" class="btn-secondary" @click="goBack">
           {{ hasExplicitReturn ? t('wiki.article.back') : t('wiki.article.backToWiki') }}
         </button>
+        <a
+          v-if="article"
+          :href="`/api/wiki/articles/${article.id}/export-pdf`"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="btn-secondary"
+        >{{ t('wiki.exportPdf') }}</a>
         <button
           v-if="article && canEdit"
           type="button"

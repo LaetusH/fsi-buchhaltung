@@ -33,6 +33,15 @@
         :loading="embedsLoading"
       />
     </Teleport>
+
+    <Teleport v-for="entry in glossaryMounts" :key="entry.id" :to="entry.el">
+      <PageWikiGlossaryTerm
+        :term-key="entry.termKey"
+        :label="entry.label"
+        :article-id="articleId ?? null"
+        :preview="preview"
+      />
+    </Teleport>
   </div>
 </template>
 
@@ -72,6 +81,13 @@ interface ChecklistMount {
   keySlug: string
 }
 
+interface GlossaryMount {
+  id: number
+  el: HTMLElement
+  termKey: string
+  label: string
+}
+
 interface EmbedMount {
   id: number
   el: HTMLElement
@@ -83,6 +99,7 @@ const containerRef = ref<HTMLElement | null>(null)
 const toolMounts = ref<ToolMount[]>([])
 const embedMounts = ref<EmbedMount[]>([])
 const checklistMounts = ref<ChecklistMount[]>([])
+const glossaryMounts = ref<GlossaryMount[]>([])
 const embedResults = ref<Record<number, WikiEmbedResult | null>>({})
 const embedsLoading = ref(false)
 
@@ -160,9 +177,22 @@ function collectMounts(container: HTMLElement) {
     })
   }
 
+  const glossary: GlossaryMount[] = []
+  for (const node of container.querySelectorAll<HTMLElement>('[data-wiki-glossary]')) {
+    const label = node.textContent ?? ''
+    node.textContent = ''
+    glossary.push({
+      id: nextId++,
+      el: node,
+      termKey: node.getAttribute('data-wiki-glossary') ?? '',
+      label,
+    })
+  }
+
   toolMounts.value = tools
   embedMounts.value = embeds
   checklistMounts.value = checklists
+  glossaryMounts.value = glossary
 }
 
 async function resolveEmbeds() {
@@ -228,6 +258,7 @@ watch(() => props.html, () => {
   toolMounts.value = []
   embedMounts.value = []
   checklistMounts.value = []
+  glossaryMounts.value = []
   embedResults.value = {}
 })
 

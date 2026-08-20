@@ -262,7 +262,8 @@ function wikiReferenceRule(state: any, silent: boolean) {
   const env = state.env.wiki as RenderEnv
   const kind = (match[1] ?? '').toLowerCase()
   const [rawTarget, rawLabel] = (match[2] ?? '').split('|')
-  const target = (rawTarget ?? '').trim().toLowerCase()
+  const targetRaw = (rawTarget ?? '').trim()
+  const target = targetRaw.toLowerCase()
   const label = (rawLabel ?? '').trim()
 
   if (kind === 'wiki') {
@@ -281,7 +282,7 @@ function wikiReferenceRule(state: any, silent: boolean) {
     }
     env.glossaryTerms.push(target)
     const token = state.push('wiki_glossary_ref', '', 0)
-    token.meta = { term: target, label }
+    token.meta = { term: target, label, display: targetRaw }
   }
 
   state.pos = end + 2
@@ -340,8 +341,8 @@ function createRenderer() {
   }
 
   md.renderer.rules.wiki_glossary_ref = (tokens: any[], index: number) => {
-    const { term, label } = tokens[index].meta
-    return `<span class="wiki-glossary" data-wiki-glossary="${escape(term)}">${escape(label || term)}</span>`
+    const { term, label, display } = tokens[index].meta
+    return `<span class="wiki-glossary" data-wiki-glossary="${escape(term)}">${escape(label || display || term)}</span>`
   }
 
   return md
@@ -440,4 +441,19 @@ export function renderArticle(markdown: string, options: WikiRenderOptions = {})
     glossaryTerms: env.glossaryTerms,
     headings: env.headings,
   }
+}
+
+export function parseArticleTokens(markdown: string, options: WikiRenderOptions = {}): any[] {
+  const env: RenderEnv = {
+    errors: [],
+    embeds: [],
+    toolLinks: [],
+    checklists: [],
+    articleLinks: [],
+    glossaryTerms: [],
+    headings: [],
+    knownChecklists: options.knownChecklists ?? null,
+  }
+
+  return renderer.parse(markdown ?? '', { wiki: env })
 }

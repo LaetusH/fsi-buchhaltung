@@ -153,7 +153,7 @@ const TAB_SECTIONS: Record<string, string[]> = {
   Finances: ['receipts', 'invoices', 'cashCounts', 'reimbursements', 'bankStatements', 'budgets'],
   MemberList: ['list', 'myData', 'fieldConfig'],
   Settings: ['general', 'association', 'spheres', 'costCentres', 'subdivisions', 'positions', 'users', 'permissions', 'app', 'notifications'],
-  WikiAdmin: ['spaces', 'paths', 'pageHelp'],
+  WikiAdmin: ['spaces', 'paths', 'glossary', 'pageHelp', 'stale'],
   WikiArticleEdit: ['content', 'checklists', 'settings', 'attachments', 'access', 'history'],
 }
 

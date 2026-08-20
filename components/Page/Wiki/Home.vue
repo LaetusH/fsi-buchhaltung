@@ -2,6 +2,9 @@
   <Page :headline1="t('wiki.title')" @open-menu="$emit('openMenu')">
     <template #header>
       <div class="flex flex-1 flex-wrap justify-end gap-2">
+        <button type="button" class="btn-secondary" @click="openGlossary">
+          {{ t('wiki.glossary.title') }}
+        </button>
         <button v-if="canManage" type="button" class="btn-secondary" @click="setPage('WikiAdmin')">
           {{ t('wiki.admin.title') }}
         </button>
@@ -20,9 +23,15 @@
 
       <div
         v-if="staleCount > 0"
-        class="col-span-12 rounded-xl bg-amber-50 px-4 py-3 text-sm text-amber-800"
+        class="col-span-12 space-y-3 rounded-xl bg-amber-50 px-4 py-3 text-sm text-amber-800"
       >
-        {{ t('wiki.home.staleBanner', { count: staleCount }) }}
+        <div class="flex flex-wrap items-center justify-between gap-2">
+          <span>{{ t('wiki.home.staleBanner', { count: staleCount }) }}</span>
+          <button type="button" class="cursor-pointer font-medium hover:underline" @click="staleOpen = !staleOpen">
+            {{ staleOpen ? t('wiki.home.staleHide') : t('wiki.home.staleShow') }}
+          </button>
+        </div>
+        <PageWikiStaleList v-if="staleOpen" return-page="Wiki" />
       </div>
 
       <div
@@ -90,7 +99,14 @@
             >
               <div class="flex items-center gap-2">
                 <Icon :name="space.icon" class="h-5 w-5 text-slate-500" aria-hidden="true" />
-                <h3 class="font-semibold text-slate-900">{{ space.title }}</h3>
+                <h3 class="min-w-0 flex-1 font-semibold text-slate-900">{{ space.title }}</h3>
+                <a
+                  :href="`/api/wiki/spaces/${space.id}/export-pdf`"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="shrink-0 text-xs text-slate-500 hover:text-slate-800 hover:underline"
+                  :title="t('wiki.home.exportSpacePdf')"
+                >{{ t('wiki.exportPdf') }}</a>
               </div>
               <p v-if="space.description" class="mt-1 text-sm text-slate-600">{{ space.description }}</p>
 
@@ -165,6 +181,7 @@ const recentlyUpdated = ref<WikiHomeArticle[]>([])
 const recentlyRead = ref<WikiHomeArticle[]>([])
 const paths = ref<WikiPathView[]>([])
 const staleCount = ref(0)
+const staleOpen = ref(false)
 const loading = ref(true)
 const canEdit = ref(false)
 const canManage = computed(() => hasPermission('wiki.manage'))
@@ -183,6 +200,10 @@ function openPath(pathId: number) {
 
 function openArticle(articleId: number) {
   setPage('WikiArticle', { articleId })
+}
+
+function openGlossary() {
+  setPage('WikiGlossary', { returnTarget: buildReturnTarget('Wiki') })
 }
 
 function createArticle() {

@@ -80,6 +80,20 @@
             {{ checklist.title }}
             <span class="ml-1 text-xs text-slate-400">{{ checklist.keySlug }}</span>
           </button>
+          <div class="px-3 py-1 text-xs font-semibold text-slate-500">{{ t('wiki.editor.toolbar.insertGlossary') }}</div>
+          <p v-if="!glossaryTerms.length" class="px-3 py-1 text-xs text-slate-400">
+            {{ t('wiki.editor.toolbar.noGlossaryTerms') }}
+          </p>
+          <button
+            v-for="entry in glossaryTerms"
+            :key="`glossary:${entry.key}`"
+            type="button"
+            :class="styling"
+            @click="chooseInsert(`glossary:${entry.key}`)"
+          >
+            {{ entry.term }}
+            <span class="ml-1 text-xs text-slate-400">{{ entry.key }}</span>
+          </button>
         </template>
       </MenuDropdown>
     </div>
@@ -132,7 +146,9 @@ import { useI18n } from '~/composables/useI18n'
 import { PAGES } from '~/config/pages'
 import { WIKI_EMBEDS } from '~/config/wikiEmbeds'
 import { useAuth } from '~/composables/useAuth'
+import { useWikiGlossary } from '~/composables/useWikiGlossary'
 import type { PreviewResponse } from '~/server/api/wiki/preview.post'
+import type { GlossaryTermView } from '~/server/utils/wiki/glossary'
 import type { WikiChecklistView } from '~/types/wiki'
 
 const props = withDefaults(defineProps<{
@@ -148,6 +164,7 @@ const emit = defineEmits<{
 
 const { t } = useI18n()
 const { hasPermission } = useAuth()
+const { loadGlossary } = useWikiGlossary()
 
 const TABLE_SNIPPET = '| Spalte | Spalte |\n| --- | --- |\n| Wert | Wert |'
 
@@ -159,6 +176,9 @@ const previewHtml = ref('')
 const previewError = ref('')
 const embeds = WIKI_EMBEDS
 const checklists = computed(() => props.checklists)
+const glossaryTerms = ref<GlossaryTermView[]>([])
+
+loadGlossary().then((terms) => { glossaryTerms.value = terms })
 
 const toolPages = Object.entries(PAGES)
   .filter(([, page]) => !page.permissions.length || hasPermission(page.permissions))
@@ -205,6 +225,10 @@ function chooseInsert(value: string) {
   openInsertMenu.value = null
 
   const [kind, key = ''] = value.split(':')
+  if (kind === 'glossary') {
+    replaceSelection(selected => ({ text: `[[glossar:${key}${selected ? `|${selected}` : ''}]]` }))
+    return
+  }
   if (kind === 'checklist') {
     insertBlock(`:::checklist{id="${key}"}`)
     return

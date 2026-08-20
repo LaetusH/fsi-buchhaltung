@@ -1,13 +1,18 @@
 import { deflateSync, inflateSync } from 'zlib'
 
+export type PdfFontName = 'F1' | 'F2' | 'F3' | 'F4' | 'F5'
+
+export type PdfColor = [number, number, number]
+
 export interface PdfText {
   x: number
   y: number
   size: number
   text: string
-  font?: 'F1' | 'F2' | 'F3'
+  font?: PdfFontName
   align?: 'left' | 'right'
   gray?: number
+  color?: PdfColor
 }
 
 export interface PdfLine {
@@ -17,6 +22,7 @@ export interface PdfLine {
   y2: number
   width?: number
   gray?: number
+  color?: PdfColor
 }
 
 export interface PdfRect {
@@ -27,6 +33,9 @@ export interface PdfRect {
   fill?: boolean
   stroke?: boolean
   gray?: number
+  color?: PdfColor
+  borderGray?: number
+  borderColor?: PdfColor
 }
 
 export interface PdfImage {
@@ -53,13 +62,75 @@ function escapePdfText(value: string) {
     .replaceAll(')', '\\)')
 }
 
+const WINANSI_SPECIALS: Record<string, number> = {
+  '€': 0x80, '‚': 0x82, 'ƒ': 0x83, '„': 0x84, '…': 0x85, '†': 0x86,
+  '‡': 0x87, 'ˆ': 0x88, '‰': 0x89, 'Š': 0x8A, '‹': 0x8B, 'Œ': 0x8C,
+  'Ž': 0x8E, '‘': 0x91, '’': 0x92, '“': 0x93, '”': 0x94, '•': 0x95,
+  '–': 0x96, '—': 0x97, '˜': 0x98, '™': 0x99, 'š': 0x9A, '›': 0x9B,
+  'œ': 0x9C, 'ž': 0x9E, 'Ÿ': 0x9F,
+}
+
+const PDF_TRANSLITERATIONS: Record<string, string> = {
+  '→': '->', '←': '<-', '↑': '^', '↓': 'v', '↔': '<->', '↵': '<-',
+  '⇒': '=>', '⇐': '<=', '⇔': '<=>',
+  '✓': '[x]', '✔': '[x]', '☑': '[x]', '☐': '[ ]', '✗': '[-]', '✘': '[-]',
+  '≥': '>=', '≤': '<=', '≠': '!=', '≈': '~', '≡': '=', '∞': 'oo',
+  '−': '-', '‐': '-', '‑': '-', '‒': '-', '―': '-', '⁄': '/',
+  '′': "'", '″': '"', '‵': "'",
+  '★': '*', '☆': '*', '▪': '-', '▫': '-', '●': '•', '○': 'o',
+  '▶': '>', '►': '>', '‣': '>', '⁃': '-', '№': 'Nr.',
+}
+
+function isDroppableSymbol(code: number) {
+  return (code >= 0x2600 && code <= 0x27BF)
+    || (code >= 0x2B00 && code <= 0x2BFF)
+    || (code >= 0xFE00 && code <= 0xFE0F)
+    || (code >= 0x1F000 && code <= 0x1FAFF)
+}
+
+const COMBINING_MARKS = /[̀-ͯ]/g
+
+function mapPdfChar(char: string): string {
+  const code = char.codePointAt(0) ?? 0
+
+  if (code === 0x09) return ' '
+  if (code === 0x0A || code === 0x0D) return char
+  if (code < 0x20) return ''
+  if (code <= 0x7E) return char
+  if (code <= 0x9F) return ''
+  if (code === 0x00A0) return ' '
+  if (code === 0x00AD) return ''
+  if (code <= 0x00FF) return char
+  if (WINANSI_SPECIALS[char] !== undefined) return char
+
+  const replacement = PDF_TRANSLITERATIONS[char]
+  if (replacement !== undefined) return replacement
+  if (isDroppableSymbol(code)) return ''
+
+  const folded = char.normalize('NFD').replace(COMBINING_MARKS, '')
+  if (folded && folded !== char) return toPdfText(folded)
+
+  return '?'
+}
+
+const PDF_SAFE_TEXT = /^[\n\r\x20-\x7E¡-¬®-ÿ]*$/
+
+export function toPdfText(value: string) {
+  const text = String(value ?? '')
+  if (PDF_SAFE_TEXT.test(text)) return text
+
+  let out = ''
+  for (const char of text) out += mapPdfChar(char)
+  return out
+}
+
 function encodePdfChar(char: string) {
-  if (char === '€') return '\x80'
-  return Buffer.from(char, 'latin1').toString('binary')
+  const code = WINANSI_SPECIALS[char] ?? char.codePointAt(0) ?? 0x3F
+  return String.fromCharCode(code > 0xFF ? 0x3F : code)
 }
 
 function encodePdfText(value: string) {
-  return [...escapePdfText(value)].map(encodePdfChar).join('')
+  return [...escapePdfText(toPdfText(value))].map(encodePdfChar).join('')
 }
 
 const PREFERRED_BREAK_CHARS = new Set([' ', '.', '-', '_', '@', '/', ',', ';', ':'])
@@ -162,24 +233,60 @@ const HELVETICA_BOLD_WIDTHS: Record<string, number> = {
   '§': 611, '·': 278, '€': 556, '°': 400,
 }
 
-export function estimateTextWidth(text: string, size: number, bold = false) {
+const HELVETICA_EXTRA_WIDTHS: Record<string, number> = {
+  '¡': 333, '¢': 556, '£': 556, '¤': 556, '¥': 556, '¦': 260, '¨': 333, '©': 737,
+  'ª': 370, '«': 556, '¬': 584, '®': 737, '¯': 333, '±': 584, '²': 333, '³': 333,
+  '´': 333, 'µ': 556, '¶': 537, '¸': 333, '¹': 333, 'º': 365, '»': 556,
+  '¼': 834, '½': 834, '¾': 834, '¿': 611, 'Æ': 1000, 'Ð': 722, '×': 584, 'Ø': 778,
+  'Þ': 667, 'æ': 889, 'ð': 556, '÷': 584, 'ø': 611, 'þ': 556,
+  'Œ': 1000, 'œ': 944, 'Š': 667, 'š': 500, 'Ž': 611, 'ž': 500, 'Ÿ': 667, 'ƒ': 556,
+  'ˆ': 333, '˜': 333, '‚': 222, '„': 333, '‘': 222, '’': 222, '“': 333, '”': 333,
+  '‹': 333, '›': 333, '–': 556, '—': 1000, '†': 556, '‡': 556, '•': 350,
+  '…': 1000, '‰': 1000, '™': 1000,
+}
+
+const HELVETICA_BOLD_EXTRA_WIDTHS: Record<string, number> = {
+  '¡': 333, '¢': 556, '£': 556, '¤': 556, '¥': 556, '¦': 280, '¨': 333, '©': 737,
+  'ª': 370, '«': 556, '¬': 584, '®': 737, '¯': 333, '±': 584, '²': 333, '³': 333,
+  '´': 333, 'µ': 611, '¶': 556, '¸': 333, '¹': 333, 'º': 365, '»': 556,
+  '¼': 834, '½': 834, '¾': 834, '¿': 611, 'Æ': 1000, 'Ð': 722, '×': 584, 'Ø': 778,
+  'Þ': 667, 'æ': 889, 'ð': 611, '÷': 584, 'ø': 611, 'þ': 611,
+  'Œ': 1000, 'œ': 611, 'Š': 667, 'š': 556, 'Ž': 611, 'ž': 500, 'Ÿ': 667, 'ƒ': 556,
+  'ˆ': 333, '˜': 333, '‚': 278, '„': 500, '‘': 278, '’': 278, '“': 500, '”': 500,
+  '‹': 333, '›': 333, '–': 556, '—': 1000, '†': 556, '‡': 556, '•': 350,
+  '…': 1000, '‰': 1000, '™': 1000,
+}
+
+const COURIER_WIDTH = 600
+
+function glyphWidth(char: string, bold: boolean) {
   const table = bold ? HELVETICA_BOLD_WIDTHS : HELVETICA_WIDTHS
-  let units = 0
+  const extra = bold ? HELVETICA_BOLD_EXTRA_WIDTHS : HELVETICA_EXTRA_WIDTHS
 
-  for (const char of text) {
-    const glyphWidth = table[char]
-    if (glyphWidth !== undefined) {
-      units += glyphWidth / 1000
-      continue
-    }
+  const direct = table[char] ?? extra[char]
+  if (direct !== undefined) return direct / 1000
 
-    // Fallback heuristic for characters outside the known metrics table.
-    if ('ilIjtfr'.includes(char)) units += 0.32
-    else if ('mwMW@%'.includes(char)) units += 0.92
-    else if (' .,:;|!'.includes(char)) units += 0.24
-    else if ('-_()/\\[]{}+'.includes(char)) units += 0.4
-    else units += 0.58
+  const folded = char.normalize('NFD').replace(COMBINING_MARKS, '')
+  if (folded.length === 1 && folded !== char) {
+    const base = table[folded] ?? extra[folded]
+    if (base !== undefined) return base / 1000
   }
+
+  // Fallback heuristic for characters outside the known metrics table.
+  if ('ilIjtfr'.includes(char)) return 0.32
+  if ('mwMW@%'.includes(char)) return 0.92
+  if (' .,:;|!'.includes(char)) return 0.24
+  if ('-_()/[]{}+'.includes(char)) return 0.4
+  return 0.58
+}
+
+export function estimateTextWidth(text: string, size: number, bold = false, font?: PdfFontName) {
+  const printable = toPdfText(text)
+  if (font === 'F4') return (printable.length * COURIER_WIDTH * size) / 1000
+
+  const useBold = bold || font === 'F2' || font === 'F5'
+  let units = 0
+  for (const char of printable) units += glyphWidth(char, useBold)
 
   return units * size
 }
@@ -287,21 +394,32 @@ export function centeredTextBaseline(topY: number, bottomY: number, fontSize: nu
   return ((topY + bottomY) / 2) - (fontSize * 0.3)
 }
 
+function fillColorOp(entry: { gray?: number, color?: PdfColor }) {
+  if (!entry.color) return `${entry.gray ?? 0} g`
+  return `${entry.color.map(component => Math.min(1, Math.max(0, component))).join(' ')} rg`
+}
+
+function strokeColorOp(entry: { gray?: number, color?: PdfColor }) {
+  if (!entry.color) return `${entry.gray ?? 0} G`
+  return `${entry.color.map(component => Math.min(1, Math.max(0, component))).join(' ')} RG`
+}
+
 export function drawText(entries: PdfText[]) {
   return entries.map((entry) => {
-    const isBold = entry.font === 'F2'
-    const x = entry.align === 'right' ? entry.x - estimateTextWidth(entry.text, entry.size, isBold) : entry.x
-    return `BT ${entry.gray ?? 0} g /${entry.font || 'F1'} ${entry.size} Tf 1 0 0 1 ${x} ${entry.y} Tm (${encodePdfText(entry.text)}) Tj ET`
+    const isBold = entry.font === 'F2' || entry.font === 'F5'
+    const x = entry.align === 'right' ? entry.x - estimateTextWidth(entry.text, entry.size, isBold, entry.font) : entry.x
+    return `BT ${fillColorOp(entry)} /${entry.font || 'F1'} ${entry.size} Tf 1 0 0 1 ${x} ${entry.y} Tm (${encodePdfText(entry.text)}) Tj ET`
   })
 }
 
 export function drawLines(entries: PdfLine[]) {
-  return entries.map(entry => `${entry.gray ?? 0} G ${entry.width || 1} w ${entry.x1} ${entry.y1} m ${entry.x2} ${entry.y2} l S`)
+  return entries.map(entry => `${strokeColorOp(entry)} ${entry.width || 1} w ${entry.x1} ${entry.y1} m ${entry.x2} ${entry.y2} l S`)
 }
 
 export function drawRects(entries: PdfRect[]) {
   return entries.map(entry => {
-    const commands = [`${entry.gray ?? 0} g`, `${entry.gray ?? 0} G`, `${entry.x} ${entry.y} ${entry.width} ${entry.height} re`]
+    const border = { gray: entry.borderGray ?? entry.gray, color: entry.borderColor ?? entry.color }
+    const commands = [fillColorOp(entry), strokeColorOp(border), `${entry.x} ${entry.y} ${entry.width} ${entry.height} re`]
     if (entry.fill && entry.stroke) commands.push('B')
     else if (entry.fill) commands.push('f')
     else commands.push('S')
@@ -573,11 +691,13 @@ export function buildPdfDocument(params: {
   const fontRegularId = firstPageObjectId + (pages.length * 2)
   const fontBoldId = fontRegularId + 1
   const fontItalicId = fontRegularId + 2
-  const imageObjectId = imageObject ? fontItalicId + 1 : null
-  const softMaskObjectId = imageObject?.softMaskObject ? fontItalicId + 2 : null
+  const fontMonoId = fontRegularId + 3
+  const fontBoldItalicId = fontRegularId + 4
+  const imageObjectId = imageObject ? fontBoldItalicId + 1 : null
+  const softMaskObjectId = imageObject?.softMaskObject ? fontBoldItalicId + 2 : null
 
   const xObjectPart = imageObjectId ? ` /XObject << /Im1 ${imageObjectId} 0 R >>` : ''
-  const resources = `<< /Font << /F1 ${fontRegularId} 0 R /F2 ${fontBoldId} 0 R /F3 ${fontItalicId} 0 R >>${xObjectPart} >>`
+  const resources = `<< /Font << /F1 ${fontRegularId} 0 R /F2 ${fontBoldId} 0 R /F3 ${fontItalicId} 0 R /F4 ${fontMonoId} 0 R /F5 ${fontBoldItalicId} 0 R >>${xObjectPart} >>`
   const kids = pages.map((_, index) => `${pageObjectId(index)} 0 R`).join(' ')
 
   const objects: string[] = [
@@ -594,6 +714,8 @@ export function buildPdfDocument(params: {
   objects.push(`${fontRegularId} 0 obj << /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >> endobj`)
   objects.push(`${fontBoldId} 0 obj << /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding >> endobj`)
   objects.push(`${fontItalicId} 0 obj << /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Oblique /Encoding /WinAnsiEncoding >> endobj`)
+  objects.push(`${fontMonoId} 0 obj << /Type /Font /Subtype /Type1 /BaseFont /Courier /Encoding /WinAnsiEncoding >> endobj`)
+  objects.push(`${fontBoldItalicId} 0 obj << /Type /Font /Subtype /Type1 /BaseFont /Helvetica-BoldOblique /Encoding /WinAnsiEncoding >> endobj`)
 
   if (imageObject && imageObjectId) {
     const smaskReference = softMaskObjectId ? ` /SMask ${softMaskObjectId} 0 R` : ''
