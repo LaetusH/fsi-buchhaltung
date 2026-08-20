@@ -11,10 +11,6 @@
     @update:search-value="search = $event"
     @create="createEvent"
   >
-    <template #actions>
-      <PageWikiHelpButton />
-    </template>
-
     <CommonAdvancedTable
       v-model:search="search"
       persist-key="events-list"

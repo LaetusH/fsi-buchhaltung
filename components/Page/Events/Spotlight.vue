@@ -45,15 +45,19 @@
     </template>
 
     <template #action>
-      <button
-        type="button"
-        class="inline-flex shrink-0 items-center gap-1.5 rounded-lg bg-orange-500 px-4 py-2 text-sm font-semibold text-white transition not-disabled:cursor-pointer not-disabled:hover:bg-orange-600 disabled:cursor-not-allowed disabled:opacity-40"
-        :disabled="!active?.canOpen"
-        @click="active && $emit('open', active.id)"
-      >
-        <Icon name="material-symbols:open-in-new-rounded" class="text-base" />
-        {{ t('actions.open') }}
-      </button>
+      <div class="flex shrink-0 items-center gap-2">
+        <PageWikiHelpButton dark />
+
+        <button
+          type="button"
+          class="inline-flex shrink-0 items-center gap-1.5 rounded-lg bg-orange-500 px-4 py-2 text-sm font-semibold text-white transition not-disabled:cursor-pointer not-disabled:hover:bg-orange-600 disabled:cursor-not-allowed disabled:opacity-40"
+          :disabled="!active?.canOpen"
+          @click="active && $emit('open', active.id)"
+        >
+          <Icon name="material-symbols:open-in-new-rounded" class="text-base" />
+          {{ t('actions.open') }}
+        </button>
+      </div>
     </template>
 
     <template v-if="active">
