@@ -15,15 +15,13 @@
       <PageWikiAdminGlossary v-else-if="activeTab === 'glossary'" />
       <PageWikiAdminTags v-else-if="activeTab === 'tags'" />
 
-      <div v-else-if="activeTab === 'stale'" class="col-span-12">
-        <div class="-mx-6 space-y-4 bg-white p-4 shadow-sm sm:mx-0 sm:rounded-xl sm:p-6 sm:shadow-lg">
-          <div>
-            <h2 class="section-title">{{ t('wiki.admin.stale.title') }}</h2>
-            <p class="text-sm text-base-600">{{ t('wiki.admin.stale.hint') }}</p>
-          </div>
-          <PageWikiAdminStaleList return-page="WikiAdmin" :return-meta="{ tab: 'stale' }" />
-        </div>
-      </div>
+      <CommonCard
+        v-else-if="activeTab === 'stale'"
+        :title="t('wiki.admin.stale.title')"
+        :description="t('wiki.admin.stale.hint')"
+      >
+        <PageWikiAdminStaleList return-page="WikiAdmin" :return-meta="{ tab: 'stale' }" />
+      </CommonCard>
 
       <PageWikiAdminPageHelp v-else />
     </template>

@@ -23,14 +23,14 @@
     </template>
 
     <template #cards>
-      <div class="-mx-6 space-y-3 bg-white p-4 shadow-sm col-span-12 sm:mx-0 sm:rounded-xl sm:p-6 sm:shadow-lg">
+      <CommonCard>
         <p class="text-base text-base-600">{{ t('wiki.subtitle') }}</p>
         <PageWikiNavigationSearchPanel :spaces="spaces" :initial-tag="initialTag" @open="openArticle" />
         <p class="flex items-center gap-1 text-xs text-base-400">
           <Icon name="material-symbols:translate-rounded" class="text-sm" aria-hidden="true" />
           {{ t('wiki.contentLanguageHint') }}
         </p>
-      </div>
+      </CommonCard>
 
       <div
         v-if="staleCount > 0"
@@ -58,17 +58,11 @@
         <PageWikiAdminStaleList v-if="staleOpen" return-page="Wiki" />
       </div>
 
-      <div
+      <CommonCard
         v-if="visiblePaths.length"
-        class="-mx-6 space-y-4 bg-white p-4 shadow-sm col-span-12 sm:mx-0 sm:rounded-xl sm:p-6 sm:shadow-lg"
+        :title="recommendedPaths.length ? t('wiki.path.recommended') : t('wiki.path.more')"
+        :description="t('wiki.path.recommendedHint')"
       >
-        <div>
-          <h2 class="text-base font-semibold sm:text-lg">
-            {{ recommendedPaths.length ? t('wiki.path.recommended') : t('wiki.path.more') }}
-          </h2>
-          <p class="text-sm text-base-600">{{ t('wiki.path.recommendedHint') }}</p>
-        </div>
-
         <div class="grid gap-3 sm:grid-cols-2">
           <button
             v-for="path in recommendedPaths.length ? recommendedPaths : otherPaths"
@@ -128,67 +122,56 @@
             </li>
           </ul>
         </details>
-      </div>
+      </CommonCard>
 
-      <div class="col-span-12 xl:col-span-8">
-        <div class="-mx-6 space-y-4 bg-white p-4 shadow-sm sm:mx-0 sm:rounded-xl sm:p-6 sm:shadow-lg">
-          <h2 class="flex items-center gap-2 text-base font-semibold sm:text-lg">
-            <Icon name="material-symbols:folder-open-outline-rounded" class="text-lg text-base-400" aria-hidden="true" />
-            {{ t('wiki.home.spaces') }}
-          </h2>
+      <CommonCard class="xl:col-span-8" icon="material-symbols:folder-open-outline-rounded" :title="t('wiki.home.spaces')">
+        <p v-if="loading" class="text-sm text-base-500">{{ t('wiki.loading') }}</p>
+        <p v-else-if="!spaces.length" class="text-sm text-base-500">{{ t('wiki.home.noSpaces') }}</p>
 
-          <p v-if="loading" class="text-sm text-base-500">{{ t('wiki.loading') }}</p>
-          <p v-else-if="!spaces.length" class="text-sm text-base-500">{{ t('wiki.home.noSpaces') }}</p>
+        <div v-else class="grid gap-3 sm:grid-cols-2">
+          <section
+            v-for="space in spaces"
+            :key="space.id"
+            class="rounded-xl border border-base-200 p-4"
+          >
+            <div class="flex items-center gap-2">
+              <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-accent-50 text-accent-600">
+                <Icon :name="space.icon" class="h-5 w-5" aria-hidden="true" />
+              </span>
+              <h3 class="min-w-0 flex-1 font-semibold text-base-900">{{ space.title }}</h3>
+              <a
+                :href="`/api/wiki/spaces/${space.id}/export-pdf`"
+                target="_blank"
+                rel="noopener noreferrer"
+                class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-base-400 transition-colors hover:bg-base-100 hover:text-base-700"
+                :title="t('wiki.home.exportSpacePdf')"
+                :aria-label="t('wiki.home.exportSpacePdf')"
+              >
+                <Icon name="material-symbols:picture-as-pdf-outline-rounded" class="h-5 w-5" aria-hidden="true" />
+              </a>
+            </div>
+            <p v-if="space.description" class="mt-2 text-sm leading-relaxed text-base-600">{{ space.description }}</p>
 
-          <div v-else class="grid gap-3 sm:grid-cols-2">
-            <section
-              v-for="space in spaces"
-              :key="space.id"
-              class="rounded-xl border border-base-200 p-4"
-            >
-              <div class="flex items-center gap-2">
-                <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-accent-50 text-accent-600">
-                  <Icon :name="space.icon" class="h-5 w-5" aria-hidden="true" />
-                </span>
-                <h3 class="min-w-0 flex-1 font-semibold text-base-900">{{ space.title }}</h3>
-                <a
-                  :href="`/api/wiki/spaces/${space.id}/export-pdf`"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-base-400 transition-colors hover:bg-base-100 hover:text-base-700"
-                  :title="t('wiki.home.exportSpacePdf')"
-                  :aria-label="t('wiki.home.exportSpacePdf')"
-                >
-                  <Icon name="material-symbols:picture-as-pdf-outline-rounded" class="h-5 w-5" aria-hidden="true" />
-                </a>
-              </div>
-              <p v-if="space.description" class="mt-2 text-sm leading-relaxed text-base-600">{{ space.description }}</p>
+            <ul v-if="space.articles.length" class="-mx-2 mt-2 text-sm">
+              <li v-for="article in space.articles.slice(0, 5)" :key="article.id">
+                <button type="button" class="wiki-link-row" @click="openArticle(article.id)">
+                  <Icon name="material-symbols:article-outline-rounded" class="shrink-0 text-base text-base-300" aria-hidden="true" />
+                  <span class="min-w-0 flex-1 truncate">{{ article.title }}</span>
+                  <Icon name="material-symbols:chevron-right-rounded" class="wiki-link-chevron" aria-hidden="true" />
+                </button>
+              </li>
+            </ul>
+            <p v-else class="mt-3 text-sm text-base-400">{{ t('wiki.home.empty') }}</p>
 
-              <ul v-if="space.articles.length" class="-mx-2 mt-2 text-sm">
-                <li v-for="article in space.articles.slice(0, 5)" :key="article.id">
-                  <button type="button" class="wiki-link-row" @click="openArticle(article.id)">
-                    <Icon name="material-symbols:article-outline-rounded" class="shrink-0 text-base text-base-300" aria-hidden="true" />
-                    <span class="min-w-0 flex-1 truncate">{{ article.title }}</span>
-                    <Icon name="material-symbols:chevron-right-rounded" class="wiki-link-chevron" aria-hidden="true" />
-                  </button>
-                </li>
-              </ul>
-              <p v-else class="mt-3 text-sm text-base-400">{{ t('wiki.home.empty') }}</p>
-
-              <p v-if="space.articles.length > 5" class="mt-1 pl-2 text-xs text-base-400">
-                {{ t('wiki.home.moreArticles', { count: space.articles.length - 5 }) }}
-              </p>
-            </section>
-          </div>
+            <p v-if="space.articles.length > 5" class="mt-1 pl-2 text-xs text-base-400">
+              {{ t('wiki.home.moreArticles', { count: space.articles.length - 5 }) }}
+            </p>
+          </section>
         </div>
-      </div>
+      </CommonCard>
 
       <div class="col-span-12 space-y-5 xl:col-span-4">
-        <section class="-mx-6 bg-white p-4 shadow-sm sm:mx-0 sm:rounded-xl sm:p-6 sm:shadow-lg">
-          <h2 class="section-title flex items-center gap-1.5">
-            <Icon name="material-symbols:history-rounded" class="text-base text-base-400" aria-hidden="true" />
-            {{ t('wiki.home.recentlyUpdated') }}
-          </h2>
+        <CommonCard icon="material-symbols:history-rounded" :title="t('wiki.home.recentlyUpdated')">
           <ul v-if="recentlyUpdated.length" class="-mx-2 text-sm">
             <li v-for="entry in recentlyUpdated" :key="entry.id">
               <button type="button" class="wiki-link-row" @click="openArticle(entry.id)">
@@ -201,13 +184,9 @@
             </li>
           </ul>
           <p v-else class="text-sm text-base-400">{{ t('wiki.home.empty') }}</p>
-        </section>
+        </CommonCard>
 
-        <section v-if="recentlyRead.length" class="-mx-6 bg-white p-4 shadow-sm sm:mx-0 sm:rounded-xl sm:p-6 sm:shadow-lg">
-          <h2 class="section-title flex items-center gap-1.5">
-            <Icon name="material-symbols:bookmark-outline-rounded" class="text-base text-base-400" aria-hidden="true" />
-            {{ t('wiki.home.recentlyRead') }}
-          </h2>
+        <CommonCard v-if="recentlyRead.length" icon="material-symbols:bookmark-outline-rounded" :title="t('wiki.home.recentlyRead')">
           <ul class="-mx-2 text-sm">
             <li v-for="entry in recentlyRead" :key="entry.id">
               <button type="button" class="wiki-link-row" @click="openArticle(entry.id)">
@@ -219,7 +198,7 @@
               </button>
             </li>
           </ul>
-        </section>
+        </CommonCard>
       </div>
     </template>
   </Page>

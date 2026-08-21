@@ -56,17 +56,14 @@
       </aside>
 
       <div class="col-span-12 space-y-5 xl:col-span-9">
-        <div v-if="loading" class="rounded-xl bg-white p-6 text-base-500 shadow-lg">
+        <CommonCard v-if="loading">
           {{ t('wiki.loading') }}
-        </div>
+        </CommonCard>
 
         <CommonValidationSummary v-else-if="error" :errors="[error]" :title="t('wiki.article.notFoundTitle')" />
 
         <template v-else-if="article">
-          <div
-            v-if="path && currentStep"
-            class="-mx-6 space-y-3 bg-white p-4 shadow-sm sm:mx-0 sm:rounded-xl sm:p-6 sm:shadow-lg"
-          >
+          <CommonCard v-if="path && currentStep">
             <div class="flex flex-wrap items-center justify-between gap-2">
               <div class="flex min-w-0 items-center gap-2">
                 <Icon :name="path.icon" class="shrink-0 text-lg text-base-500" aria-hidden="true" />
@@ -91,9 +88,9 @@
             </div>
 
             <p v-if="currentStep.note" class="text-sm text-base-600">{{ currentStep.note }}</p>
-          </div>
+          </CommonCard>
 
-          <div class="-mx-6 space-y-4 bg-white p-4 shadow-sm sm:mx-0 sm:rounded-xl sm:p-6 sm:shadow-lg">
+          <CommonCard>
             <nav
               class="flex flex-wrap items-center gap-x-1 gap-y-0.5 text-sm text-base-500"
               :aria-label="t('wiki.article.breadcrumb')"
@@ -166,7 +163,7 @@
               <Icon name="material-symbols:edit-note-rounded" class="mt-0.5 shrink-0 text-base" aria-hidden="true" />
               {{ t('wiki.article.hasDraft') }}
             </p>
-          </div>
+          </CommonCard>
 
           <details
             v-if="article.headings.length > 1"
@@ -183,27 +180,25 @@
           </details>
 
           <div class="grid grid-cols-12 gap-5">
-            <div class="col-span-12 xl:col-span-8">
-              <div class="-mx-6 bg-white p-4 shadow-sm sm:mx-0 sm:rounded-xl sm:p-6 sm:shadow-lg lg:p-8">
-                <p
-                  v-if="article.status !== 'published'"
-                  class="mb-5 flex items-start gap-2 rounded-lg bg-base-100 px-3 py-2 text-sm text-base-700"
-                >
-                  <Icon name="material-symbols:visibility-off-outline-rounded" class="mt-0.5 shrink-0 text-base text-base-500" aria-hidden="true" />
-                  {{ t('wiki.article.notPublished') }}
-                </p>
+            <CommonCard class="xl:col-span-8 lg:p-8">
+              <p
+                v-if="article.status !== 'published'"
+                class="mb-5 flex items-start gap-2 rounded-lg bg-base-100 px-3 py-2 text-sm text-base-700"
+              >
+                <Icon name="material-symbols:visibility-off-outline-rounded" class="mt-0.5 shrink-0 text-base text-base-500" aria-hidden="true" />
+                {{ t('wiki.article.notPublished') }}
+              </p>
 
-                <PageWikiArticleBody
-                  v-if="article.contentHtml"
-                  class="wiki-article-measure"
-                  :html="article.contentHtml"
-                  :links="article.links"
-                  :article-id="article.id"
-                  :checklists="article.checklists"
-                />
-                <p v-else class="text-sm text-base-500">{{ t('wiki.article.emptyContent') }}</p>
-              </div>
-            </div>
+              <PageWikiArticleBody
+                v-if="article.contentHtml"
+                class="wiki-article-measure"
+                :html="article.contentHtml"
+                :links="article.links"
+                :article-id="article.id"
+                :checklists="article.checklists"
+              />
+              <p v-else class="text-sm text-base-500">{{ t('wiki.article.emptyContent') }}</p>
+            </CommonCard>
 
             <div class="col-span-12 space-y-5 xl:col-span-4">
               <div
@@ -217,11 +212,7 @@
                 <PageWikiArticleTableOfContents :headings="article.headings" />
               </div>
 
-              <div v-if="article.children.length" class="-mx-6 bg-white p-4 shadow-sm sm:mx-0 sm:rounded-xl sm:p-6 sm:shadow-lg">
-                <h3 class="section-title flex items-center gap-1.5">
-                  <Icon name="material-symbols:account-tree-outline-rounded" class="text-base text-base-400" aria-hidden="true" />
-                  {{ t('wiki.article.subarticles') }}
-                </h3>
+              <CommonCard v-if="article.children.length" icon="material-symbols:account-tree-outline-rounded" :title="t('wiki.article.subarticles')">
                 <ul class="-mx-2 text-sm">
                   <li v-for="child in article.children" :key="child.id">
                     <button type="button" class="wiki-link-row" @click="openArticleById(child.id)">
@@ -230,13 +221,9 @@
                     </button>
                   </li>
                 </ul>
-              </div>
+              </CommonCard>
 
-              <div v-if="article.attachments.length" class="-mx-6 bg-white p-4 shadow-sm sm:mx-0 sm:rounded-xl sm:p-6 sm:shadow-lg">
-                <h3 class="section-title flex items-center gap-1.5">
-                  <Icon name="material-symbols:attach-file-rounded" class="text-base text-base-400" aria-hidden="true" />
-                  {{ t('wiki.article.attachments') }}
-                </h3>
+              <CommonCard v-if="article.attachments.length" icon="material-symbols:attach-file-rounded" :title="t('wiki.article.attachments')">
                 <ul class="-mx-2 text-sm">
                   <li v-for="attachment in article.attachments" :key="attachment.attachmentId">
                     <a
@@ -251,7 +238,7 @@
                     </a>
                   </li>
                 </ul>
-              </div>
+              </CommonCard>
             </div>
           </div>
 

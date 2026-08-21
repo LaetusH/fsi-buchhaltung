@@ -1,12 +1,9 @@
 <template>
-  <div v-if="hasAccess" class="-mx-6 -mb-6 bg-white p-4 shadow-sm space-y-3 col-span-12 sm:mx-0 sm:mb-0 sm:space-y-6 sm:rounded-xl sm:p-6 sm:shadow-lg">
-    <div class="space-y-1">
-      <h2 class="text-base font-semibold sm:text-lg">{{ t('settings.association.title') }}</h2>
-      <p class="text-sm text-base-600">{{ t('settings.association.intro') }}</p>
-    </div>
-
-    <section class="rounded-xl border border-base-200 p-4 space-y-4">
-      <h3 class="font-semibold">{{ t('settings.association.legalTitle') }}</h3>
+  <template v-if="hasAccess">
+    <CommonCard
+      :title="t('settings.association.legalTitle')"
+      :description="t('settings.association.intro')"
+    >
 
       <div class="field">
         <label>{{ t('settings.association.fields.logo') }}</label>
@@ -77,10 +74,9 @@
         <label>{{ t('company.vatId') }}</label>
         <input v-model="form.vat_id" class="input" />
       </div>
-    </section>
+    </CommonCard>
 
-    <section class="rounded-xl border border-base-200 p-4 space-y-4">
-      <h3 class="font-semibold">{{ t('settings.association.contactTitle') }}</h3>
+    <CommonCard :title="t('settings.association.contactTitle')">
 
       <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
         <div class="field">
@@ -98,10 +94,9 @@
         <label>{{ t('settings.association.fields.website') }}</label>
         <input v-model="form.website" class="input" />
       </div>
-    </section>
+    </CommonCard>
 
-    <section class="rounded-xl border border-base-200 p-4 space-y-4">
-      <h3 class="font-semibold">{{ t('settings.association.bankingTitle') }}</h3>
+    <CommonCard :title="t('settings.association.bankingTitle')">
 
       <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
         <div class="field">
@@ -119,9 +114,9 @@
         <label>{{ t('reimbursement.bankname') }}</label>
         <input v-model="form.bankname" class="input" />
       </div>
-    </section>
+    </CommonCard>
 
-    <section class="rounded-xl border border-base-200 p-4 space-y-4">
+    <CommonCard :title="t('settings.association.responsibleTitle')">
       <div class="field">
         <label>{{ t('settings.association.responsibleMembers') }}</label>
         <CommonSelectionListField
@@ -155,10 +150,9 @@
           @remove="removePosition"
         />
       </div>
-    </section>
+    </CommonCard>
 
-    <section class="rounded-xl border border-base-200 p-4 space-y-3">
-      <h3 class="font-semibold">{{ t('settings.association.effectiveResponsibleTitle') }}</h3>
+    <CommonCard :title="t('settings.association.effectiveResponsibleTitle')">
 
       <div v-if="effectiveResponsiblePeople.length" class="rounded-lg border border-base-200 bg-base-50">
         <div class="selection-scroll max-h-[min(38vh,20rem)] overflow-y-auto p-2">
@@ -176,19 +170,21 @@
       <div v-else class="rounded-lg border border-dashed border-base-300 px-3 py-4 text-sm text-base-500">
         {{ t('settings.association.noEffectiveResponsible') }}
       </div>
-    </section>
+    </CommonCard>
 
-    <CommonValidationSummary
-      :errors="validationErrors"
-      :title="t('common.validationBlocked')"
-    />
+    <CommonCard>
+      <CommonValidationSummary
+        :errors="validationErrors"
+        :title="t('common.validationBlocked')"
+      />
 
-    <div class="flex justify-end">
-      <button class="btn-primary" :class="{ 'opacity-50 cursor-not-allowed': isSaving || validationErrors.length > 0 }" :disabled="isSaving || validationErrors.length > 0" @click="save">
-        {{ t('actions.save') }}
-      </button>
-    </div>
-  </div>
+      <div class="flex justify-end">
+        <button class="btn-primary" :class="{ 'opacity-50 cursor-not-allowed': isSaving || validationErrors.length > 0 }" :disabled="isSaving || validationErrors.length > 0" @click="save">
+          {{ t('actions.save') }}
+        </button>
+      </div>
+    </CommonCard>
+  </template>
 </template>
 
 <script setup lang="ts">

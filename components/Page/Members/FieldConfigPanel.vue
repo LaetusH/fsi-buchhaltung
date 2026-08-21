@@ -1,12 +1,10 @@
 <template>
   <div class="space-y-6">
-    <section
+    <CommonCard
       v-if="canConfigure"
-      class="-mx-6 bg-white shadow-sm sm:mx-0 sm:rounded-xl sm:shadow-lg p-4 space-y-3"
+      :title="t('member.fieldConfig.title')"
+      :description="t('member.fieldConfig.intro')"
     >
-      <h2 class="text-lg font-semibold">{{ t('member.fieldConfig.title') }}</h2>
-      <p class="text-sm text-base-500">{{ t('member.fieldConfig.intro') }}</p>
-
       <div v-if="loadingConfig" class="flex items-center justify-center p-6 text-base-400">
         <Icon name="material-symbols:progress-activity" class="animate-spin text-2xl" />
       </div>
@@ -47,14 +45,9 @@
           {{ t('member.fieldConfig.save') }}
         </button>
       </div>
-    </section>
+    </CommonCard>
 
-    <section
-      v-if="canApprove"
-      class="-mx-6 bg-white shadow-sm sm:mx-0 sm:rounded-xl sm:shadow-lg p-4 space-y-3"
-    >
-      <h2 class="text-lg font-semibold">{{ t('member.fieldConfig.pendingChangesTitle') }}</h2>
-
+    <CommonCard v-if="canApprove" :title="t('member.fieldConfig.pendingChangesTitle')">
       <div v-if="loadingPending" class="flex items-center justify-center p-6 text-base-400">
         <Icon name="material-symbols:progress-activity" class="animate-spin text-2xl" />
       </div>
@@ -104,7 +97,7 @@
           </tbody>
         </table>
       </div>
-    </section>
+    </CommonCard>
   </div>
 </template>
 

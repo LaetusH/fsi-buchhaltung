@@ -1,264 +1,257 @@
 <template>
-  <div class="-mx-6 -mb-6 bg-white p-4 shadow-sm space-y-3 col-span-12 sm:mx-0 sm:mb-0 sm:space-y-6 sm:rounded-xl sm:p-6 sm:shadow-lg">
-    <h2 class="text-base font-semibold sm:text-lg">{{ t('settings.app.title') }}</h2>
-
-    <section class="rounded-xl border border-base-200 p-4 space-y-4">
-      <div>
-        <h3 class="font-semibold">{{ t('settings.app.invoiceTextsTitle') }}</h3>
-        <p class="text-sm text-base-600">{{ t('settings.app.invoiceTextsText') }}</p>
-      </div>
-
-      <div class="flex flex-wrap gap-2">
-        <span
-          v-for="variable in invoiceTextVariables"
-          :key="variable.key"
-          class="rounded-md border border-base-200 bg-base-50 px-2 py-1 text-xs font-medium text-base-700"
-          :title="variable.label"
-        >
-          {{ variableToken(variable.key) }}
-        </span>
-      </div>
-
-      <div class="grid gap-4">
-        <div class="grid gap-4 md:grid-cols-[1fr_auto_auto] md:items-end">
-          <div class="field">
-            <label>{{ t('settings.app.invoiceNumberTemplate') }}</label>
-            <input v-model="invoiceTextForm.invoice_number_template" class="input" :disabled="isSavingInvoiceTexts">
-          </div>
-          <div class="field">
-            <label>{{ t('settings.app.invoiceNumberNextIncrement') }}</label>
-            <input
-              v-model.number="invoiceTextForm.invoice_number_next_increment"
-              type="number"
-              min="1"
-              step="1"
-              class="input md:w-36"
-              :disabled="isSavingInvoiceTexts"
-            >
-          </div>
-          <div class="field">
-            <label>{{ t('settings.app.invoiceNumberIncrementDigits') }}</label>
-            <input
-              v-model.number="invoiceTextForm.invoice_number_increment_digits"
-              type="number"
-              min="1"
-              step="1"
-              class="input md:w-36"
-              :disabled="isSavingInvoiceTexts"
-            >
-          </div>
-        </div>
-        <label class="inline-flex items-center gap-3 text-sm text-base-700 select-none cursor-pointer">
-          <input
-            v-model="invoiceTextForm.invoice_number_manual_edit_disabled"
-            type="checkbox"
-            class="checkbox"
-            :disabled="isSavingInvoiceTexts"
-          >
-          <span>{{ t('settings.app.invoiceNumberManualEditDisabled') }}</span>
-        </label>
-        <div class="field">
-          <label>{{ t('settings.app.invoiceSubject') }}</label>
-          <input v-model="invoiceTextForm.subject" class="input" :disabled="isSavingInvoiceTexts">
-        </div>
-        <div class="field">
-          <label>{{ t('settings.app.invoiceIntroText') }}</label>
-          <textarea v-model="invoiceTextForm.intro_text" rows="3" class="input resize-y" :disabled="isSavingInvoiceTexts" />
-        </div>
-        <div class="field">
-          <label>{{ t('settings.app.invoiceNotes') }}</label>
-          <textarea v-model="invoiceTextForm.notes" rows="4" class="input resize-y" :disabled="isSavingInvoiceTexts" />
-        </div>
-        <label class="inline-flex items-center gap-3 text-sm text-base-700 select-none cursor-pointer">
-          <input
-            v-model="invoiceTextForm.is_kleinunternehmer_default"
-            type="checkbox"
-            class="checkbox"
-            :disabled="isSavingInvoiceTexts"
-          >
-          <span>{{ t('settings.app.invoiceKleinunternehmerDefault') }}</span>
-        </label>
-      </div>
-
-      <div class="flex justify-end">
-        <button
-          class="btn-primary"
-          :disabled="isSavingInvoiceTexts"
-          :class="{ 'opacity-50 cursor-not-allowed': isSavingInvoiceTexts }"
-          @click="saveInvoiceTexts"
-        >
-          {{ isSavingInvoiceTexts ? t('settings.app.invoiceTextsSaving') : t('settings.app.invoiceTextsSave') }}
-        </button>
-      </div>
-    </section>
-
-    <section v-if="canManageSnapshots" class="rounded-xl border border-base-200 p-4 space-y-3">
-      <div>
-        <h3 class="font-semibold">{{ t('settings.app.snapshotTitle') }}</h3>
-        <p class="text-sm text-base-600">{{ t('settings.app.snapshotText') }}</p>
-      </div>
-
-      <div class="flex flex-wrap gap-2">
-        <input
-          v-model="snapshotPassword"
-          class="input max-w-sm"
-          type="password"
-          autocomplete="new-password"
-          :placeholder="t('settings.app.snapshotPasswordPlaceholder')"
-        >
-
-        <button
-          class="btn-primary"
-          :disabled="isDownloadingSnapshot || isDownloadingFiles || !canUseSnapshotPassword"
-          :class="{ 'opacity-50 cursor-not-allowed': isDownloadingSnapshot || isDownloadingFiles || !canUseSnapshotPassword }"
-          @click="downloadSnapshot"
-        >
-          {{ isDownloadingSnapshot ? t('settings.app.downloading') : t('settings.app.download') }}
-        </button>
-
-        <button
-          class="btn-secondary"
-          :disabled="isDownloadingSnapshot || isDownloadingFiles"
-          :class="{ 'opacity-50 cursor-not-allowed': isDownloadingSnapshot || isDownloadingFiles }"
-          @click="downloadFiles"
-        >
-          {{ isDownloadingFiles ? t('settings.app.downloadingFiles') : t('settings.app.downloadFiles') }}
-        </button>
-      </div>
-
-      <p class="text-xs text-base-500">{{ t('settings.app.snapshotPasswordHelp') }}</p>
-      <p class="text-xs text-base-500">{{ t('settings.app.filesArchiveText') }}</p>
-    </section>
-
-    <section v-if="canManageSnapshots" class="rounded-xl border border-danger-200 bg-danger-50 p-4 space-y-3">
-      <div>
-        <h3 class="font-semibold text-danger-900">{{ t('settings.app.restoreTitle') }}</h3>
-        <p class="text-sm text-danger-800">{{ t('settings.app.restoreText') }}</p>
-      </div>
-
-      <input
-        ref="fileInput"
-        class="input bg-white"
-        type="file"
-        accept="application/json,.json,.enc,application/octet-stream"
-        @change="handleFileChange"
+  <CommonCard
+    :title="t('settings.app.invoiceTextsTitle')"
+    :description="t('settings.app.invoiceTextsText')"
+  >
+    <div class="flex flex-wrap gap-2">
+      <span
+        v-for="variable in invoiceTextVariables"
+        :key="variable.key"
+        class="rounded-md border border-base-200 bg-base-50 px-2 py-1 text-xs font-medium text-base-700"
+        :title="variable.label"
       >
+        {{ variableToken(variable.key) }}
+      </span>
+    </div>
 
+    <div class="grid gap-4">
+      <div class="grid gap-4 md:grid-cols-[1fr_auto_auto] md:items-end">
+        <div class="field">
+          <label>{{ t('settings.app.invoiceNumberTemplate') }}</label>
+          <input v-model="invoiceTextForm.invoice_number_template" class="input" :disabled="isSavingInvoiceTexts">
+        </div>
+        <div class="field">
+          <label>{{ t('settings.app.invoiceNumberNextIncrement') }}</label>
+          <input
+            v-model.number="invoiceTextForm.invoice_number_next_increment"
+            type="number"
+            min="1"
+            step="1"
+            class="input md:w-36"
+            :disabled="isSavingInvoiceTexts"
+          >
+        </div>
+        <div class="field">
+          <label>{{ t('settings.app.invoiceNumberIncrementDigits') }}</label>
+          <input
+            v-model.number="invoiceTextForm.invoice_number_increment_digits"
+            type="number"
+            min="1"
+            step="1"
+            class="input md:w-36"
+            :disabled="isSavingInvoiceTexts"
+          >
+        </div>
+      </div>
+      <label class="inline-flex items-center gap-3 text-sm text-base-700 select-none cursor-pointer">
+        <input
+          v-model="invoiceTextForm.invoice_number_manual_edit_disabled"
+          type="checkbox"
+          class="checkbox"
+          :disabled="isSavingInvoiceTexts"
+        >
+        <span>{{ t('settings.app.invoiceNumberManualEditDisabled') }}</span>
+      </label>
+      <div class="field">
+        <label>{{ t('settings.app.invoiceSubject') }}</label>
+        <input v-model="invoiceTextForm.subject" class="input" :disabled="isSavingInvoiceTexts">
+      </div>
+      <div class="field">
+        <label>{{ t('settings.app.invoiceIntroText') }}</label>
+        <textarea v-model="invoiceTextForm.intro_text" rows="3" class="input resize-y" :disabled="isSavingInvoiceTexts" />
+      </div>
+      <div class="field">
+        <label>{{ t('settings.app.invoiceNotes') }}</label>
+        <textarea v-model="invoiceTextForm.notes" rows="4" class="input resize-y" :disabled="isSavingInvoiceTexts" />
+      </div>
+      <label class="inline-flex items-center gap-3 text-sm text-base-700 select-none cursor-pointer">
+        <input
+          v-model="invoiceTextForm.is_kleinunternehmer_default"
+          type="checkbox"
+          class="checkbox"
+          :disabled="isSavingInvoiceTexts"
+        >
+        <span>{{ t('settings.app.invoiceKleinunternehmerDefault') }}</span>
+      </label>
+    </div>
+
+    <div class="flex justify-end">
+      <button
+        class="btn-primary"
+        :disabled="isSavingInvoiceTexts"
+        :class="{ 'opacity-50 cursor-not-allowed': isSavingInvoiceTexts }"
+        @click="saveInvoiceTexts"
+      >
+        {{ isSavingInvoiceTexts ? t('settings.app.invoiceTextsSaving') : t('settings.app.invoiceTextsSave') }}
+      </button>
+    </div>
+  </CommonCard>
+
+  <CommonCard
+    v-if="canManageSnapshots"
+    :title="t('settings.app.snapshotTitle')"
+    :description="t('settings.app.snapshotText')"
+  >
+    <div class="flex flex-wrap gap-2">
       <input
-        v-model="restorePassword"
-        class="input bg-white"
+        v-model="snapshotPassword"
+        class="input max-w-sm"
         type="password"
         autocomplete="new-password"
-        :placeholder="t('settings.app.restorePasswordPlaceholder')"
-        @input="handleRestorePasswordInput"
+        :placeholder="t('settings.app.snapshotPasswordPlaceholder')"
       >
-
-      <label class="block space-y-1">
-        <span class="text-sm font-medium text-danger-900">{{ t('settings.app.filesArchiveLabel') }}</span>
-        <input
-          ref="archiveInput"
-          class="input bg-white"
-          type="file"
-          accept=".tar,application/x-tar"
-          @change="handleArchiveChange"
-        >
-      </label>
 
       <button
         class="btn-primary"
-        :disabled="isPreviewing || isRestoring || !selectedFile || !canUseRestorePassword"
-        :class="{ 'opacity-50 cursor-not-allowed': isPreviewing || isRestoring || !selectedFile || !canUseRestorePassword }"
-        @click="openRestorePreview"
+        :disabled="isDownloadingSnapshot || isDownloadingFiles || !canUseSnapshotPassword"
+        :class="{ 'opacity-50 cursor-not-allowed': isDownloadingSnapshot || isDownloadingFiles || !canUseSnapshotPassword }"
+        @click="downloadSnapshot"
       >
-        {{ isPreviewing ? t('settings.app.previewing') : t('settings.app.previewRestore') }}
+        {{ isDownloadingSnapshot ? t('settings.app.downloading') : t('settings.app.download') }}
       </button>
 
-      <div v-if="isPreviewing && uploadProgress !== null" class="space-y-1">
+      <button
+        class="btn-secondary"
+        :disabled="isDownloadingSnapshot || isDownloadingFiles"
+        :class="{ 'opacity-50 cursor-not-allowed': isDownloadingSnapshot || isDownloadingFiles }"
+        @click="downloadFiles"
+      >
+        {{ isDownloadingFiles ? t('settings.app.downloadingFiles') : t('settings.app.downloadFiles') }}
+      </button>
+    </div>
+
+    <p class="text-xs text-base-500">{{ t('settings.app.snapshotPasswordHelp') }}</p>
+    <p class="text-xs text-base-500">{{ t('settings.app.filesArchiveText') }}</p>
+  </CommonCard>
+
+  <CommonCard
+    v-if="canManageSnapshots"
+    tone="danger"
+    :title="t('settings.app.restoreTitle')"
+    :description="t('settings.app.restoreText')"
+  >
+    <input
+      ref="fileInput"
+      class="input bg-white"
+      type="file"
+      accept="application/json,.json,.enc,application/octet-stream"
+      @change="handleFileChange"
+    >
+
+    <input
+      v-model="restorePassword"
+      class="input bg-white"
+      type="password"
+      autocomplete="new-password"
+      :placeholder="t('settings.app.restorePasswordPlaceholder')"
+      @input="handleRestorePasswordInput"
+    >
+
+    <label class="block space-y-1">
+      <span class="text-sm font-medium text-danger-900">{{ t('settings.app.filesArchiveLabel') }}</span>
+      <input
+        ref="archiveInput"
+        class="input bg-white"
+        type="file"
+        accept=".tar,application/x-tar"
+        @change="handleArchiveChange"
+      >
+    </label>
+
+    <button
+      class="btn-primary"
+      :disabled="isPreviewing || isRestoring || !selectedFile || !canUseRestorePassword"
+      :class="{ 'opacity-50 cursor-not-allowed': isPreviewing || isRestoring || !selectedFile || !canUseRestorePassword }"
+      @click="openRestorePreview"
+    >
+      {{ isPreviewing ? t('settings.app.previewing') : t('settings.app.previewRestore') }}
+    </button>
+
+    <div v-if="isPreviewing && uploadProgress !== null" class="space-y-1">
+      <div class="h-2 overflow-hidden rounded-full bg-danger-100">
+        <div class="h-full bg-accent-500" :style="{ width: `${uploadProgress}%` }" />
+      </div>
+      <p class="text-xs text-danger-800">{{ t('settings.app.uploadProgress', { progress: String(uploadProgress) }) }}</p>
+    </div>
+  </CommonCard>
+
+  <CommonCard v-else>
+    <p class="text-sm text-base-600">{{ t('settings.app.noSnapshotPermission') }}</p>
+  </CommonCard>
+
+  <CommonModal
+    v-if="restorePreview"
+    :model-value="!!restorePreview"
+    :title="t('settings.app.restorePreviewTitle')"
+    width-class="max-w-2xl"
+    @update:model-value="closeRestorePreview"
+  >
+    <p class="text-sm text-base-600">{{ t('settings.app.restorePreviewText') }}</p>
+
+    <div class="grid md:grid-cols-2 gap-3 text-sm">
+      <div class="rounded-lg border border-base-200 p-3">
+        <p class="text-xs text-base-500">{{ t('settings.app.previewCreatedAt') }}</p>
+        <p class="font-medium">{{ previewCreatedAtLabel }}</p>
+      </div>
+      <div class="rounded-lg border border-base-200 p-3">
+        <p class="text-xs text-base-500">{{ t('settings.app.previewDatabase') }}</p>
+        <p class="font-medium">{{ restorePreview.database || t('settings.app.previewUnknown') }}</p>
+      </div>
+      <div class="rounded-lg border border-base-200 p-3">
+        <p class="text-xs text-base-500">{{ t('settings.app.previewApp') }}</p>
+        <p class="font-medium">{{ previewAppLabel }}</p>
+      </div>
+      <div class="rounded-lg border border-base-200 p-3">
+        <p class="text-xs text-base-500">{{ t('settings.app.previewSchema') }}</p>
+        <p class="font-medium">{{ restorePreview.schemaVersion || t('settings.app.previewUnknown') }}</p>
+      </div>
+      <div class="rounded-lg border border-base-200 p-3">
+        <p class="text-xs text-base-500">{{ t('settings.app.previewTables') }}</p>
+        <p class="font-medium">{{ restorePreview.tables }}</p>
+      </div>
+      <div class="rounded-lg border border-base-200 p-3">
+        <p class="text-xs text-base-500">{{ t('settings.app.previewRows') }}</p>
+        <p class="font-medium">{{ restorePreview.rows }}</p>
+      </div>
+      <div class="rounded-lg border border-base-200 p-3 md:col-span-2">
+        <p class="text-xs text-base-500">{{ t('settings.app.previewIntegrity') }}</p>
+        <p class="font-medium">{{ integrityLabel }}</p>
+      </div>
+      <div class="rounded-lg border border-base-200 p-3 md:col-span-2">
+        <p class="text-xs text-base-500">{{ t('settings.app.previewFilesArchive') }}</p>
+        <p class="font-medium">{{ filesArchiveLabel }}</p>
+      </div>
+    </div>
+
+    <div class="rounded-lg border border-danger-200 bg-danger-50 p-3 text-sm text-danger-800 space-y-2">
+      <p>{{ t('settings.app.restoreSessionsWarning') }}</p>
+      <div v-if="isRestoring && uploadProgress !== null" class="space-y-1">
         <div class="h-2 overflow-hidden rounded-full bg-danger-100">
           <div class="h-full bg-accent-500" :style="{ width: `${uploadProgress}%` }" />
         </div>
         <p class="text-xs text-danger-800">{{ t('settings.app.uploadProgress', { progress: String(uploadProgress) }) }}</p>
       </div>
-    </section>
+      <label class="block">
+        <span class="text-xs font-medium text-danger-900">{{ t('settings.app.restoreConfirmLabel') }}</span>
+        <input v-model="restoreConfirmation" class="input mt-1 bg-white" autocomplete="off">
+      </label>
+    </div>
 
-    <section v-else class="rounded-xl border border-base-200 p-4">
-      <p class="text-sm text-base-600">{{ t('settings.app.noSnapshotPermission') }}</p>
-    </section>
-
-    <CommonModal
-      v-if="restorePreview"
-      :model-value="!!restorePreview"
-      :title="t('settings.app.restorePreviewTitle')"
-      width-class="max-w-2xl"
-      @update:model-value="closeRestorePreview"
-    >
-      <p class="text-sm text-base-600">{{ t('settings.app.restorePreviewText') }}</p>
-
-      <div class="grid md:grid-cols-2 gap-3 text-sm">
-        <div class="rounded-lg border border-base-200 p-3">
-          <p class="text-xs text-base-500">{{ t('settings.app.previewCreatedAt') }}</p>
-          <p class="font-medium">{{ previewCreatedAtLabel }}</p>
-        </div>
-        <div class="rounded-lg border border-base-200 p-3">
-          <p class="text-xs text-base-500">{{ t('settings.app.previewDatabase') }}</p>
-          <p class="font-medium">{{ restorePreview.database || t('settings.app.previewUnknown') }}</p>
-        </div>
-        <div class="rounded-lg border border-base-200 p-3">
-          <p class="text-xs text-base-500">{{ t('settings.app.previewApp') }}</p>
-          <p class="font-medium">{{ previewAppLabel }}</p>
-        </div>
-        <div class="rounded-lg border border-base-200 p-3">
-          <p class="text-xs text-base-500">{{ t('settings.app.previewSchema') }}</p>
-          <p class="font-medium">{{ restorePreview.schemaVersion || t('settings.app.previewUnknown') }}</p>
-        </div>
-        <div class="rounded-lg border border-base-200 p-3">
-          <p class="text-xs text-base-500">{{ t('settings.app.previewTables') }}</p>
-          <p class="font-medium">{{ restorePreview.tables }}</p>
-        </div>
-        <div class="rounded-lg border border-base-200 p-3">
-          <p class="text-xs text-base-500">{{ t('settings.app.previewRows') }}</p>
-          <p class="font-medium">{{ restorePreview.rows }}</p>
-        </div>
-        <div class="rounded-lg border border-base-200 p-3 md:col-span-2">
-          <p class="text-xs text-base-500">{{ t('settings.app.previewIntegrity') }}</p>
-          <p class="font-medium">{{ integrityLabel }}</p>
-        </div>
-        <div class="rounded-lg border border-base-200 p-3 md:col-span-2">
-          <p class="text-xs text-base-500">{{ t('settings.app.previewFilesArchive') }}</p>
-          <p class="font-medium">{{ filesArchiveLabel }}</p>
-        </div>
-      </div>
-
-      <div class="rounded-lg border border-danger-200 bg-danger-50 p-3 text-sm text-danger-800 space-y-2">
-        <p>{{ t('settings.app.restoreSessionsWarning') }}</p>
-        <div v-if="isRestoring && uploadProgress !== null" class="space-y-1">
-          <div class="h-2 overflow-hidden rounded-full bg-danger-100">
-            <div class="h-full bg-accent-500" :style="{ width: `${uploadProgress}%` }" />
-          </div>
-          <p class="text-xs text-danger-800">{{ t('settings.app.uploadProgress', { progress: String(uploadProgress) }) }}</p>
-        </div>
-        <label class="block">
-          <span class="text-xs font-medium text-danger-900">{{ t('settings.app.restoreConfirmLabel') }}</span>
-          <input v-model="restoreConfirmation" class="input mt-1 bg-white" autocomplete="off">
-        </label>
-      </div>
-
-      <template #footer>
-        <button class="btn-secondary" type="button" @click="closeRestorePreview">
-          {{ t('actions.cancel') }}
-        </button>
-        <button
-          class="btn-primary"
-          type="button"
-          :disabled="isRestoring || restoreConfirmation !== 'RESTORE' || !canRestorePreview"
-          :class="{ 'opacity-50 cursor-not-allowed': isRestoring || restoreConfirmation !== 'RESTORE' || !canRestorePreview }"
-          @click="restoreSnapshot"
-        >
-          {{ isRestoring ? t('settings.app.restoring') : t('settings.app.restore') }}
-        </button>
-      </template>
-    </CommonModal>
-  </div>
+    <template #footer>
+      <button class="btn-secondary" type="button" @click="closeRestorePreview">
+        {{ t('actions.cancel') }}
+      </button>
+      <button
+        class="btn-primary"
+        type="button"
+        :disabled="isRestoring || restoreConfirmation !== 'RESTORE' || !canRestorePreview"
+        :class="{ 'opacity-50 cursor-not-allowed': isRestoring || restoreConfirmation !== 'RESTORE' || !canRestorePreview }"
+        @click="restoreSnapshot"
+      >
+        {{ isRestoring ? t('settings.app.restoring') : t('settings.app.restore') }}
+      </button>
+    </template>
+  </CommonModal>
 </template>
 
 <script setup lang="ts">

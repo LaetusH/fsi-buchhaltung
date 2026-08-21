@@ -1,71 +1,65 @@
 <template>
-  <div class="col-span-12 space-y-5">
-    <div class="-mx-6 space-y-4 bg-white p-4 shadow-sm sm:mx-0 sm:rounded-xl sm:p-6 sm:shadow-lg">
-      <div>
-        <h2 class="section-title">{{ editingId ? t('wiki.admin.tags.editTitle') : t('wiki.admin.tags.addTitle') }}</h2>
-        <p class="text-sm text-base-600">{{ t('wiki.admin.tags.hint') }}</p>
+  <CommonCard
+    :title="editingId ? t('wiki.admin.tags.editTitle') : t('wiki.admin.tags.addTitle')"
+    :description="t('wiki.admin.tags.hint')"
+  >
+    <CommonValidationSummary v-if="errors.length" :errors="errors" :title="t('common.validationBlocked')" />
+
+    <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+      <div class="field">
+        <label for="wiki-tag-label">{{ t('wiki.admin.tags.fields.label') }}</label>
+        <input id="wiki-tag-label" v-model="label" class="input" maxlength="80" @input="onLabelInput" />
       </div>
 
-      <CommonValidationSummary v-if="errors.length" :errors="errors" :title="t('common.validationBlocked')" />
-
-      <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
-        <div class="field">
-          <label for="wiki-tag-label">{{ t('wiki.admin.tags.fields.label') }}</label>
-          <input id="wiki-tag-label" v-model="label" class="input" maxlength="80" @input="onLabelInput" />
-        </div>
-
-        <div class="field">
-          <label for="wiki-tag-slug">{{ t('wiki.admin.tags.fields.slug') }}</label>
-          <input
-            id="wiki-tag-slug"
-            v-model="slug"
-            class="input"
-            maxlength="60"
-            :placeholder="t('wiki.admin.tags.fields.slugPlaceholder')"
-            @input="slugTouched = true"
-          />
-          <p class="mt-1 text-xs text-base-400">{{ t('wiki.admin.tags.fields.slugHint') }}</p>
-        </div>
-      </div>
-
-      <div class="flex flex-wrap gap-2">
-        <button type="button" class="btn-primary" :disabled="!canSave || saving" @click="save">
-          {{ editingId ? t('actions.save') : t('wiki.admin.tags.add') }}
-        </button>
-        <button v-if="editingId" type="button" class="btn-secondary" @click="resetForm">
-          {{ t('actions.cancel') }}
-        </button>
+      <div class="field">
+        <label for="wiki-tag-slug">{{ t('wiki.admin.tags.fields.slug') }}</label>
+        <input
+          id="wiki-tag-slug"
+          v-model="slug"
+          class="input"
+          maxlength="60"
+          :placeholder="t('wiki.admin.tags.fields.slugPlaceholder')"
+          @input="slugTouched = true"
+        />
+        <p class="mt-1 text-xs text-base-400">{{ t('wiki.admin.tags.fields.slugHint') }}</p>
       </div>
     </div>
 
-    <div class="-mx-6 space-y-4 bg-white p-4 shadow-sm sm:mx-0 sm:rounded-xl sm:p-6 sm:shadow-lg">
-      <h2 class="section-title">{{ t('wiki.admin.tags.listTitle') }}</h2>
-
-      <p v-if="loading" class="text-sm text-base-500">{{ t('wiki.loading') }}</p>
-      <p v-else-if="!tags.length" class="text-sm text-base-500">{{ t('wiki.admin.tags.empty') }}</p>
-
-      <ul v-else class="divide-y divide-base-100">
-        <li v-for="entry in tags" :key="entry.id" class="flex flex-wrap items-start gap-2 py-3">
-          <div class="min-w-0 flex-1">
-            <div class="flex flex-wrap items-baseline gap-2">
-              <span class="font-semibold text-base-900">{{ entry.label }}</span>
-              <code class="rounded bg-base-100 px-1.5 py-0.5 text-xs text-base-600">{{ entry.slug }}</code>
-            </div>
-            <p class="mt-1 text-xs text-base-500">{{ t('wiki.admin.tags.usage', { count: entry.articleCount }) }}</p>
-          </div>
-
-          <div class="flex shrink-0 gap-3 text-xs">
-            <button type="button" class="cursor-pointer text-accent-700 hover:underline" @click="edit(entry)">
-              {{ t('actions.edit') }}
-            </button>
-            <button type="button" class="cursor-pointer text-danger-700 hover:underline" @click="askRemove(entry)">
-              {{ t('actions.delete') }}
-            </button>
-          </div>
-        </li>
-      </ul>
+    <div class="flex flex-wrap gap-2">
+      <button type="button" class="btn-primary" :disabled="!canSave || saving" @click="save">
+        {{ editingId ? t('actions.save') : t('wiki.admin.tags.add') }}
+      </button>
+      <button v-if="editingId" type="button" class="btn-secondary" @click="resetForm">
+        {{ t('actions.cancel') }}
+      </button>
     </div>
-  </div>
+  </CommonCard>
+
+  <CommonCard :title="t('wiki.admin.tags.listTitle')">
+    <p v-if="loading" class="text-sm text-base-500">{{ t('wiki.loading') }}</p>
+    <p v-else-if="!tags.length" class="text-sm text-base-500">{{ t('wiki.admin.tags.empty') }}</p>
+
+    <ul v-else class="divide-y divide-base-100">
+      <li v-for="entry in tags" :key="entry.id" class="flex flex-wrap items-start gap-2 py-3">
+        <div class="min-w-0 flex-1">
+          <div class="flex flex-wrap items-baseline gap-2">
+            <span class="font-semibold text-base-900">{{ entry.label }}</span>
+            <code class="rounded bg-base-100 px-1.5 py-0.5 text-xs text-base-600">{{ entry.slug }}</code>
+          </div>
+          <p class="mt-1 text-xs text-base-500">{{ t('wiki.admin.tags.usage', { count: entry.articleCount }) }}</p>
+        </div>
+
+        <div class="flex shrink-0 gap-3 text-xs">
+          <button type="button" class="cursor-pointer text-accent-700 hover:underline" @click="edit(entry)">
+            {{ t('actions.edit') }}
+          </button>
+          <button type="button" class="cursor-pointer text-danger-700 hover:underline" @click="askRemove(entry)">
+            {{ t('actions.delete') }}
+          </button>
+        </div>
+      </li>
+    </ul>
+  </CommonCard>
 
   <CommonModal v-model="confirmOpen" :title="t('wiki.admin.tags.removeConfirmTitle')">
     <p class="text-sm text-base-600">

@@ -1,104 +1,98 @@
 <template>
-  <div class="col-span-12 space-y-5">
-    <div class="-mx-6 space-y-4 bg-white p-4 shadow-sm sm:mx-0 sm:rounded-xl sm:p-6 sm:shadow-lg">
-      <div>
-        <h2 class="section-title">{{ t('wiki.admin.pageHelp.addTitle') }}</h2>
-        <p class="text-sm text-base-600">{{ t('wiki.admin.pageHelp.hint') }}</p>
+  <CommonCard
+    :title="t('wiki.admin.pageHelp.addTitle')"
+    :description="t('wiki.admin.pageHelp.hint')"
+  >
+    <CommonValidationSummary v-if="errors.length" :errors="errors" :title="t('common.validationBlocked')" />
+
+    <div class="flex flex-wrap items-end gap-3">
+      <div class="field min-w-56 flex-1">
+        <label>{{ t('wiki.admin.pageHelp.fields.page') }}</label>
+        <CommonSearchSelect
+          v-model="pageQuery"
+          :options="pageOptions"
+          :placeholder="t('wiki.admin.pageHelp.fields.pagePlaceholder')"
+          :empty-text="t('wiki.search.empty')"
+          :selected-label="selectedPageLabel"
+          menu-width="wide"
+          @select="onSelectPage"
+          @clear-selection="clearPage"
+        />
       </div>
 
-      <CommonValidationSummary v-if="errors.length" :errors="errors" :title="t('common.validationBlocked')" />
-
-      <div class="flex flex-wrap items-end gap-3">
-        <div class="field min-w-56 flex-1">
-          <label>{{ t('wiki.admin.pageHelp.fields.page') }}</label>
-          <CommonSearchSelect
-            v-model="pageQuery"
-            :options="pageOptions"
-            :placeholder="t('wiki.admin.pageHelp.fields.pagePlaceholder')"
-            :empty-text="t('wiki.search.empty')"
-            :selected-label="selectedPageLabel"
-            menu-width="wide"
-            @select="onSelectPage"
-            @clear-selection="clearPage"
-          />
-        </div>
-
-        <div class="field min-w-40">
-          <label for="wiki-help-section">{{ t('wiki.admin.pageHelp.fields.section') }}</label>
-          <input
-            id="wiki-help-section"
-            v-model="sectionKey"
-            class="input"
-            list="wiki-help-section-suggestions"
-            placeholder="z. B. receipts"
-          />
-          <datalist id="wiki-help-section-suggestions">
-            <option v-for="key in sectionSuggestions" :key="key" :value="key" />
-          </datalist>
-        </div>
-
-        <div class="field min-w-56 flex-1">
-          <label>{{ t('wiki.admin.pageHelp.fields.article') }}</label>
-          <CommonSearchSelect
-            v-model="articleQuery"
-            :options="articleOptions"
-            :placeholder="t('wiki.admin.pageHelp.fields.articlePlaceholder')"
-            :empty-text="t('wiki.search.empty')"
-            :selected-label="selectedArticleLabel"
-            menu-width="wide"
-            @select="onSelectArticle"
-            @clear-selection="clearArticle"
-          />
-        </div>
-
-        <button type="button" class="btn-primary h-9.5" :disabled="!canAdd || saving" @click="addEntry">
-          {{ t('wiki.admin.pageHelp.add') }}
-        </button>
+      <div class="field min-w-40">
+        <label for="wiki-help-section">{{ t('wiki.admin.pageHelp.fields.section') }}</label>
+        <input
+          id="wiki-help-section"
+          v-model="sectionKey"
+          class="input"
+          list="wiki-help-section-suggestions"
+          placeholder="z. B. receipts"
+        />
+        <datalist id="wiki-help-section-suggestions">
+          <option v-for="key in sectionSuggestions" :key="key" :value="key" />
+        </datalist>
       </div>
 
-      <p class="text-xs text-base-400">{{ t('wiki.admin.pageHelp.sectionHint') }}</p>
+      <div class="field min-w-56 flex-1">
+        <label>{{ t('wiki.admin.pageHelp.fields.article') }}</label>
+        <CommonSearchSelect
+          v-model="articleQuery"
+          :options="articleOptions"
+          :placeholder="t('wiki.admin.pageHelp.fields.articlePlaceholder')"
+          :empty-text="t('wiki.search.empty')"
+          :selected-label="selectedArticleLabel"
+          menu-width="wide"
+          @select="onSelectArticle"
+          @clear-selection="clearArticle"
+        />
+      </div>
+
+      <button type="button" class="btn-primary h-9.5" :disabled="!canAdd || saving" @click="addEntry">
+        {{ t('wiki.admin.pageHelp.add') }}
+      </button>
     </div>
 
-    <div class="-mx-6 space-y-4 bg-white p-4 shadow-sm sm:mx-0 sm:rounded-xl sm:p-6 sm:shadow-lg">
-      <h2 class="section-title">{{ t('wiki.admin.pageHelp.listTitle') }}</h2>
+    <p class="text-xs text-base-400">{{ t('wiki.admin.pageHelp.sectionHint') }}</p>
+  </CommonCard>
 
-      <p v-if="loading" class="text-sm text-base-500">{{ t('wiki.loading') }}</p>
-      <p v-else-if="!groups.length" class="text-sm text-base-500">{{ t('wiki.admin.pageHelp.empty') }}</p>
+  <CommonCard :title="t('wiki.admin.pageHelp.listTitle')">
+    <p v-if="loading" class="text-sm text-base-500">{{ t('wiki.loading') }}</p>
+    <p v-else-if="!groups.length" class="text-sm text-base-500">{{ t('wiki.admin.pageHelp.empty') }}</p>
 
-      <div v-else class="space-y-3">
-        <section v-for="group in groups" :key="group.pageName" class="rounded-lg border border-base-200 p-3">
-          <h3 class="font-semibold text-base-900">{{ pageLabel(group.pageName) }}</h3>
-          <p class="text-xs text-base-400">{{ group.pageName }}</p>
+    <div v-else class="space-y-3">
+      <section v-for="group in groups" :key="group.pageName" class="rounded-lg border border-base-200 p-3">
+        <h3 class="font-semibold text-base-900">{{ pageLabel(group.pageName) }}</h3>
+        <p class="text-xs text-base-400">{{ group.pageName }}</p>
 
-          <ul class="mt-2 space-y-1">
-            <li
-              v-for="entry in group.entries"
-              :key="entry.id"
-              class="flex flex-wrap items-center gap-2 border-t border-base-100 py-2 text-sm first:border-t-0"
+        <ul class="mt-2 space-y-1">
+          <li
+            v-for="entry in group.entries"
+            :key="entry.id"
+            class="flex flex-wrap items-center gap-2 border-t border-base-100 py-2 text-sm first:border-t-0"
+          >
+            <span class="font-medium text-base-800">{{ entry.title }}</span>
+            <span class="text-xs text-base-400">{{ entry.spaceTitle }}</span>
+            <CommonStatusBadge
+              v-if="entry.status !== 'published'"
+              :label="t(`wiki.status.${entry.status}`)"
+              tone="base"
+            />
+            <span v-if="entry.sectionKey" class="rounded-md bg-base-100 px-2 py-0.5 text-xs text-base-600">
+              {{ t('wiki.admin.pageHelp.fields.section') }}: {{ entry.sectionKey }}
+            </span>
+            <button
+              type="button"
+              class="ml-auto cursor-pointer text-xs text-danger-700 hover:underline"
+              @click="askRemove(entry)"
             >
-              <span class="font-medium text-base-800">{{ entry.title }}</span>
-              <span class="text-xs text-base-400">{{ entry.spaceTitle }}</span>
-              <CommonStatusBadge
-                v-if="entry.status !== 'published'"
-                :label="t(`wiki.status.${entry.status}`)"
-                tone="base"
-              />
-              <span v-if="entry.sectionKey" class="rounded-md bg-base-100 px-2 py-0.5 text-xs text-base-600">
-                {{ t('wiki.admin.pageHelp.fields.section') }}: {{ entry.sectionKey }}
-              </span>
-              <button
-                type="button"
-                class="ml-auto cursor-pointer text-xs text-danger-700 hover:underline"
-                @click="askRemove(entry)"
-              >
-                {{ t('wiki.admin.pageHelp.remove') }}
-              </button>
-            </li>
-          </ul>
-        </section>
-      </div>
+              {{ t('wiki.admin.pageHelp.remove') }}
+            </button>
+          </li>
+        </ul>
+      </section>
     </div>
-  </div>
+  </CommonCard>
 
   <CommonModal v-model="confirmOpen" :title="t('wiki.admin.pageHelp.removeConfirmTitle')">
     <p class="text-sm text-base-600">{{ t('wiki.admin.pageHelp.removeConfirmText') }}</p>

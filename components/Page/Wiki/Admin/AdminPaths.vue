@@ -1,12 +1,8 @@
 <template>
-  <div class="-mx-6 space-y-4 bg-white p-4 shadow-sm col-span-12 sm:mx-0 sm:rounded-xl sm:p-6 sm:shadow-lg">
-    <div class="flex flex-wrap items-center justify-between gap-2">
-      <div>
-        <h2 class="text-base font-semibold sm:text-lg">{{ t('wiki.admin.paths.title') }}</h2>
-        <p class="text-sm text-base-600">{{ t('wiki.admin.paths.hint') }}</p>
-      </div>
+  <CommonCard :title="t('wiki.admin.paths.title')" :description="t('wiki.admin.paths.hint')">
+    <template #actions>
       <button type="button" class="btn-primary" @click="openCreate">{{ t('wiki.admin.paths.create') }}</button>
-    </div>
+    </template>
 
     <CommonValidationSummary v-if="error" :errors="[error]" :title="t('common.validationBlocked')" />
 
@@ -64,7 +60,7 @@
         </div>
       </li>
     </ul>
-  </div>
+  </CommonCard>
 
   <CommonModal
     v-model="modalOpen"

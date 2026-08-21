@@ -1,56 +1,38 @@
 <template>
-  <div class="-mx-6 -mb-6 bg-white p-4 shadow-sm space-y-3 col-span-12 sm:mx-0 sm:mb-0 sm:space-y-6 sm:rounded-xl sm:p-6 sm:shadow-lg">
-    <h2 class="text-base font-semibold sm:text-lg">{{ t('settings.general.title') }}</h2>
+  <CommonCard
+    :title="t('settings.general.languageTitle')"
+    :description="t('settings.general.languageText', { language: t(`language.${language === 'de' ? 'german' : 'english'}`) })"
+  >
+    <button class="btn-secondary" @click="toggleLanguage">
+      {{ t('language.switchTo') }}
+    </button>
+  </CommonCard>
 
-    <section class="rounded-xl border border-base-200 p-4 space-y-3">
-      <div>
-        <h3 class="font-semibold">{{ t('settings.general.languageTitle') }}</h3>
-        <p class="text-sm text-base-600">
-          {{ t('settings.general.languageText', { language: t(`language.${language === 'de' ? 'german' : 'english'}`) }) }}
-        </p>
-      </div>
+  <CommonCard :title="t('settings.general.passwordTitle')" :description="t('settings.general.passwordText')">
+    <button class="btn-secondary" @click="openPasswordModal">
+      {{ t('settings.general.passwordOpen') }}
+    </button>
+  </CommonCard>
 
-      <button class="btn-secondary" @click="toggleLanguage">
-        {{ t('language.switchTo') }}
+  <CommonCard :title="t('settings.general.logoutTitle')" :description="t('settings.general.logoutText')">
+    <div class="flex flex-col gap-3 sm:flex-row">
+      <button class="btn-primary" @click="openLogoutModal">
+        {{ t('actions.logout') }}
       </button>
-    </section>
 
-    <section class="rounded-xl border border-base-200 p-4 space-y-3">
-      <div>
-        <h3 class="font-semibold">{{ t('settings.general.passwordTitle') }}</h3>
-        <p class="text-sm text-base-600">{{ t('settings.general.passwordText') }}</p>
-      </div>
-
-      <button class="btn-secondary" @click="openPasswordModal">
-        {{ t('settings.general.passwordOpen') }}
+      <button
+        class="btn-secondary"
+        :disabled="isLoggingOutAll"
+        :class="{ 'opacity-50 cursor-not-allowed': isLoggingOutAll }"
+        @click="openLogoutAllModal"
+      >
+        {{ isLoggingOutAll ? t('settings.general.logoutAllLoading') : t('settings.general.logoutAll') }}
       </button>
-    </section>
+    </div>
+  </CommonCard>
 
-    <section class="rounded-xl border border-base-200 p-4 space-y-3">
-      <div>
-        <h3 class="font-semibold">{{ t('settings.general.logoutTitle') }}</h3>
-        <p class="text-sm text-base-600">{{ t('settings.general.logoutText') }}</p>
-      </div>
-
-      <div class="flex flex-col gap-3 sm:flex-row">
-        <button class="btn-primary" @click="openLogoutModal">
-          {{ t('actions.logout') }}
-        </button>
-
-        <button
-          class="btn-secondary"
-          :disabled="isLoggingOutAll"
-          :class="{ 'opacity-50 cursor-not-allowed': isLoggingOutAll }"
-          @click="openLogoutAllModal"
-        >
-          {{ isLoggingOutAll ? t('settings.general.logoutAllLoading') : t('settings.general.logoutAll') }}
-        </button>
-      </div>
-    </section>
-
-    <PageSettingsCalendarFeedSection />
-    <PageSettingsNotificationPreferencesSection />
-  </div>
+  <PageSettingsCalendarFeedSection />
+  <PageSettingsNotificationPreferencesSection />
 
   <CommonModal
     v-model="showPasswordModal"

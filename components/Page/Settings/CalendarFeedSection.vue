@@ -1,11 +1,8 @@
 <template>
-  <section class="rounded-xl border border-base-200 p-4 space-y-3">
-    <div>
-      <h3 class="font-semibold">{{ t('home.widgets.calendarFeed.title') }}</h3>
-      <p class="text-sm text-base-600">
-        {{ t('home.widgets.calendarFeed.description') }}
-      </p>
-    </div>
+  <CommonCard
+    :title="t('home.widgets.calendarFeed.title')"
+    :description="t('home.widgets.calendarFeed.description')"
+  >
 
     <div v-if="loading" class="flex items-center justify-center p-6 text-base-400">
       <Icon name="material-symbols:progress-activity" class="animate-spin text-2xl" />
@@ -70,7 +67,7 @@
         </button>
       </div>
     </template>
-  </section>
+  </CommonCard>
 
   <CommonModal
     v-model="confirmingRegenerate"

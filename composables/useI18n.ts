@@ -176,7 +176,6 @@ const messages = {
         notifications: 'Benachrichtigungen',
       },
       general: {
-        title: 'Allgemeine Einstellungen',
         languageTitle: 'Sprache',
         languageText: 'Aktuelle Sprache: {language}',
         passwordTitle: 'Passwort ändern',
@@ -208,7 +207,6 @@ const messages = {
         logoutAllConfirmButton: 'Alle abmelden',
       },
       app: {
-        title: 'App',
         invoiceTextsTitle: 'Rechnungstexte',
         invoiceTextsText: 'Standardtexte für automatisch erzeugte Rechnungen. Variablen werden beim Erstellen der PDF ersetzt.',
         invoiceNumberTemplate: 'Rechnungsnummer-Standard',
@@ -283,11 +281,11 @@ const messages = {
         noSnapshotPermission: 'Du kannst die App-Einstellungen ansehen, hast aber keine Berechtigung zum Verwalten von Snapshots.',
       },
       association: {
-        title: 'Vereinsdaten',
         intro: 'Bearbeite die Stammdaten des Trägervereins sowie die vertretungsberechtigten Personen nach §26 BGB.',
         legalTitle: 'Vereins- und Registerdaten',
         contactTitle: 'Kontakt',
         bankingTitle: 'Bankverbindung',
+        responsibleTitle: 'Vertretungsberechtigung',
         responsibleMembers: 'Verantwortliche Mitglieder (§26 BGB)',
         responsiblePositions: 'Verantwortliche Positionen (§26 BGB)',
         responsibleMembersPlaceholder: 'Mitglied hinzufügen',
@@ -434,7 +432,6 @@ const messages = {
         },
       },
       permissions: {
-        title: 'Berechtigungen',
         rolesTitle: 'Rollen',
         positionsTitle: 'Positionen',
         usersTitle: 'Benutzer',
@@ -2564,7 +2561,6 @@ const messages = {
         notifications: 'Notifications',
       },
       general: {
-        title: 'General settings',
         languageTitle: 'Language',
         languageText: 'Current language: {language}',
         passwordTitle: 'Change password',
@@ -2596,7 +2592,6 @@ const messages = {
         logoutAllConfirmButton: 'Log out all',
       },
       app: {
-        title: 'App',
         invoiceTextsTitle: 'Invoice texts',
         invoiceTextsText: 'Default texts for automatically generated invoices. Variables are replaced when the PDF is created.',
         invoiceNumberTemplate: 'Invoice number default',
@@ -2671,11 +2666,11 @@ const messages = {
         noSnapshotPermission: 'You can access app settings, but you do not have permission to manage snapshots.',
       },
       association: {
-        title: 'Association details',
         intro: 'Edit the owning association profile and the people authorized to represent it under section 26 BGB.',
         legalTitle: 'Association and register details',
         contactTitle: 'Contact',
         bankingTitle: 'Banking details',
+        responsibleTitle: 'Authorized representatives',
         responsibleMembers: 'Responsible members (section 26 BGB)',
         responsiblePositions: 'Responsible positions (section 26 BGB)',
         responsibleMembersPlaceholder: 'Add member',
@@ -2822,7 +2817,6 @@ const messages = {
         },
       },
       permissions: {
-        title: 'Permissions',
         rolesTitle: 'Roles',
         positionsTitle: 'Positions',
         usersTitle: 'Users',

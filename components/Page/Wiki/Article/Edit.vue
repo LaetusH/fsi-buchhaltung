@@ -16,7 +16,7 @@
     </template>
 
     <template #cards>
-      <div class="-mx-6 -mb-6 space-y-4 bg-white p-4 shadow-sm col-span-12 sm:mx-0 sm:mb-0 sm:rounded-xl sm:p-6 sm:shadow-lg">
+      <CommonCard class="-mb-6 sm:mb-0">
         <CommonValidationSummary
           v-if="errors.length"
           :errors="errors"
@@ -379,7 +379,7 @@
             </template>
           </div>
         </template>
-      </div>
+      </CommonCard>
     </template>
   </Page>
 

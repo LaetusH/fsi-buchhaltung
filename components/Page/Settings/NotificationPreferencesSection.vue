@@ -1,26 +1,21 @@
 <template>
-  <section
+  <CommonCard
     :id="NOTIFICATION_PREFERENCES_SECTION"
-    ref="sectionRef"
-    class="rounded-xl border p-4 space-y-4 transition-colors"
-    :class="highlighted ? 'border-secondary-400 bg-secondary-50/40' : 'border-base-200'"
+    class="transition-colors"
+    :tone="highlighted ? 'success' : 'default'"
+    :title="t('settings.notifications.preferencesTitle')"
+    :description="t('settings.notifications.preferencesHelp')"
   >
-    <div class="flex flex-wrap items-start justify-between gap-3">
-      <div class="min-w-0">
-        <h3 class="font-semibold">{{ t('settings.notifications.preferencesTitle') }}</h3>
-        <p class="text-sm text-base-600">{{ t('settings.notifications.preferencesHelp') }}</p>
-      </div>
-      <div class="flex w-full flex-wrap gap-2 sm:w-auto sm:shrink-0">
-        <button type="button" class="btn-secondary inline-flex items-center gap-2" @click="openNotificationCentre">
-          <Icon name="material-symbols:notifications-rounded" class="h-4 w-4" aria-hidden="true" />
-          {{ t('notifications.title') }}
-        </button>
-        <button type="button" class="btn-primary inline-flex items-center gap-2" @click="openMatrix">
-          <Icon name="material-symbols:tune-rounded" class="h-4 w-4" aria-hidden="true" />
-          {{ t('settings.notifications.preferencesOpen') }}
-        </button>
-      </div>
-    </div>
+    <template #actions>
+      <button type="button" class="btn-secondary inline-flex items-center gap-2" @click="openNotificationCentre">
+        <Icon name="material-symbols:notifications-rounded" class="h-4 w-4" aria-hidden="true" />
+        {{ t('notifications.title') }}
+      </button>
+      <button type="button" class="btn-primary inline-flex items-center gap-2" @click="openMatrix">
+        <Icon name="material-symbols:tune-rounded" class="h-4 w-4" aria-hidden="true" />
+        {{ t('settings.notifications.preferencesOpen') }}
+      </button>
+    </template>
 
     <div v-if="push.configured" class="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-base-100 bg-base-50 p-3">
       <div class="flex min-w-0 items-start gap-3">
@@ -125,7 +120,7 @@
         <button type="button" class="btn-primary" @click="matrixOpen = false">{{ t('actions.close') }}</button>
       </template>
     </CommonModal>
-  </section>
+  </CommonCard>
 </template>
 
 <script setup lang="ts">
@@ -149,7 +144,6 @@ const { typeIcon, typeLabel, typeDescription, channelLabel } = useNotificationDi
 
 const loading = ref(true)
 const entries = ref<NotificationPreferenceEntry[]>([])
-const sectionRef = ref<HTMLElement | null>(null)
 const highlighted = ref(false)
 const matrixOpen = ref(false)
 
@@ -169,7 +163,7 @@ function revealSection() {
   handledSectionKey = key
 
   nextTick(() => {
-    sectionRef.value?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    document.getElementById(NOTIFICATION_PREFERENCES_SECTION)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
     openMatrix()
     highlighted.value = true
     if (highlightTimeout) clearTimeout(highlightTimeout)

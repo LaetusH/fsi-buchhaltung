@@ -1,98 +1,79 @@
 <template>
   <div v-if="hasAccess" class="contents">
-    <div class="-mx-6 -mb-6 bg-white p-4 shadow-sm space-y-4 col-span-12 sm:mx-0 sm:mb-0 sm:space-y-8 sm:rounded-xl sm:p-6 sm:shadow-lg">
-      <h2 class="text-base font-semibold sm:text-lg">{{ t('settings.permissions.title') }}</h2>
+    <CommonCard :title="t('settings.permissions.rolesTitle')">
+      <template #actions>
+        <CommonAdvancedTableViewToggle persist-key="settings-permissions-roles" />
+        <CommonGlobalSearchBar v-model="roleSearchInput" />
+        <button class="btn-primary" @click="openRoleEditor()">
+          + {{ t('settings.permissions.newRole') }}
+        </button>
+      </template>
 
-      <section class="rounded-xl border border-base-300 p-4 space-y-4">
-        <div class="flex items-center justify-between gap-3 flex-wrap">
-          <h3 class="font-semibold">{{ t('settings.permissions.rolesTitle') }}</h3>
-          <div class="flex items-center gap-2 flex-wrap justify-end">
-            <CommonAdvancedTableViewToggle persist-key="settings-permissions-roles" />
-            <CommonGlobalSearchBar
-              v-model="roleSearchInput"
-            />
-            <button class="btn-primary" @click="openRoleEditor()">
-              + {{ t('settings.permissions.newRole') }}
-            </button>
-          </div>
-        </div>
+      <CommonAdvancedTable
+        v-model:search="roleSearchInput"
+        persist-key="settings-permissions-roles"
+        :rows="roles"
+        :columns="roleColumns"
+        :empty-text="t('settings.permissions.noRoles')"
+        @row-open="openRoleEditor($event)"
+      >
+        <template #cell-description="{ row }">
+          <span class="text-base-600">{{ row.description || '-' }}</span>
+        </template>
+        <template #actions="{ row }">
+          <button class="text-link-600 hover:underline cursor-pointer" @click="openRoleEditor(row)">
+            {{ t('actions.edit') }}
+          </button>
+          <button class="text-warning-600 hover:underline cursor-pointer" @click="openRolePermissions(row)">
+            {{ t('settings.permissions.editPermissions') }}
+          </button>
+        </template>
+      </CommonAdvancedTable>
+    </CommonCard>
 
-        <CommonAdvancedTable
-          v-model:search="roleSearchInput"
-          persist-key="settings-permissions-roles"
-          :rows="roles"
-          :columns="roleColumns"
-          :empty-text="t('settings.permissions.noRoles')"
-          @row-open="openRoleEditor($event)"
-        >
-          <template #cell-description="{ row }">
-            <span class="text-base-600">{{ row.description || '-' }}</span>
-          </template>
-          <template #actions="{ row }">
-            <button class="text-link-600 hover:underline cursor-pointer" @click="openRoleEditor(row)">
-              {{ t('actions.edit') }}
-            </button>
-            <button class="text-warning-600 hover:underline cursor-pointer" @click="openRolePermissions(row)">
-              {{ t('settings.permissions.editPermissions') }}
-            </button>
-          </template>
-        </CommonAdvancedTable>
-      </section>
+    <CommonCard :title="t('settings.permissions.positionsTitle')">
+      <template #actions>
+        <CommonAdvancedTableViewToggle persist-key="settings-permissions-positions" />
+        <CommonGlobalSearchBar v-model="positionSearchInput" />
+      </template>
 
-      <section class="rounded-xl border border-base-300 p-4 space-y-4">
-        <div class="flex items-center justify-between gap-3 flex-wrap">
-          <h3 class="font-semibold">{{ t('settings.permissions.positionsTitle') }}</h3>
-          <div class="flex items-center gap-2 flex-wrap justify-end">
-            <CommonAdvancedTableViewToggle persist-key="settings-permissions-positions" />
-            <CommonGlobalSearchBar
-              v-model="positionSearchInput"
-            />
-          </div>
-        </div>
+      <CommonAdvancedTable
+        v-model:search="positionSearchInput"
+        persist-key="settings-permissions-positions"
+        :rows="positions"
+        :columns="positionColumns"
+        :empty-text="t('settings.permissions.noPositions')"
+        @row-open="openPositionPermissions($event)"
+      >
+        <template #actions="{ row }">
+          <button class="text-warning-600 hover:underline cursor-pointer" @click="openPositionPermissions(row)">
+            {{ t('settings.permissions.editPermissions') }}
+          </button>
+        </template>
+      </CommonAdvancedTable>
+    </CommonCard>
 
-        <CommonAdvancedTable
-          v-model:search="positionSearchInput"
-          persist-key="settings-permissions-positions"
-          :rows="positions"
-          :columns="positionColumns"
-          :empty-text="t('settings.permissions.noPositions')"
-          @row-open="openPositionPermissions($event)"
-        >
-          <template #actions="{ row }">
-            <button class="text-warning-600 hover:underline cursor-pointer" @click="openPositionPermissions(row)">
-              {{ t('settings.permissions.editPermissions') }}
-            </button>
-          </template>
-        </CommonAdvancedTable>
-      </section>
+    <CommonCard :title="t('settings.permissions.usersTitle')">
+      <template #actions>
+        <CommonAdvancedTableViewToggle persist-key="settings-permissions-users" />
+        <CommonGlobalSearchBar v-model="userSearchInput" />
+      </template>
 
-      <section class="rounded-xl border border-base-300 p-4 space-y-4">
-        <div class="flex items-center justify-between gap-3 flex-wrap">
-          <h3 class="font-semibold">{{ t('settings.permissions.usersTitle') }}</h3>
-          <div class="flex items-center gap-2 flex-wrap justify-end">
-            <CommonAdvancedTableViewToggle persist-key="settings-permissions-users" />
-            <CommonGlobalSearchBar
-              v-model="userSearchInput"
-            />
-          </div>
-        </div>
-
-        <CommonAdvancedTable
-          v-model:search="userSearchInput"
-          persist-key="settings-permissions-users"
-          :rows="users"
-          :columns="userColumns"
-          :empty-text="t('settings.permissions.noUsers')"
-          @row-open="openUserAccess($event)"
-        >
-          <template #actions="{ row }">
-            <button class="text-warning-600 hover:underline cursor-pointer" @click="openUserAccess(row)">
-              {{ t('settings.permissions.editAccess') }}
-            </button>
-          </template>
-        </CommonAdvancedTable>
-      </section>
-    </div>
+      <CommonAdvancedTable
+        v-model:search="userSearchInput"
+        persist-key="settings-permissions-users"
+        :rows="users"
+        :columns="userColumns"
+        :empty-text="t('settings.permissions.noUsers')"
+        @row-open="openUserAccess($event)"
+      >
+        <template #actions="{ row }">
+          <button class="text-warning-600 hover:underline cursor-pointer" @click="openUserAccess(row)">
+            {{ t('settings.permissions.editAccess') }}
+          </button>
+        </template>
+      </CommonAdvancedTable>
+    </CommonCard>
 
     <CommonModal
       v-model="showRoleModal"
