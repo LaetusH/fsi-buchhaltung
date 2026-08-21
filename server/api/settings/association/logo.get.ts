@@ -26,15 +26,16 @@ export default defineEventHandler(async (event) => {
        LIMIT 1`,
     )
 
-    if (!rows.length) return { ok: false, error: 'Logo not found' }
+    const logo = rows[0]
+    if (!logo) return { ok: false, error: 'Logo not found' }
 
     const uploadRoot = process.env.UPLOAD_DIR!
-    const relativePath = rows[0].file_path.replace(/^\/uploads\//, '')
+    const relativePath = logo.file_path.replace(/^\/uploads\//, '')
     const absolutePath = path.join(uploadRoot, relativePath)
     if (!fs.existsSync(absolutePath)) return { ok: false, error: 'Physical file not found' }
 
     const stat = fs.statSync(absolutePath)
-    setHeader(event, 'Content-Type', rows[0].mime_type)
+    setHeader(event, 'Content-Type', logo.mime_type)
     setHeader(event, 'Content-Length', stat.size)
     setHeader(event, 'Content-Disposition', 'inline')
     setHeader(event, 'Cache-Control', 'no-transform')

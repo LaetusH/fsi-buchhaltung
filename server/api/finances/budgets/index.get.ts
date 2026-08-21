@@ -27,8 +27,9 @@ interface GetBudgetsError {
 type GetBudgetsResponse = GetBudgetsSuccess | GetBudgetsError
 
 function getBudgetPeriod(startDate: string, endDate: string): { year: number, semester: BudgetSemester } {
-  const [startYear, startMonth] = startDate.split('-').map(Number)
-  const [, endMonth] = endDate.split('-').map(Number)
+  const startYear = Number(startDate.slice(0, 4))
+  const startMonth = Number(startDate.slice(5, 7))
+  const endMonth = Number(endDate.slice(5, 7))
 
   if (startMonth === 4 && endMonth === 9) {
     return { year: startYear, semester: 'summer' }
