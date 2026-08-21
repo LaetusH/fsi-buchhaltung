@@ -10,6 +10,7 @@
     @create="createInvoice"
   >
     <CommonAdvancedTable
+      :loading="loading"
       v-model:search="search"
       persist-key="invoices-list"
       :rows="invoices"
@@ -45,6 +46,7 @@ const { hasPermission } = useAuth()
 const { setPage } = usePage()
 
 const invoices = ref<InvoiceRow[]>([])
+const loading = ref(true)
 const search = ref('')
 const canEdit = computed(() => hasPermission('invoices.edit'))
 const resolvedReturnTarget = computed(() => cloneReturnTarget(props.returnTarget) ?? buildReturnTarget('InvoiceList'))
@@ -129,8 +131,12 @@ const columns = computed<AdvancedTableColumn<InvoiceRow>[]>(() => [
 ])
 
 onMounted(async () => {
-  const res = await $fetch<{ ok: boolean, invoices?: InvoiceRow[], error?: string }>('/api/invoices')
-  if (res.ok && res.invoices) invoices.value = res.invoices
+  try {
+    const res = await $fetch<{ ok: boolean, invoices?: InvoiceRow[], error?: string }>('/api/invoices')
+    if (res.ok && res.invoices) invoices.value = res.invoices
+  } finally {
+    loading.value = false
+  }
 })
 
 function statusTone(status: InvoiceStatus) {

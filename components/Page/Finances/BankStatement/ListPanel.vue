@@ -10,6 +10,7 @@
     @create="createBankStatement"
   >
     <CommonAdvancedTable
+      :loading="loading"
       v-model:search="search"
       persist-key="bank-statements-list"
       :rows="bankStatements"
@@ -44,6 +45,7 @@ const canEdit = computed(() => hasPermission('bank_statements.edit'))
 const resolvedReturnTarget = computed(() => cloneReturnTarget(props.returnTarget) ?? buildReturnTarget('BankStatementList'))
 
 const bankStatements = ref<BankStatementOverview[]>([])
+const loading = ref(true)
 const search = ref('')
 
 const columns = computed<AdvancedTableColumn<BankStatementOverview>[]>(() => [
@@ -106,9 +108,13 @@ const columns = computed<AdvancedTableColumn<BankStatementOverview>[]>(() => [
 ])
 
 onMounted(async () => {
-  const res = await $fetch('/api/bank_statements')
-  if (res.ok) {
-    bankStatements.value = res.bankStatements
+  try {
+    const res = await $fetch('/api/bank_statements')
+    if (res.ok) {
+      bankStatements.value = res.bankStatements
+    }
+  } finally {
+    loading.value = false
   }
 })
 

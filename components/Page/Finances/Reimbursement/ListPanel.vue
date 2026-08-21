@@ -10,6 +10,7 @@
     @create="createReimbursement"
   >
     <CommonAdvancedTable
+      :loading="loading"
       v-model:search="search"
       persist-key="reimbursements-list"
       :rows="reimbursements"
@@ -48,6 +49,7 @@ const canEdit = computed(() => hasPermission('reimbursements.edit'))
 const resolvedReturnTarget = computed(() => cloneReturnTarget(props.returnTarget) ?? buildReturnTarget('ReimbursementList'))
 
 const reimbursements = ref<ReimbursementOverview[]>([])
+const loading = ref(true)
 const search = ref('')
 
 const statusLabels = computed<Record<ReimbursementStatus, string>>(() => ({
@@ -128,11 +130,15 @@ const columns = computed<AdvancedTableColumn<ReimbursementOverview>[]>(() => [
 ])
 
 onMounted(async () => {
-  const res = await $fetch('/api/reimbursements')
-  if (res.ok) {
-    reimbursements.value = res.reimbursements
-  } else {
-    console.log(res.error)
+  try {
+    const res = await $fetch('/api/reimbursements')
+    if (res.ok) {
+      reimbursements.value = res.reimbursements
+    } else {
+      console.log(res.error)
+    }
+  } finally {
+    loading.value = false
   }
 })
 

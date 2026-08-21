@@ -10,6 +10,7 @@
     @create="createBudget"
   >
     <CommonAdvancedTable
+      :loading="loading"
       v-model:search="search"
       persist-key="budgets-list"
       :rows="budgets"
@@ -64,6 +65,7 @@ const downloadingBudgetId = ref<number | null>(null)
 const canEdit = computed(() => hasPermission('budgets.edit'))
 const resolvedReturnTarget = computed(() => cloneReturnTarget(props.returnTarget) ?? buildReturnTarget('BudgetList'))
 const budgets = ref<BudgetListItem[]>([])
+const loading = ref(true)
 const search = ref('')
 
 const columns = computed<AdvancedTableColumn<BudgetListItem>[]>(() => [
@@ -118,9 +120,13 @@ const columns = computed<AdvancedTableColumn<BudgetListItem>[]>(() => [
 ])
 
 onMounted(async () => {
-  const response = await $fetch<{ ok: boolean, budgets?: BudgetListItem[], error?: string }>('/api/finances/budgets')
-  if (response.ok && response.budgets) {
-    budgets.value = response.budgets
+  try {
+    const response = await $fetch<{ ok: boolean, budgets?: BudgetListItem[], error?: string }>('/api/finances/budgets')
+    if (response.ok && response.budgets) {
+      budgets.value = response.budgets
+    }
+  } finally {
+    loading.value = false
   }
 })
 

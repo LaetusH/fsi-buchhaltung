@@ -201,6 +201,8 @@
 
         <CommonFormActions
           :save-disabled="saving"
+          :saving="saving"
+          :saving-label="t('actions.saving')"
           :cancel-label="t('actions.cancel')"
           :submit-label="timing === 'schedule' ? t('notifications.compose.submitScheduled') : t('notifications.compose.submit')"
           @cancel="cancel"

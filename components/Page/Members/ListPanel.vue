@@ -19,6 +19,7 @@
     </template>
 
     <CommonAdvancedTable
+      :loading="loading"
       v-model:search="search"
       persist-key="members-list"
       :rows="members"
@@ -49,6 +50,7 @@ const canEdit = computed(() => hasPermission('members.edit'))
 const canViewUsers = computed(() => hasPermission(['users.view', 'users.manage']))
 
 const members = ref<MemberListItem[]>([])
+const loading = ref(true)
 const search = ref('')
 const exportOpen = ref(false)
 
@@ -123,11 +125,15 @@ const columns = computed<AdvancedTableColumn<MemberListItem>[]>(() => [
 ])
 
 async function load() {
-  const res = await $fetch('/api/members')
-  if (res.ok) {
-    members.value = res.members
-  } else {
-    console.log(res.error)
+  try {
+    const res = await $fetch('/api/members')
+    if (res.ok) {
+      members.value = res.members
+    } else {
+      console.log(res.error)
+    }
+  } finally {
+    loading.value = false
   }
 }
 

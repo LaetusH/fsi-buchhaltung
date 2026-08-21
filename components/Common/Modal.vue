@@ -10,6 +10,8 @@
       @click.self="handleBackdropClick"
     >
       <section
+        ref="panelRef"
+        tabindex="-1"
         :class="[
           'w-full rounded-xl bg-white p-4 sm:p-6 shadow-xl',
           'scroll-panel max-h-[calc(100vh-2rem)] overflow-y-auto overscroll-none',
@@ -38,7 +40,7 @@
 </template>
 
 <script setup lang="ts">
-import { onBeforeUnmount, onMounted, toRef, useId } from 'vue'
+import { nextTick, onBeforeUnmount, onMounted, ref, toRef, useId, watch } from 'vue'
 import { useBodyScrollLock } from '~/composables/useBodyScrollLock'
 
 const props = withDefaults(defineProps<{
@@ -71,6 +73,67 @@ const emit = defineEmits<{
 
 const titleId = `modal-title-${useId()}`
 
+const panelRef = ref<HTMLElement | null>(null)
+let previouslyFocused: HTMLElement | null = null
+
+function tabbableElements(): HTMLElement[] {
+  if (!panelRef.value) return []
+  const selector = 'a[href], button, input, select, textarea, [tabindex]'
+  return Array.from(panelRef.value.querySelectorAll<HTMLElement>(selector))
+    .filter(el => !el.hasAttribute('disabled')
+      && el.getAttribute('tabindex') !== '-1'
+      && el.getAttribute('aria-hidden') !== 'true'
+      && (el.offsetParent !== null || el === document.activeElement))
+}
+
+function focusFirstElement() {
+  const [first] = tabbableElements()
+  if (first) first.focus()
+  else panelRef.value?.focus()
+}
+
+function trapTab(event: KeyboardEvent) {
+  const elements = tabbableElements()
+  if (elements.length === 0) {
+    event.preventDefault()
+    panelRef.value?.focus()
+    return
+  }
+
+  const first = elements[0]!
+  const last = elements[elements.length - 1]!
+  const active = document.activeElement as HTMLElement | null
+
+  if (event.shiftKey && (active === first || !panelRef.value?.contains(active))) {
+    event.preventDefault()
+    last.focus()
+    return
+  }
+
+  if (!event.shiftKey && (active === last || !panelRef.value?.contains(active))) {
+    event.preventDefault()
+    first.focus()
+  }
+}
+
+async function captureAndFocus() {
+  previouslyFocused = document.activeElement as HTMLElement | null
+  await nextTick()
+  focusFirstElement()
+}
+
+watch(() => props.modelValue, (open) => {
+  if (!import.meta.client) return
+
+  if (open) {
+    captureAndFocus()
+    return
+  }
+
+  previouslyFocused?.focus?.()
+  previouslyFocused = null
+})
+
 let backdropMousedownOnSelf = false
 
 useBodyScrollLock(toRef(props, 'modelValue'))
@@ -89,12 +152,20 @@ function handleBackdropClick() {
 }
 
 function handleKeydown(event: KeyboardEvent) {
-  if (!props.closeOnEscape || !props.modelValue || event.key !== 'Escape') return
+  if (!props.modelValue) return
+
+  if (event.key === 'Tab') {
+    trapTab(event)
+    return
+  }
+
+  if (!props.closeOnEscape || event.key !== 'Escape') return
   close()
 }
 
 onMounted(() => {
   window.addEventListener('keydown', handleKeydown)
+  if (props.modelValue) captureAndFocus()
 })
 
 onBeforeUnmount(() => {

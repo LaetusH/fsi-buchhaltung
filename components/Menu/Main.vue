@@ -1,14 +1,17 @@
 <template>
   <div
     v-if="open"
-    class="fixed inset bg-black/40 z-30 md:hidden"
+    class="fixed inset-0 bg-black/40 z-30 md:hidden"
     @click="$emit('close')"
   />
 
-  <aside :class="[
+  <aside
+    role="navigation"
+    :aria-label="t('common.mainNavigation')"
+    :class="[
       'fixed top-0 left-0 h-full bg-base-900 text-base-300 flex flex-col p-4 shadow-lg z-40 transition-[width,transform] duration-200',
       collapsed ? 'md:w-18' : 'md:w-40',
-      'w-18',
+      'w-40',
       open ? 'translate-x-0' : '-translate-x-full',
       'md:translate-x-0'
     ]"
@@ -17,26 +20,35 @@
       class="flex flex-1 flex-col mt-2 mb-4 sm:mb-2"
       :class="pages.length > 6 ? 'justify-between' : 'justify-start gap-4'"
     >
-      <li
-        v-for="page in mainPages"
-        :key="page.name"
-        @click="handleClick(page.name)"
-        class="cursor-pointer flex flex-col items-center rounded-lg p-1 md:p-3"
-      >
-        <div
-          :class="[
-            'w-12 h-12 flex items-center justify-center rounded-full transition-colors',
-            page.name === currentPage
-              ? 'bg-secondary-600 text-white'
-              : 'bg-base-800 text-base-400'
-          ]"
+      <li v-for="page in mainPages" :key="page.name">
+        <button
+          type="button"
+          class="group flex w-full flex-col items-center rounded-lg p-1 transition-colors cursor-pointer hover:bg-base-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-secondary-400 md:p-3"
+          :aria-current="page.name === currentPage ? 'page' : undefined"
+          :title="collapsedLabel(page.labelKey)"
+          @click="handleClick(page.name)"
         >
-          <Icon :name="page.icon" size="30" class="shrink-0" aria-hidden="true" />
-        </div>
+          <span
+            :class="[
+              'w-12 h-12 flex items-center justify-center rounded-full transition-colors',
+              page.name === currentPage
+                ? 'bg-secondary-600 text-white'
+                : 'bg-base-800 text-base-400 group-hover:bg-base-700 group-hover:text-base-200'
+            ]"
+          >
+            <Icon :name="page.icon" size="30" class="shrink-0" aria-hidden="true" />
+          </span>
 
-        <span v-if="!collapsed" class="mt-2 text-sm text-base-300 font-medium text-center">
-          {{ t(page.labelKey) }}
-        </span>
+          <span
+            :class="[
+              'mt-2 text-sm font-medium text-center transition-colors',
+              page.name === currentPage ? 'text-white' : 'text-base-300 group-hover:text-white',
+              collapsed ? 'md:hidden' : '',
+            ]"
+          >
+            {{ t(page.labelKey) }}
+          </span>
+        </button>
       </li>
     </ul>
 
@@ -60,7 +72,7 @@
           :class="['h-5 w-5 shrink-0', isRefreshing ? 'animate-spin' : '']"
           aria-hidden="true"
         />
-        <span v-if="!collapsed">{{ t('actions.refresh') }}</span>
+        <span :class="collapsed ? 'md:hidden' : ''">{{ t('actions.refresh') }}</span>
       </button>
 
       <button
@@ -106,6 +118,10 @@ const mainPages = computed(() => {
 })
 
 const collapsed = computed(() => props.collapsed === true)
+
+function collapsedLabel(labelKey: string) {
+  return collapsed.value ? t(labelKey) : undefined
+}
 
 function handleClick(name: PageName) {
   setPage(name, name === currentPage.value ? { resetTabKey: Date.now() } : undefined)

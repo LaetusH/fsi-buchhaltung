@@ -165,6 +165,7 @@
 
     <CommonAdvancedTable
       v-else
+      :loading="outboxLoading"
       v-model:search="search"
       persist-key="notifications-outbox"
       :rows="outboxRows"
@@ -324,6 +325,7 @@ const search = ref('')
 const tab = ref<'inbox' | 'outbox'>(pageMeta.value?.tab === 'outbox' ? 'outbox' : 'inbox')
 const unreadOnly = ref(false)
 const outboxRows = ref<NotificationOutboxItem[]>([])
+const outboxLoading = ref(false)
 const detailOpen = ref(false)
 const detail = ref<NotificationOutboxDetail | null>(null)
 
@@ -431,9 +433,14 @@ const columns = computed<AdvancedTableColumn<NotificationOutboxItem>[]>(() => [
 
 async function loadOutbox() {
   if (!canViewOutbox.value) return
-  const res = await $fetch<GetNotificationOutboxResponse>('/api/notifications')
-  if (res.ok) outboxRows.value = res.items
-  else toast.error(res.error)
+  outboxLoading.value = true
+  try {
+    const res = await $fetch<GetNotificationOutboxResponse>('/api/notifications')
+    if (res.ok) outboxRows.value = res.items
+    else toast.error(res.error)
+  } finally {
+    outboxLoading.value = false
+  }
 }
 
 function openInboxItem(item: NotificationInboxItem) {

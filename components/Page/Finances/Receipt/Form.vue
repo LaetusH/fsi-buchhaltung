@@ -165,6 +165,8 @@
     <CommonFormActions
       :disabled="Boolean(disabled)"
       :save-disabled="saveDisabled"
+      :saving="Boolean(props.saving)"
+      :saving-label="t('actions.saving')"
       :cancel-label="t('actions.cancel')"
       :submit-label="t('actions.save')"
       :close-label="t('actions.close')"

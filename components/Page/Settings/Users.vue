@@ -10,6 +10,7 @@
     @create="openCreateModal"
   >
     <CommonAdvancedTable
+      :loading="loading"
       v-model:search="search"
       persist-key="settings-users"
       :rows="users"
@@ -220,6 +221,7 @@ const { hasPermission, user: currentUser, fetchSession } = useAuth()
 
 const hasAccess = computed(() => hasPermission('users.manage'))
 const users = ref<UserListRow[]>([])
+const loading = ref(true)
 const memberOptions = ref<MemberOptionRow[]>([])
 const showCreateModal = ref(false)
 const editingUser = ref<UserListRow | null>(null)
@@ -526,7 +528,10 @@ async function requirePasswordChange(user: UserListRow) {
 }
 
 onMounted(async () => {
-  if (!hasAccess.value) return
+  if (!hasAccess.value) {
+    loading.value = false
+    return
+  }
   await loadSupportData()
 })
 
@@ -536,6 +541,10 @@ useAppRefresh().onRefresh(async () => {
 })
 
 async function loadSupportData() {
-  await Promise.all([loadUsers(), loadMemberOptions()])
+  try {
+    await Promise.all([loadUsers(), loadMemberOptions()])
+  } finally {
+    loading.value = false
+  }
 }
 </script>

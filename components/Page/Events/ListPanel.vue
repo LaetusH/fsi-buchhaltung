@@ -12,6 +12,7 @@
     @create="createEvent"
   >
     <CommonAdvancedTable
+      :loading="loading"
       v-model:search="search"
       persist-key="events-list"
       :rows="events"
@@ -47,6 +48,7 @@ const canEdit = computed(() => hasPermission('events.edit'))
 const resolvedReturnTarget = computed(() => cloneReturnTarget(props.returnTarget) ?? buildReturnTarget('Events'))
 
 const events = ref<Event[]>([])
+const loading = ref(true)
 const canOpenAll = ref(true)
 const organizerEventIds = ref(new Set<number>())
 const search = ref('')
@@ -123,11 +125,15 @@ const columns = computed<AdvancedTableColumn<Event>[]>(() => [
 ])
 
 onMounted(async () => {
-  const res = await $fetch('/api/events')
-  if (res.ok) {
-    events.value = res.events
-    canOpenAll.value = res.canOpenAll
-    organizerEventIds.value = new Set(res.organizerEventIds)
+  try {
+    const res = await $fetch('/api/events')
+    if (res.ok) {
+      events.value = res.events
+      canOpenAll.value = res.canOpenAll
+      organizerEventIds.value = new Set(res.organizerEventIds)
+    }
+  } finally {
+    loading.value = false
   }
 })
 

@@ -26,7 +26,7 @@
           {{ unreadCount > 99 ? '99+' : unreadCount }}
         </span>
       </span>
-      <span v-if="!collapsed" class="truncate">{{ t('notifications.title') }}</span>
+      <span :class="['truncate', collapsed ? 'md:hidden' : '']">{{ t('notifications.title') }}</span>
     </button>
 
     <Teleport to="body">

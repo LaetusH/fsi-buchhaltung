@@ -79,10 +79,23 @@
         </thead>
 
         <tbody>
+          <template v-if="loading">
+            <tr v-for="n in SKELETON_ROWS" :key="`skeleton-${n}`" class="border-b last:border-b-0">
+              <td v-for="column in visibleColumns" :key="column.key" class="py-3">
+                <div class="h-3 w-full max-w-40 animate-pulse rounded bg-base-200" />
+              </td>
+              <td v-if="showActions" class="py-3">
+                <div class="ml-auto h-3 w-12 animate-pulse rounded bg-base-200" />
+              </td>
+            </tr>
+          </template>
+
           <tr
-            v-for="(row, index) in processedRows"
+            v-for="(row, index) in loading ? [] : processedRows"
             :key="rowKeyOf(row, index)"
-            class="border-b last:border-b-0 transition"
+            class="border-b last:border-b-0 transition-colors"
+            :class="canOpen(row) ? 'cursor-pointer hover:bg-base-50' : ''"
+            @click="onRowClick(row, $event)"
           >
             <td
               v-for="column in visibleColumns"
@@ -107,9 +120,15 @@
             </td>
           </tr>
 
-          <tr v-if="processedRows.length === 0">
-            <td :colspan="visibleColumns.length + (showActions ? 1 : 0)" class="py-6 text-center text-base-500">
-              {{ emptyText }}
+          <tr v-if="!loading && processedRows.length === 0">
+            <td :colspan="visibleColumns.length + (showActions ? 1 : 0)">
+              <CommonTableEmptyState
+                :title="emptyState.title"
+                :hint="emptyState.hint"
+                :icon="emptyState.icon"
+                :reset-label="emptyState.resetLabel"
+                @reset="resetSearchAndFilters"
+              />
             </td>
           </tr>
         </tbody>
@@ -121,7 +140,16 @@
       class="overflow-hidden rounded-xl border border-base-200 divide-y divide-base-200 bg-white"
       :class="{ 'xl:hidden': viewMode === 'table' }"
     >
-      <li v-for="(row, index) in processedRows" :key="rowKeyOf(row, index)" class="flex items-stretch">
+      <template v-if="loading">
+        <li v-for="n in SKELETON_ROWS" :key="`skeleton-${n}`" class="flex items-center gap-3 px-3 py-3">
+          <div class="min-w-0 flex-1 space-y-2">
+            <div class="h-3 w-2/5 animate-pulse rounded bg-base-200" />
+            <div class="h-2.5 w-3/5 animate-pulse rounded bg-base-100" />
+          </div>
+        </li>
+      </template>
+
+      <li v-for="(row, index) in loading ? [] : processedRows" :key="rowKeyOf(row, index)" class="flex items-stretch">
         <button
           type="button"
           class="flex min-w-0 flex-1 items-center gap-3 bg-white px-3 py-2.5 text-left transition not-disabled:cursor-pointer not-disabled:hover:bg-base-50 disabled:cursor-default"
@@ -198,8 +226,14 @@
         </MenuDropdown>
       </li>
 
-      <li v-if="processedRows.length === 0" class="py-6 text-center text-sm text-base-500">
-        {{ emptyText }}
+      <li v-if="!loading && processedRows.length === 0">
+        <CommonTableEmptyState
+          :title="emptyState.title"
+          :hint="emptyState.hint"
+          :icon="emptyState.icon"
+          :reset-label="emptyState.resetLabel"
+          @reset="resetSearchAndFilters"
+        />
       </li>
     </ul>
 
@@ -284,6 +318,10 @@ const props = withDefaults(defineProps<{
   rows: T[]
   columns: AdvancedTableColumn<T>[]
   emptyText: string
+  /** Replaces the rows with skeleton placeholders, so an in-flight load never reads as "no data". */
+  loading?: boolean
+  /** Icon for the empty state; defaults to a generic inbox. */
+  emptyIcon?: string
   /** Unique key per row; defaults to `row.id`, falling back to the index. */
   rowKey?: (row: T) => string | number
   showActions?: boolean
@@ -293,11 +331,15 @@ const props = withDefaults(defineProps<{
   /** Unique, stable key to persist sort/filter/search state across page navigation. Omit to keep state local to this mount. */
   persistKey?: string
 }>(), {
+  loading: false,
+  emptyIcon: 'material-symbols:inbox-rounded',
   showActions: true,
   tableClass: 'min-w-5xl',
 })
 
-defineEmits<{
+const SKELETON_ROWS = 5
+
+const emit = defineEmits<{
   (e: 'row-open', row: T): void
 }>()
 
@@ -403,5 +445,36 @@ function resetAllFilters() {
     resetFilter(column.key)
   }
   expandedFilterKey.value = null
+}
+
+const isNarrowed = computed(() => search.value.trim().length > 0 || activeFilterColumns.value.length > 0)
+
+const emptyState = computed(() => {
+  if (isNarrowed.value) {
+    return {
+      title: t('common.noResults'),
+      hint: t('common.noResultsHint'),
+      icon: 'material-symbols:search-off-rounded',
+      resetLabel: t('common.resetSearchAndFilters'),
+    }
+  }
+
+  return { title: props.emptyText, hint: '', icon: props.emptyIcon, resetLabel: '' }
+})
+
+function resetSearchAndFilters() {
+  search.value = ''
+  resetAllFilters()
+}
+
+function onRowClick(row: T, event: MouseEvent) {
+  if (!canOpen(row)) return
+
+  const target = event.target as HTMLElement | null
+  if (target?.closest('button, a, input, select, textarea, label, [role="button"]')) return
+
+  if (window.getSelection()?.toString()) return
+
+  emit('row-open', row)
 }
 </script>

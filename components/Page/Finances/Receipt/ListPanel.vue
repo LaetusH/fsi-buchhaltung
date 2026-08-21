@@ -10,6 +10,7 @@
     @create="createReceipt"
   >
     <CommonAdvancedTable
+      :loading="loading"
       v-model:search="search"
       persist-key="receipts-list"
       :rows="receipts"
@@ -48,6 +49,7 @@ const canEdit = computed(() => hasPermission('receipts.edit'))
 const resolvedReturnTarget = computed(() => cloneReturnTarget(props.returnTarget) ?? buildReturnTarget('ReceiptList'))
 
 const receipts = ref<ReceiptRow[]>([])
+const loading = ref(true)
 const search = ref('')
 
 const statusLabels = computed<Record<ReceiptStatus, string>>(() => ({
@@ -107,11 +109,15 @@ const columns = computed<AdvancedTableColumn<ReceiptRow>[]>(() => [
 ])
 
 onMounted(async () => {
-  const res = await $fetch('/api/receipts')
-  if (res.ok) {
-    receipts.value = res.receipts
-  } else {
-    console.log(res.error)
+  try {
+    const res = await $fetch('/api/receipts')
+    if (res.ok) {
+      receipts.value = res.receipts
+    } else {
+      console.log(res.error)
+    }
+  } finally {
+    loading.value = false
   }
 })
 

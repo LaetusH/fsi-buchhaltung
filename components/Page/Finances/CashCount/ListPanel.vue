@@ -10,6 +10,7 @@
     @create="createCashCount"
   >
     <CommonAdvancedTable
+      :loading="loading"
       v-model:search="search"
       persist-key="cash-counts-list"
       :rows="cashCounts"
@@ -58,6 +59,7 @@ const canEdit = computed(() => hasPermission('cash_counts.edit'))
 const resolvedReturnTarget = computed(() => cloneReturnTarget(props.returnTarget) ?? buildReturnTarget('CashCountList'))
 
 const cashCounts = ref<CashCountListRow[]>([])
+const loading = ref(true)
 const search = ref('')
 
 const columns = computed<AdvancedTableColumn<CashCountListRow>[]>(() => [
@@ -127,14 +129,18 @@ const columns = computed<AdvancedTableColumn<CashCountListRow>[]>(() => [
 ])
 
 onMounted(async () => {
-  const res = await $fetch('/api/cash_counts')
-  if (res.ok) {
-    cashCounts.value = res.cashCounts.map((entry: CashCountOverview) => ({
-      ...entry,
-      counters_label: [entry.counted_by_first_name, entry.counted_by_second_name].filter(Boolean).join(' / '),
-    }))
-  } else {
-    console.log(res.error)
+  try {
+    const res = await $fetch('/api/cash_counts')
+    if (res.ok) {
+      cashCounts.value = res.cashCounts.map((entry: CashCountOverview) => ({
+        ...entry,
+        counters_label: [entry.counted_by_first_name, entry.counted_by_second_name].filter(Boolean).join(' / '),
+      }))
+    } else {
+      console.log(res.error)
+    }
+  } finally {
+    loading.value = false
   }
 })
 

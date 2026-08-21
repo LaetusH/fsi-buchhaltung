@@ -10,6 +10,7 @@
     @create="addItem"
   >
     <CommonAdvancedTable
+      :loading="loading"
       v-model:search="search"
       :persist-key="persistKey"
       :rows="displayItems"
@@ -214,6 +215,7 @@ defineSlots<{
 const slots = useSlots()
 const { t } = useI18n()
 const items = ref<SettingsEntityRow[]>([])
+const loading = ref(true)
 const displayItems = computed(() => props.transformItems(items.value))
 const search = ref('')
 
@@ -288,6 +290,8 @@ async function loadItems() {
     reportError('load', res.error)
   } catch (error) {
     reportError('load', undefined, error)
+  } finally {
+    loading.value = false
   }
 }
 
@@ -351,6 +355,7 @@ async function toggleActive(item: SettingsEntityRow) {
 watch(() => props.canManage, async (canManage) => {
   if (!canManage) {
     items.value = []
+    loading.value = false
     closeModal()
     return
   }

@@ -315,6 +315,8 @@
     <CommonFormActions
       :disabled="Boolean(disabled) && statusDisabled"
       :save-disabled="Boolean(props.saving) || validationErrors.length > 0"
+      :saving="Boolean(props.saving)"
+      :saving-label="t('actions.saving')"
       :cancel-label="t('actions.cancel')"
       :submit-label="t('actions.save')"
       :close-label="t('actions.close')"
