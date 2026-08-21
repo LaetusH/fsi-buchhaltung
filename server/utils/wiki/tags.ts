@@ -106,19 +106,28 @@ export function parseTagIds(value: unknown): { ok: true, tagIds: number[] } | { 
   return { ok: true, tagIds }
 }
 
+export async function validateTagIds(
+  tagIds: number[],
+  conn?: mariadb.PoolConnection,
+): Promise<string | null> {
+  if (!tagIds.length) return null
+
+  const existing = await query<Array<{ id: number }>>(
+    `SELECT id FROM wiki_tags WHERE id IN (${tagIds.map(() => '?').join(', ')})`,
+    tagIds,
+    conn,
+  )
+  if (existing.length !== tagIds.length) return 'Ein Schlagwort wurde nicht gefunden.'
+  return null
+}
+
 export async function replaceArticleTags(
   articleId: number,
   tagIds: number[],
   conn: mariadb.PoolConnection,
 ): Promise<string | null> {
-  if (tagIds.length) {
-    const existing = await query<Array<{ id: number }>>(
-      `SELECT id FROM wiki_tags WHERE id IN (${tagIds.map(() => '?').join(', ')})`,
-      tagIds,
-      conn,
-    )
-    if (existing.length !== tagIds.length) return 'Ein Schlagwort wurde nicht gefunden.'
-  }
+  const validationError = await validateTagIds(tagIds, conn)
+  if (validationError) return validationError
 
   await query('DELETE FROM wiki_article_tags WHERE article_id = ?', [articleId], conn)
   for (const tagId of tagIds) {
