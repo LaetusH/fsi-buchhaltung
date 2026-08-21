@@ -53,6 +53,9 @@ export const usePage = () => {
     if (import.meta.client && page !== 'Login') {
       window.location.hash = buildHash(page, meta || null)
     }
+    if (import.meta.client && !meta?.section) {
+      nextTick(() => window.scrollTo(0, 0))
+    }
   }
 
   return { currentPage, setPage, pageMeta }
