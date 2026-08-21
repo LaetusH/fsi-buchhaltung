@@ -116,10 +116,13 @@ export async function loadArticleChecklists(
       created_by: number
       created_at: string
       username: string | null
+      member_name: string | null
     }>>(
-      `SELECT r.id, r.checklist_id, r.title, r.due_date, r.closed_at, r.created_by, r.created_at, u.username
+      `SELECT r.id, r.checklist_id, r.title, r.due_date, r.closed_at, r.created_by, r.created_at, u.username,
+              TRIM(CONCAT(m.first_name, ' ', m.last_name)) AS member_name
        FROM wiki_checklist_runs r
        LEFT JOIN users u ON u.id = r.created_by
+       LEFT JOIN members m ON m.account = u.id
        WHERE r.checklist_id IN (${listIds.map(() => '?').join(', ')})
        ORDER BY r.closed_at IS NOT NULL, r.created_at DESC, r.id DESC`,
       listIds,
@@ -135,10 +138,13 @@ export async function loadArticleChecklists(
       completed_at: string
       completed_by: number
       username: string | null
+      member_name: string | null
     }>>(
-      `SELECT s.run_id, s.item_id, s.completed_at, s.completed_by, u.username
+      `SELECT s.run_id, s.item_id, s.completed_at, s.completed_by, u.username,
+              TRIM(CONCAT(m.first_name, ' ', m.last_name)) AS member_name
        FROM wiki_checklist_run_state s
        LEFT JOIN users u ON u.id = s.completed_by
+       LEFT JOIN members m ON m.account = u.id
        WHERE s.run_id IN (${runIds.map(() => '?').join(', ')})`,
       runIds,
       conn,
@@ -168,7 +174,7 @@ export async function loadArticleChecklists(
             itemId: Number(row.item_id),
             completedAt: String(row.completed_at),
             completedBy: Number(row.completed_by),
-            completedByName: row.username ?? '',
+            completedByName: row.member_name || row.username || '',
           }))
 
         return {
@@ -177,7 +183,7 @@ export async function loadArticleChecklists(
           dueDate: run.due_date ? String(run.due_date) : null,
           closedAt: run.closed_at ? String(run.closed_at) : null,
           createdBy: Number(run.created_by),
-          createdByName: run.username ?? '',
+          createdByName: run.member_name || run.username || '',
           createdAt: String(run.created_at),
           entries,
           canClose: canWrite || Number(run.created_by) === userId,

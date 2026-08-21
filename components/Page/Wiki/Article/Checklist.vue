@@ -66,8 +66,8 @@
         {{ t('wiki.checklist.noRuns') }}
       </p>
 
-      <ul class="mt-3 space-y-2">
-        <li v-for="item in checklist.items" :key="item.id">
+      <ul class="mt-3 list-none space-y-2 pl-0">
+        <li v-for="item in checklist.items" :key="item.id" class="list-none pl-0">
           <label
             class="flex flex-wrap items-start gap-x-3 gap-y-1 rounded-lg border p-3 transition-colors"
             :class="[
