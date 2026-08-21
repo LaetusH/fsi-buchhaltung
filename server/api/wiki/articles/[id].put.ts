@@ -3,6 +3,7 @@ import { query, withAuditTransaction } from '~/server/utils/db'
 import { requirePermission } from '~/server/utils/api/guards'
 import { requireArticleWrite } from '~/server/utils/wiki/access'
 import { isSlugTaken, validateArticleFields, validateParent } from '~/server/utils/wiki/articles'
+import { parseTagIds, replaceArticleTags, validateTagIds } from '~/server/utils/wiki/tags'
 
 export type UpdateWikiArticleResponse =
   | { ok: true }
@@ -41,6 +42,13 @@ export default defineEventHandler(async (event): Promise<UpdateWikiArticleRespon
     ? undefined
     : (body.reviewIntervalDays === null || body.reviewIntervalDays === '' ? null : Number(body.reviewIntervalDays))
 
+  let tagIds: number[] | undefined
+  if (body?.tagIds !== undefined) {
+    const parsedTags = parseTagIds(body.tagIds)
+    if (!parsedTags.ok) return parsedTags
+    tagIds = parsedTags.tagIds
+  }
+
   const invalid = validateArticleFields({ title, slug, summary, markdown: draftMd })
   if (invalid) return { ok: false, error: invalid }
 
@@ -56,6 +64,11 @@ export default defineEventHandler(async (event): Promise<UpdateWikiArticleRespon
 
   const parentError = await validateParent(articleId, node.spaceId, parentId)
   if (parentError) return { ok: false, error: parentError }
+
+  if (tagIds !== undefined) {
+    const tagError = await validateTagIds(tagIds)
+    if (tagError) return { ok: false, error: tagError }
+  }
 
   try {
     await withAuditTransaction(current.user, async (conn) => {
@@ -74,6 +87,8 @@ export default defineEventHandler(async (event): Promise<UpdateWikiArticleRespon
 
       params.push(articleId)
       await query(`UPDATE wiki_articles SET ${fields.join(', ')} WHERE id = ?`, params, conn)
+
+      if (tagIds !== undefined) await replaceArticleTags(articleId, tagIds, conn)
     })
 
     return { ok: true }

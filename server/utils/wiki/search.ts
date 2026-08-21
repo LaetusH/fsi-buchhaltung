@@ -68,20 +68,23 @@ export async function searchArticles(
   filters: WikiSearchFilters = {},
 ): Promise<WikiSearchHit[]> {
   const term = rawTerm.trim()
-  if (term.length < 2) return []
+  const hasTerm = term.length >= 2
+  if (!hasTerm && !filters.tag) return []
 
   const conditions: string[] = []
   const params: unknown[] = []
 
-  const booleanTerm = toBooleanQuery(term)
+  if (hasTerm) {
+    const booleanTerm = toBooleanQuery(term)
 
-  if (booleanTerm && await hasWikiFulltextIndex()) {
-    conditions.push('MATCH (a.title, a.summary, a.content_text) AGAINST (? IN BOOLEAN MODE)')
-    params.push(booleanTerm)
-  } else {
-    conditions.push('(a.title LIKE ? OR a.summary LIKE ? OR a.content_text LIKE ?)')
-    const like = `%${term}%`
-    params.push(like, like, like)
+    if (booleanTerm && await hasWikiFulltextIndex()) {
+      conditions.push('MATCH (a.title, a.summary, a.content_text) AGAINST (? IN BOOLEAN MODE)')
+      params.push(booleanTerm)
+    } else {
+      conditions.push('(a.title LIKE ? OR a.summary LIKE ? OR a.content_text LIKE ?)')
+      const like = `%${term}%`
+      params.push(like, like, like)
+    }
   }
 
   if (filters.spaceId) {
@@ -127,6 +130,6 @@ export async function searchArticles(
       spaceTitle: row.space_title,
       title: row.title,
       summary: row.summary,
-      snippet: buildSnippet(row.content_text, term),
+      snippet: buildSnippet(row.content_text, hasTerm ? term : ''),
     }))
 }

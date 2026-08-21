@@ -47,6 +47,26 @@
           </button>
         </template>
       </MenuDropdown>
+      <MenuDropdown v-if="tags.length" v-model="openDropdown" id="tag" wrapper-class="relative w-full sm:max-w-xs">
+        <template #trigger="{ styling }">
+          <button type="button" :class="[styling, 'cursor-pointer']">
+            <span class="truncate">{{ tagLabel }}</span>
+            <Icon name="material-symbols:keyboard-arrow-down-rounded" class="text-lg" />
+          </button>
+        </template>
+        <template #default="{ styling }">
+          <button type="button" :class="styling" @click="selectTag('')">{{ t('wiki.search.allTags') }}</button>
+          <button
+            v-for="tag in tags"
+            :key="tag.id"
+            type="button"
+            :class="styling"
+            @click="selectTag(tag.slug)"
+          >
+            {{ tag.label }}
+          </button>
+        </template>
+      </MenuDropdown>
       <button type="button" class="btn-primary inline-flex h-9.5 items-center gap-1.5" @click="run">
         <Icon name="material-symbols:search-rounded" class="text-base" aria-hidden="true" />
         {{ t('wiki.search.submit') }}
@@ -87,10 +107,12 @@
 import { computed, ref, watch } from 'vue'
 import { useI18n } from '~/composables/useI18n'
 import type { WikiSearchResponse } from '~/server/api/wiki/search.get'
-import type { WikiSearchHit, WikiTreeSpace } from '~/types/wiki'
+import type { WikiTagsResponse } from '~/server/api/wiki/tags/index.get'
+import type { WikiSearchHit, WikiTag, WikiTreeSpace } from '~/types/wiki'
 
 const props = defineProps<{
   spaces: WikiTreeSpace[]
+  initialTag?: string | null
 }>()
 
 defineEmits<{
@@ -101,6 +123,8 @@ const { t } = useI18n()
 
 const term = ref('')
 const spaceId = ref(0)
+const tagSlug = ref(props.initialTag ?? '')
+const tags = ref<WikiTag[]>([])
 const hits = ref<WikiSearchHit[]>([])
 const searchedTerms = ref<string[]>([])
 const searching = ref(false)
@@ -112,6 +136,18 @@ const spaceLabel = computed(() => props.spaces.find(space => space.id === spaceI
 function selectSpace(id: number) {
   spaceId.value = id
   openDropdown.value = null
+}
+
+const tagLabel = computed(() => tags.value.find(tag => tag.slug === tagSlug.value)?.label ?? t('wiki.search.allTags'))
+
+function selectTag(slug: string) {
+  tagSlug.value = slug
+  openDropdown.value = null
+}
+
+async function loadTags() {
+  const res = await $fetch<WikiTagsResponse>('/api/wiki/tags')
+  tags.value = res.ok ? res.tags.filter(tag => tag.articleCount > 0) : []
 }
 
 const ESCAPE_HTML: Record<string, string> = {
@@ -143,6 +179,8 @@ function clear() {
   hits.value = []
   searchedTerms.value = []
   searched.value = false
+  if (!tagSlug.value) return
+  run()
 }
 
 const statusMessage = computed(() => {
@@ -154,7 +192,8 @@ const statusMessage = computed(() => {
 let debounce: ReturnType<typeof setTimeout> | null = null
 
 async function run() {
-  if (term.value.trim().length < 2) {
+  const query = term.value.trim()
+  if (query.length < 2 && !tagSlug.value) {
     hits.value = []
     searchedTerms.value = []
     searched.value = false
@@ -162,21 +201,29 @@ async function run() {
   }
 
   searching.value = true
-  const query = term.value.trim()
   try {
     const res = await $fetch<WikiSearchResponse>('/api/wiki/search', {
-      query: { q: query, spaceId: spaceId.value || undefined },
+      query: {
+        q: query,
+        spaceId: spaceId.value || undefined,
+        tag: tagSlug.value || undefined,
+      },
     })
     hits.value = res.ok ? res.hits : []
-    searchedTerms.value = res.ok ? query.split(/\s+/).filter(word => word.length > 1) : []
+    searchedTerms.value = res.ok && query.length >= 2
+      ? query.split(/\s+/).filter(word => word.length > 1)
+      : []
   } finally {
     searching.value = false
     searched.value = true
   }
 }
 
-watch([term, spaceId], () => {
+watch([term, spaceId, tagSlug], () => {
   if (debounce) clearTimeout(debounce)
   debounce = setTimeout(run, 300)
 })
+
+loadTags()
+if (tagSlug.value) run()
 </script>

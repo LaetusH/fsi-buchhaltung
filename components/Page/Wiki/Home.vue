@@ -25,7 +25,7 @@
     <template #cards>
       <div class="-mx-6 space-y-3 bg-white p-4 shadow-sm col-span-12 sm:mx-0 sm:rounded-xl sm:p-6 sm:shadow-lg">
         <p class="text-base text-base-600">{{ t('wiki.subtitle') }}</p>
-        <PageWikiNavigationSearchPanel :spaces="spaces" @open="openArticle" />
+        <PageWikiNavigationSearchPanel :spaces="spaces" :initial-tag="initialTag" @open="openArticle" />
         <p class="flex items-center gap-1 text-xs text-base-400">
           <Icon name="material-symbols:translate-rounded" class="text-sm" aria-hidden="true" />
           {{ t('wiki.contentLanguageHint') }}
@@ -242,7 +242,10 @@ defineEmits<{
 const { t } = useI18n()
 const { hasPermission } = useAuth()
 const { formatDate } = useLocaleFormatters()
-const { setPage } = usePage()
+const { pageMeta, setPage } = usePage()
+
+// Arriving from a tag chip on an article preselects that tag in the search panel.
+const initialTag = pageMeta.value?.tag ? String(pageMeta.value.tag) : null
 
 const spaces = ref<WikiTreeSpace[]>([])
 const recentlyUpdated = ref<WikiHomeArticle[]>([])

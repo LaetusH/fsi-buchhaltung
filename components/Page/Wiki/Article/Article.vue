@@ -142,11 +142,14 @@
                 <Icon name="material-symbols:verified-outline-rounded" class="text-sm text-base-400" aria-hidden="true" />
                 {{ t('wiki.article.reviewedAt', { date: formatDate(article.reviewedAt) }) }}
               </span>
-              <span
+              <button
                 v-for="tag in article.tags"
                 :key="tag.id"
-                class="rounded-full bg-base-100 px-2 py-0.5 font-medium text-base-600"
-              >{{ tag.label }}</span>
+                type="button"
+                class="cursor-pointer rounded-full bg-base-100 px-2 py-0.5 font-medium text-base-600 transition-colors hover:bg-accent-100 hover:text-accent-800"
+                :title="t('wiki.article.tagSearch', { label: tag.label })"
+                @click="openTag(tag.slug)"
+              >{{ tag.label }}</button>
             </div>
 
             <p
@@ -432,6 +435,10 @@ function openArticleById(articleId: number) {
 
 function openArticle(target: { id: number, slug: string, spaceSlug: string }) {
   setPage('WikiArticle', { articleId: target.id, slug: `${target.spaceSlug}/${target.slug}` })
+}
+
+function openTag(tagSlug: string) {
+  setPage('Wiki', { tag: tagSlug })
 }
 
 function openFromDrawer(target: { id: number, slug: string, spaceSlug: string }) {

@@ -13,6 +13,7 @@
       <PageWikiAdminSpaces v-if="activeTab === 'spaces'" />
       <PageWikiAdminPaths v-else-if="activeTab === 'paths'" />
       <PageWikiAdminGlossary v-else-if="activeTab === 'glossary'" />
+      <PageWikiAdminTags v-else-if="activeTab === 'tags'" />
 
       <div v-else-if="activeTab === 'stale'" class="col-span-12">
         <div class="-mx-6 space-y-4 bg-white p-4 shadow-sm sm:mx-0 sm:rounded-xl sm:p-6 sm:shadow-lg">
@@ -42,7 +43,7 @@ defineEmits<{
 const { t } = useI18n()
 const { pageMeta } = usePage()
 
-const TABS = ['spaces', 'paths', 'glossary', 'pageHelp', 'stale']
+const TABS = ['spaces', 'paths', 'glossary', 'tags', 'pageHelp', 'stale']
 
 const activeTab = ref(TABS.includes(String(pageMeta.value?.tab)) ? String(pageMeta.value?.tab) : 'spaces')
 
@@ -50,6 +51,7 @@ const tabs = computed<TabOverviewItem[]>(() => [
   { key: 'spaces', label: t('wiki.admin.tabs.spaces') },
   { key: 'paths', label: t('wiki.admin.tabs.paths') },
   { key: 'glossary', label: t('wiki.admin.tabs.glossary') },
+  { key: 'tags', label: t('wiki.admin.tabs.tags') },
   { key: 'pageHelp', label: t('wiki.admin.tabs.pageHelp') },
   { key: 'stale', label: t('wiki.admin.tabs.stale') },
 ])

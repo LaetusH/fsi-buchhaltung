@@ -203,6 +203,46 @@
               <input v-model="owner.createGrant" type="checkbox" class="checkbox" :disabled="readOnly" />
               {{ t('wiki.editor.fields.createOwnerGrant') }}
             </label>
+
+            <div class="space-y-2 border-t border-base-100 pt-4">
+              <div>
+                <h3 class="section-title">{{ t('wiki.editor.fields.tags') }}</h3>
+                <p class="text-xs text-base-500">{{ t('wiki.editor.fields.tagsHint') }}</p>
+              </div>
+
+              <p v-if="!selectedTags.length" class="text-sm text-base-500">{{ t('wiki.editor.fields.noTags') }}</p>
+
+              <ul v-else class="flex flex-wrap gap-2">
+                <li
+                  v-for="tag in selectedTags"
+                  :key="tag.id"
+                  class="inline-flex items-center gap-1.5 rounded-full bg-base-100 py-1 pl-3 text-sm text-base-700"
+                  :class="readOnly ? 'pr-3' : 'pr-1'"
+                >
+                  {{ tag.label }}
+                  <button
+                    v-if="!readOnly"
+                    type="button"
+                    class="flex h-5 w-5 cursor-pointer items-center justify-center rounded-full text-base-400 transition-colors hover:bg-base-200 hover:text-danger-700"
+                    :title="t('wiki.editor.fields.removeTag')"
+                    :aria-label="t('wiki.editor.fields.removeTag')"
+                    @click="removeTag(tag.id)"
+                  >
+                    <Icon name="material-symbols:close-rounded" class="text-sm" aria-hidden="true" />
+                  </button>
+                </li>
+              </ul>
+
+              <CommonSearchSelect
+                v-if="!readOnly"
+                v-model="tagQuery"
+                :options="tagOptions"
+                :placeholder="t('wiki.editor.fields.addTag')"
+                :empty-text="availableTags.length ? t('wiki.editor.fields.noTagOptions') : t('wiki.editor.fields.noTagsDefined')"
+                @select="addTag($event as number)"
+                @clear-selection="tagQuery = ''"
+              />
+            </div>
           </div>
 
           <div v-show="activeTab === 'checklists'">
@@ -366,7 +406,9 @@ import type { WikiTreeResponse } from '~/server/api/wiki/tree.get'
 import type { CreateWikiArticleResponse } from '~/server/api/wiki/articles/create.post'
 import type { UploadWikiAttachmentResponse } from '~/server/api/wiki/articles/[id]/attachments.post'
 import type { WikiSubjectOptionsResponse } from '~/server/api/wiki/access/subject-options.get'
-import type { WikiAttachment, WikiChecklistView, WikiTreeArticle, WikiTreeSpace } from '~/types/wiki'
+import type { WikiTagsResponse } from '~/server/api/wiki/tags/index.get'
+import type { SearchSelectOption } from '~/components/Common/SearchSelect.vue'
+import type { WikiAttachment, WikiChecklistView, WikiTag, WikiTreeArticle, WikiTreeSpace } from '~/types/wiki'
 
 defineEmits<{
   (e: 'openMenu'): void
@@ -401,6 +443,9 @@ const openFieldMenu = ref<string | null>(null)
 const positionOptions = ref<Array<{ id: number, label: string }>>([])
 const subdivisionOptions = ref<Array<{ id: number, label: string }>>([])
 
+const availableTags = ref<WikiTag[]>([])
+const tagQuery = ref('')
+
 const form = reactive({
   spaceId: Number(pageMeta.value?.spaceId ?? 0),
   parentId: pageMeta.value?.parentId ? Number(pageMeta.value.parentId) : null as number | null,
@@ -409,6 +454,7 @@ const form = reactive({
   summary: '',
   markdown: '',
   reviewIntervalDays: '' as string | number,
+  tagIds: [] as number[],
 })
 
 const owner = reactive({
@@ -444,6 +490,7 @@ function snapshotForm() {
     parentId: form.parentId,
     markdown: form.markdown,
     reviewIntervalDays: form.reviewIntervalDays,
+    tagIds: form.tagIds,
   })
 }
 // Once the author edits the slug by hand, the title stops rewriting it.
@@ -500,6 +547,23 @@ function selectOwnerSubdivision(subdivisionId: number | null) {
   openFieldMenu.value = null
 }
 
+const selectedTags = computed(() => form.tagIds
+  .map(tagId => availableTags.value.find(tag => tag.id === tagId))
+  .filter((tag): tag is WikiTag => Boolean(tag)))
+
+const tagOptions = computed<SearchSelectOption<number>[]>(() => availableTags.value
+  .filter(tag => !form.tagIds.includes(tag.id))
+  .map(tag => ({ key: tag.id, label: tag.label, value: tag.id })))
+
+function addTag(tagId: number) {
+  if (!form.tagIds.includes(tagId)) form.tagIds.push(tagId)
+  tagQuery.value = ''
+}
+
+function removeTag(tagId: number) {
+  form.tagIds = form.tagIds.filter(entry => entry !== tagId)
+}
+
 const mustSubmit = computed(() => requiresReview.value && accessLevel.value !== 'admin')
 const canMarkReviewed = computed(() => accessLevel.value === 'admin' && status.value === 'published')
 
@@ -532,6 +596,11 @@ async function loadSpaces() {
   }
 }
 
+async function loadTags() {
+  const res = await $fetch<WikiTagsResponse>('/api/wiki/tags')
+  availableTags.value = res.ok ? res.tags.map(tag => ({ id: tag.id, slug: tag.slug, label: tag.label })) : []
+}
+
 async function loadOwnerOptions() {
   for (const [type, target] of [['position', positionOptions], ['subdivision', subdivisionOptions]] as const) {
     const res = await $fetch<WikiSubjectOptionsResponse>('/api/wiki/access/subject-options', { query: { type, q: '' } })
@@ -562,6 +631,7 @@ async function loadArticle() {
   form.summary = article.summary
   // The draft is what the editor works on; without one, editing starts from the published version.
   form.markdown = article.draftMd ?? article.contentMd ?? ''
+  form.tagIds = article.tags.map(tag => Number(tag.id))
   owner.positionId = article.owner.position_id
   owner.subdivisionId = article.owner.subdivision_id
   attachments.value = article.attachments
@@ -620,6 +690,7 @@ async function saveDraft(explicit: boolean) {
           parentId: form.parentId,
           draftMd: form.markdown,
           reviewIntervalDays: form.reviewIntervalDays === '' ? null : Number(form.reviewIntervalDays),
+          tagIds: form.tagIds,
         },
       })
 
@@ -819,9 +890,10 @@ function onBeforeUnload(event: BeforeUnloadEvent) {
 watch(
   () => [
     form.title, form.slug, form.summary, form.markdown, form.parentId, form.reviewIntervalDays,
-    owner.positionId, owner.subdivisionId, owner.createGrant,
+    form.tagIds, owner.positionId, owner.subdivisionId, owner.createGrant,
   ],
   scheduleAutosave,
+  { deep: true },
 )
 
 onMounted(() => {
@@ -834,6 +906,7 @@ onBeforeUnmount(() => {
 })
 
 loadSpaces()
+loadTags()
 loadOwnerOptions()
 loadArticle()
 </script>
