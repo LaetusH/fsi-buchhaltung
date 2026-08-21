@@ -4,7 +4,7 @@
       v-for="action in FORMAT_ACTIONS"
       :key="action.key"
       type="button"
-      class="flex h-7 w-7 items-center justify-center rounded-md border border-slate-200 bg-slate-50 text-slate-600 transition hover:border-cyan-400 hover:text-cyan-700 cursor-pointer"
+      class="flex h-7 w-7 items-center justify-center rounded-md border border-base-200 bg-base-50 text-base-600 transition hover:border-secondary-400 hover:text-secondary-700 cursor-pointer"
       :title="t(action.labelKey)"
       @click="$emit('action', action.key)"
     >

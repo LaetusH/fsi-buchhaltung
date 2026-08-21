@@ -1,28 +1,28 @@
 <template>
   <div class="space-y-3">
-    <p v-if="loading" class="text-sm text-slate-500">{{ t('wiki.loading') }}</p>
-    <p v-else-if="!articles.length" class="text-sm text-slate-500">{{ t('wiki.admin.stale.empty') }}</p>
+    <p v-if="loading" class="text-sm text-base-500">{{ t('wiki.loading') }}</p>
+    <p v-else-if="!articles.length" class="text-sm text-base-500">{{ t('wiki.admin.stale.empty') }}</p>
 
-    <ul v-else class="divide-y divide-slate-100">
+    <ul v-else class="divide-y divide-base-100">
       <li v-for="entry in articles" :key="entry.id" class="flex flex-wrap items-start gap-2 py-3">
         <div class="min-w-0 flex-1">
           <button
             type="button"
-            class="inline-flex cursor-pointer items-center gap-1 text-left font-medium text-slate-800 underline decoration-slate-300 underline-offset-2 transition-colors hover:text-orange-700 hover:decoration-orange-400"
+            class="inline-flex cursor-pointer items-center gap-1 text-left font-medium text-base-800 underline decoration-base-300 underline-offset-2 transition-colors hover:text-accent-700 hover:decoration-accent-400"
             @click="open(entry.id)"
           >
             {{ entry.title }}
-            <Icon name="material-symbols:chevron-right-rounded" class="text-base text-slate-400" aria-hidden="true" />
+            <Icon name="material-symbols:chevron-right-rounded" class="text-base text-base-400" aria-hidden="true" />
           </button>
-          <p class="text-xs text-slate-500">
+          <p class="text-xs text-base-500">
             {{ entry.spaceTitle }}
             <span v-if="entry.ownerLabel"> · {{ entry.ownerLabel }}</span>
           </p>
         </div>
 
         <div class="shrink-0 text-right text-xs">
-          <p class="font-medium text-amber-700">{{ t('wiki.admin.stale.dueSince', { date: formatDate(entry.dueAt) }) }}</p>
-          <p class="text-slate-400">
+          <p class="font-medium text-warning-700">{{ t('wiki.admin.stale.dueSince', { date: formatDate(entry.dueAt) }) }}</p>
+          <p class="text-base-400">
             {{ entry.reviewedAt
               ? t('wiki.article.reviewedAt', { date: formatDate(entry.reviewedAt) })
               : t('wiki.admin.stale.neverReviewed') }}

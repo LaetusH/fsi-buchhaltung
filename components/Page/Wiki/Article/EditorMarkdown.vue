@@ -33,15 +33,15 @@
 
       <div class="wiki-toolbar-group">
         <button type="button" class="wiki-toolbar-btn" @click="insertBlock(':::hinweis\n\n:::')">
-          <Icon name="material-symbols:info-outline-rounded" class="h-4 w-4 text-sky-500" aria-hidden="true" />
+          <Icon name="material-symbols:info-outline-rounded" class="h-4 w-4 text-info-500" aria-hidden="true" />
           {{ t('wiki.editor.toolbar.hint') }}
         </button>
         <button type="button" class="wiki-toolbar-btn" @click="insertBlock(':::warnung\n\n:::')">
-          <Icon name="material-symbols:warning-outline-rounded" class="h-4 w-4 text-amber-500" aria-hidden="true" />
+          <Icon name="material-symbols:warning-outline-rounded" class="h-4 w-4 text-warning-500" aria-hidden="true" />
           {{ t('wiki.editor.toolbar.warning') }}
         </button>
         <button type="button" class="wiki-toolbar-btn" @click="insertBlock(':::tipp\n\n:::')">
-          <Icon name="material-symbols:lightbulb-outline-rounded" class="h-4 w-4 text-emerald-500" aria-hidden="true" />
+          <Icon name="material-symbols:lightbulb-outline-rounded" class="h-4 w-4 text-success-500" aria-hidden="true" />
           {{ t('wiki.editor.toolbar.tip') }}
         </button>
       </div>
@@ -49,14 +49,14 @@
       <MenuDropdown v-model="openInsertMenu" id="insert" wrapper-class="relative w-auto">
         <template #trigger="{ styling }">
           <button type="button" :class="[styling, 'w-auto cursor-pointer gap-1.5 py-2 text-sm']">
-            <Icon name="material-symbols:add-circle-outline-rounded" class="text-base text-slate-500" aria-hidden="true" />
+            <Icon name="material-symbols:add-circle-outline-rounded" class="text-base text-base-500" aria-hidden="true" />
             <span>{{ t('wiki.editor.toolbar.insert') }}</span>
             <Icon name="material-symbols:keyboard-arrow-down-rounded" class="text-lg" />
           </button>
         </template>
 
         <template #default="{ styling }">
-          <div class="px-3 py-1 text-xs font-semibold text-slate-500">{{ t('wiki.editor.toolbar.insertTool') }}</div>
+          <div class="px-3 py-1 text-xs font-semibold text-base-500">{{ t('wiki.editor.toolbar.insertTool') }}</div>
           <button
             v-for="page in toolPages"
             :key="`tool:${page}`"
@@ -66,7 +66,7 @@
           >
             {{ pageLabel(page) }}
           </button>
-          <div class="px-3 py-1 text-xs font-semibold text-slate-500">{{ t('wiki.editor.toolbar.insertEmbed') }}</div>
+          <div class="px-3 py-1 text-xs font-semibold text-base-500">{{ t('wiki.editor.toolbar.insertEmbed') }}</div>
           <button
             v-for="embed in embeds"
             :key="`embed:${embed.key}`"
@@ -75,12 +75,12 @@
             @click="chooseInsert(`embed:${embed.key}`)"
           >
             {{ t(embed.labelKey) }}
-            <span v-if="embed.argsSchema" class="ml-1 text-xs text-slate-400">
+            <span v-if="embed.argsSchema" class="ml-1 text-xs text-base-400">
               {{ Object.keys(embed.argsSchema).join(', ') }}
             </span>
           </button>
-          <div class="px-3 py-1 text-xs font-semibold text-slate-500">{{ t('wiki.editor.toolbar.insertChecklist') }}</div>
-          <p v-if="!checklists.length" class="px-3 py-1 text-xs text-slate-400">
+          <div class="px-3 py-1 text-xs font-semibold text-base-500">{{ t('wiki.editor.toolbar.insertChecklist') }}</div>
+          <p v-if="!checklists.length" class="px-3 py-1 text-xs text-base-400">
             {{ t('wiki.editor.toolbar.noChecklists') }}
           </p>
           <button
@@ -91,10 +91,10 @@
             @click="chooseInsert(`checklist:${checklist.keySlug}`)"
           >
             {{ checklist.title }}
-            <span class="ml-1 text-xs text-slate-400">{{ checklist.keySlug }}</span>
+            <span class="ml-1 text-xs text-base-400">{{ checklist.keySlug }}</span>
           </button>
-          <div class="px-3 py-1 text-xs font-semibold text-slate-500">{{ t('wiki.editor.toolbar.insertGlossary') }}</div>
-          <p v-if="!glossaryTerms.length" class="px-3 py-1 text-xs text-slate-400">
+          <div class="px-3 py-1 text-xs font-semibold text-base-500">{{ t('wiki.editor.toolbar.insertGlossary') }}</div>
+          <p v-if="!glossaryTerms.length" class="px-3 py-1 text-xs text-base-400">
             {{ t('wiki.editor.toolbar.noGlossaryTerms') }}
           </p>
           <button
@@ -105,7 +105,7 @@
             @click="chooseInsert(`glossary:${entry.key}`)"
           >
             {{ entry.term }}
-            <span class="ml-1 text-xs text-slate-400">{{ entry.key }}</span>
+            <span class="ml-1 text-xs text-base-400">{{ entry.key }}</span>
           </button>
         </template>
       </MenuDropdown>
@@ -143,14 +143,14 @@
 
       <div class="flex flex-col" :class="mobileView === 'editor' ? 'hidden xl:flex' : ''">
         <p class="section-title">{{ t('wiki.editor.preview') }}</p>
-        <div class="min-h-104 flex-1 overflow-y-auto rounded-lg border border-slate-200 bg-white p-4">
+        <div class="min-h-104 flex-1 overflow-y-auto rounded-lg border border-base-200 bg-white p-4">
           <CommonValidationSummary
             v-if="previewError"
             :errors="[previewError]"
             :title="t('common.validationBlocked')"
           />
           <PageWikiArticleBody v-else-if="previewHtml" :html="previewHtml" :checklists="checklists" preview />
-          <p v-else class="text-sm text-slate-400">{{ t('wiki.editor.previewEmpty') }}</p>
+          <p v-else class="text-sm text-base-400">{{ t('wiki.editor.previewEmpty') }}</p>
         </div>
       </div>
     </div>

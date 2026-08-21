@@ -5,12 +5,12 @@
 
       <div class="grid gap-4 md:grid-cols-2">
         <div>
-          <label class="text-sm font-medium text-slate-600">{{ t('event.name') }}</label>
+          <label class="text-sm font-medium text-base-600">{{ t('event.name') }}</label>
           <input v-model="form.name" class="input" :disabled="disabled">
         </div>
 
         <div>
-          <label class="text-sm font-medium text-slate-600">{{ t('event.location') }}</label>
+          <label class="text-sm font-medium text-base-600">{{ t('event.location') }}</label>
           <input
             :value="form.location ?? ''"
             class="input"
@@ -20,17 +20,17 @@
         </div>
 
         <div>
-          <label class="text-sm font-medium text-slate-600">{{ t('event.startsOn') }}</label>
+          <label class="text-sm font-medium text-base-600">{{ t('event.startsOn') }}</label>
           <CommonDateInput v-model="startsAtInput" mode="datetime" :disabled="disabled" />
         </div>
 
         <div>
-          <label class="text-sm font-medium text-slate-600">{{ t('event.endsOn') }}</label>
+          <label class="text-sm font-medium text-base-600">{{ t('event.endsOn') }}</label>
           <CommonDateInput v-model="endsAtInput" mode="datetime" :disabled="disabled" />
         </div>
 
         <div>
-          <label class="text-sm font-medium text-slate-600">{{ t('event.expectedGuests') }}</label>
+          <label class="text-sm font-medium text-base-600">{{ t('event.expectedGuests') }}</label>
           <input
             :value="form.expected_guests ?? ''"
             type="number"
@@ -49,7 +49,7 @@
 
       <div class="grid gap-4 lg:grid-cols-2">
         <div class="space-y-2">
-          <label class="text-sm font-medium text-slate-600">{{ t('event.memberOrganizers') }}</label>
+          <label class="text-sm font-medium text-base-600">{{ t('event.memberOrganizers') }}</label>
           <CommonSelectionListField
             :query="memberOrganizerQuery"
             :options="memberOrganizerOptions"
@@ -67,7 +67,7 @@
         </div>
 
         <div class="space-y-2">
-          <label class="text-sm font-medium text-slate-600">{{ t('event.subdivisionOrganizers') }}</label>
+          <label class="text-sm font-medium text-base-600">{{ t('event.subdivisionOrganizers') }}</label>
           <CommonSelectionListField
             :query="subdivisionOrganizerQuery"
             :options="subdivisionOrganizerOptions"
@@ -89,7 +89,7 @@
     <section class="space-y-4 -mx-6 bg-white p-4 shadow-sm sm:mx-0 sm:rounded-xl sm:shadow-lg">
       <div class="flex flex-wrap items-center justify-between gap-3">
         <h2 class="text-lg font-semibold">{{ t('event.costCentres') }}</h2>
-        <p class="text-sm font-medium" :class="allocationIsValid ? 'text-emerald-600' : 'text-amber-600'">
+        <p class="text-sm font-medium" :class="allocationIsValid ? 'text-success-600' : 'text-warning-600'">
           {{ t('event.allocationTotal', { value: allocationTotalLabel }) }}
         </p>
       </div>
@@ -106,23 +106,23 @@
           @clear-selection="costCentreQuery = ''"
         />
 
-        <div v-if="selectedCostCentreSplits.length" class="min-h-0 rounded-lg border border-slate-200 bg-slate-50">
+        <div v-if="selectedCostCentreSplits.length" class="min-h-0 rounded-lg border border-base-200 bg-base-50">
           <div class="selection-scroll max-h-[min(38vh,24rem)] overflow-y-auto p-2">
             <div
               v-for="split in selectedCostCentreSplits"
               :key="split.id"
-              class="mb-2 rounded-lg border border-slate-200 bg-white px-3 py-3 last:mb-0"
+              class="mb-2 rounded-lg border border-base-200 bg-white px-3 py-3 last:mb-0"
             >
               <div class="flex items-start justify-between gap-3">
                 <div class="min-w-0">
-                  <p class="truncate text-sm font-medium text-slate-800">{{ split.label }}</p>
-                  <p v-if="split.meta" class="text-xs text-slate-500">{{ split.meta }}</p>
+                  <p class="truncate text-sm font-medium text-base-800">{{ split.label }}</p>
+                  <p v-if="split.meta" class="text-xs text-base-500">{{ split.meta }}</p>
                 </div>
 
                 <button
                   v-if="!disabled"
                   type="button"
-                  class="shrink-0 cursor-pointer text-sm text-red-500 hover:underline"
+                  class="shrink-0 cursor-pointer text-sm text-danger-500 hover:underline"
                   @click="removeCostCentreSplit(split.id)"
                 >
                   {{ t('actions.remove') }}
@@ -131,7 +131,7 @@
 
               <div class="mt-3 grid gap-3 md:grid-cols-[minmax(0,1fr)_auto] md:items-end">
                 <div>
-                  <label class="text-sm text-slate-600">{{ t('event.sphere') }}</label>
+                  <label class="text-sm text-base-600">{{ t('event.sphere') }}</label>
                   <MenuDropdown v-model="openSphereDropdownId" :id="split.id" :disabled="disabled">
                     <template #trigger>
                       <button
@@ -150,7 +150,7 @@
                       v-for="sphere in availableSpheres(split.sphere_id)"
                       :key="sphere.id"
                       type="button"
-                      class="flex w-full cursor-pointer px-3 py-2 text-left text-sm hover:bg-gray-100"
+                      class="flex w-full cursor-pointer px-3 py-2 text-left text-sm hover:bg-base-100"
                       @click="updateCostCentreSphere(split.id, sphere.id)"
                     >
                       {{ sphereOptionLabel(sphere) }}
@@ -159,7 +159,7 @@
                 </div>
 
                 <div>
-                  <label class="text-sm text-slate-600">{{ t('event.allocationPercentage') }}</label>
+                  <label class="text-sm text-base-600">{{ t('event.allocationPercentage') }}</label>
                   <div class="mt-1 flex items-center gap-2">
                     <input
                       :value="split.allocation"
@@ -170,7 +170,7 @@
                       :disabled="disabled"
                       @input="updateCostCentreAllocation(split.id, ($event.target as HTMLInputElement).value)"
                     >
-                    <span class="text-sm text-slate-500">%</span>
+                    <span class="text-sm text-base-500">%</span>
                   </div>
                 </div>
               </div>
@@ -178,7 +178,7 @@
           </div>
         </div>
 
-        <div v-else class="rounded-lg border border-dashed border-slate-300 px-3 py-4 text-sm text-slate-500">
+        <div v-else class="rounded-lg border border-dashed border-base-300 px-3 py-4 text-sm text-base-500">
           {{ t('event.noCostCentresAssigned') }}
         </div>
       </div>
@@ -206,9 +206,9 @@
 
       <span
         v-if="!isDirty && !!eventId && !saving"
-        class="inline-flex items-center justify-center gap-1.5 rounded-md border border-slate-200 bg-white px-2.5 py-1.5 text-sm font-medium text-slate-400"
+        class="inline-flex items-center justify-center gap-1.5 rounded-md border border-base-200 bg-white px-2.5 py-1.5 text-sm font-medium text-base-400"
       >
-        <Icon name="material-symbols:check-circle-rounded" class="text-emerald-500" />
+        <Icon name="material-symbols:check-circle-rounded" class="text-success-500" />
         {{ t('actions.saved') }}
       </span>
       <button

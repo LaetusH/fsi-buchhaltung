@@ -10,13 +10,13 @@
     @create="create"
   >
     <template #actions>
-      <div v-if="canViewOutbox" class="flex gap-1 rounded-lg bg-slate-100 p-1">
+      <div v-if="canViewOutbox" class="flex gap-1 rounded-lg bg-base-100 p-1">
         <button
           v-for="entry in tabs"
           :key="entry.key"
           type="button"
           class="inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition cursor-pointer"
-          :class="tab === entry.key ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'"
+          :class="tab === entry.key ? 'bg-white text-base-900 shadow-sm' : 'text-base-500 hover:text-base-700'"
           @click="tab = entry.key"
         >
           <Icon :name="entry.icon" class="h-4 w-4" aria-hidden="true" />
@@ -33,11 +33,11 @@
 
     <div v-if="tab === 'inbox'" class="space-y-3">
       <div class="flex flex-wrap items-center justify-between gap-2">
-        <div class="flex gap-1 rounded-lg bg-slate-100 p-1">
+        <div class="flex gap-1 rounded-lg bg-base-100 p-1">
           <button
             type="button"
             class="rounded-md px-3 py-1 text-xs font-medium transition cursor-pointer"
-            :class="!unreadOnly ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'"
+            :class="!unreadOnly ? 'bg-white text-base-900 shadow-sm' : 'text-base-500 hover:text-base-700'"
             @click="unreadOnly = false"
           >
             {{ t('notifications.filterAll') }}
@@ -45,7 +45,7 @@
           <button
             type="button"
             class="rounded-md px-3 py-1 text-xs font-medium transition cursor-pointer"
-            :class="unreadOnly ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'"
+            :class="unreadOnly ? 'bg-white text-base-900 shadow-sm' : 'text-base-500 hover:text-base-700'"
             @click="unreadOnly = true"
           >
             {{ t('notifications.filterUnread') }} ({{ unreadCount }})
@@ -63,13 +63,13 @@
         </button>
       </div>
 
-      <div v-if="loading && !inboxItems.length" class="flex items-center justify-center p-10 text-slate-400">
+      <div v-if="loading && !inboxItems.length" class="flex items-center justify-center p-10 text-base-400">
         <Icon name="material-symbols:progress-activity" class="animate-spin text-2xl" aria-hidden="true" />
       </div>
 
       <div v-else-if="!filteredInbox.length" class="flex flex-col items-center gap-2 py-12 text-center">
-        <Icon name="material-symbols:notifications-off-outline-rounded" class="h-10 w-10 text-slate-300" aria-hidden="true" />
-        <p class="text-sm text-slate-500">{{ t('notifications.empty') }}</p>
+        <Icon name="material-symbols:notifications-off-outline-rounded" class="h-10 w-10 text-base-300" aria-hidden="true" />
+        <p class="text-sm text-base-500">{{ t('notifications.empty') }}</p>
       </div>
 
       <ul v-else class="space-y-2">
@@ -78,7 +78,7 @@
           :key="item.deliveryId"
           class="group relative overflow-hidden rounded-xl border border-l-4 transition"
           :class="item.readAt
-            ? 'border-slate-200 border-l-slate-200 bg-white hover:border-slate-300'
+            ? 'border-base-200 border-l-base-200 bg-white hover:border-base-300'
             : 'border-cyan-300 border-l-cyan-500 bg-cyan-100/70 hover:border-cyan-400 hover:border-l-cyan-600'"
         >
           <!--
@@ -103,12 +103,12 @@
             <span class="min-w-0 flex-1">
               <span class="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
                 <span
-                  class="min-w-0 truncate text-sm text-slate-900"
+                  class="min-w-0 truncate text-sm text-base-900"
                   :class="item.readAt ? 'font-medium' : 'font-semibold'"
                 >
                   {{ item.subject || typeLabel(item.typeKey) }}
                 </span>
-                <span class="shrink-0 text-xs text-slate-400" :title="absoluteTime(receivedAt(item))">
+                <span class="shrink-0 text-xs text-base-400" :title="absoluteTime(receivedAt(item))">
                   {{ relativeTime(receivedAt(item)) }}
                 </span>
               </span>
@@ -121,16 +121,16 @@
                    breaks, no `p`/`ul`/`hr`) so expanding only lifts the height cap — it must not also
                    change how the text looks, or the toggle reads as a rendering glitch. -->
               <span
-                class="mt-1 text-sm break-words text-slate-600"
+                class="mt-1 text-sm break-words text-base-600"
                 :class="expanded.includes(item.deliveryId) ? 'block' : 'line-clamp-6'"
                 v-html="renderNotificationInlineHtml(item.body)"
               ></span>
 
               <span class="mt-2 flex flex-wrap items-center gap-2">
-                <span class="rounded-md bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-600">
+                <span class="rounded-md bg-base-100 px-2 py-0.5 text-[11px] font-medium text-base-600">
                   {{ typeLabel(item.typeKey) }}
                 </span>
-                <span v-if="item.linkPage" class="inline-flex items-center gap-0.5 text-[11px] font-medium text-cyan-700">
+                <span v-if="item.linkPage" class="inline-flex items-center gap-0.5 text-[11px] font-medium text-secondary-700">
                   {{ t('notifications.openLink') }}
                   <Icon name="material-symbols:chevron-right-rounded" class="h-4 w-4" aria-hidden="true" />
                 </span>
@@ -143,7 +143,7 @@
           <button
             v-if="isLongBody(item.body)"
             type="button"
-            class="px-3 pb-3 text-[11px] font-medium text-slate-500 hover:underline cursor-pointer sm:px-4 sm:pb-4"
+            class="px-3 pb-3 text-[11px] font-medium text-base-500 hover:underline cursor-pointer sm:px-4 sm:pb-4"
             @click.stop="toggleExpanded(item.deliveryId)"
           >
             {{ expanded.includes(item.deliveryId) ? t('actions.showLess') : t('actions.showMore') }}
@@ -152,7 +152,7 @@
           <button
             v-if="!item.readAt"
             type="button"
-            class="absolute top-2 right-2 inline-flex h-7 w-7 items-center justify-center rounded-lg bg-white/90 text-slate-400 transition hover:text-cyan-700 cursor-pointer sm:opacity-0 sm:group-hover:opacity-100 sm:focus:opacity-100"
+            class="absolute top-2 right-2 inline-flex h-7 w-7 items-center justify-center rounded-lg bg-white/90 text-base-400 transition hover:text-cyan-700 cursor-pointer sm:opacity-0 sm:group-hover:opacity-100 sm:focus:opacity-100"
             :title="t('notifications.markRead')"
             :aria-label="t('notifications.markRead')"
             @click.stop="markRead([item.deliveryId])"
@@ -179,8 +179,8 @@
 
       <template #cell-counts="{ row }">
         <span class="inline-flex items-center gap-2">
-          <span class="text-slate-700">{{ row.counts.sent }} / {{ totalDeliveries(row) }}</span>
-          <span v-if="row.counts.failed > 0" class="text-xs font-medium text-red-600">
+          <span class="text-base-700">{{ row.counts.sent }} / {{ totalDeliveries(row) }}</span>
+          <span v-if="row.counts.failed > 0" class="text-xs font-medium text-danger-600">
             {{ row.counts.failed }} {{ t('notifications.status.failed') }}
           </span>
         </span>
@@ -192,36 +192,36 @@
     <div v-if="detail" class="space-y-4">
       <div class="flex flex-wrap items-center gap-2">
         <CommonStatusBadge :label="statusLabel(detail.status)" :tone="statusTone(detail.status)" />
-        <span class="rounded-md bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-600">
+        <span class="rounded-md bg-base-100 px-2 py-0.5 text-xs font-medium text-base-600">
           {{ typeLabel(detail.typeKey) }}
         </span>
-        <span class="inline-flex items-center gap-1 text-xs text-slate-500">
+        <span class="inline-flex items-center gap-1 text-xs text-base-500">
           <Icon name="material-symbols:schedule-rounded" class="h-4 w-4" aria-hidden="true" />
           {{ scheduledTime(detail.scheduledFor) }}
         </span>
       </div>
 
-      <div class="rounded-xl border border-slate-200 p-3">
-        <p class="text-sm font-semibold text-slate-900">
+      <div class="rounded-xl border border-base-200 p-3">
+        <p class="text-sm font-semibold text-base-900">
           {{ detail.subject || typeLabel(detail.typeKey) }}
         </p>
-        <div class="notification-body-html mt-1 text-sm text-slate-600" v-html="renderNotificationBodyHtml(detail.body)"></div>
+        <div class="notification-body-html mt-1 text-sm text-base-600" v-html="renderNotificationBodyHtml(detail.body)"></div>
       </div>
 
       <div class="grid grid-cols-2 gap-2 sm:grid-cols-4">
         <div
           v-for="entry in detailCounts"
           :key="entry.key"
-          class="rounded-lg border border-slate-200 px-3 py-2 text-center"
+          class="rounded-lg border border-base-200 px-3 py-2 text-center"
         >
           <p class="text-lg font-semibold" :class="entry.class">{{ entry.value }}</p>
-          <p class="text-[11px] text-slate-500">{{ entry.label }}</p>
+          <p class="text-[11px] text-base-500">{{ entry.label }}</p>
         </div>
       </div>
 
-      <div class="max-h-64 overflow-auto rounded-xl border border-slate-200">
+      <div class="max-h-64 overflow-auto rounded-xl border border-base-200">
         <table class="w-full text-xs">
-          <thead class="sticky top-0 z-10 bg-slate-50 text-left text-slate-500">
+          <thead class="sticky top-0 z-10 bg-base-50 text-left text-base-500">
             <tr>
               <th class="p-2 font-medium">{{ t('common.name') }}</th>
               <th class="p-2 font-medium">{{ t('notifications.compose.channels') }}</th>
@@ -229,20 +229,20 @@
             </tr>
           </thead>
           <tbody>
-            <tr v-for="d in detail.deliveries" :key="d.id" class="border-t border-slate-100 align-top">
+            <tr v-for="d in detail.deliveries" :key="d.id" class="border-t border-base-100 align-top">
               <td class="p-2">
-                <p class="font-medium text-slate-800">{{ d.recipientName }}</p>
-                <p v-if="d.address" class="break-all text-[11px] text-slate-400">{{ d.address }}</p>
+                <p class="font-medium text-base-800">{{ d.recipientName }}</p>
+                <p v-if="d.address" class="break-all text-[11px] text-base-400">{{ d.address }}</p>
               </td>
               <td class="p-2">
-                <span class="inline-flex items-center gap-1 text-slate-600">
+                <span class="inline-flex items-center gap-1 text-base-600">
                   <Icon :name="channelIcon(d.channel)" class="h-4 w-4" aria-hidden="true" />
                   {{ channelLabel(d.channel) }}
                 </span>
               </td>
               <td class="p-2">
                 <CommonStatusBadge :label="statusLabel(d.status)" :tone="statusTone(d.status)" />
-                <p v-if="d.error" class="mt-1 text-[11px] text-red-600">{{ d.error }}</p>
+                <p v-if="d.error" class="mt-1 text-[11px] text-danger-600">{{ d.error }}</p>
               </td>
             </tr>
           </tbody>
@@ -268,7 +268,7 @@
       <button
         v-if="detail?.status === 'scheduled' && canSend"
         type="button"
-        class="btn-secondary inline-flex items-center gap-2 text-red-600!"
+        class="btn-secondary inline-flex items-center gap-2 text-danger-600!"
         :title="t('notifications.cancelSendingHelp')"
         @click="cancelDetail"
       >
@@ -367,10 +367,10 @@ const detailCounts = computed(() => {
   }, {} as Record<string, number>) || {}
 
   return [
-    { key: 'sent', label: t('notifications.status.sent'), value: counts.sent || 0, class: 'text-green-600' },
-    { key: 'pending', label: t('notifications.status.pending'), value: counts.pending || 0, class: 'text-yellow-600' },
-    { key: 'failed', label: t('notifications.status.failed'), value: counts.failed || 0, class: 'text-red-600' },
-    { key: 'skipped', label: t('notifications.status.skipped'), value: counts.skipped || 0, class: 'text-slate-500' },
+    { key: 'sent', label: t('notifications.status.sent'), value: counts.sent || 0, class: 'text-success-600' },
+    { key: 'pending', label: t('notifications.status.pending'), value: counts.pending || 0, class: 'text-warning-600' },
+    { key: 'failed', label: t('notifications.status.failed'), value: counts.failed || 0, class: 'text-danger-600' },
+    { key: 'skipped', label: t('notifications.status.skipped'), value: counts.skipped || 0, class: 'text-base-500' },
   ]
 })
 

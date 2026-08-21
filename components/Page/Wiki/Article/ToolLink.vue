@@ -14,7 +14,7 @@
 
     <span
       v-else
-      class="inline-flex items-center gap-1.5 rounded-lg bg-slate-100 px-3 py-2 text-sm text-slate-500"
+      class="inline-flex items-center gap-1.5 rounded-lg bg-base-100 px-3 py-2 text-sm text-base-500"
     >
       <Icon name="material-symbols:lock-outline" class="text-base" aria-hidden="true" />
       {{ t('wiki.toolLink.noAccess') }}

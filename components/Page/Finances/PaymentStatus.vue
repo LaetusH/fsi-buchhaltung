@@ -12,7 +12,7 @@
           v-for="s in allowedTargets"
           :key="s"
           :class="[styling, statusClasses[s]]"
-          class="hover:text-black hover:bg-slate-300"
+          class="hover:text-black hover:bg-base-300"
           @click="select(s)"
         >
           {{ statusLabels[s] }}
@@ -53,10 +53,10 @@ const statusLabels = computed<Record<PaymentStatusValue, string>>(() => ({
 }))
 
 const statusClasses: Record<PaymentStatusValue, string> = {
-  draft: 'bg-slate-300 text-slate-900',
-  open: 'bg-yellow-300 text-yellow-900',
-  paid: 'bg-green-300 text-green-900',
-  cancelled: 'bg-red-300 text-red-900 line-through',
+  draft: 'bg-base-300 text-base-900',
+  open: 'bg-warning-300 text-warning-900',
+  paid: 'bg-success-300 text-success-900',
+  cancelled: 'bg-danger-300 text-danger-900 line-through',
 }
 
 const transitions: Record<PaymentStatusValue, PaymentStatusValue[]> = {

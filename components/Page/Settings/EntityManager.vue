@@ -40,13 +40,13 @@
           :toggle="() => toggleActive(row)"
           :reload="loadItems"
         >
-          <button class="text-blue-600 hover:underline cursor-pointer" @click="editItem(row)">
+          <button class="text-link-600 hover:underline cursor-pointer" @click="editItem(row)">
             {{ t('actions.edit') }}
           </button>
 
           <button
             class="hover:underline cursor-pointer"
-            :class="row.is_active ? 'text-red-500' : 'text-gray-500'"
+            :class="row.is_active ? 'text-danger-500' : 'text-base-500'"
             @click="toggleActive(row)"
           >
             {{ row.is_active ? t('actions.deactivate') : t('actions.activate') }}

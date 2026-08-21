@@ -1,17 +1,17 @@
 <template>
-  <div class="my-4 rounded-xl border border-slate-200 bg-slate-50/70 p-4">
-    <p class="flex items-center gap-2 text-sm font-semibold text-slate-800">
-      <Icon :name="icon" class="text-lg text-slate-400" aria-hidden="true" />
+  <div class="my-4 rounded-xl border border-base-200 bg-base-50/70 p-4">
+    <p class="flex items-center gap-2 text-sm font-semibold text-base-800">
+      <Icon :name="icon" class="text-lg text-base-400" aria-hidden="true" />
       {{ title }}
     </p>
 
     <div class="mt-3">
-      <p v-if="!definition" class="text-sm text-slate-500">
+      <p v-if="!definition" class="text-sm text-base-500">
         {{ t('wiki.embeds.unknown', { key: embedKey }) }}
       </p>
-      <p v-else-if="loading" class="text-sm text-slate-400">{{ t('wiki.embeds.loading') }}</p>
-      <p v-else-if="!result || !result.visible" class="text-sm text-slate-500">{{ t('wiki.embeds.hidden') }}</p>
-      <p v-else-if="result.error || !result.data" class="text-sm text-slate-500">
+      <p v-else-if="loading" class="text-sm text-base-400">{{ t('wiki.embeds.loading') }}</p>
+      <p v-else-if="!result || !result.visible" class="text-sm text-base-500">{{ t('wiki.embeds.hidden') }}</p>
+      <p v-else-if="result.error || !result.data" class="text-sm text-base-500">
         {{ result.error || t('wiki.embeds.failed') }}
       </p>
       <component :is="component" v-else-if="component" :data="result.data" />

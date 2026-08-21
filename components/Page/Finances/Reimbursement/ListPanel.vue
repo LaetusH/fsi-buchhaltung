@@ -146,15 +146,15 @@ function status(reimbursement: ReimbursementOverview): ReimbursementStatus {
 function statusTone(statusValue: ReimbursementStatus) {
   switch (statusValue) {
     case ReimbursementStatus.Submitted:
-      return 'slate'
+      return 'base'
     case ReimbursementStatus.Checked:
-      return 'yellow'
+      return 'warning'
     case ReimbursementStatus.Disbursed:
-      return 'green'
+      return 'success'
     case ReimbursementStatus.Cancelled:
-      return 'red'
+      return 'dangerCancelled'
     default:
-      return 'gray'
+      return 'baseMuted'
   }
 }
 

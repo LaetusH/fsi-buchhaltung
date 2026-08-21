@@ -13,7 +13,7 @@
           <button
             type="button"
             class="cursor-pointer rounded-md px-2.5 py-1 transition"
-            :class="view === 'upcoming' ? 'bg-white text-slate-900' : 'text-slate-200 hover:text-white'"
+            :class="view === 'upcoming' ? 'bg-white text-base-900' : 'text-base-200 hover:text-white'"
             @click="view = 'upcoming'"
           >
             {{ t('event.spotlight.toggleUpcoming') }}
@@ -21,7 +21,7 @@
           <button
             type="button"
             class="cursor-pointer rounded-md px-2.5 py-1 transition"
-            :class="view === 'latest' ? 'bg-white text-slate-900' : 'text-slate-200 hover:text-white'"
+            :class="view === 'latest' ? 'bg-white text-base-900' : 'text-base-200 hover:text-white'"
             @click="view = 'latest'"
           >
             {{ t('event.spotlight.toggleLatest') }}
@@ -30,7 +30,7 @@
 
         <button
           type="button"
-          class="inline-flex shrink-0 items-center gap-1 rounded-lg bg-white/10 px-2.5 py-1.5 text-xs font-medium text-slate-200 transition cursor-pointer hover:bg-white/20 hover:text-white"
+          class="inline-flex shrink-0 items-center gap-1 rounded-lg bg-white/10 px-2.5 py-1.5 text-xs font-medium text-base-200 transition cursor-pointer hover:bg-white/20 hover:text-white"
           @click="setPage('Events')"
         >
           {{ t('home.widgets.showAll') }}
@@ -45,13 +45,13 @@
         <div class="flex flex-wrap items-center gap-2">
           <span
             class="inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wide"
-            :class="active.status === 'past' ? 'bg-slate-100 text-slate-600' : 'bg-orange-100 text-orange-700'"
+            :class="active.status === 'past' ? 'bg-base-100 text-base-600' : 'bg-accent-100 text-accent-700'"
           >
-            <span class="h-1.5 w-1.5 rounded-full" :class="active.status === 'past' ? 'bg-slate-400' : 'bg-orange-500'" />
+            <span class="h-1.5 w-1.5 rounded-full" :class="active.status === 'past' ? 'bg-base-400' : 'bg-accent-500'" />
             {{ statusLabel }}
           </span>
-          <span v-if="countdownLabel" class="flex items-center gap-1 text-xs text-slate-500">
-            <Icon name="material-symbols:schedule-rounded" class="text-sm text-slate-400" />
+          <span v-if="countdownLabel" class="flex items-center gap-1 text-xs text-base-500">
+            <Icon name="material-symbols:schedule-rounded" class="text-sm text-base-400" />
             {{ countdownLabel }}
           </span>
         </div>
@@ -63,11 +63,11 @@
           :disabled="!active.canOpen"
           @click="openActive()"
         >
-          <span class="truncate text-lg font-semibold text-slate-900" :class="{ 'hover:underline': active.canOpen }">{{ active.name }}</span>
+          <span class="truncate text-lg font-semibold text-base-900" :class="{ 'hover:underline': active.canOpen }">{{ active.name }}</span>
           <Icon
             v-if="active.canOpen"
             name="material-symbols:open-in-new-rounded"
-            class="shrink-0 text-base text-slate-400"
+            class="shrink-0 text-base text-base-400"
           />
         </button>
       </div>
@@ -75,53 +75,53 @@
       <!-- Event facts -->
       <dl class="grid grid-cols-2 gap-x-4 gap-y-3">
         <div class="col-span-2">
-          <dt class="text-xs font-medium uppercase tracking-wide text-slate-400">{{ t('event.startsOn') }} – {{ t('event.endsOn') }}</dt>
-          <dd class="mt-0.5 flex items-center gap-1.5 text-sm font-medium text-slate-800">
-            <Icon name="material-symbols:event-rounded" class="shrink-0 text-base text-slate-400" />
+          <dt class="text-xs font-medium uppercase tracking-wide text-base-400">{{ t('event.startsOn') }} – {{ t('event.endsOn') }}</dt>
+          <dd class="mt-0.5 flex items-center gap-1.5 text-sm font-medium text-base-800">
+            <Icon name="material-symbols:event-rounded" class="shrink-0 text-base text-base-400" />
             <span>{{ rangeLabel }}</span>
           </dd>
         </div>
 
         <div>
-          <dt class="text-xs font-medium uppercase tracking-wide text-slate-400">{{ t('event.location') }}</dt>
-          <dd class="mt-0.5 flex items-center gap-1.5 text-sm text-slate-800">
-            <Icon name="material-symbols:location-on-rounded" class="shrink-0 text-base text-slate-400" />
+          <dt class="text-xs font-medium uppercase tracking-wide text-base-400">{{ t('event.location') }}</dt>
+          <dd class="mt-0.5 flex items-center gap-1.5 text-sm text-base-800">
+            <Icon name="material-symbols:location-on-rounded" class="shrink-0 text-base text-base-400" />
             <span class="truncate">{{ active.location || t('event.planning.locationMissing') }}</span>
           </dd>
         </div>
 
         <div>
-          <dt class="text-xs font-medium uppercase tracking-wide text-slate-400">{{ t('event.expectedGuests') }}</dt>
-          <dd class="mt-0.5 flex items-center gap-1.5 text-sm text-slate-800">
-            <Icon name="material-symbols:groups-rounded" class="shrink-0 text-base text-slate-400" />
+          <dt class="text-xs font-medium uppercase tracking-wide text-base-400">{{ t('event.expectedGuests') }}</dt>
+          <dd class="mt-0.5 flex items-center gap-1.5 text-sm text-base-800">
+            <Icon name="material-symbols:groups-rounded" class="shrink-0 text-base text-base-400" />
             <span>{{ active.expected_guests != null ? active.expected_guests : t('event.planning.guestsMissing') }}</span>
           </dd>
         </div>
       </dl>
 
       <!-- Planning summary (only when the user may view planning details) -->
-      <div v-if="active.planning" class="mt-auto rounded-xl border border-slate-200 bg-slate-50/60 p-4">
+      <div v-if="active.planning" class="mt-auto rounded-xl border border-base-200 bg-base-50/60 p-4">
         <button
           type="button"
-          class="-m-1 block w-[calc(100%+0.5rem)] rounded-lg p-1 text-left transition not-disabled:cursor-pointer not-disabled:hover:bg-slate-100/70 disabled:cursor-default"
+          class="-m-1 block w-[calc(100%+0.5rem)] rounded-lg p-1 text-left transition not-disabled:cursor-pointer not-disabled:hover:bg-base-100/70 disabled:cursor-default"
           :disabled="!active.canOpen"
           @click="openActive('overview')"
         >
           <span class="flex items-center justify-between gap-3">
-            <span class="flex items-center gap-1.5 text-sm font-semibold text-slate-700">
+            <span class="flex items-center gap-1.5 text-sm font-semibold text-base-700">
               <Icon
                 :name="active.status === 'past' ? 'material-symbols:history-rounded' : 'material-symbols:checklist-rtl-rounded'"
-                class="text-base text-orange-500"
+                class="text-base text-accent-500"
               />
               {{ active.status === 'past' ? t('event.spotlight.recap') : t('event.spotlight.planningState') }}
             </span>
-            <span class="text-sm font-semibold text-slate-900">{{ active.planning.readiness }}%</span>
+            <span class="text-sm font-semibold text-base-900">{{ active.planning.readiness }}%</span>
           </span>
 
-          <span class="mt-2 block h-2 overflow-hidden rounded-full bg-slate-200">
+          <span class="mt-2 block h-2 overflow-hidden rounded-full bg-base-200">
             <span
               class="block h-full rounded-full transition-all"
-              :class="active.status === 'past' ? 'bg-slate-400' : 'bg-orange-500'"
+              :class="active.status === 'past' ? 'bg-base-400' : 'bg-accent-500'"
               :style="{ width: `${active.planning.readiness}%` }"
             />
           </span>
@@ -136,11 +136,11 @@
             :disabled="!active.canOpen"
             @click="openActive(tile.tab)"
           >
-            <span class="flex items-center gap-1 text-xs text-slate-500">
-              <Icon :name="tile.icon" class="shrink-0 text-sm" :class="tile.variant === 'ok' ? 'text-emerald-500' : tile.variant === 'warning' ? 'text-amber-500' : 'text-slate-400'" />
+            <span class="flex items-center gap-1 text-xs text-base-500">
+              <Icon :name="tile.icon" class="shrink-0 text-sm" :class="tile.variant === 'ok' ? 'text-success-500' : tile.variant === 'warning' ? 'text-warning-500' : 'text-base-400'" />
               <span class="truncate">{{ tile.label }}</span>
             </span>
-            <span class="mt-0.5 block text-sm font-semibold text-slate-800">{{ tile.value }}</span>
+            <span class="mt-0.5 block text-sm font-semibold text-base-800">{{ tile.value }}</span>
           </button>
         </div>
       </div>

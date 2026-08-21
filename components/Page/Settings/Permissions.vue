@@ -3,7 +3,7 @@
     <div class="-mx-6 -mb-6 bg-white p-4 shadow-sm space-y-4 col-span-12 sm:mx-0 sm:mb-0 sm:space-y-8 sm:rounded-xl sm:p-6 sm:shadow-lg">
       <h2 class="text-base font-semibold sm:text-lg">{{ t('settings.permissions.title') }}</h2>
 
-      <section class="rounded-xl border border-slate-300 p-4 space-y-4">
+      <section class="rounded-xl border border-base-300 p-4 space-y-4">
         <div class="flex items-center justify-between gap-3 flex-wrap">
           <h3 class="font-semibold">{{ t('settings.permissions.rolesTitle') }}</h3>
           <div class="flex items-center gap-2 flex-wrap justify-end">
@@ -26,20 +26,20 @@
           @row-open="openRoleEditor($event)"
         >
           <template #cell-description="{ row }">
-            <span class="text-slate-600">{{ row.description || '-' }}</span>
+            <span class="text-base-600">{{ row.description || '-' }}</span>
           </template>
           <template #actions="{ row }">
-            <button class="text-blue-600 hover:underline cursor-pointer" @click="openRoleEditor(row)">
+            <button class="text-link-600 hover:underline cursor-pointer" @click="openRoleEditor(row)">
               {{ t('actions.edit') }}
             </button>
-            <button class="text-orange-600 hover:underline cursor-pointer" @click="openRolePermissions(row)">
+            <button class="text-warning-600 hover:underline cursor-pointer" @click="openRolePermissions(row)">
               {{ t('settings.permissions.editPermissions') }}
             </button>
           </template>
         </CommonAdvancedTable>
       </section>
 
-      <section class="rounded-xl border border-slate-300 p-4 space-y-4">
+      <section class="rounded-xl border border-base-300 p-4 space-y-4">
         <div class="flex items-center justify-between gap-3 flex-wrap">
           <h3 class="font-semibold">{{ t('settings.permissions.positionsTitle') }}</h3>
           <div class="flex items-center gap-2 flex-wrap justify-end">
@@ -59,14 +59,14 @@
           @row-open="openPositionPermissions($event)"
         >
           <template #actions="{ row }">
-            <button class="text-orange-600 hover:underline cursor-pointer" @click="openPositionPermissions(row)">
+            <button class="text-warning-600 hover:underline cursor-pointer" @click="openPositionPermissions(row)">
               {{ t('settings.permissions.editPermissions') }}
             </button>
           </template>
         </CommonAdvancedTable>
       </section>
 
-      <section class="rounded-xl border border-slate-300 p-4 space-y-4">
+      <section class="rounded-xl border border-base-300 p-4 space-y-4">
         <div class="flex items-center justify-between gap-3 flex-wrap">
           <h3 class="font-semibold">{{ t('settings.permissions.usersTitle') }}</h3>
           <div class="flex items-center gap-2 flex-wrap justify-end">
@@ -86,7 +86,7 @@
           @row-open="openUserAccess($event)"
         >
           <template #actions="{ row }">
-            <button class="text-orange-600 hover:underline cursor-pointer" @click="openUserAccess(row)">
+            <button class="text-warning-600 hover:underline cursor-pointer" @click="openUserAccess(row)">
               {{ t('settings.permissions.editAccess') }}
             </button>
           </template>
@@ -113,11 +113,11 @@
         <textarea v-model="roleForm.description" rows="3" class="input resize-none" />
       </div>
       <div class="flex gap-4">
-        <label class="inline-flex items-center gap-2 text-sm text-slate-700 cursor-pointer">
+        <label class="inline-flex items-center gap-2 text-sm text-base-700 cursor-pointer">
           <input v-model="roleForm.is_active" type="checkbox" class="checkbox" />
           {{ t('settings.permissions.roleActive') }}
         </label>
-        <label class="inline-flex items-center gap-2 text-sm text-slate-700 cursor-pointer">
+        <label class="inline-flex items-center gap-2 text-sm text-base-700 cursor-pointer">
           <input v-model="roleForm.is_default" type="checkbox" class="checkbox" />
           {{ t('settings.permissions.defaultRole') }}
         </label>

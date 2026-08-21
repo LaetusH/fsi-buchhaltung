@@ -3,22 +3,22 @@
     <div class="flex flex-wrap items-start justify-between gap-3">
       <div>
         <h2 class="text-base font-semibold sm:text-lg">{{ t('settings.notifications.title') }}</h2>
-        <p class="text-sm text-slate-600">{{ t('settings.notifications.intro') }}</p>
+        <p class="text-sm text-base-600">{{ t('settings.notifications.intro') }}</p>
       </div>
     </div>
 
-    <div v-if="loading" class="flex items-center justify-center p-10 text-slate-400">
+    <div v-if="loading" class="flex items-center justify-center p-10 text-base-400">
       <Icon name="material-symbols:progress-activity" class="animate-spin text-2xl" aria-hidden="true" />
     </div>
 
     <template v-else-if="settings">
       <section
         class="flex flex-wrap items-center justify-between gap-3 rounded-xl border p-4"
-        :class="settings.notifications_enabled ? 'border-cyan-200 bg-cyan-50/50' : 'border-amber-200 bg-amber-50'"
+        :class="settings.notifications_enabled ? 'border-secondary-200 bg-secondary-50/50' : 'border-warning-200 bg-warning-50'"
       >
         <div class="min-w-0">
           <h3 class="font-semibold">{{ t('settings.notifications.masterSwitch') }}</h3>
-          <p class="text-xs text-slate-600">{{ t('settings.notifications.masterSwitchHelp') }}</p>
+          <p class="text-xs text-base-600">{{ t('settings.notifications.masterSwitchHelp') }}</p>
         </div>
         <CommonToggleSwitch
           v-model="settings.notifications_enabled"
@@ -27,23 +27,23 @@
       </section>
 
       <div :class="settings.notifications_enabled ? '' : 'opacity-60'" class="space-y-3 sm:space-y-6">
-        <section class="rounded-xl border border-slate-200 p-4 space-y-3">
+        <section class="rounded-xl border border-base-200 p-4 space-y-3">
           <h3 class="font-semibold">{{ t('settings.notifications.channels') }}</h3>
 
-          <div class="divide-y divide-slate-100">
+          <div class="divide-y divide-base-100">
             <div
               v-for="channel in NOTIFICATION_CHANNELS"
               :key="channel.key"
               class="flex flex-wrap items-center justify-between gap-3 py-3 first:pt-0 last:pb-0"
             >
               <div class="flex min-w-0 items-start gap-3">
-                <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-slate-100 text-slate-600">
+                <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-base-100 text-base-600">
                   <Icon :name="channelIcon(channel.key)" class="h-5 w-5" aria-hidden="true" />
                 </span>
                 <div class="min-w-0">
-                  <p class="text-sm font-medium text-slate-800">{{ t(channel.labelKey) }}</p>
-                  <p class="text-xs text-slate-500">{{ t(`settings.notifications.channelHelp.${channel.key}`) }}</p>
-                  <p v-if="channelWarning(channel.key)" class="mt-1 inline-flex items-center gap-1 text-xs text-amber-600">
+                  <p class="text-sm font-medium text-base-800">{{ t(channel.labelKey) }}</p>
+                  <p class="text-xs text-base-500">{{ t(`settings.notifications.channelHelp.${channel.key}`) }}</p>
+                  <p v-if="channelWarning(channel.key)" class="mt-1 inline-flex items-center gap-1 text-xs text-warning-600">
                     <Icon name="material-symbols:warning-rounded" class="h-4 w-4" aria-hidden="true" />
                     {{ channelWarning(channel.key) }}
                   </p>
@@ -51,7 +51,7 @@
               </div>
 
               <div class="flex items-center gap-2">
-                <span v-if="channel.key === 'in_app'" class="text-xs text-slate-400">
+                <span v-if="channel.key === 'in_app'" class="text-xs text-base-400">
                   {{ t('settings.notifications.alwaysOn') }}
                 </span>
                 <CommonToggleSwitch
@@ -64,13 +64,13 @@
           </div>
         </section>
 
-        <section class="rounded-xl border border-slate-200 p-4 space-y-3">
+        <section class="rounded-xl border border-base-200 p-4 space-y-3">
           <div>
             <h3 class="font-semibold">{{ t('settings.notifications.types') }}</h3>
-            <p class="text-xs text-slate-500">{{ t('settings.notifications.typesHelp') }}</p>
+            <p class="text-xs text-base-500">{{ t('settings.notifications.typesHelp') }}</p>
           </div>
 
-          <div class="divide-y divide-slate-100">
+          <div class="divide-y divide-base-100">
             <div v-for="typeKey in automaticTypeKeys" :key="typeKey" class="py-3 first:pt-0 last:pb-0">
               <div class="flex flex-wrap items-start justify-between gap-3">
                 <div class="flex min-w-0 items-start gap-3">
@@ -81,8 +81,8 @@
                     <Icon :name="typeIcon(typeKey)" class="h-5 w-5" aria-hidden="true" />
                   </span>
                   <div class="min-w-0">
-                    <p class="text-sm font-medium text-slate-800">{{ typeLabel(typeKey) }}</p>
-                    <p class="text-xs text-slate-500">{{ typeDescription(typeKey) }}</p>
+                    <p class="text-sm font-medium text-base-800">{{ typeLabel(typeKey) }}</p>
+                    <p class="text-xs text-base-500">{{ typeDescription(typeKey) }}</p>
                   </div>
                 </div>
                 <CommonToggleSwitch
@@ -99,8 +99,8 @@
                   type="button"
                   class="inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-medium transition cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
                   :class="isTypeChannelOn(typeKey, channel)
-                    ? 'border-cyan-200 bg-cyan-50 text-cyan-800 hover:border-cyan-300'
-                    : 'border-slate-200 bg-slate-50 text-slate-400 line-through hover:border-slate-300'"
+                    ? 'border-secondary-200 bg-secondary-50 text-secondary-800 hover:border-secondary-300'
+                    : 'border-base-200 bg-base-50 text-base-400 line-through hover:border-base-300'"
                   :aria-pressed="isTypeChannelOn(typeKey, channel)"
                   :disabled="channelOffGlobally(channel)"
                   :title="channelOffGlobally(channel) ? t('settings.notifications.channelOffGlobally') : t('settings.notifications.toggleChannelForType')"
@@ -109,24 +109,24 @@
                   <Icon :name="channelIcon(channel)" class="h-4 w-4" aria-hidden="true" />
                   {{ t(`notifications.channels.${channel}`) }}
                 </button>
-                <span class="text-xs text-slate-400">{{ t('settings.notifications.typeChannelsHint') }}</span>
+                <span class="text-xs text-base-400">{{ t('settings.notifications.typeChannelsHint') }}</span>
               </div>
 
-              <p v-else class="mt-2 text-xs text-amber-600 sm:pl-12">
+              <p v-else class="mt-2 text-xs text-warning-600 sm:pl-12">
                 {{ t('settings.notifications.typeDisabledHint') }}
               </p>
             </div>
           </div>
         </section>
 
-        <section class="rounded-xl border border-slate-200 p-4 space-y-4">
+        <section class="rounded-xl border border-base-200 p-4 space-y-4">
           <h3 class="font-semibold">{{ t('settings.notifications.behaviour') }}</h3>
 
           <div>
             <div class="flex flex-wrap items-center justify-between gap-3">
               <div class="min-w-0">
-                <p class="text-sm font-medium text-slate-800">{{ t('settings.notifications.quietHours') }}</p>
-                <p class="text-xs text-slate-500">{{ t('settings.notifications.quietHoursHelp') }}</p>
+                <p class="text-sm font-medium text-base-800">{{ t('settings.notifications.quietHours') }}</p>
+                <p class="text-xs text-base-500">{{ t('settings.notifications.quietHoursHelp') }}</p>
               </div>
               <CommonToggleSwitch
                 v-model="settings.quiet_hours.enabled"
@@ -146,25 +146,25 @@
             </div>
           </div>
 
-          <div class="flex flex-wrap gap-6 border-t border-slate-100 pt-4">
+          <div class="flex flex-wrap gap-6 border-t border-base-100 pt-4">
             <div class="field">
               <label for="inbox-retention-days">{{ t('settings.notifications.inboxRetentionDays') }}</label>
               <input id="inbox-retention-days" v-model.number="settings.inbox_retention_days" type="number" min="1" class="input w-32">
-              <p class="max-w-xs text-xs text-slate-500">{{ t('settings.notifications.inboxRetentionDaysHelp') }}</p>
+              <p class="max-w-xs text-xs text-base-500">{{ t('settings.notifications.inboxRetentionDaysHelp') }}</p>
             </div>
             <div class="field">
               <label for="retention-days">{{ t('settings.notifications.retentionDays') }}</label>
               <input id="retention-days" v-model.number="settings.retention_days" type="number" min="1" class="input w-32">
-              <p class="max-w-xs text-xs text-slate-500">{{ t('settings.notifications.retentionDaysHelp') }}</p>
+              <p class="max-w-xs text-xs text-base-500">{{ t('settings.notifications.retentionDaysHelp') }}</p>
             </div>
           </div>
         </section>
 
-        <section class="rounded-xl border border-slate-200 p-4 space-y-3">
+        <section class="rounded-xl border border-base-200 p-4 space-y-3">
           <div>
             <h3 class="font-semibold">{{ t('settings.notifications.leadTimes') }}</h3>
-            <p class="text-xs text-slate-500">{{ t('settings.notifications.leadTimesHelp') }}</p>
-            <p class="mt-1 inline-flex items-start gap-1 text-xs text-slate-400">
+            <p class="text-xs text-base-500">{{ t('settings.notifications.leadTimesHelp') }}</p>
+            <p class="mt-1 inline-flex items-start gap-1 text-xs text-base-400">
               <Icon name="material-symbols:info-outline-rounded" class="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
               {{ t('settings.notifications.leadTimesPastHint') }}
             </p>
@@ -173,23 +173,23 @@
           <div
             v-for="typeKey in scheduledTypeKeys"
             :key="typeKey"
-            class="rounded-lg border border-slate-100 p-3 space-y-2"
+            class="rounded-lg border border-base-100 p-3 space-y-2"
           >
             <div class="flex items-center gap-2">
-              <Icon :name="typeIcon(typeKey)" class="h-4 w-4 shrink-0 text-slate-400" aria-hidden="true" />
-              <p class="text-sm font-medium text-slate-700">{{ typeLabel(typeKey) }}</p>
+              <Icon :name="typeIcon(typeKey)" class="h-4 w-4 shrink-0 text-base-400" aria-hidden="true" />
+              <p class="text-sm font-medium text-base-700">{{ typeLabel(typeKey) }}</p>
             </div>
 
             <div class="flex flex-wrap items-center gap-2">
               <span
                 v-for="minutes in sortedLeadTimes(typeKey)"
                 :key="minutes"
-                class="inline-flex items-center gap-1 rounded-md bg-cyan-50 py-1 pr-1 pl-2 text-xs font-medium text-cyan-800"
+                class="inline-flex items-center gap-1 rounded-md bg-secondary-50 py-1 pr-1 pl-2 text-xs font-medium text-secondary-800"
               >
                 {{ t('settings.notifications.leadBefore', { value: formatLeadMinutes(minutes) }) }}
                 <button
                   type="button"
-                  class="rounded p-0.5 text-cyan-600 transition hover:bg-cyan-100 cursor-pointer"
+                  class="rounded p-0.5 text-secondary-600 transition hover:bg-secondary-100 cursor-pointer"
                   :title="t('actions.remove')"
                   :aria-label="t('actions.remove')"
                   @click="removeLeadTime(typeKey, minutes)"
@@ -197,7 +197,7 @@
                   <Icon name="material-symbols:close-rounded" class="h-3.5 w-3.5" aria-hidden="true" />
                 </button>
               </span>
-              <span v-if="!sortedLeadTimes(typeKey).length" class="text-xs text-slate-400">
+              <span v-if="!sortedLeadTimes(typeKey).length" class="text-xs text-base-400">
                 {{ t('settings.notifications.leadTimesNone') }}
               </span>
             </div>
@@ -228,42 +228,42 @@
           </div>
         </section>
 
-        <section class="rounded-xl border border-slate-200 p-4 space-y-3">
+        <section class="rounded-xl border border-base-200 p-4 space-y-3">
           <div>
             <h3 class="font-semibold">{{ t('settings.notifications.templates') }}</h3>
-            <p class="text-xs text-slate-500">{{ t('settings.notifications.templatesHelp') }}</p>
+            <p class="text-xs text-base-500">{{ t('settings.notifications.templatesHelp') }}</p>
           </div>
 
-          <div v-for="typeKey in templateTypeKeys" :key="typeKey" class="rounded-lg border border-slate-100">
+          <div v-for="typeKey in templateTypeKeys" :key="typeKey" class="rounded-lg border border-base-100">
             <button
               type="button"
               class="flex w-full items-center gap-2 p-3 text-left cursor-pointer"
               @click="toggleTemplate(typeKey)"
             >
-              <Icon :name="typeIcon(typeKey)" class="h-4 w-4 shrink-0 text-slate-400" aria-hidden="true" />
+              <Icon :name="typeIcon(typeKey)" class="h-4 w-4 shrink-0 text-base-400" aria-hidden="true" />
               <span class="min-w-0 flex-1">
-                <span class="block truncate text-sm font-medium text-slate-700">{{ typeLabel(typeKey) }}</span>
-                <span class="block truncate text-xs text-slate-500">{{ typeDescription(typeKey) }}</span>
+                <span class="block truncate text-sm font-medium text-base-700">{{ typeLabel(typeKey) }}</span>
+                <span class="block truncate text-xs text-base-500">{{ typeDescription(typeKey) }}</span>
               </span>
               <span
                 v-if="hasTemplateOverride(typeKey)"
-                class="shrink-0 rounded-md bg-cyan-100 px-2 py-0.5 text-[11px] font-medium text-cyan-800"
+                class="shrink-0 rounded-md bg-secondary-100 px-2 py-0.5 text-[11px] font-medium text-secondary-800"
               >
                 {{ t('settings.notifications.templateCustom') }}
               </span>
               <Icon
                 :name="openTemplates.includes(typeKey) ? 'material-symbols:expand-less-rounded' : 'material-symbols:expand-more-rounded'"
-                class="h-5 w-5 shrink-0 text-slate-400"
+                class="h-5 w-5 shrink-0 text-base-400"
                 aria-hidden="true"
               />
             </button>
 
-            <div v-if="openTemplates.includes(typeKey)" class="space-y-2 border-t border-slate-100 p-3">
+            <div v-if="openTemplates.includes(typeKey)" class="space-y-2 border-t border-base-100 p-3">
               <div class="flex flex-wrap gap-1.5">
                 <span
                   v-for="variable in typeVariables(typeKey)"
                   :key="variable"
-                  class="rounded-md border border-slate-200 bg-slate-50 px-2 py-0.5 text-[11px] font-medium text-slate-600"
+                  class="rounded-md border border-base-200 bg-base-50 px-2 py-0.5 text-[11px] font-medium text-base-600"
                   :title="variableDescription(variable)"
                 >
                   {{ variableToken(variable) }}
@@ -294,13 +294,13 @@
                   :placeholder="t(`notifications.types.${typeKey}.body`)"
                   @input="updateTemplate(typeKey, 'body', ($event.target as HTMLTextAreaElement).value)"
                 ></textarea>
-                <p class="mt-1 text-xs text-slate-400">{{ t('notifications.compose.formatHelp') }}</p>
+                <p class="mt-1 text-xs text-base-400">{{ t('notifications.compose.formatHelp') }}</p>
               </div>
 
               <div class="flex justify-end">
                 <button
                   type="button"
-                  class="text-xs font-medium text-slate-500 hover:text-slate-700 hover:underline cursor-pointer"
+                  class="text-xs font-medium text-base-500 hover:text-base-700 hover:underline cursor-pointer"
                   :disabled="!hasTemplateOverride(typeKey)"
                   :class="{ 'cursor-not-allowed opacity-50': !hasTemplateOverride(typeKey) }"
                   @click="resetTemplate(typeKey)"
@@ -312,7 +312,7 @@
           </div>
         </section>
 
-        <section class="rounded-xl border border-slate-200 p-4 space-y-3">
+        <section class="rounded-xl border border-base-200 p-4 space-y-3">
           <h3 class="font-semibold">{{ t('settings.notifications.emailPresentation') }}</h3>
           <div class="grid gap-3 sm:grid-cols-2">
             <div class="field">
@@ -334,7 +334,7 @@
                 v-for="variable in footerVariables"
                 :key="variable"
                 type="button"
-                class="rounded-md border border-slate-200 bg-slate-50 px-2 py-0.5 text-[11px] font-medium text-slate-600 transition hover:border-cyan-400 hover:text-cyan-700 cursor-pointer"
+                class="rounded-md border border-base-200 bg-base-50 px-2 py-0.5 text-[11px] font-medium text-base-600 transition hover:border-secondary-400 hover:text-secondary-700 cursor-pointer"
                 :title="`${variableDescription(variable)} — ${t('notifications.compose.insertVariable')}`"
                 @click="insertFooterVariable(variable)"
               >
@@ -349,13 +349,13 @@
               class="input resize-y"
               style="resize: vertical; min-height: 6rem;"
             ></textarea>
-            <p class="mt-1 text-xs text-slate-400">{{ t('notifications.compose.formatHelp') }}</p>
+            <p class="mt-1 text-xs text-base-400">{{ t('notifications.compose.formatHelp') }}</p>
           </div>
         </section>
       </div>
 
-      <div class="sticky bottom-0 -mx-4 flex flex-wrap items-center justify-end gap-3 border-t border-slate-200 bg-white/95 px-4 py-3 backdrop-blur sm:-mx-6 sm:px-6">
-        <span v-if="dirty" class="mr-auto inline-flex items-center gap-1 text-xs text-amber-600">
+      <div class="sticky bottom-0 -mx-4 flex flex-wrap items-center justify-end gap-3 border-t border-base-200 bg-white/95 px-4 py-3 backdrop-blur sm:-mx-6 sm:px-6">
+        <span v-if="dirty" class="mr-auto inline-flex items-center gap-1 text-xs text-warning-600">
           <Icon name="material-symbols:error-outline-rounded" class="h-4 w-4" aria-hidden="true" />
           {{ t('settings.notifications.unsavedChanges') }}
         </span>

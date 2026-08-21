@@ -118,15 +118,15 @@ onMounted(async () => {
 function statusTone(status: ReceiptStatus) {
   switch (status) {
     case ReceiptStatus.Draft:
-      return 'slate'
+      return 'base'
     case ReceiptStatus.Open:
-      return 'yellow'
+      return 'warning'
     case ReceiptStatus.Paid:
-      return 'green'
+      return 'success'
     case ReceiptStatus.Cancelled:
-      return 'red'
+      return 'dangerCancelled'
     default:
-      return 'gray'
+      return 'baseMuted'
   }
 }
 

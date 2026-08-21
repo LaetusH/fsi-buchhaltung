@@ -11,21 +11,21 @@
 
     <span
       v-if="open"
-      class="absolute left-0 top-full z-30 mt-1 block w-64 rounded-lg bg-slate-800 p-3 text-left text-xs font-normal text-white shadow-lg sm:w-72"
+      class="absolute left-0 top-full z-30 mt-1 block w-64 rounded-lg bg-base-800 p-3 text-left text-xs font-normal text-white shadow-lg sm:w-72"
       @click.stop
       @mouseenter="onHover(true)"
       @mouseleave="onHover(false)"
     >
       <span class="block font-semibold">{{ term?.term || label }}</span>
 
-      <span v-if="loading" class="mt-1 block text-slate-300">{{ t('wiki.glossary.loading') }}</span>
-      <span v-else-if="!term" class="mt-1 block text-slate-300">{{ t('wiki.glossary.unknown', { term: label }) }}</span>
-      <span v-else class="mt-1 block text-slate-200">{{ term.shortDefinition }}</span>
+      <span v-if="loading" class="mt-1 block text-base-300">{{ t('wiki.glossary.loading') }}</span>
+      <span v-else-if="!term" class="mt-1 block text-base-300">{{ t('wiki.glossary.unknown', { term: label }) }}</span>
+      <span v-else class="mt-1 block text-base-200">{{ term.shortDefinition }}</span>
 
       <button
         v-if="term?.articleId"
         type="button"
-        class="mt-2 block cursor-pointer text-orange-300 hover:underline"
+        class="mt-2 block cursor-pointer text-accent-300 hover:underline"
         @click.stop="openArticle"
       >{{ t('wiki.glossary.readMore') }}</button>
     </span>

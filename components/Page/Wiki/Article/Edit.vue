@@ -23,7 +23,7 @@
           :title="t('common.validationBlocked')"
         />
 
-        <p v-if="loading" class="text-sm text-slate-500">{{ t('wiki.loading') }}</p>
+        <p v-if="loading" class="text-sm text-base-500">{{ t('wiki.loading') }}</p>
 
         <template v-else>
           <div v-show="activeTab === 'content'" class="space-y-4">
@@ -93,10 +93,10 @@
 
             <PageWikiArticleEditorMarkdown v-model="form.markdown" :checklists="checklists" />
 
-            <p v-if="draftStateLabel" class="flex items-center gap-1.5 text-xs text-slate-500">
+            <p v-if="draftStateLabel" class="flex items-center gap-1.5 text-xs text-base-500">
               <span
                 class="h-1.5 w-1.5 rounded-full"
-                :class="savingDraft ? 'bg-amber-400' : dirty ? 'bg-orange-500' : 'bg-emerald-500'"
+                :class="savingDraft ? 'bg-warning-400' : dirty ? 'bg-accent-500' : 'bg-success-500'"
                 aria-hidden="true"
               ></span>
               {{ draftStateLabel }}
@@ -104,7 +104,7 @@
           </div>
 
           <div v-show="activeTab === 'settings'" class="space-y-4">
-            <p v-if="readOnly" class="text-sm text-slate-500">{{ t('wiki.editor.readOnly') }}</p>
+            <p v-if="readOnly" class="text-sm text-base-500">{{ t('wiki.editor.readOnly') }}</p>
 
             <div class="grid gap-3 sm:grid-cols-2">
               <div class="field">
@@ -142,7 +142,7 @@
                   class="input"
                   :disabled="readOnly"
                 />
-                <span class="text-xs text-slate-500">{{ t('wiki.editor.fields.reviewIntervalHint') }}</span>
+                <span class="text-xs text-base-500">{{ t('wiki.editor.fields.reviewIntervalHint') }}</span>
               </div>
             </div>
 
@@ -197,7 +197,7 @@
             </div>
 
             <label
-              class="flex w-fit items-center gap-2 text-sm text-slate-700"
+              class="flex w-fit items-center gap-2 text-sm text-base-700"
               :class="readOnly ? 'cursor-default' : 'cursor-pointer'"
             >
               <input v-model="owner.createGrant" type="checkbox" class="checkbox" :disabled="readOnly" />
@@ -212,7 +212,7 @@
               v-model="checklists"
               :read-only="readOnly"
             />
-            <p v-else class="text-sm text-slate-500">{{ t('wiki.checklist.saveArticleFirst') }}</p>
+            <p v-else class="text-sm text-base-500">{{ t('wiki.checklist.saveArticleFirst') }}</p>
           </div>
 
           <div v-show="activeTab === 'attachments'" class="space-y-3">
@@ -220,29 +220,29 @@
               v-if="!readOnly"
               ref="fileInputRef"
               type="file"
-              class="input cursor-pointer file:mr-3 file:cursor-pointer file:rounded-md file:border-0 file:bg-slate-100 file:px-3 file:py-1 file:text-sm file:font-medium file:text-slate-700 hover:file:bg-slate-200"
+              class="input cursor-pointer file:mr-3 file:cursor-pointer file:rounded-md file:border-0 file:bg-base-100 file:px-3 file:py-1 file:text-sm file:font-medium file:text-base-700 hover:file:bg-base-200"
               accept="application/pdf,image/png,image/jpeg"
               @change="uploadAttachment"
             />
 
-            <p v-if="!attachments.length" class="text-sm text-slate-500">{{ t('wiki.attachments.empty') }}</p>
+            <p v-if="!attachments.length" class="text-sm text-base-500">{{ t('wiki.attachments.empty') }}</p>
 
             <ul v-else class="space-y-2">
               <li
                 v-for="attachment in attachments"
                 :key="attachment.attachmentId"
-                class="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-slate-200 p-3 text-sm"
+                class="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-base-200 p-3 text-sm"
               >
                 <a
                   :href="`/api/files/${attachment.fileId}`"
                   target="_blank"
                   rel="noopener noreferrer"
-                  class="min-w-0 truncate text-orange-700 hover:underline"
+                  class="min-w-0 truncate text-accent-700 hover:underline"
                 >{{ attachment.name }}</a>
                 <button
                   v-if="!readOnly"
                   type="button"
-                  class="inline-flex shrink-0 cursor-pointer items-center gap-1.5 rounded-lg px-2 py-1 text-red-700 transition-colors hover:bg-red-50"
+                  class="inline-flex shrink-0 cursor-pointer items-center gap-1.5 rounded-lg px-2 py-1 text-danger-700 transition-colors hover:bg-danger-50"
                   :title="t('wiki.attachments.remove')"
                   :aria-label="t('wiki.attachments.remove')"
                   @click="removeAttachment(attachment.attachmentId)"
@@ -267,11 +267,11 @@
             />
           </div>
 
-          <div class="flex flex-wrap items-center gap-2 border-t border-slate-200 pt-4">
+          <div class="flex flex-wrap items-center gap-2 border-t border-base-200 pt-4">
             <button
               v-if="!isCreate && !readOnly"
               type="button"
-              class="inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-red-200 px-4 py-2 text-sm text-red-700 transition-colors hover:bg-red-50"
+              class="inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-danger-200 px-4 py-2 text-sm text-danger-700 transition-colors hover:bg-danger-50"
               @click="confirmArchive = true"
             >
               <Icon name="material-symbols:archive-outline-rounded" class="text-base" aria-hidden="true" />
@@ -344,7 +344,7 @@
   </Page>
 
   <CommonModal v-model="confirmArchive" :title="t('wiki.editor.archiveConfirmTitle')">
-    <p class="text-sm text-slate-700">{{ t('wiki.editor.archiveConfirmText') }}</p>
+    <p class="text-sm text-base-700">{{ t('wiki.editor.archiveConfirmText') }}</p>
     <template #footer>
       <div class="flex justify-end gap-2">
         <button type="button" class="btn-secondary" @click="confirmArchive = false">{{ t('wiki.editor.cancel') }}</button>

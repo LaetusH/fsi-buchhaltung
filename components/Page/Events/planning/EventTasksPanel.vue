@@ -4,14 +4,14 @@
       <div class="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h2 class="text-lg font-semibold">{{ t('event.planning.tasks') }}</h2>
-          <p class="text-sm text-slate-500">{{ t('event.planning.taskBoardHint') }}</p>
+          <p class="text-sm text-base-500">{{ t('event.planning.taskBoardHint') }}</p>
         </div>
 
         <div class="flex flex-wrap items-center justify-end gap-2">
           <button
             type="button"
             class="inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1.5 text-sm font-medium cursor-pointer"
-            :class="showOnlyMine ? 'border-sky-300 bg-sky-50 text-sky-800' : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'"
+            :class="showOnlyMine ? 'border-info-300 bg-info-50 text-info-800' : 'border-base-200 bg-white text-base-600 hover:bg-base-50'"
             @click="showOnlyMine = !showOnlyMine"
           >
             <Icon name="material-symbols:person-rounded" />
@@ -20,7 +20,7 @@
           <button
             type="button"
             class="inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1.5 text-sm font-medium cursor-pointer"
-            :class="showOnlyOverdue ? 'border-red-300 bg-red-50 text-red-800' : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'"
+            :class="showOnlyOverdue ? 'border-danger-300 bg-danger-50 text-danger-800' : 'border-base-200 bg-white text-base-600 hover:bg-base-50'"
             @click="showOnlyOverdue = !showOnlyOverdue"
           >
             <Icon name="material-symbols:warning-rounded" />
@@ -29,7 +29,7 @@
           <button
             type="button"
             class="inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1.5 text-sm font-medium cursor-pointer"
-            :class="showOnlyDueSoon ? 'border-amber-300 bg-amber-50 text-amber-800' : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'"
+            :class="showOnlyDueSoon ? 'border-warning-300 bg-warning-50 text-warning-800' : 'border-base-200 bg-white text-base-600 hover:bg-base-50'"
             @click="showOnlyDueSoon = !showOnlyDueSoon"
           >
             <Icon name="material-symbols:schedule-rounded" />
@@ -49,18 +49,18 @@
           </button>
           <span
             v-else
-            class="inline-flex items-center gap-1.5 rounded-md border border-slate-200 bg-white px-2.5 py-1.5 text-sm font-medium text-slate-400"
+            class="inline-flex items-center gap-1.5 rounded-md border border-base-200 bg-white px-2.5 py-1.5 text-sm font-medium text-base-400"
           >
-            <Icon name="material-symbols:check-circle-rounded" class="text-emerald-500" />
+            <Icon name="material-symbols:check-circle-rounded" class="text-success-500" />
             {{ t('actions.saved') }}
           </span>
         </div>
       </div>
 
-      <div v-if="canManage !== false" class="mt-4 rounded-lg border border-slate-200 bg-slate-50 p-3">
+      <div v-if="canManage !== false" class="mt-4 rounded-lg border border-base-200 bg-base-50 p-3">
         <div class="grid gap-3 sm:grid-cols-2 sm:items-end lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(12rem,auto)] lg:items-end xl:grid-cols-[minmax(14rem,1fr)_11rem_13rem_13rem_auto]">
           <div class="sm:col-span-2 lg:col-span-2 xl:col-span-1">
-            <label class="text-xs font-medium text-slate-500">{{ t('event.planning.taskTitle') }}</label>
+            <label class="text-xs font-medium text-base-500">{{ t('event.planning.taskTitle') }}</label>
             <input
               v-model="quickAdd.title"
               class="input mt-1"
@@ -72,10 +72,10 @@
 
           <div>
             <div class="flex items-center justify-between gap-2">
-              <label class="text-xs font-medium text-slate-500">{{ t('event.planning.deadline') }}</label>
+              <label class="text-xs font-medium text-base-500">{{ t('event.planning.deadline') }}</label>
               <button
                 type="button"
-                class="py-0 leading-none text-xs font-medium text-orange-600 hover:text-orange-700 disabled:opacity-60 cursor-pointer"
+                class="py-0 leading-none text-xs font-medium text-accent-600 hover:text-accent-700 disabled:opacity-60 cursor-pointer"
                 :disabled="disabled"
                 @click="quickAddDateMode = quickAddDateMode === 'date' ? 'datetime' : 'date'"
               >
@@ -86,7 +86,7 @@
           </div>
 
           <div>
-            <label class="text-xs font-medium text-slate-500">{{ t('event.planning.assignedMembers') }}</label>
+            <label class="text-xs font-medium text-base-500">{{ t('event.planning.assignedMembers') }}</label>
             <CommonSearchSelect
               v-model="quickAddMemberQuery"
               class="mt-1"
@@ -100,7 +100,7 @@
           </div>
 
           <div>
-            <label class="text-xs font-medium text-slate-500">{{ t('event.planning.subdivision') }}</label>
+            <label class="text-xs font-medium text-base-500">{{ t('event.planning.subdivision') }}</label>
             <CommonSearchSelect
               v-model="quickAddSubdivisionQuery"
               class="mt-1"
@@ -123,12 +123,12 @@
           <span
             v-for="memberId in quickAdd.memberIds"
             :key="`quick-member-${memberId}`"
-            class="inline-flex items-center gap-1 rounded border border-slate-300 bg-white px-1.5 py-0.5 text-[0.7rem] font-medium text-slate-700"
+            class="inline-flex items-center gap-1 rounded border border-base-300 bg-white px-1.5 py-0.5 text-[0.7rem] font-medium text-base-700"
           >
             {{ memberLabel(memberId) }}
             <button
               type="button"
-              class="inline-flex h-4 w-4 items-center justify-center rounded text-slate-500 hover:bg-red-50 hover:text-red-600 disabled:opacity-60 cursor-pointer"
+              class="inline-flex h-4 w-4 items-center justify-center rounded text-base-500 hover:bg-danger-50 hover:text-danger-600 disabled:opacity-60 cursor-pointer"
               :disabled="disabled"
               @click="quickAdd.memberIds = quickAdd.memberIds.filter(id => id !== memberId)"
             >
@@ -138,12 +138,12 @@
           <span
             v-for="subdivisionId in quickAdd.subdivisionIds"
             :key="`quick-subdivision-${subdivisionId}`"
-            class="inline-flex items-center gap-1 rounded border border-slate-300 bg-white px-1.5 py-0.5 text-[0.7rem] font-medium text-slate-700"
+            class="inline-flex items-center gap-1 rounded border border-base-300 bg-white px-1.5 py-0.5 text-[0.7rem] font-medium text-base-700"
           >
             {{ subdivisionLabel(subdivisionId) }}
             <button
               type="button"
-              class="inline-flex h-4 w-4 items-center justify-center rounded text-slate-500 hover:bg-red-50 hover:text-red-600 disabled:opacity-60 cursor-pointer"
+              class="inline-flex h-4 w-4 items-center justify-center rounded text-base-500 hover:bg-danger-50 hover:text-danger-600 disabled:opacity-60 cursor-pointer"
               :disabled="disabled"
               @click="quickAdd.subdivisionIds = quickAdd.subdivisionIds.filter(id => id !== subdivisionId)"
             >
@@ -161,10 +161,10 @@
         :data-column-status="column.status"
         class="-mx-6 min-h-72 min-w-0 bg-white p-3 shadow-sm sm:mx-0 sm:rounded-xl sm:shadow-lg"
       >
-        <div class="flex items-center justify-between gap-3 border-b border-slate-200 pb-3">
+        <div class="flex items-center justify-between gap-3 border-b border-base-200 pb-3">
           <div>
-            <h3 class="font-semibold text-slate-900">{{ column.label }}</h3>
-            <p class="text-xs text-slate-500">{{ t('event.planning.taskCount', { count: tasksByStatus[column.status].length }) }}</p>
+            <h3 class="font-semibold text-base-900">{{ column.label }}</h3>
+            <p class="text-xs text-base-500">{{ t('event.planning.taskCount', { count: tasksByStatus[column.status].length }) }}</p>
           </div>
           <span class="h-2.5 w-2.5 rounded-full" :class="column.dotClass" />
         </div>
@@ -175,10 +175,10 @@
             :key="task.id"
             :data-task-id="task.id"
             :draggable="!disabled && !task.linkedChecklistId"
-            class="rounded-lg border border-slate-200 border-l-4 bg-slate-50 p-3 transition-all"
+            class="rounded-lg border border-base-200 border-l-4 bg-base-50 p-3 transition-all"
             :class="[
               draggedTaskId === task.id ? 'opacity-40' : '',
-              dragOverTaskId === task.id ? 'ring-2 ring-inset ring-orange-400' : '',
+              dragOverTaskId === task.id ? 'ring-2 ring-inset ring-accent-400' : '',
               deadlineBorderClass(task),
             ]"
             @dragstart="!task.linkedChecklistId && onDragStart(task.id, $event)"
@@ -196,13 +196,13 @@
               >
                 <Icon
                   :name="task.linkedChecklistId ? 'material-symbols:lock' : 'material-symbols:drag-indicator'"
-                  :class="task.linkedChecklistId ? 'text-sky-400' : 'text-slate-300'"
+                  :class="task.linkedChecklistId ? 'text-info-400' : 'text-base-300'"
                   :title="task.linkedChecklistId ? t('event.planning.checklistControlled') : undefined"
                 />
               </span>
               <input
                 :value="task.title"
-                class="min-w-0 flex-1 truncate bg-transparent text-sm font-semibold text-slate-900 outline-none disabled:opacity-70"
+                class="min-w-0 flex-1 truncate bg-transparent text-sm font-semibold text-base-900 outline-none disabled:opacity-70"
                 :disabled="disabled"
                 @input="updateTask(task.id, { title: ($event.target as HTMLInputElement).value })"
               >
@@ -210,7 +210,7 @@
               <button
                 v-if="task.linkedChecklistId"
                 type="button"
-                class="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-sky-200 bg-sky-50 text-sky-600 hover:bg-sky-100 cursor-pointer"
+                class="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-info-200 bg-info-50 text-info-600 hover:bg-info-100 cursor-pointer"
                 :title="`${linkedChecklistTitle(task)}${task.linkedChecklistProgress ? ` (${task.linkedChecklistProgress.done}/${task.linkedChecklistProgress.total})` : ''}`"
                 @click="emit('navigate-to-checklists')"
               >
@@ -219,7 +219,7 @@
               <button
                 v-else-if="!disabled"
                 type="button"
-                class="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-slate-200 bg-white text-slate-400 hover:bg-slate-50 hover:text-slate-600 cursor-pointer"
+                class="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-base-200 bg-white text-base-400 hover:bg-base-50 hover:text-base-600 cursor-pointer"
                 :title="t('event.planning.linkChecklist')"
                 @click="linkingChecklistForTaskId = linkingChecklistForTaskId === task.id ? null : task.id"
               >
@@ -228,7 +228,7 @@
               <button
                 v-if="canManage !== false"
                 type="button"
-                class="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-red-200 bg-red-50 text-red-700 hover:bg-red-100 disabled:opacity-60 cursor-pointer"
+                class="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-danger-200 bg-danger-50 text-danger-700 hover:bg-danger-100 disabled:opacity-60 cursor-pointer"
                 :disabled="disabled"
                 :title="t('actions.remove')"
                 @click="removeTask(task.id)"
@@ -249,7 +249,7 @@
                 @select="selectChecklistForTask(task.id, $event)"
                 @clear-selection="checklistLinkQuery = ''"
               />
-              <button type="button" class="shrink-0 text-xs text-slate-400 hover:text-slate-600 cursor-pointer" @click="linkingChecklistForTaskId = null">
+              <button type="button" class="shrink-0 text-xs text-base-400 hover:text-base-600 cursor-pointer" @click="linkingChecklistForTaskId = null">
                 {{ t('actions.cancel') }}
               </button>
             </div>
@@ -267,7 +267,7 @@
               />
               <button
                 type="button"
-                class="inline-flex shrink-0 items-center justify-center text-orange-600 hover:text-orange-700 disabled:opacity-60 not-disabled:cursor-pointer"
+                class="inline-flex shrink-0 items-center justify-center text-accent-600 hover:text-accent-700 disabled:opacity-60 not-disabled:cursor-pointer"
                 :title="taskDateMode(task) === 'date' ? t('event.planning.dateAndTime') : t('event.planning.dateOnly')"
                 :disabled="disabled"
                 @click="toggleTaskDateMode(task)"
@@ -289,13 +289,13 @@
                 <span
                   v-for="memberId in task.memberIds"
                   :key="`task-${task.id}-member-${memberId}`"
-                  class="inline-flex items-center gap-1 rounded border border-slate-300 bg-white px-1.5 py-0.5 text-[0.7rem] font-medium text-slate-700"
+                  class="inline-flex items-center gap-1 rounded border border-base-300 bg-white px-1.5 py-0.5 text-[0.7rem] font-medium text-base-700"
                 >
                   {{ memberLabel(memberId) }}
                   <button
                     v-if="canManage !== false"
                     type="button"
-                    class="inline-flex h-4 w-4 items-center justify-center rounded text-slate-500 hover:bg-red-50 hover:text-red-600 disabled:opacity-60 cursor-pointer"
+                    class="inline-flex h-4 w-4 items-center justify-center rounded text-base-500 hover:bg-danger-50 hover:text-danger-600 disabled:opacity-60 cursor-pointer"
                     :disabled="disabled"
                     @click="removeTaskMember(task.id, memberId)"
                   >
@@ -305,20 +305,20 @@
                 <span
                   v-for="subdivisionId in task.subdivisionIds"
                   :key="`task-${task.id}-subdivision-${subdivisionId}`"
-                  class="inline-flex items-center gap-1 rounded border border-slate-300 bg-white px-1.5 py-0.5 text-[0.7rem] font-medium text-slate-700"
+                  class="inline-flex items-center gap-1 rounded border border-base-300 bg-white px-1.5 py-0.5 text-[0.7rem] font-medium text-base-700"
                 >
                   {{ subdivisionLabel(subdivisionId) }}
                   <button
                     v-if="canManage !== false"
                     type="button"
-                    class="inline-flex h-4 w-4 items-center justify-center rounded text-slate-500 hover:bg-red-50 hover:text-red-600 disabled:opacity-60 cursor-pointer"
+                    class="inline-flex h-4 w-4 items-center justify-center rounded text-base-500 hover:bg-danger-50 hover:text-danger-600 disabled:opacity-60 cursor-pointer"
                     :disabled="disabled"
                     @click="removeTaskSubdivision(task.id, subdivisionId)"
                   >
                     <Icon name="material-symbols:close-rounded" class="text-sm" />
                   </button>
                 </span>
-                <span v-if="!task.memberIds.length && !task.subdivisionIds.length" class="rounded border border-dashed border-slate-300 bg-white px-1.5 py-0.5 text-[0.7rem] font-medium text-slate-500">
+                <span v-if="!task.memberIds.length && !task.subdivisionIds.length" class="rounded border border-dashed border-base-300 bg-white px-1.5 py-0.5 text-[0.7rem] font-medium text-base-500">
                   {{ t('event.planning.unassigned') }}
                 </span>
               </div>
@@ -353,7 +353,7 @@
           <div
             v-if="draggedTaskId !== null && tasksByStatus[column.status].length > 0"
             class="h-8 rounded-md border-2 border-dashed transition-colors"
-            :class="dragOverColumnStatus === column.status ? 'border-orange-400 bg-orange-50' : 'border-transparent'"
+            :class="dragOverColumnStatus === column.status ? 'border-accent-400 bg-accent-50' : 'border-transparent'"
             @dragover.prevent="!disabled && onDragOverColumn(column.status)"
             @dragleave="onColumnDragLeave($event)"
             @drop.prevent="!disabled && onDrop(null, column.status)"
@@ -361,7 +361,7 @@
           <div
             v-if="tasksByStatus[column.status].length === 0"
             class="min-h-28 rounded-lg border border-dashed p-3 text-sm transition-colors"
-            :class="dragOverColumnStatus === column.status ? 'border-orange-400 bg-orange-50 text-orange-600' : 'border-slate-300 bg-slate-50 text-slate-500'"
+            :class="dragOverColumnStatus === column.status ? 'border-accent-400 bg-accent-50 text-accent-600' : 'border-base-300 bg-base-50 text-base-500'"
             @dragover.prevent="!disabled && onDragOverColumn(column.status)"
             @dragleave="onColumnDragLeave($event)"
             @drop.prevent="!disabled && onDrop(null, column.status)"
@@ -471,9 +471,9 @@ watch(() => props.saving, (now, was) => {
 })
 
 const statusColumns = computed(() => [
-  { status: 'open' as const, label: t('event.planning.taskStatus.open'), dotClass: 'bg-slate-400' },
-  { status: 'in_progress' as const, label: t('event.planning.taskStatus.inProgress'), dotClass: 'bg-sky-500' },
-  { status: 'done' as const, label: t('event.planning.taskStatus.done'), dotClass: 'bg-emerald-500' },
+  { status: 'open' as const, label: t('event.planning.taskStatus.open'), dotClass: 'bg-base-400' },
+  { status: 'in_progress' as const, label: t('event.planning.taskStatus.inProgress'), dotClass: 'bg-info-500' },
+  { status: 'done' as const, label: t('event.planning.taskStatus.done'), dotClass: 'bg-success-500' },
 ])
 
 const quickMemberOptions = computed(() => memberOptions(quickAdd.memberIds))
@@ -664,17 +664,17 @@ function toggleTaskDateMode(task: EventPlanningTask) {
 }
 
 function deadlineBorderClass(task: EventPlanningTask): string {
-  if (!task.deadline) return 'border-l-slate-300'
-  if (isOverdue(task)) return 'border-l-red-500'
-  if (isDueSoon(task)) return 'border-l-amber-400'
-  return 'border-l-emerald-400'
+  if (!task.deadline) return 'border-l-base-300'
+  if (isOverdue(task)) return 'border-l-danger-500'
+  if (isDueSoon(task)) return 'border-l-warning-400'
+  return 'border-l-success-400'
 }
 
 function deadlineTextClass(task: EventPlanningTask): string {
-  if (!task.deadline) return 'text-slate-300'
-  if (isOverdue(task)) return 'text-red-500'
-  if (isDueSoon(task)) return 'text-amber-400'
-  return 'text-emerald-400'
+  if (!task.deadline) return 'text-base-300'
+  if (isOverdue(task)) return 'text-danger-500'
+  if (isDueSoon(task)) return 'text-warning-400'
+  return 'text-success-400'
 }
 
 function isOverdue(task: EventPlanningTask) {

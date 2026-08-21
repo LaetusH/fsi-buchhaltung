@@ -1,13 +1,13 @@
 <template>
-  <section class="rounded-xl border border-slate-200 p-4 space-y-3">
+  <section class="rounded-xl border border-base-200 p-4 space-y-3">
     <div>
       <h3 class="font-semibold">{{ t('home.widgets.calendarFeed.title') }}</h3>
-      <p class="text-sm text-slate-600">
+      <p class="text-sm text-base-600">
         {{ t('home.widgets.calendarFeed.description') }}
       </p>
     </div>
 
-    <div v-if="loading" class="flex items-center justify-center p-6 text-slate-400">
+    <div v-if="loading" class="flex items-center justify-center p-6 text-base-400">
       <Icon name="material-symbols:progress-activity" class="animate-spin text-2xl" />
     </div>
 
@@ -24,7 +24,7 @@
       </div>
 
       <div v-else-if="!url" class="space-y-3">
-        <p class="text-xs text-slate-400">
+        <p class="text-xs text-base-400">
           {{ t('home.widgets.calendarFeed.alreadyExists') }}
         </p>
         <button
@@ -56,7 +56,7 @@
           </button>
         </div>
 
-        <p class="text-xs text-slate-400">
+        <p class="text-xs text-base-400">
           {{ t('home.widgets.calendarFeed.helpText') }}
         </p>
 
@@ -77,7 +77,7 @@
     :title="t('home.widgets.calendarFeed.regenerateConfirmTitle')"
     footer-class="relative z-10 mt-4 flex justify-end gap-3 bg-white pt-2"
   >
-    <p class="text-sm text-slate-600">
+    <p class="text-sm text-base-600">
       {{ t('home.widgets.calendarFeed.regenerateConfirmText') }}
     </p>
 

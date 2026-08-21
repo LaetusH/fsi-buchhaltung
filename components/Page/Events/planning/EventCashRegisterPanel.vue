@@ -1,17 +1,17 @@
 <template>
   <section class="space-y-6">
-    <div v-if="loading" class="-mx-6 bg-white p-8 text-center text-sm text-slate-400 shadow-sm sm:mx-0 sm:rounded-xl sm:shadow-lg">
+    <div v-if="loading" class="-mx-6 bg-white p-8 text-center text-sm text-base-400 shadow-sm sm:mx-0 sm:rounded-xl sm:shadow-lg">
       {{ t('event.cashRegister.loading') }}
     </div>
 
     <div v-else-if="error" class="-mx-6 bg-white p-8 text-center shadow-sm sm:mx-0 sm:rounded-xl sm:shadow-lg">
-      <Icon name="material-symbols:error-outline-rounded" class="mb-1 text-2xl text-rose-400" />
-      <p class="text-sm text-slate-500">{{ error }}</p>
+      <Icon name="material-symbols:error-outline-rounded" class="mb-1 text-2xl text-danger-400" />
+      <p class="text-sm text-base-500">{{ error }}</p>
     </div>
 
     <div v-else-if="!linked" class="-mx-6 bg-white p-8 text-center shadow-sm sm:mx-0 sm:rounded-xl sm:shadow-lg">
-      <Icon name="material-symbols:link-off-rounded" class="mb-1 text-2xl text-slate-300" />
-      <p class="text-sm text-slate-500">{{ t('event.cashRegister.notLinked') }}</p>
+      <Icon name="material-symbols:link-off-rounded" class="mb-1 text-2xl text-base-300" />
+      <p class="text-sm text-base-500">{{ t('event.cashRegister.notLinked') }}</p>
     </div>
 
     <template v-else-if="overview">
@@ -22,25 +22,25 @@
           class="-mx-6 bg-white p-4 shadow-sm sm:mx-0 sm:rounded-xl sm:shadow-lg"
         >
           <div class="flex items-center gap-2">
-            <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-orange-50 text-orange-600">
+            <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-accent-50 text-accent-600">
               <Icon :name="tile.icon" class="text-base" />
             </span>
-            <p class="text-sm text-slate-500">{{ tile.label }}</p>
+            <p class="text-sm text-base-500">{{ tile.label }}</p>
           </div>
-          <p class="mt-3 text-2xl font-semibold text-slate-900">{{ tile.value }}</p>
-          <p class="mt-1 text-xs text-slate-400">{{ tile.meta }}</p>
+          <p class="mt-3 text-2xl font-semibold text-base-900">{{ tile.value }}</p>
+          <p class="mt-1 text-xs text-base-400">{{ tile.meta }}</p>
         </div>
       </div>
 
       <div class="-mx-6 bg-white p-4 shadow-sm sm:mx-0 sm:rounded-xl sm:shadow-lg">
         <div class="mb-4 flex items-center gap-2">
-          <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-orange-50 text-orange-600">
+          <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-accent-50 text-accent-600">
             <Icon name="material-symbols:bar-chart-rounded" class="text-base" />
           </span>
           <h2 class="text-lg font-semibold">{{ t('event.cashRegister.hourlyTitle') }}</h2>
         </div>
 
-        <div v-if="overview.hourly.length === 0" class="rounded-lg border border-slate-200 bg-slate-50 p-6 text-center text-sm text-slate-400">
+        <div v-if="overview.hourly.length === 0" class="rounded-lg border border-base-200 bg-base-50 p-6 text-center text-sm text-base-400">
           {{ t('event.cashRegister.noSales') }}
         </div>
 
@@ -52,15 +52,15 @@
               class="group flex min-w-14 flex-1 flex-col items-center"
               :title="`${formatCurrency(entry.revenue)} · ${entry.quantity} ${t('event.cashRegister.pcs')}`"
             >
-              <span class="mb-1 whitespace-nowrap text-xs text-slate-500">{{ formatCurrency(entry.revenue) }}</span>
+              <span class="mb-1 whitespace-nowrap text-xs text-base-500">{{ formatCurrency(entry.revenue) }}</span>
               <div
-                class="w-full rounded-t-md bg-orange-400 transition-colors"
+                class="w-full rounded-t-md bg-accent-400 transition-colors"
                 :style="{ height: `${barHeight(entry.revenue)}px` }"
               ></div>
-              <span class="mt-1 w-full whitespace-nowrap border-t border-slate-200 pt-1 text-center text-xs font-medium text-slate-500">
+              <span class="mt-1 w-full whitespace-nowrap border-t border-base-200 pt-1 text-center text-xs font-medium text-base-500">
                 {{ hourLabel(entry.hour) }}
               </span>
-              <span class="h-4 whitespace-nowrap text-xs text-slate-400">
+              <span class="h-4 whitespace-nowrap text-xs text-base-400">
                 {{ dayLabel(entry.hour) }}
               </span>
             </div>
@@ -71,75 +71,75 @@
       <div class="grid items-start gap-6 lg:grid-cols-2">
         <div class="-mx-6 bg-white p-4 shadow-sm sm:mx-0 sm:rounded-xl sm:shadow-lg">
           <div class="mb-3 flex items-center gap-2">
-            <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-orange-50 text-orange-600">
+            <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-accent-50 text-accent-600">
               <Icon name="material-symbols:shopping-cart-rounded" class="text-base" />
             </span>
             <h2 class="text-lg font-semibold">{{ t('event.cashRegister.salesTitle') }}</h2>
           </div>
 
-          <div v-if="overview.regular.items.length === 0" class="rounded-lg border border-slate-200 bg-slate-50 p-6 text-center text-sm text-slate-400">
+          <div v-if="overview.regular.items.length === 0" class="rounded-lg border border-base-200 bg-base-50 p-6 text-center text-sm text-base-400">
             {{ t('event.cashRegister.noSales') }}
           </div>
 
           <table v-else class="w-full text-sm">
             <thead>
-              <tr class="border-b border-slate-200 text-xs uppercase tracking-wide text-slate-400">
+              <tr class="border-b border-base-200 text-xs uppercase tracking-wide text-base-400">
                 <th class="pb-2 text-left font-semibold">{{ t('event.cashRegister.item') }}</th>
                 <th class="pb-2 text-right font-semibold">{{ t('event.cashRegister.quantity') }}</th>
                 <th class="pb-2 text-right font-semibold">{{ t('event.cashRegister.revenue') }}</th>
               </tr>
             </thead>
             <tbody>
-              <tr v-for="item in overview.regular.items" :key="item.id" class="border-b border-slate-100">
-                <td class="max-w-0 truncate py-2 pr-3 text-slate-700">{{ item.name }}</td>
-                <td class="py-2 text-right text-slate-500">{{ item.quantity }}</td>
-                <td class="py-2 text-right font-medium text-slate-800">{{ formatCurrency(item.amount) }}</td>
+              <tr v-for="item in overview.regular.items" :key="item.id" class="border-b border-base-100">
+                <td class="max-w-0 truncate py-2 pr-3 text-base-700">{{ item.name }}</td>
+                <td class="py-2 text-right text-base-500">{{ item.quantity }}</td>
+                <td class="py-2 text-right font-medium text-base-800">{{ formatCurrency(item.amount) }}</td>
               </tr>
             </tbody>
             <tfoot>
               <tr>
-                <td class="pt-2 font-semibold text-slate-700">{{ t('common.total') }}</td>
-                <td class="pt-2 text-right font-semibold text-slate-700">{{ overview.regular.totalQuantity }}</td>
-                <td class="pt-2 text-right font-semibold text-slate-900">{{ formatCurrency(overview.regular.totalRevenue) }}</td>
+                <td class="pt-2 font-semibold text-base-700">{{ t('common.total') }}</td>
+                <td class="pt-2 text-right font-semibold text-base-700">{{ overview.regular.totalQuantity }}</td>
+                <td class="pt-2 text-right font-semibold text-base-900">{{ formatCurrency(overview.regular.totalRevenue) }}</td>
               </tr>
             </tfoot>
           </table>
 
-          <p class="mt-3 text-xs text-slate-400">{{ t('event.cashRegister.historicalPricesNotice') }}</p>
+          <p class="mt-3 text-xs text-base-400">{{ t('event.cashRegister.historicalPricesNotice') }}</p>
         </div>
 
         <div class="-mx-6 bg-white p-4 shadow-sm sm:mx-0 sm:rounded-xl sm:shadow-lg">
           <div class="mb-3 flex items-center gap-2">
-            <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-orange-50 text-orange-600">
+            <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-accent-50 text-accent-600">
               <Icon name="material-symbols:volunteer-activism-rounded" class="text-base" />
             </span>
             <h2 class="text-lg font-semibold">{{ t('event.cashRegister.givenOutTitle') }}</h2>
           </div>
 
-          <div v-if="overview.fachschaft.items.length === 0" class="rounded-lg border border-slate-200 bg-slate-50 p-6 text-center text-sm text-slate-400">
+          <div v-if="overview.fachschaft.items.length === 0" class="rounded-lg border border-base-200 bg-base-50 p-6 text-center text-sm text-base-400">
             {{ t('event.cashRegister.noGivenOut') }}
           </div>
 
           <table v-else class="w-full text-sm">
             <thead>
-              <tr class="border-b border-slate-200 text-xs uppercase tracking-wide text-slate-400">
+              <tr class="border-b border-base-200 text-xs uppercase tracking-wide text-base-400">
                 <th class="pb-2 text-left font-semibold">{{ t('event.cashRegister.item') }}</th>
                 <th class="pb-2 text-right font-semibold">{{ t('event.cashRegister.quantity') }}</th>
                 <th class="pb-2 text-right font-semibold">{{ t('event.cashRegister.worth') }}</th>
               </tr>
             </thead>
             <tbody>
-              <tr v-for="item in overview.fachschaft.items" :key="item.id" class="border-b border-slate-100">
-                <td class="max-w-0 truncate py-2 pr-3 text-slate-700">{{ item.name }}</td>
-                <td class="py-2 text-right text-slate-500">{{ item.quantity }}</td>
-                <td class="py-2 text-right font-medium text-slate-800">{{ formatCurrency(item.amount) }}</td>
+              <tr v-for="item in overview.fachschaft.items" :key="item.id" class="border-b border-base-100">
+                <td class="max-w-0 truncate py-2 pr-3 text-base-700">{{ item.name }}</td>
+                <td class="py-2 text-right text-base-500">{{ item.quantity }}</td>
+                <td class="py-2 text-right font-medium text-base-800">{{ formatCurrency(item.amount) }}</td>
               </tr>
             </tbody>
             <tfoot>
               <tr>
-                <td class="pt-2 font-semibold text-slate-700">{{ t('common.total') }}</td>
-                <td class="pt-2 text-right font-semibold text-slate-700">{{ overview.fachschaft.totalQuantity }}</td>
-                <td class="pt-2 text-right font-semibold text-slate-900">{{ formatCurrency(overview.fachschaft.totalWorth) }}</td>
+                <td class="pt-2 font-semibold text-base-700">{{ t('common.total') }}</td>
+                <td class="pt-2 text-right font-semibold text-base-700">{{ overview.fachschaft.totalQuantity }}</td>
+                <td class="pt-2 text-right font-semibold text-base-900">{{ formatCurrency(overview.fachschaft.totalWorth) }}</td>
               </tr>
             </tfoot>
           </table>

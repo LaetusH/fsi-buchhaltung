@@ -13,15 +13,15 @@
     <template #sidebar>
       <div class="space-y-3">
         <h2 class="text-lg font-semibold">{{ t('invoice.generatedPreviewTitle') }}</h2>
-        <p class="text-sm text-slate-600">{{ t('invoice.generatedPreviewText') }}</p>
-        <p class="text-xs text-slate-500">{{ t('invoice.generatedUsesAssociation') }}</p>
+        <p class="text-sm text-base-600">{{ t('invoice.generatedPreviewText') }}</p>
+        <p class="text-xs text-base-500">{{ t('invoice.generatedUsesAssociation') }}</p>
       </div>
     </template>
 
-    <div v-if="bankStatementLocked" class="mb-6 rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-900">
+    <div v-if="bankStatementLocked" class="mb-6 rounded-xl border border-info-200 bg-info-50 px-4 py-3 text-sm text-info-900">
       {{ t('invoice.bankStatementLockedNotice') }}
     </div>
-    <div v-else-if="isLocked" class="mb-6 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+    <div v-else-if="isLocked" class="mb-6 rounded-xl border border-warning-200 bg-warning-50 px-4 py-3 text-sm text-warning-900">
       {{ t('invoice.lockedNotice', { status: t(`invoice.states.${form.status}`) }) }}
     </div>
 
@@ -45,10 +45,10 @@
     :title="t('invoice.finalizeConfirm.title')"
     width-class="max-w-xl"
   >
-    <p class="text-sm text-slate-700">
+    <p class="text-sm text-base-700">
       {{ t('invoice.finalizeConfirm.intro', { status: t(`invoice.states.${form.status}`) }) }}
     </p>
-    <p class="text-sm text-slate-600">
+    <p class="text-sm text-base-600">
       {{ t('invoice.finalizeConfirm.reviewHint') }}
     </p>
 

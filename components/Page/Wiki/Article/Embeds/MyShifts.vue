@@ -1,16 +1,16 @@
 <template>
-  <p v-if="!data.memberLinked" class="text-sm text-slate-500">{{ t('wiki.embeds.noMemberLink') }}</p>
+  <p v-if="!data.memberLinked" class="text-sm text-base-500">{{ t('wiki.embeds.noMemberLink') }}</p>
 
   <ul v-else-if="data.shifts.length" class="space-y-2">
     <li v-for="shift in data.shifts" :key="shift.id" class="rounded-lg bg-white px-3 py-2 shadow-sm">
-      <p class="text-sm font-medium text-slate-900">{{ shift.name }}</p>
-      <p class="text-xs text-slate-500">
+      <p class="text-sm font-medium text-base-900">{{ shift.name }}</p>
+      <p class="text-xs text-base-500">
         {{ shift.eventName }} · {{ formatDateTime(shift.startsAt) }} – {{ formatDateTime(shift.endsAt) }}
       </p>
     </li>
   </ul>
 
-  <p v-else class="text-sm text-slate-500">{{ t('wiki.embeds.empty') }}</p>
+  <p v-else class="text-sm text-base-500">{{ t('wiki.embeds.empty') }}</p>
 </template>
 
 <script setup lang="ts">

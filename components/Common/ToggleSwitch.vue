@@ -7,7 +7,7 @@
     :disabled="disabled"
     :class="[
       'relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors',
-      modelValue ? 'bg-cyan-600' : 'bg-slate-300',
+      modelValue ? 'bg-secondary-600' : 'bg-base-300',
       disabled ? 'cursor-not-allowed opacity-50' : 'cursor-pointer',
     ]"
     @click="toggle"

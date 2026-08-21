@@ -3,44 +3,44 @@
     <div class="flex flex-wrap items-center justify-between gap-2">
       <div>
         <h2 class="text-base font-semibold sm:text-lg">{{ t('wiki.admin.paths.title') }}</h2>
-        <p class="text-sm text-slate-600">{{ t('wiki.admin.paths.hint') }}</p>
+        <p class="text-sm text-base-600">{{ t('wiki.admin.paths.hint') }}</p>
       </div>
       <button type="button" class="btn-primary" @click="openCreate">{{ t('wiki.admin.paths.create') }}</button>
     </div>
 
     <CommonValidationSummary v-if="error" :errors="[error]" :title="t('common.validationBlocked')" />
 
-    <p v-if="loading" class="text-sm text-slate-500">{{ t('wiki.loading') }}</p>
-    <p v-else-if="!paths.length" class="text-sm text-slate-500">{{ t('wiki.admin.paths.empty') }}</p>
+    <p v-if="loading" class="text-sm text-base-500">{{ t('wiki.loading') }}</p>
+    <p v-else-if="!paths.length" class="text-sm text-base-500">{{ t('wiki.admin.paths.empty') }}</p>
 
     <ul v-else class="space-y-2">
       <li
         v-for="(path, position) in paths"
         :key="path.id"
-        class="flex flex-wrap items-start gap-3 rounded-lg border border-slate-200 p-3"
+        class="flex flex-wrap items-start gap-3 rounded-lg border border-base-200 p-3"
       >
-        <Icon :name="path.icon" class="mt-0.5 shrink-0 text-xl text-slate-500" aria-hidden="true" />
+        <Icon :name="path.icon" class="mt-0.5 shrink-0 text-xl text-base-500" aria-hidden="true" />
 
         <div class="min-w-0 flex-1">
-          <p class="font-medium text-slate-900">
+          <p class="font-medium text-base-900">
             {{ path.title }}
-            <span v-if="!path.isPublished" class="ml-2 text-xs font-normal text-amber-700">{{ t('wiki.admin.paths.draft') }}</span>
+            <span v-if="!path.isPublished" class="ml-2 text-xs font-normal text-warning-700">{{ t('wiki.admin.paths.draft') }}</span>
           </p>
-          <p class="text-xs text-slate-500">{{ path.slug }}</p>
-          <p class="mt-1 text-xs text-slate-500">
+          <p class="text-xs text-base-500">{{ path.slug }}</p>
+          <p class="mt-1 text-xs text-base-500">
             {{ t('wiki.admin.paths.stepCount', { count: path.items.length }) }} ·
             {{ audienceLabel(path) }}
           </p>
-          <p v-if="path.items.some(item => item.missing)" class="mt-1 text-xs text-red-600">
+          <p v-if="path.items.some(item => item.missing)" class="mt-1 text-xs text-danger-600">
             {{ t('wiki.admin.paths.missingArticles') }}
           </p>
         </div>
 
         <div class="flex shrink-0 flex-wrap items-center gap-2">
-          <span class="inline-flex shrink-0 rounded-md border border-slate-200">
+          <span class="inline-flex shrink-0 rounded-md border border-base-200">
             <button
               type="button"
-              class="inline-flex items-center justify-center rounded-l-md p-1.5 text-slate-500 hover:bg-slate-100 disabled:pointer-events-none disabled:opacity-30 cursor-pointer transition-colors"
+              class="inline-flex items-center justify-center rounded-l-md p-1.5 text-base-500 hover:bg-base-100 disabled:pointer-events-none disabled:opacity-30 cursor-pointer transition-colors"
               :disabled="position === 0"
               :aria-label="t('wiki.tree.moveUp')"
               @click="move(position, -1)"
@@ -49,7 +49,7 @@
             </button>
             <button
               type="button"
-              class="inline-flex items-center justify-center rounded-r-md border-l border-slate-200 p-1.5 text-slate-500 hover:bg-slate-100 disabled:pointer-events-none disabled:opacity-30 cursor-pointer transition-colors"
+              class="inline-flex items-center justify-center rounded-r-md border-l border-base-200 p-1.5 text-base-500 hover:bg-base-100 disabled:pointer-events-none disabled:opacity-30 cursor-pointer transition-colors"
               :disabled="position === paths.length - 1"
               :aria-label="t('wiki.tree.moveDown')"
               @click="move(position, 1)"
@@ -58,7 +58,7 @@
             </button>
           </span>
           <button type="button" class="btn-secondary" @click="openEdit(path)">{{ t('actions.edit') }}</button>
-          <button type="button" class="btn-secondary text-red-600" @click="deleteTarget = path">
+          <button type="button" class="btn-secondary text-danger-600" @click="deleteTarget = path">
             {{ t('actions.delete') }}
           </button>
         </div>
@@ -92,31 +92,31 @@
     <div class="field">
       <label for="wiki-path-icon">{{ t('wiki.admin.paths.fields.icon') }}</label>
       <div class="flex items-center gap-2">
-        <Icon :name="previewIcon" class="shrink-0 text-xl text-slate-500" />
+        <Icon :name="previewIcon" class="shrink-0 text-xl text-base-500" />
         <input id="wiki-path-icon" v-model="form.icon" class="input" :placeholder="DEFAULT_ICON" />
       </div>
     </div>
 
-    <label class="flex w-fit cursor-pointer items-center gap-2 text-sm text-slate-700">
+    <label class="flex w-fit cursor-pointer items-center gap-2 text-sm text-base-700">
       <input v-model="form.isPublished" type="checkbox" class="checkbox" />
       {{ t('wiki.admin.paths.fields.isPublished') }}
     </label>
 
     <div class="space-y-2">
       <h3 class="section-title">{{ t('wiki.admin.paths.fields.steps') }}</h3>
-      <p class="text-xs text-slate-500">{{ t('wiki.admin.paths.fields.stepsHint') }}</p>
+      <p class="text-xs text-base-500">{{ t('wiki.admin.paths.fields.stepsHint') }}</p>
 
-      <p v-if="!form.items.length" class="text-sm text-slate-500">{{ t('wiki.admin.paths.fields.noSteps') }}</p>
+      <p v-if="!form.items.length" class="text-sm text-base-500">{{ t('wiki.admin.paths.fields.noSteps') }}</p>
 
       <div
         v-for="(item, position) in form.items"
         :key="item.key"
-        class="flex flex-wrap items-start gap-2 rounded-lg border border-slate-200 p-3"
+        class="flex flex-wrap items-start gap-2 rounded-lg border border-base-200 p-3"
       >
-        <span class="mt-2 w-5 shrink-0 text-sm text-slate-500">{{ position + 1 }}.</span>
+        <span class="mt-2 w-5 shrink-0 text-sm text-base-500">{{ position + 1 }}.</span>
 
         <div class="min-w-0 flex-1 space-y-2">
-          <p class="font-medium text-slate-900">{{ articleLabel(item.articleId) }}</p>
+          <p class="font-medium text-base-900">{{ articleLabel(item.articleId) }}</p>
           <input
             v-model="item.note"
             class="input"
@@ -125,10 +125,10 @@
         </div>
 
         <div class="flex shrink-0 items-center gap-2">
-          <span class="inline-flex shrink-0 rounded-md border border-slate-200">
+          <span class="inline-flex shrink-0 rounded-md border border-base-200">
             <button
               type="button"
-              class="inline-flex items-center justify-center rounded-l-md p-1.5 text-slate-500 hover:bg-slate-100 disabled:pointer-events-none disabled:opacity-30 cursor-pointer transition-colors"
+              class="inline-flex items-center justify-center rounded-l-md p-1.5 text-base-500 hover:bg-base-100 disabled:pointer-events-none disabled:opacity-30 cursor-pointer transition-colors"
               :disabled="position === 0"
               :aria-label="t('wiki.tree.moveUp')"
               @click="moveItem(position, -1)"
@@ -137,7 +137,7 @@
             </button>
             <button
               type="button"
-              class="inline-flex items-center justify-center rounded-r-md border-l border-slate-200 p-1.5 text-slate-500 hover:bg-slate-100 disabled:pointer-events-none disabled:opacity-30 cursor-pointer transition-colors"
+              class="inline-flex items-center justify-center rounded-r-md border-l border-base-200 p-1.5 text-base-500 hover:bg-base-100 disabled:pointer-events-none disabled:opacity-30 cursor-pointer transition-colors"
               :disabled="position === form.items.length - 1"
               :aria-label="t('wiki.tree.moveDown')"
               @click="moveItem(position, 1)"
@@ -145,7 +145,7 @@
               <Icon name="material-symbols:keyboard-arrow-down-rounded" class="h-4 w-4" aria-hidden="true" />
             </button>
           </span>
-          <button type="button" class="btn-secondary text-red-600" @click="form.items.splice(position, 1)">
+          <button type="button" class="btn-secondary text-danger-600" @click="form.items.splice(position, 1)">
             {{ t('actions.remove') }}
           </button>
         </div>
@@ -164,18 +164,18 @@
 
     <div class="space-y-2">
       <h3 class="section-title">{{ t('wiki.admin.paths.fields.audiences') }}</h3>
-      <p class="text-xs text-slate-500">{{ t('wiki.admin.paths.fields.audiencesHint') }}</p>
+      <p class="text-xs text-base-500">{{ t('wiki.admin.paths.fields.audiencesHint') }}</p>
 
-      <p v-if="!form.audiences.length" class="text-sm text-slate-500">{{ t('wiki.admin.paths.fields.everyone') }}</p>
+      <p v-if="!form.audiences.length" class="text-sm text-base-500">{{ t('wiki.admin.paths.fields.everyone') }}</p>
 
       <ul v-else class="space-y-2">
         <li
           v-for="(audience, position) in form.audiences"
           :key="`${audience.positionId}-${audience.subdivisionId}-${position}`"
-          class="flex items-center justify-between gap-2 rounded-lg border border-slate-200 px-3 py-2 text-sm"
+          class="flex items-center justify-between gap-2 rounded-lg border border-base-200 px-3 py-2 text-sm"
         >
           <span>{{ audienceEntryLabel(audience) }}</span>
-          <button type="button" class="btn-secondary text-red-600" @click="form.audiences.splice(position, 1)">
+          <button type="button" class="btn-secondary text-danger-600" @click="form.audiences.splice(position, 1)">
             {{ t('actions.remove') }}
           </button>
         </li>
@@ -219,7 +219,7 @@
     :title="t('wiki.admin.paths.deleteConfirmTitle')"
     @update:model-value="deleteTarget = null"
   >
-    <p class="text-sm text-slate-700">{{ t('wiki.admin.paths.deleteConfirmText', { title: deleteTarget.title }) }}</p>
+    <p class="text-sm text-base-700">{{ t('wiki.admin.paths.deleteConfirmText', { title: deleteTarget.title }) }}</p>
     <template #footer>
       <div class="flex justify-end gap-2">
         <button type="button" class="btn-secondary" @click="deleteTarget = null">{{ t('actions.cancel') }}</button>

@@ -8,7 +8,7 @@
     :empty-text="t('home.widgets.wiki.empty')"
   >
     <template #subtitle>
-      <p class="mt-0.5 truncate text-xs text-slate-300">
+      <p class="mt-0.5 truncate text-xs text-base-300">
         {{ recommendedPath ? recommendedPath.title : t('home.widgets.wiki.subtitle') }}
       </p>
     </template>
@@ -16,7 +16,7 @@
     <template #action>
       <button
         type="button"
-        class="inline-flex shrink-0 items-center gap-1 rounded-lg bg-white/10 px-2.5 py-1.5 text-xs font-medium text-slate-200 transition cursor-pointer hover:bg-white/20 hover:text-white"
+        class="inline-flex shrink-0 items-center gap-1 rounded-lg bg-white/10 px-2.5 py-1.5 text-xs font-medium text-base-200 transition cursor-pointer hover:bg-white/20 hover:text-white"
         @click="setPage('Wiki')"
       >
         {{ t('home.widgets.showAll') }}
@@ -25,25 +25,25 @@
     </template>
 
     <div v-if="recommendedPath" class="flex h-full flex-col gap-3">
-      <p v-if="recommendedPath.description" class="text-sm text-slate-600">{{ recommendedPath.description }}</p>
+      <p v-if="recommendedPath.description" class="text-sm text-base-600">{{ recommendedPath.description }}</p>
 
       <div>
-        <p class="text-xs text-slate-500">
+        <p class="text-xs text-base-500">
           {{ t('wiki.path.progress', { done: recommendedPath.doneCount, total: recommendedPath.totalCount }) }}
         </p>
-        <div class="mt-1 h-2 w-full overflow-hidden rounded-full bg-slate-200">
-          <div class="h-full rounded-full bg-orange-500" :style="{ width: `${pathPercent}%` }"></div>
+        <div class="mt-1 h-2 w-full overflow-hidden rounded-full bg-base-200">
+          <div class="h-full rounded-full bg-accent-500" :style="{ width: `${pathPercent}%` }"></div>
         </div>
       </div>
 
       <button
         v-if="recommendedPath.nextItem"
         type="button"
-        class="cursor-pointer rounded-lg border border-slate-200 p-3 text-left transition hover:bg-slate-50"
+        class="cursor-pointer rounded-lg border border-base-200 p-3 text-left transition hover:bg-base-50"
         @click="openPath()"
       >
-        <span class="block text-xs text-slate-500">{{ t('wiki.path.next') }}</span>
-        <span class="mt-0.5 block truncate font-medium text-slate-900">{{ recommendedPath.nextItem.title }}</span>
+        <span class="block text-xs text-base-500">{{ t('wiki.path.next') }}</span>
+        <span class="mt-0.5 block truncate font-medium text-base-900">{{ recommendedPath.nextItem.title }}</span>
       </button>
 
       <button type="button" class="btn-primary mt-auto w-full" @click="openPath()">
@@ -55,15 +55,15 @@
       <li v-for="article in articles" :key="article.id">
         <button
           type="button"
-          class="w-full cursor-pointer rounded-lg border border-slate-200 p-3 text-left transition hover:bg-slate-50"
+          class="w-full cursor-pointer rounded-lg border border-base-200 p-3 text-left transition hover:bg-base-50"
           @click="openArticle(article.id)"
         >
           <span class="flex items-center justify-between gap-2">
-            <span class="truncate text-xs text-slate-500">{{ article.spaceTitle }}</span>
-            <span v-if="article.changedAt" class="shrink-0 text-xs text-slate-400">{{ formatDate(article.changedAt) }}</span>
+            <span class="truncate text-xs text-base-500">{{ article.spaceTitle }}</span>
+            <span v-if="article.changedAt" class="shrink-0 text-xs text-base-400">{{ formatDate(article.changedAt) }}</span>
           </span>
-          <span class="mt-0.5 block truncate font-medium text-slate-900">{{ article.title }}</span>
-          <span v-if="article.summary" class="mt-0.5 block truncate text-sm text-slate-600">{{ article.summary }}</span>
+          <span class="mt-0.5 block truncate font-medium text-base-900">{{ article.title }}</span>
+          <span v-if="article.summary" class="mt-0.5 block truncate text-sm text-base-600">{{ article.summary }}</span>
         </button>
       </li>
     </ul>

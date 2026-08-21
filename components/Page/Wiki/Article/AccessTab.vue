@@ -1,16 +1,16 @@
 <template>
   <div class="space-y-4">
-    <div class="rounded-lg bg-slate-50 p-3 text-sm">
-      <p class="font-semibold text-slate-800">{{ t('wiki.access.summary') }}</p>
-      <p class="text-slate-700">{{ readSummary }}</p>
-      <p v-if="writeSummary" class="text-slate-700">{{ writeSummary }}</p>
+    <div class="rounded-lg bg-base-50 p-3 text-sm">
+      <p class="font-semibold text-base-800">{{ t('wiki.access.summary') }}</p>
+      <p class="text-base-700">{{ readSummary }}</p>
+      <p v-if="writeSummary" class="text-base-700">{{ writeSummary }}</p>
     </div>
 
-    <p v-if="!canManage" class="text-sm text-slate-500">{{ t('wiki.access.readOnlyHint') }}</p>
+    <p v-if="!canManage" class="text-sm text-base-500">{{ t('wiki.access.readOnlyHint') }}</p>
 
     <PageWikiArticleAccessSubjectSelect v-if="canManage" :max-level="maxLevel" @add="addGrant" />
 
-    <p v-if="!grants.length" class="text-sm text-slate-500">{{ t('wiki.access.empty') }}</p>
+    <p v-if="!grants.length" class="text-sm text-base-500">{{ t('wiki.access.empty') }}</p>
 
     <ul v-else class="space-y-2">
       <li
@@ -18,7 +18,7 @@
         :key="grant.id"
         :class="[
           'flex flex-wrap items-center justify-between gap-2 rounded-lg border p-3 text-sm',
-          grant.inherited ? 'border-slate-200 bg-slate-50 text-slate-500' : 'border-slate-200',
+          grant.inherited ? 'border-base-200 bg-base-50 text-base-500' : 'border-base-200',
         ]"
       >
         <div class="min-w-0">
@@ -49,7 +49,7 @@
       :title="t('wiki.access.removeConfirmTitle')"
       @update:model-value="confirmRemoval = null"
     >
-      <p class="text-sm text-slate-700">{{ t('wiki.access.removeConfirmText') }}</p>
+      <p class="text-sm text-base-700">{{ t('wiki.access.removeConfirmText') }}</p>
       <template #footer>
         <div class="flex justify-end gap-2">
           <button type="button" class="btn-secondary" @click="confirmRemoval = null">{{ t('wiki.editor.cancel') }}</button>

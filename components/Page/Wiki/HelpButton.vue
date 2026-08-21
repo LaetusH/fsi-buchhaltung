@@ -5,7 +5,7 @@
     class="flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-md transition-colors"
     :class="dark
       ? 'bg-white/10 text-white hover:bg-white/20'
-      : ['text-slate-400 hover:bg-slate-100 hover:text-slate-700', { 'text-slate-300': !entries.length }]"
+      : ['text-base-400 hover:bg-base-100 hover:text-base-700', { 'text-base-300': !entries.length }]"
     :title="buttonTitle"
     :aria-label="buttonTitle"
     @click="openPanel"
@@ -23,11 +23,11 @@
       @click.self="closePanel"
     >
       <section class="flex h-full w-full max-w-xl flex-col bg-white shadow-2xl">
-        <header class="flex items-start gap-3 border-b border-slate-200 p-4">
+        <header class="flex items-start gap-3 border-b border-base-200 p-4">
           <button
             v-if="selectedId && entries.length > 1"
             type="button"
-            class="cursor-pointer text-slate-500 hover:text-slate-800"
+            class="cursor-pointer text-base-500 hover:text-base-800"
             :title="t('wiki.help.backToList')"
             :aria-label="t('wiki.help.backToList')"
             @click="selectedId = null"
@@ -36,15 +36,15 @@
           </button>
 
           <div class="min-w-0 flex-1">
-            <p class="text-xs uppercase tracking-wide text-slate-400">{{ t('wiki.help.panelTitle') }}</p>
-            <h2 class="truncate text-lg font-semibold text-slate-900">
+            <p class="text-xs uppercase tracking-wide text-base-400">{{ t('wiki.help.panelTitle') }}</p>
+            <h2 class="truncate text-lg font-semibold text-base-900">
               {{ article?.title || selectedEntry?.title || t('wiki.help.panelTitle') }}
             </h2>
           </div>
 
           <button
             type="button"
-            class="cursor-pointer text-slate-500 hover:text-slate-800"
+            class="cursor-pointer text-base-500 hover:text-base-800"
             :title="t('wiki.help.close')"
             :aria-label="t('wiki.help.close')"
             @click="closePanel"
@@ -55,32 +55,32 @@
 
         <div class="flex-1 space-y-4 overflow-y-auto p-4">
           <template v-if="!entries.length">
-            <p class="text-sm text-slate-600">{{ t('wiki.help.empty') }}</p>
+            <p class="text-sm text-base-600">{{ t('wiki.help.empty') }}</p>
             <button v-if="canManage" type="button" class="btn-secondary" @click="goToMapping">
               {{ t('wiki.help.link') }}
             </button>
-            <p v-else class="text-xs text-slate-400">{{ t('wiki.help.linkHint') }}</p>
+            <p v-else class="text-xs text-base-400">{{ t('wiki.help.linkHint') }}</p>
           </template>
 
           <ul v-else-if="!selectedId" class="space-y-2">
             <li v-for="entry in entries" :key="entry.id">
               <button
                 type="button"
-                class="w-full cursor-pointer rounded-lg border border-slate-200 p-3 text-left hover:border-orange-300 hover:bg-orange-50"
+                class="w-full cursor-pointer rounded-lg border border-base-200 p-3 text-left hover:border-accent-300 hover:bg-accent-50"
                 @click="selectedId = entry.articleId"
               >
-                <span class="block font-medium text-slate-900">{{ entry.title }}</span>
-                <span v-if="entry.summary" class="mt-0.5 block text-sm text-slate-600">{{ entry.summary }}</span>
-                <span class="mt-0.5 block text-xs text-slate-400">{{ entry.spaceTitle }}</span>
+                <span class="block font-medium text-base-900">{{ entry.title }}</span>
+                <span v-if="entry.summary" class="mt-0.5 block text-sm text-base-600">{{ entry.summary }}</span>
+                <span class="mt-0.5 block text-xs text-base-400">{{ entry.spaceTitle }}</span>
               </button>
             </li>
           </ul>
 
           <template v-else>
-            <p v-if="loading" class="text-sm text-slate-500">{{ t('wiki.loading') }}</p>
+            <p v-if="loading" class="text-sm text-base-500">{{ t('wiki.loading') }}</p>
             <CommonValidationSummary v-else-if="error" :errors="[error]" :title="t('wiki.article.notFoundTitle')" />
             <template v-else-if="article">
-              <p v-if="article.summary" class="text-sm text-slate-600">{{ article.summary }}</p>
+              <p v-if="article.summary" class="text-sm text-base-600">{{ article.summary }}</p>
               <PageWikiArticleBody
                 v-if="article.contentHtml"
                 :html="article.contentHtml"
@@ -88,12 +88,12 @@
                 :article-id="article.id"
                 :checklists="article.checklists"
               />
-              <p v-else class="text-sm text-slate-500">{{ t('wiki.article.emptyContent') }}</p>
+              <p v-else class="text-sm text-base-500">{{ t('wiki.article.emptyContent') }}</p>
             </template>
           </template>
         </div>
 
-        <footer v-if="selectedId" class="flex justify-end gap-3 border-t border-slate-200 p-4">
+        <footer v-if="selectedId" class="flex justify-end gap-3 border-t border-base-200 p-4">
           <button type="button" class="btn-primary" @click="openFullArticle">
             {{ t('wiki.help.openArticle') }}
           </button>

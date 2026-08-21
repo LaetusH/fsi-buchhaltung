@@ -2,7 +2,7 @@
   <section class="space-y-6">
     <div class="-mx-6 bg-white p-4 shadow-sm sm:mx-0 sm:rounded-xl sm:shadow-lg">
       <h2 class="text-lg font-semibold">{{ t('event.planning.checklists') }}</h2>
-      <p class="text-sm text-slate-500">{{ t('event.planning.checklistHint') }}</p>
+      <p class="text-sm text-base-500">{{ t('event.planning.checklistHint') }}</p>
     </div>
 
     <div :class="['grid gap-6', canManage !== false ? 'xl:grid-cols-[minmax(18rem,0.75fr)_minmax(0,1.25fr)]' : '']">
@@ -10,8 +10,8 @@
         <section class="-mx-6 bg-white p-4 shadow-sm sm:mx-0 sm:rounded-xl sm:shadow-lg">
           <div class="flex items-center justify-between gap-3">
             <div>
-              <h3 class="font-semibold text-slate-900">{{ t('event.planning.checklistTemplates') }}</h3>
-              <p class="text-sm text-slate-500">{{ t('event.planning.checklistTemplatesHint') }}</p>
+              <h3 class="font-semibold text-base-900">{{ t('event.planning.checklistTemplates') }}</h3>
+              <p class="text-sm text-base-500">{{ t('event.planning.checklistTemplatesHint') }}</p>
             </div>
           </div>
 
@@ -23,17 +23,17 @@
           >
             <Icon name="material-symbols:folder-open-rounded" />
             {{ t('event.planning.openChecklistTemplates') }}
-            <span class="rounded bg-white px-1.5 py-0.5 text-xs text-slate-600">{{ checklistTemplates.length }}</span>
+            <span class="rounded bg-white px-1.5 py-0.5 text-xs text-base-600">{{ checklistTemplates.length }}</span>
           </button>
 
-          <p v-if="checklistTemplates.length === 0" class="mt-3 rounded-lg border border-dashed border-slate-300 p-3 text-sm text-slate-500">
+          <p v-if="checklistTemplates.length === 0" class="mt-3 rounded-lg border border-dashed border-base-300 p-3 text-sm text-base-500">
             {{ t('event.planning.noChecklistTemplates') }}
           </p>
         </section>
 
         <section ref="builderSectionEl" class="-mx-6 bg-white p-4 shadow-sm sm:mx-0 sm:rounded-xl sm:shadow-lg">
           <div class="flex items-center justify-between gap-3">
-            <h3 class="font-semibold text-slate-900">{{ builderTitle }}</h3>
+            <h3 class="font-semibold text-base-900">{{ builderTitle }}</h3>
             <button
               type="button"
               class="btn-primary inline-flex items-center gap-2 h-8.5"
@@ -46,15 +46,15 @@
           </div>
           <div class="mt-3 space-y-3">
             <div>
-              <label class="text-xs font-medium text-slate-500">{{ t('event.planning.checklistTitle') }}</label>
+              <label class="text-xs font-medium text-base-500">{{ t('event.planning.checklistTitle') }}</label>
               <input v-model="draft.title" class="input mt-1" :disabled="disabled">
             </div>
             <div>
-              <label class="text-xs font-medium text-slate-500">{{ t('event.planning.checklistDescription') }}</label>
+              <label class="text-xs font-medium text-base-500">{{ t('event.planning.checklistDescription') }}</label>
               <textarea v-model="draft.description" class="input mt-1 min-h-20" :disabled="disabled" />
             </div>
             <div>
-              <label class="text-xs font-medium text-slate-500">{{ t('event.planning.checklistItems') }}</label>
+              <label class="text-xs font-medium text-base-500">{{ t('event.planning.checklistItems') }}</label>
               <div class="mt-1 space-y-2">
                 <div
                   v-for="item in draft.items"
@@ -68,7 +68,7 @@
                 >
                   <button
                     type="button"
-                    class="inline-flex h-9.5 w-9.5 items-center justify-center rounded-md border border-slate-200 bg-white text-slate-500 cursor-grab active:cursor-grabbing disabled:cursor-not-allowed disabled:opacity-60 touch-none"
+                    class="inline-flex h-9.5 w-9.5 items-center justify-center rounded-md border border-base-200 bg-white text-base-500 cursor-grab active:cursor-grabbing disabled:cursor-not-allowed disabled:opacity-60 touch-none"
                     draggable="true"
                     :disabled="disabled || draft.items.length <= 1"
                     :title="t('event.planning.reorderChecklistItem')"
@@ -88,7 +88,7 @@
                   >
                   <button
                     type="button"
-                    class="inline-flex h-9.5 w-9.5 items-center justify-center rounded-md border border-red-200 bg-red-50 text-red-700 hover:bg-red-100 disabled:opacity-60 cursor-pointer"
+                    class="inline-flex h-9.5 w-9.5 items-center justify-center rounded-md border border-danger-200 bg-danger-50 text-danger-700 hover:bg-danger-100 disabled:opacity-60 cursor-pointer"
                     :disabled="disabled"
                     :title="t('actions.remove')"
                     @click="removeDraftItem(item.id)"
@@ -112,7 +112,7 @@
                 v-if="canSaveTemplates !== false"
                 type="button"
                 class="inline-flex items-center gap-2 rounded-md border px-3 py-2 text-sm font-medium disabled:opacity-60 not-disabled:cursor-pointer disabled:cursor-not-allowed"
-                :class="draftIsSavedAsTemplate || editingTemplateId !== null ? 'border-emerald-200 bg-emerald-50 text-emerald-700' : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50'"
+                :class="draftIsSavedAsTemplate || editingTemplateId !== null ? 'border-success-200 bg-success-50 text-success-700' : 'border-base-200 bg-white text-base-700 hover:bg-base-50'"
                 :disabled="disabled || !canSaveDraft || draftIsSavedAsTemplate"
                 @click="saveDraftAsTemplate"
               >
@@ -131,10 +131,10 @@
         <div v-for="checklist in checklists" :key="checklist.id" class="mb-4 break-inside-avoid -mx-6 bg-white p-4 shadow-sm sm:mx-0 sm:rounded-xl sm:shadow-lg">
           <div class="flex items-start justify-between gap-3">
             <div class="min-w-0">
-              <h3 class="truncate font-semibold text-slate-900">{{ checklist.title }}</h3>
-              <p class="text-sm text-slate-500">{{ checklist.description || t('event.planning.noChecklistDescription') }}</p>
+              <h3 class="truncate font-semibold text-base-900">{{ checklist.title }}</h3>
+              <p class="text-sm text-base-500">{{ checklist.description || t('event.planning.noChecklistDescription') }}</p>
             </div>
-            <span class="shrink-0 rounded-md bg-slate-100 px-2 py-1 text-xs font-semibold text-slate-600">
+            <span class="shrink-0 rounded-md bg-base-100 px-2 py-1 text-xs font-semibold text-base-600">
               {{ completedItemCount(checklist) }}/{{ checklist.items.length }}
             </span>
           </div>
@@ -144,7 +144,7 @@
             <button
               v-if="canManage !== false"
               type="button"
-              class="inline-flex h-7 w-7 items-center justify-center rounded-md border border-slate-200 bg-white text-slate-500 hover:bg-slate-50 hover:text-slate-700 disabled:opacity-60 cursor-pointer"
+              class="inline-flex h-7 w-7 items-center justify-center rounded-md border border-base-200 bg-white text-base-500 hover:bg-base-50 hover:text-base-700 disabled:opacity-60 cursor-pointer"
               :disabled="disabled"
               :title="t('actions.edit')"
               @click="editChecklist(checklist)"
@@ -155,7 +155,7 @@
               v-if="canSaveTemplates !== false"
               type="button"
               class="inline-flex h-7 w-7 items-center justify-center rounded-md border disabled:opacity-60"
-              :class="isChecklistSavedAsTemplate(checklist) ? 'border-emerald-200 bg-emerald-50 text-emerald-600 cursor-not-allowed' : 'border-slate-200 bg-white text-slate-500 hover:bg-slate-50 hover:text-slate-700 cursor-pointer'"
+              :class="isChecklistSavedAsTemplate(checklist) ? 'border-success-200 bg-success-50 text-success-600 cursor-not-allowed' : 'border-base-200 bg-white text-base-500 hover:bg-base-50 hover:text-base-700 cursor-pointer'"
               :disabled="disabled || isChecklistSavedAsTemplate(checklist)"
               :title="isChecklistSavedAsTemplate(checklist) ? t('event.planning.savedAsTemplate') : t('event.planning.saveAsTemplate')"
               @click="saveChecklistAsTemplate(checklist)"
@@ -167,7 +167,7 @@
             <template v-if="checklist.taskId !== null">
               <button
                 type="button"
-                class="inline-flex h-7 min-w-7 items-center gap-1 rounded-md border border-sky-200 bg-sky-50 px-1.5 text-xs font-medium text-sky-700 hover:bg-sky-100 cursor-pointer"
+                class="inline-flex h-7 min-w-7 items-center gap-1 rounded-md border border-link-200 bg-link-50 px-1.5 text-xs font-medium text-link-700 hover:bg-link-100 cursor-pointer"
                 :title="t('event.planning.navigateToTask')"
                 @click="emit('navigate-to-tasks')"
               >
@@ -177,7 +177,7 @@
               <button
                 v-if="!disabled"
                 type="button"
-                class="inline-flex h-7 w-7 items-center justify-center rounded-md border border-slate-200 bg-white text-slate-400 hover:bg-slate-50 hover:text-slate-600 cursor-pointer"
+                class="inline-flex h-7 w-7 items-center justify-center rounded-md border border-base-200 bg-white text-base-400 hover:bg-base-50 hover:text-base-600 cursor-pointer"
                 :title="t('event.planning.unlinkFromTask')"
                 @click="unlinkTask(checklist.id)"
               >
@@ -187,7 +187,7 @@
             <template v-else-if="!disabled">
               <button
                 type="button"
-                class="inline-flex h-7 w-7 items-center justify-center rounded-md border border-slate-200 bg-white text-slate-400 hover:bg-slate-50 hover:text-slate-700 cursor-pointer"
+                class="inline-flex h-7 w-7 items-center justify-center rounded-md border border-base-200 bg-white text-base-400 hover:bg-base-50 hover:text-base-700 cursor-pointer"
                 :title="t('event.planning.linkToTask')"
                 @click="openLinkTask(checklist.id)"
               >
@@ -195,7 +195,7 @@
               </button>
               <button
                 type="button"
-                class="inline-flex h-7 w-7 items-center justify-center rounded-md border border-slate-200 bg-white text-slate-400 hover:bg-orange-50 hover:text-orange-600 cursor-pointer"
+                class="inline-flex h-7 w-7 items-center justify-center rounded-md border border-base-200 bg-white text-base-400 hover:bg-accent-50 hover:text-accent-600 cursor-pointer"
                 :title="t('event.planning.createTaskFromChecklist')"
                 @click="openCreateTask(checklist.id)"
               >
@@ -207,7 +207,7 @@
             <button
               v-if="canManage !== false"
               type="button"
-              class="inline-flex h-7 w-7 items-center justify-center rounded-md border border-red-200 bg-red-50 text-red-600 hover:bg-red-100 disabled:opacity-60 cursor-pointer"
+              class="inline-flex h-7 w-7 items-center justify-center rounded-md border border-danger-200 bg-danger-50 text-danger-600 hover:bg-danger-100 disabled:opacity-60 cursor-pointer"
               :disabled="disabled"
               :title="t('actions.remove')"
               @click="removeChecklist(checklist.id)"
@@ -228,7 +228,7 @@
               @select="selectTaskForChecklist(checklist.id, $event)"
               @clear-selection="taskLinkQuery = ''"
             />
-            <button type="button" class="shrink-0 text-xs text-slate-400 hover:text-slate-600 cursor-pointer" @click="closeLinkTask">
+            <button type="button" class="shrink-0 text-xs text-base-400 hover:text-base-600 cursor-pointer" @click="closeLinkTask">
               {{ t('actions.cancel') }}
             </button>
           </div>
@@ -247,7 +247,7 @@
                 <Icon name="material-symbols:add-rounded" />
                 {{ t('event.planning.createTaskFromChecklist') }}
               </button>
-              <button type="button" class="shrink-0 text-xs text-slate-400 hover:text-slate-600 cursor-pointer" @click="cancelCreateTask">
+              <button type="button" class="shrink-0 text-xs text-base-400 hover:text-base-600 cursor-pointer" @click="cancelCreateTask">
                 {{ t('actions.cancel') }}
               </button>
             </div>
@@ -260,8 +260,8 @@
               :key="item.id"
               class="flex items-center gap-2 rounded-md border px-2 py-1.5 text-sm transition-colors"
               :class="[
-                item.done ? 'border-emerald-200 bg-emerald-50/50' : 'border-slate-200',
-                disabled ? 'cursor-default' : 'cursor-pointer hover:bg-slate-50',
+                item.done ? 'border-success-200 bg-success-50/50' : 'border-base-200',
+                disabled ? 'cursor-default' : 'cursor-pointer hover:bg-base-50',
               ]"
             >
               <input
@@ -271,12 +271,12 @@
                 :disabled="disabled"
                 @change="setChecklistItemDone(checklist.id, item.id, ($event.target as HTMLInputElement).checked)"
               >
-              <span :class="item.done ? 'line-through text-slate-400' : 'text-slate-700'">{{ item.label }}</span>
+              <span :class="item.done ? 'line-through text-base-400' : 'text-base-700'">{{ item.label }}</span>
             </label>
           </div>
         </div>
 
-        <div v-if="checklists.length === 0" class="rounded-xl border border-dashed border-slate-300 bg-slate-50 p-4 text-sm text-slate-500">
+        <div v-if="checklists.length === 0" class="rounded-xl border border-dashed border-base-300 bg-base-50 p-4 text-sm text-base-500">
           {{ t('event.planning.noChecklists') }}
         </div>
       </section>
@@ -285,19 +285,19 @@
     <Teleport to="body">
       <div
         v-if="templateBrowserOpen"
-        class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/45 p-4"
+        class="fixed inset-0 z-50 flex items-center justify-center bg-base-900/45 p-4"
         @click.self="templateBrowserOpen = false"
         @keydown.esc="templateBrowserOpen = false"
       >
         <section class="w-full max-w-3xl overflow-hidden rounded-xl bg-white shadow-2xl">
-          <div class="flex items-start justify-between gap-3 border-b border-slate-200 p-4">
+          <div class="flex items-start justify-between gap-3 border-b border-base-200 p-4">
             <div>
-              <h3 class="text-lg font-semibold text-slate-900">{{ t('event.planning.checklistTemplates') }}</h3>
-              <p class="text-sm text-slate-500">{{ t('event.planning.checklistTemplateBrowserHint') }}</p>
+              <h3 class="text-lg font-semibold text-base-900">{{ t('event.planning.checklistTemplates') }}</h3>
+              <p class="text-sm text-base-500">{{ t('event.planning.checklistTemplateBrowserHint') }}</p>
             </div>
             <button
               type="button"
-              class="inline-flex h-8 w-8 items-center justify-center rounded-md border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 cursor-pointer"
+              class="inline-flex h-8 w-8 items-center justify-center rounded-md border border-base-200 bg-white text-base-600 hover:bg-base-50 cursor-pointer"
               :title="t('actions.close')"
               @click="templateBrowserOpen = false"
             >
@@ -305,8 +305,8 @@
             </button>
           </div>
 
-          <div class="border-b border-slate-200 p-4">
-            <label class="text-xs font-medium text-slate-500">{{ t('event.planning.searchChecklistTemplates') }}</label>
+          <div class="border-b border-base-200 p-4">
+            <label class="text-xs font-medium text-base-500">{{ t('event.planning.searchChecklistTemplates') }}</label>
             <input
               v-model="templateSearch"
               class="input mt-1"
@@ -319,7 +319,7 @@
               <article
                 v-for="template in filteredChecklistTemplates"
                 :key="template.id"
-                class="rounded-lg border border-slate-200 bg-slate-50 p-3"
+                class="rounded-lg border border-base-200 bg-base-50 p-3"
               >
                 <button
                   type="button"
@@ -329,10 +329,10 @@
                 >
                   <span class="flex items-start justify-between gap-3">
                     <span class="min-w-0">
-                      <span class="block truncate text-sm font-semibold text-slate-900">{{ template.title }}</span>
-                      <span class="mt-0.5 block line-clamp-2 text-xs text-slate-500">{{ template.description || t('event.planning.noChecklistDescription') }}</span>
+                      <span class="block truncate text-sm font-semibold text-base-900">{{ template.title }}</span>
+                      <span class="mt-0.5 block line-clamp-2 text-xs text-base-500">{{ template.description || t('event.planning.noChecklistDescription') }}</span>
                     </span>
-                    <span class="shrink-0 rounded-md bg-white px-2 py-1 text-xs font-semibold text-slate-600">
+                    <span class="shrink-0 rounded-md bg-white px-2 py-1 text-xs font-semibold text-base-600">
                       {{ template.items.length }}
                     </span>
                   </span>
@@ -349,7 +349,7 @@
                   </button>
                   <button
                     type="button"
-                    class="inline-flex items-center gap-1.5 rounded-md border border-red-200 bg-red-50 px-2 py-1 text-xs font-medium text-red-700 hover:bg-red-100 disabled:opacity-60 cursor-pointer"
+                    class="inline-flex items-center gap-1.5 rounded-md border border-danger-200 bg-danger-50 px-2 py-1 text-xs font-medium text-danger-700 hover:bg-danger-100 disabled:opacity-60 cursor-pointer"
                     :disabled="disabled"
                     @click="removeTemplate(template.id)"
                   >
@@ -360,7 +360,7 @@
               </article>
             </div>
 
-            <p v-if="filteredChecklistTemplates.length === 0" class="rounded-lg border border-dashed border-slate-300 p-3 text-sm text-slate-500">
+            <p v-if="filteredChecklistTemplates.length === 0" class="rounded-lg border border-dashed border-base-300 p-3 text-sm text-base-500">
               {{ t('event.planning.noMatchingChecklistTemplates') }}
             </p>
           </div>

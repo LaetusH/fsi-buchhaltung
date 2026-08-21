@@ -19,7 +19,7 @@
       >
         <header v-if="$slots.title || title" :class="headerClass">
           <slot name="title">
-            <h3 :id="titleId" class="text-lg font-semibold text-slate-900">
+            <h3 :id="titleId" class="text-lg font-semibold text-base-900">
               {{ title }}
             </h3>
           </slot>

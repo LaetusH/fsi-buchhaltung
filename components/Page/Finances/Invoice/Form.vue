@@ -8,7 +8,7 @@
             type="button"
             class="rounded-lg border px-3 py-2 text-sm transition"
             :class="[
-              form.source_type === InvoiceSourceType.Upload ? 'border-orange-500 bg-orange-50 text-orange-700' : 'border-slate-200',
+              form.source_type === InvoiceSourceType.Upload ? 'border-accent-500 bg-accent-50 text-accent-700' : 'border-base-200',
               disabled ? 'opacity-70' : '',
             ]"
             :disabled="disabled"
@@ -20,7 +20,7 @@
             type="button"
             class="rounded-lg border px-3 py-2 text-sm transition"
             :class="[
-              form.source_type === InvoiceSourceType.Generated ? 'border-orange-500 bg-orange-50 text-orange-700' : 'border-slate-200',
+              form.source_type === InvoiceSourceType.Generated ? 'border-accent-500 bg-accent-50 text-accent-700' : 'border-base-200',
               disabled ? 'opacity-70' : '',
             ]"
             :disabled="disabled"
@@ -71,7 +71,7 @@
             <button
               v-if="selectedCompany && canEditCompany"
               type="button"
-              class="p-2 h-10 w-10 rounded-md hover:bg-slate-100 text-orange-500 cursor-pointer"
+              class="p-2 h-10 w-10 rounded-md hover:bg-base-100 text-accent-500 cursor-pointer"
               :title="t('invoice.editCompany')"
               @click.stop.prevent="openCompanyDrawer"
             >
@@ -136,7 +136,7 @@
     <section class="-mx-6 bg-white shadow-sm sm:mx-0 sm:rounded-xl sm:shadow-lg p-4 space-y-4">
       <div class="flex items-center justify-between">
         <h3 class="font-semibold">{{ t('invoice.positions') }}</h3>
-        <button v-if="!disabled" type="button" class="text-orange-500 font-medium cursor-pointer" @click="addPosition">
+        <button v-if="!disabled" type="button" class="text-accent-500 font-medium cursor-pointer" @click="addPosition">
           + {{ t('actions.addPosition') }}
         </button>
       </div>
@@ -144,7 +144,7 @@
       <div
         v-for="(position, index) in form.positions"
         :key="position.id ?? index"
-        class="rounded-xl border border-slate-200 bg-slate-50 p-3 space-y-3"
+        class="rounded-xl border border-base-200 bg-base-50 p-3 space-y-3"
       >
         <div class="grid grid-cols-1 md:grid-cols-[1.1fr_2fr] gap-3">
           <div class="field">
@@ -193,7 +193,7 @@
                 >
                   {{ sphereOptionLabel(sphere) }}
                 </button>
-                <div v-if="availableSpheres(index).length === 0" class="px-3 py-2 text-sm text-gray-500">
+                <div v-if="availableSpheres(index).length === 0" class="px-3 py-2 text-sm text-base-500">
                   {{ t('invoice.noSpheres') }}
                 </div>
               </template>
@@ -275,7 +275,7 @@
           <button
             v-if="!disabled && form.positions.length > 1"
             type="button"
-            class="text-red-500 cursor-pointer p-2 w-10 rounded-md hover:bg-slate-100 md:col-span-1 2xl:col-span-1 md:self-end"
+            class="text-danger-500 cursor-pointer p-2 w-10 rounded-md hover:bg-base-100 md:col-span-1 2xl:col-span-1 md:self-end"
             @click="removePosition(index)"
           >
             ✕
@@ -284,7 +284,7 @@
       </div>
 
       <div class="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-        <label v-if="!isUpload" class="inline-flex items-center gap-3 text-sm text-slate-700 select-none cursor-pointer">
+        <label v-if="!isUpload" class="inline-flex items-center gap-3 text-sm text-base-700 select-none cursor-pointer">
           <input
             v-model="form.is_kleinunternehmer"
             type="checkbox"
@@ -296,11 +296,11 @@
         <div v-else />
 
         <div class="md:ml-auto md:max-w-xs w-full space-y-1 text-sm">
-          <div class="flex justify-between text-slate-500">
+          <div class="flex justify-between text-base-500">
             <span>{{ t('invoice.net') }}</span>
             <span>{{ formatCurrency(netTotal) }}</span>
           </div>
-          <div v-for="(taxAmount, tax) in taxBreakdown" :key="tax" class="flex justify-between text-slate-500">
+          <div v-for="(taxAmount, tax) in taxBreakdown" :key="tax" class="flex justify-between text-base-500">
             <span>{{ t('invoice.vat', { tax }) }}</span>
             <span>{{ formatCurrency(taxAmount) }}</span>
           </div>
@@ -340,7 +340,7 @@
       >
         <div class="flex items-center justify-between px-6 py-4 border-b">
           <h2 class="text-lg font-semibold">{{ t('invoice.companyDrawer') }}</h2>
-          <button class="text-slate-400 hover:text-slate-600 cursor-pointer" @click="closeCompanyDrawer">✕</button>
+          <button class="text-base-400 hover:text-base-600 cursor-pointer" @click="closeCompanyDrawer">✕</button>
         </div>
 
         <div class="p-6">

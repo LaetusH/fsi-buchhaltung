@@ -3,7 +3,7 @@
     <div class="flex flex-wrap items-center justify-between gap-3">
       <div>
         <h2 class="text-lg font-semibold">{{ t('event.planning.timeline') }}</h2>
-        <p class="text-sm text-slate-500">{{ t('event.planning.timelineHint') }}</p>
+        <p class="text-sm text-base-500">{{ t('event.planning.timelineHint') }}</p>
       </div>
     </div>
 
@@ -15,14 +15,14 @@
         class="inline-flex cursor-pointer items-center gap-1.5 rounded-md border px-2.5 py-1.5 text-sm font-medium transition-colors"
         :class="activeFilter === filter.kind
           ? filter.activeClass
-          : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'"
+          : 'border-base-200 bg-white text-base-600 hover:bg-base-50'"
         @click="activeFilter = filter.kind"
       >
         <Icon :name="filter.icon" />
         {{ filter.label }}
         <span
           class="rounded-full px-1.5 text-xs font-semibold tabular-nums"
-          :class="activeFilter === filter.kind ? filter.chipClass : 'bg-slate-100 text-slate-500'"
+          :class="activeFilter === filter.kind ? filter.chipClass : 'bg-base-100 text-base-500'"
         >
           {{ filter.count }}
         </span>
@@ -31,8 +31,8 @@
 
     <template v-if="!items.length">
       <div class="mt-10 flex flex-col items-center gap-3 text-center">
-        <p class="font-medium text-slate-700">{{ t('event.planning.noTimelineItems') }}</p>
-        <p class="text-sm text-slate-500">{{ t('event.planning.noTimelineItemsHint') }}</p>
+        <p class="font-medium text-base-700">{{ t('event.planning.noTimelineItems') }}</p>
+        <p class="text-sm text-base-500">{{ t('event.planning.noTimelineItemsHint') }}</p>
         <div class="mt-2 flex gap-2">
           <button type="button" class="btn-secondary text-sm" @click="emit('navigate', 'tasks')">
             {{ t('event.planning.tabs.tasks') }}
@@ -46,20 +46,20 @@
 
     <template v-else-if="!groupedItems.length">
       <div class="mt-10 flex flex-col items-center gap-2 text-center">
-        <p class="text-sm text-slate-500">{{ t('event.planning.noTimelineItemsFiltered') }}</p>
+        <p class="text-sm text-base-500">{{ t('event.planning.noTimelineItemsFiltered') }}</p>
       </div>
     </template>
 
     <div v-else class="relative mt-6 pl-8">
-      <div class="absolute left-3 top-3 bottom-3 w-0.5 bg-slate-200" aria-hidden="true" />
+      <div class="absolute left-3 top-3 bottom-3 w-0.5 bg-base-200" aria-hidden="true" />
 
       <div v-if="pastItemCount > 0" class="relative mb-6">
         <div class="absolute -left-8 flex h-6 w-6 items-center justify-center">
-          <div class="h-3 w-3 rounded-full border-2 border-white bg-slate-300 ring-1 ring-slate-300" />
+          <div class="h-3 w-3 rounded-full border-2 border-white bg-base-300 ring-1 ring-base-300" />
         </div>
         <button
           type="button"
-          class="inline-flex cursor-pointer items-center gap-1 text-sm font-medium text-slate-500 transition-colors hover:text-slate-700"
+          class="inline-flex cursor-pointer items-center gap-1 text-sm font-medium text-base-500 transition-colors hover:text-base-700"
           @click="showPast = !showPast"
         >
           <Icon :name="showPast ? 'material-symbols:keyboard-arrow-up-rounded' : 'material-symbols:keyboard-arrow-down-rounded'" />
@@ -72,41 +72,41 @@
           <div
             class="h-4 w-4 rounded-full border-2 border-white ring-1"
             :class="group.isToday
-              ? 'bg-orange-500 ring-orange-400'
+              ? 'bg-accent-500 ring-accent-400'
               : group.isPast
-                ? 'bg-slate-300 ring-slate-300'
-                : 'bg-slate-500 ring-slate-400'"
+                ? 'bg-base-300 ring-base-300'
+                : 'bg-base-500 ring-base-400'"
           />
         </div>
 
         <div class="mb-3 flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
           <span
             class="text-sm font-semibold"
-            :class="group.isToday ? 'text-orange-600' : group.isPast ? 'text-slate-400' : 'text-slate-700'"
+            :class="group.isToday ? 'text-accent-600' : group.isPast ? 'text-base-400' : 'text-base-700'"
           >
             {{ group.weekday }}, {{ group.dateLabel }}
           </span>
           <span
             v-if="group.isToday"
-            class="rounded-full bg-orange-100 px-2 py-0.5 text-xs font-semibold text-orange-700"
+            class="rounded-full bg-accent-100 px-2 py-0.5 text-xs font-semibold text-accent-700"
           >
             {{ t('event.planning.today') }}
           </span>
-          <span v-else-if="group.relativeLabel" class="text-xs font-medium" :class="group.isPast ? 'text-slate-400' : 'text-slate-500'">
+          <span v-else-if="group.relativeLabel" class="text-xs font-medium" :class="group.isPast ? 'text-base-400' : 'text-base-500'">
             {{ group.relativeLabel }}
           </span>
         </div>
 
-        <p v-if="!group.items.length" class="text-xs text-slate-400">{{ t('event.planning.noItemsToday') }}</p>
+        <p v-if="!group.items.length" class="text-xs text-base-400">{{ t('event.planning.noItemsToday') }}</p>
 
         <div v-else class="space-y-4">
           <div v-for="cluster in group.clusters" :key="cluster.key">
-            <p class="mb-1.5 flex items-center gap-1.5 text-xs font-semibold text-slate-400">
+            <p class="mb-1.5 flex items-center gap-1.5 text-xs font-semibold text-base-400">
               <Icon name="material-symbols:schedule-rounded" class="text-sm" />
               {{ cluster.timeLabel }}
               <span
                 v-if="cluster.items.length > 1"
-                class="rounded-full bg-slate-100 px-1.5 text-[0.7rem] font-semibold tabular-nums text-slate-500"
+                class="rounded-full bg-base-100 px-1.5 text-[0.7rem] font-semibold tabular-nums text-base-500"
               >
                 {{ cluster.items.length }}
               </span>
@@ -135,17 +135,17 @@
                   <span class="min-w-0 flex-1">
                     <span
                       class="block truncate font-medium"
-                      :class="item.kind === 'task' && item.status === 'done' ? 'text-slate-400 line-through' : 'text-slate-900'"
+                      :class="item.kind === 'task' && item.status === 'done' ? 'text-base-400 line-through' : 'text-base-900'"
                     >
                       {{ item.title }}
                     </span>
-                    <span class="mt-0.5 block truncate text-xs text-slate-500">
+                    <span class="mt-0.5 block truncate text-xs text-base-500">
                       {{ item.typeLabel }}<template v-if="item.meta"> · {{ item.meta }}</template>
                     </span>
                   </span>
                   <Icon
                     name="material-symbols:chevron-right-rounded"
-                    class="shrink-0 text-lg text-slate-300 transition-colors group-hover:text-slate-500"
+                    class="shrink-0 text-lg text-base-300 transition-colors group-hover:text-base-500"
                   />
                 </span>
 
@@ -155,13 +155,13 @@
                 >
                   <span
                     v-if="item.status === 'in_progress'"
-                    class="rounded-md bg-blue-100 px-2 py-0.5 text-xs font-semibold text-blue-700"
+                    class="rounded-md bg-info-100 px-2 py-0.5 text-xs font-semibold text-info-700"
                   >
                     {{ t('event.planning.taskStatus.inProgress') }}
                   </span>
                   <span
                     v-if="item.checklistProgress"
-                    class="inline-flex items-center gap-1 rounded-md bg-sky-100 px-2 py-0.5 text-xs font-semibold text-sky-700"
+                    class="inline-flex items-center gap-1 rounded-md bg-info-100 px-2 py-0.5 text-xs font-semibold text-info-700"
                   >
                     <Icon name="material-symbols:checklist-rounded" class="text-sm" />
                     {{ item.checklistProgress.done }}/{{ item.checklistProgress.total }}
@@ -169,7 +169,7 @@
                   <span
                     v-if="urgencyLabel(item)"
                     class="rounded-md px-2 py-0.5 text-xs font-semibold"
-                    :class="isOverdue(item) ? 'bg-red-100 text-red-700' : 'bg-amber-100 text-amber-700'"
+                    :class="isOverdue(item) ? 'bg-danger-100 text-danger-700' : 'bg-warning-100 text-warning-700'"
                   >
                     {{ urgencyLabel(item) }}
                   </span>
@@ -188,7 +188,7 @@
                     </span>
                     <span class="tabular-nums">{{ item.memberCount ?? 0 }}/{{ item.requiredPeople }}</span>
                   </span>
-                  <span class="mt-1 flex h-1.5 w-full overflow-hidden rounded-full bg-slate-200/80">
+                  <span class="mt-1 flex h-1.5 w-full overflow-hidden rounded-full bg-base-200/80">
                     <span
                       class="h-full rounded-full transition-all"
                       :class="staffingBarClass(item)"
@@ -228,9 +228,9 @@ const activeFilter = ref<FilterKind>(null)
 const showPast = ref(false)
 
 const kindConfig: Record<EventTimelineKind, { icon: string; chip: string; tab: EventPlanningTabKey; titleKey: string }> = {
-  event: { icon: 'material-symbols:flag-rounded', chip: 'bg-orange-100 text-orange-600', tab: 'details', titleKey: 'event.planning.tabs.details' },
-  task: { icon: 'material-symbols:task-alt-rounded', chip: 'bg-amber-100 text-amber-600', tab: 'tasks', titleKey: 'event.planning.navigateToTask' },
-  shift: { icon: 'material-symbols:calendar-month-rounded', chip: 'bg-sky-100 text-sky-600', tab: 'shifts', titleKey: 'event.planning.openShifts' },
+  event: { icon: 'material-symbols:flag-rounded', chip: 'bg-accent-100 text-accent-600', tab: 'details', titleKey: 'event.planning.tabs.details' },
+  task: { icon: 'material-symbols:task-alt-rounded', chip: 'bg-warning-100 text-warning-600', tab: 'tasks', titleKey: 'event.planning.navigateToTask' },
+  shift: { icon: 'material-symbols:calendar-month-rounded', chip: 'bg-info-100 text-info-600', tab: 'shifts', titleKey: 'event.planning.openShifts' },
 }
 
 const kindCounts = computed(() => {
@@ -245,32 +245,32 @@ const kindFilters = computed<{ kind: FilterKind; label: string; icon: string; co
     label: t('common.all'),
     icon: 'material-symbols:format-list-bulleted-rounded',
     count: props.items.length,
-    activeClass: 'border-slate-300 bg-slate-100 text-slate-800',
-    chipClass: 'bg-slate-200 text-slate-600',
+    activeClass: 'border-base-300 bg-base-100 text-base-800',
+    chipClass: 'bg-base-200 text-base-600',
   },
   {
     kind: 'event',
     label: t('event.planning.milestones'),
     icon: 'material-symbols:flag-rounded',
     count: kindCounts.value.event,
-    activeClass: 'border-orange-300 bg-orange-50 text-orange-800',
-    chipClass: 'bg-orange-100 text-orange-700',
+    activeClass: 'border-accent-300 bg-accent-50 text-accent-800',
+    chipClass: 'bg-accent-100 text-accent-700',
   },
   {
     kind: 'task',
     label: t('event.planning.tasks'),
     icon: 'material-symbols:task-alt-rounded',
     count: kindCounts.value.task,
-    activeClass: 'border-amber-300 bg-amber-50 text-amber-800',
-    chipClass: 'bg-amber-100 text-amber-700',
+    activeClass: 'border-warning-300 bg-warning-50 text-warning-800',
+    chipClass: 'bg-warning-100 text-warning-700',
   },
   {
     kind: 'shift',
     label: t('event.planning.shifts'),
     icon: 'material-symbols:calendar-month-rounded',
     count: kindCounts.value.shift,
-    activeClass: 'border-sky-300 bg-sky-50 text-sky-800',
-    chipClass: 'bg-sky-100 text-sky-700',
+    activeClass: 'border-info-300 bg-info-50 text-info-800',
+    chipClass: 'bg-info-100 text-info-700',
   },
 ])
 
@@ -307,8 +307,8 @@ function itemIcon(item: EventTimelineItem): string {
 
 function itemChipClass(item: EventTimelineItem): string {
   if (item.kind === 'task') {
-    if (item.status === 'done') return 'bg-emerald-100 text-emerald-600'
-    if (isOverdue(item)) return 'bg-red-100 text-red-600'
+    if (item.status === 'done') return 'bg-success-100 text-success-600'
+    if (isOverdue(item)) return 'bg-danger-100 text-danger-600'
   }
   return kindConfig[item.kind].chip
 }
@@ -330,12 +330,12 @@ function staffingLabel(item: EventTimelineItem): string {
 
 function staffingTextClass(item: EventTimelineItem): string {
   const state = shiftState(item)
-  return state === 'full' ? 'text-emerald-700' : state === 'partial' ? 'text-amber-700' : 'text-red-700'
+  return state === 'full' ? 'text-success-700' : state === 'partial' ? 'text-warning-700' : 'text-danger-700'
 }
 
 function staffingBarClass(item: EventTimelineItem): string {
   const state = shiftState(item)
-  return state === 'full' ? 'bg-emerald-500' : state === 'partial' ? 'bg-amber-500' : 'bg-red-500'
+  return state === 'full' ? 'bg-success-500' : state === 'partial' ? 'bg-warning-500' : 'bg-danger-500'
 }
 
 function staffingPercent(item: EventTimelineItem): number {
@@ -347,16 +347,16 @@ function staffingPercent(item: EventTimelineItem): number {
 function itemCardClass(item: EventTimelineItem, group: DayGroup): string[] {
   const classes: string[] = group.isPast ? ['opacity-70'] : []
   if (item.kind === 'event') {
-    classes.push('border-orange-200 bg-orange-50/60 hover:bg-orange-50')
+    classes.push('border-accent-200 bg-accent-50/60 hover:bg-accent-50')
   } else if (item.kind === 'shift') {
     const state = shiftState(item)
-    if (state === 'full') classes.push('border-emerald-200 bg-white hover:bg-emerald-50/50')
-    else if (state === 'partial') classes.push('border-amber-300 bg-amber-50/50 hover:bg-amber-50')
-    else classes.push('border-red-300 bg-red-50/50 hover:bg-red-50')
+    if (state === 'full') classes.push('border-success-200 bg-white hover:bg-success-50/50')
+    else if (state === 'partial') classes.push('border-warning-300 bg-warning-50/50 hover:bg-warning-50')
+    else classes.push('border-danger-300 bg-danger-50/50 hover:bg-danger-50')
   } else if (isOverdue(item)) {
-    classes.push('border-red-200 bg-white hover:bg-red-50/40')
+    classes.push('border-danger-200 bg-white hover:bg-danger-50/40')
   } else {
-    classes.push('border-slate-200 bg-white hover:bg-slate-50')
+    classes.push('border-base-200 bg-white hover:bg-base-50')
   }
   return classes
 }

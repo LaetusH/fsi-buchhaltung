@@ -15,7 +15,7 @@
         </div>
 
         <div class="flex items-center justify-between">
-          <div v-if="error" class="text-sm text-red-600">{{ error }}</div>
+          <div v-if="error" class="text-sm text-danger-600">{{ error }}</div>
           <button type="submit" class="btn-primary">{{ t('actions.login') }}</button>
         </div>
       </form>

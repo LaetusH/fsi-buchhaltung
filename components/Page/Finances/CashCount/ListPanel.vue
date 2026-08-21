@@ -20,7 +20,7 @@
       <template #cell-event_name="{ row }">
         <span
           v-if="!row.event_name"
-          class="inline-flex rounded-md bg-slate-100 px-2 py-1 text-xs font-medium text-slate-700"
+          class="inline-flex rounded-md bg-base-100 px-2 py-1 text-xs font-medium text-base-700"
         >
           {{ t('cashCount.registerCheck') }}
         </span>

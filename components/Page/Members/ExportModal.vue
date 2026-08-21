@@ -1,9 +1,9 @@
 <template>
   <CommonModal :model-value="modelValue" :title="t('member.export.title')" width-class="max-w-xl" @update:model-value="$emit('update:modelValue', $event)">
-    <p class="text-sm text-slate-500">{{ t('member.export.hint') }}</p>
+    <p class="text-sm text-base-500">{{ t('member.export.hint') }}</p>
 
     <div>
-      <span class="block text-sm font-medium text-slate-700">{{ t('member.export.format') }}</span>
+      <span class="block text-sm font-medium text-base-700">{{ t('member.export.format') }}</span>
       <div class="mt-1.5 grid grid-cols-2 gap-2">
         <button
           v-for="option in formatOptions"
@@ -11,49 +11,49 @@
           type="button"
           :class="[
             'flex items-start gap-2.5 rounded-lg border p-3 text-left cursor-pointer',
-            format === option.value ? 'border-slate-800 bg-slate-50' : 'border-slate-200 hover:bg-slate-50',
+            format === option.value ? 'border-base-800 bg-base-50' : 'border-base-200 hover:bg-base-50',
           ]"
           @click="format = option.value"
         >
-          <Icon :name="option.icon" class="mt-0.5 shrink-0 text-lg text-slate-700" />
+          <Icon :name="option.icon" class="mt-0.5 shrink-0 text-lg text-base-700" />
           <span class="min-w-0">
-            <span class="block text-sm font-semibold text-slate-900">{{ option.label }}</span>
-            <span class="mt-0.5 block text-xs text-slate-500">{{ option.hint }}</span>
+            <span class="block text-sm font-semibold text-base-900">{{ option.label }}</span>
+            <span class="mt-0.5 block text-xs text-base-500">{{ option.hint }}</span>
           </span>
         </button>
       </div>
     </div>
 
     <div>
-      <span class="block text-sm font-medium text-slate-700">{{ t('member.export.preset') }}</span>
+      <span class="block text-sm font-medium text-base-700">{{ t('member.export.preset') }}</span>
       <div class="mt-1.5 flex flex-wrap gap-2">
         <button
           type="button"
-          class="rounded-md border border-slate-200 px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-50 cursor-pointer"
+          class="rounded-md border border-base-200 px-3 py-1.5 text-sm text-base-700 hover:bg-base-50 cursor-pointer"
           @click="applyAttendancePreset"
         >
           {{ t('member.export.presetAttendance') }}
         </button>
         <button
           type="button"
-          class="rounded-md border border-slate-200 px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-50 cursor-pointer"
+          class="rounded-md border border-base-200 px-3 py-1.5 text-sm text-base-700 hover:bg-base-50 cursor-pointer"
           @click="applyListPreset"
         >
           {{ t('member.export.presetList') }}
         </button>
       </div>
-      <p class="mt-1 text-xs text-slate-500">{{ t('member.export.presetHint') }}</p>
+      <p class="mt-1 text-xs text-base-500">{{ t('member.export.presetHint') }}</p>
     </div>
 
     <label class="block">
-      <span class="text-sm font-medium text-slate-700">{{ t('member.export.docTitle') }}</span>
+      <span class="text-sm font-medium text-base-700">{{ t('member.export.docTitle') }}</span>
       <input v-model="title" type="text" class="input mt-1 w-full" :placeholder="t('member.export.titlePlaceholder')">
     </label>
 
     <div>
-      <span class="block text-sm font-medium text-slate-700">{{ t('member.export.statuses') }}</span>
+      <span class="block text-sm font-medium text-base-700">{{ t('member.export.statuses') }}</span>
       <div class="mt-1.5 flex flex-wrap gap-x-4 gap-y-1.5">
-        <label v-for="option in statusOptions" :key="option.value" class="flex cursor-pointer items-center gap-2 text-sm text-slate-700">
+        <label v-for="option in statusOptions" :key="option.value" class="flex cursor-pointer items-center gap-2 text-sm text-base-700">
           <input v-model="statuses" type="checkbox" class="checkbox" :value="option.value">
           {{ option.label }}
         </label>
@@ -61,9 +61,9 @@
     </div>
 
     <div>
-      <span class="block text-sm font-medium text-slate-700">{{ t('member.export.columns') }}</span>
+      <span class="block text-sm font-medium text-base-700">{{ t('member.export.columns') }}</span>
       <div class="mt-1.5 grid grid-cols-2 gap-x-4 gap-y-1.5">
-        <label v-for="option in dataColumnOptions" :key="option.key" class="flex cursor-pointer items-center gap-2 text-sm text-slate-700">
+        <label v-for="option in dataColumnOptions" :key="option.key" class="flex cursor-pointer items-center gap-2 text-sm text-base-700">
           <input v-model="selectedColumns" type="checkbox" class="checkbox" :value="option.key">
           {{ option.label }}
         </label>
@@ -72,16 +72,16 @@
 
     <div>
       <div class="flex items-center justify-between gap-3">
-        <span class="text-sm font-medium text-slate-700">{{ t('member.export.blankColumns') }}</span>
+        <span class="text-sm font-medium text-base-700">{{ t('member.export.blankColumns') }}</span>
         <button
           type="button"
-          class="rounded-md border border-slate-200 px-2.5 py-1 text-sm text-slate-700 hover:bg-slate-50 cursor-pointer"
+          class="rounded-md border border-base-200 px-2.5 py-1 text-sm text-base-700 hover:bg-base-50 cursor-pointer"
           @click="addBlankColumn"
         >
           {{ t('member.export.addBlankColumn') }}
         </button>
       </div>
-      <p class="mt-1 text-xs text-slate-500">{{ t('member.export.blankColumnsHint') }}</p>
+      <p class="mt-1 text-xs text-base-500">{{ t('member.export.blankColumnsHint') }}</p>
 
       <div v-if="blankColumns.length" class="mt-2 space-y-2">
         <div v-for="(column, index) in blankColumns" :key="index" class="flex items-center gap-2">
@@ -89,7 +89,7 @@
           <input v-model="column.hint" type="text" class="input flex-1 min-w-0" :placeholder="t('member.export.blankHintPlaceholder')">
           <button
             type="button"
-            class="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-red-200 bg-red-50 text-red-700 hover:bg-red-100 cursor-pointer"
+            class="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-danger-200 bg-danger-50 text-danger-700 hover:bg-danger-100 cursor-pointer"
             :title="t('actions.remove')"
             @click="blankColumns.splice(index, 1)"
           >

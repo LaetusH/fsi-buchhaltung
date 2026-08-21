@@ -3,15 +3,15 @@
     <div class="flex flex-wrap items-center justify-between gap-3">
       <div>
         <h2 class="text-lg font-semibold">{{ t('event.planning.shifts') }}</h2>
-        <p class="text-sm text-slate-500">{{ shiftModeHint }}</p>
+        <p class="text-sm text-base-500">{{ shiftModeHint }}</p>
       </div>
 
       <div class="flex w-full flex-wrap items-center gap-2 sm:w-auto sm:justify-end">
-        <div v-if="canManage" class="flex w-full rounded-lg bg-slate-100 p-1 sm:inline-flex sm:w-auto">
+        <div v-if="canManage" class="flex w-full rounded-lg bg-base-100 p-1 sm:inline-flex sm:w-auto">
           <button
             type="button"
             class="flex-1 rounded-md px-3 py-1.5 text-sm font-medium cursor-pointer sm:flex-none"
-            :class="permissionMode === 'own' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-600'"
+            :class="permissionMode === 'own' ? 'bg-white text-base-900 shadow-sm' : 'text-base-600'"
             @click="permissionMode = 'own'"
           >
             {{ t('event.planning.ownOnly') }}
@@ -19,7 +19,7 @@
           <button
             type="button"
             class="flex-1 rounded-md px-3 py-1.5 text-sm font-medium cursor-pointer sm:flex-none"
-            :class="permissionMode === 'manage' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-600'"
+            :class="permissionMode === 'manage' ? 'bg-white text-base-900 shadow-sm' : 'text-base-600'"
             @click="permissionMode = 'manage'"
           >
             {{ t('event.planning.manageAll') }}
@@ -29,7 +29,7 @@
         <button
           type="button"
           class="inline-flex flex-1 items-center justify-center gap-1.5 rounded-md border px-2.5 py-1.5 text-sm font-medium cursor-pointer sm:flex-none"
-          :class="showUnderstaffedOnly ? 'border-amber-300 bg-amber-50 text-amber-800' : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'"
+          :class="showUnderstaffedOnly ? 'border-warning-300 bg-warning-50 text-warning-800' : 'border-base-200 bg-white text-base-600 hover:bg-base-50'"
           :disabled="loading"
           @click="showUnderstaffedOnly = !showUnderstaffedOnly"
         >
@@ -39,7 +39,7 @@
         <button
           type="button"
           class="inline-flex flex-1 items-center justify-center gap-1.5 rounded-md border px-2.5 py-1.5 text-sm font-medium cursor-pointer sm:flex-none"
-          :class="showMyShiftsOnly ? 'border-sky-300 bg-sky-50 text-sky-800' : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'"
+          :class="showMyShiftsOnly ? 'border-info-300 bg-info-50 text-info-800' : 'border-base-200 bg-white text-base-600 hover:bg-base-50'"
           :disabled="loading"
           @click="showMyShiftsOnly = !showMyShiftsOnly"
         >
@@ -58,22 +58,22 @@
       </div>
     </div>
 
-    <div v-if="permissionMode === 'manage' && canManage" class="mt-4 rounded-lg border border-slate-200 bg-slate-50 p-3">
+    <div v-if="permissionMode === 'manage' && canManage" class="mt-4 rounded-lg border border-base-200 bg-base-50 p-3">
       <div class="grid gap-3 sm:grid-cols-4 sm:items-end lg:grid-cols-3 lg:items-end xl:grid-cols-[minmax(10rem,1fr)_12rem_12rem_6rem_7rem_auto]">
         <div class="sm:col-span-4 lg:col-span-1">
-          <label class="text-xs font-medium text-slate-500">{{ t('event.planning.shiftName') }}</label>
+          <label class="text-xs font-medium text-base-500">{{ t('event.planning.shiftName') }}</label>
           <input v-model="newShift.name" class="input mt-1" :disabled="disabled || saving">
         </div>
         <div class="sm:col-span-2 lg:col-span-1">
-          <label class="text-xs font-medium text-slate-500">{{ t('event.planning.startTime') }}</label>
+          <label class="text-xs font-medium text-base-500">{{ t('event.planning.startTime') }}</label>
           <CommonDateInput v-model="newShift.startsAt" mode="datetime" class="mt-1" :disabled="disabled || saving" />
         </div>
         <div class="sm:col-span-2 lg:col-span-1">
-          <label class="text-xs font-medium text-slate-500">{{ t('event.planning.endTime') }}</label>
+          <label class="text-xs font-medium text-base-500">{{ t('event.planning.endTime') }}</label>
           <CommonDateInput v-model="newShift.endsAt" mode="datetime" class="mt-1" :disabled="disabled || saving" />
         </div>
         <div class="sm:col-span-1">
-          <label class="text-xs font-medium text-slate-500">{{ t('event.planning.requiredPeople') }}</label>
+          <label class="text-xs font-medium text-base-500">{{ t('event.planning.requiredPeople') }}</label>
           <input
             :value="newShift.requiredPeople"
             type="text"
@@ -86,7 +86,7 @@
           >
         </div>
         <div class="sm:col-span-1">
-          <label class="text-xs font-medium text-slate-500">{{ t('event.planning.splitIntoShifts') }}</label>
+          <label class="text-xs font-medium text-base-500">{{ t('event.planning.splitIntoShifts') }}</label>
           <input
             :value="newShift.consecutiveCount"
             type="text"
@@ -108,7 +108,7 @@
           {{ t('event.planning.addShift') }}
         </button>
         <div v-if="!newShiftMatchesExistingType" class="sm:col-span-4 lg:col-span-3 xl:col-span-full">
-          <label class="text-xs font-medium text-slate-500">{{ t('event.planning.shiftDescription') }}</label>
+          <label class="text-xs font-medium text-base-500">{{ t('event.planning.shiftDescription') }}</label>
           <textarea
             v-model="newShift.description"
             class="input mt-1 min-h-16"
@@ -127,13 +127,13 @@
         >
           <Icon name="material-symbols:folder-open-rounded" />
           {{ t('event.planning.openShiftTemplates') }}
-          <span class="rounded bg-white px-1.5 py-0.5 text-xs text-slate-600">{{ shiftTemplates.length }}</span>
+          <span class="rounded bg-white px-1.5 py-0.5 text-xs text-base-600">{{ shiftTemplates.length }}</span>
         </button>
         <button
           v-if="canSaveTemplates"
           type="button"
-          class="inline-flex items-center gap-2 rounded-md border px-3 py-2 text-sm font-medium disabled:opacity-60 not-disabled:cursor-pointer disabled:cursor-not-allowed"
-          :class="newShiftIsSavedAsTemplate ? 'border-emerald-200 bg-emerald-50 text-emerald-700' : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50'"
+          class="inline-flex items-center gap-2 rounded-lg border px-3 py-2 text-sm font-medium disabled:opacity-60 not-disabled:cursor-pointer disabled:cursor-not-allowed"
+          :class="newShiftIsSavedAsTemplate ? 'border-success-200 bg-success-50 text-success-700' : 'border-base-200 bg-white text-base-700 hover:bg-base-50'"
           :disabled="disabled || saving || !newShift.name.trim() || newShiftIsSavedAsTemplate"
           @click="saveNewShiftAsTemplate"
         >
@@ -147,24 +147,24 @@
       <div
         v-for="section in timetableSections"
         :key="section.key"
-        class="overflow-hidden rounded-lg border border-slate-200"
+        class="overflow-hidden rounded-lg border border-base-200"
         :class="section.borderClass"
       >
         <div class="flex items-center justify-between gap-3 px-3 py-2" :class="section.headerClass">
           <div>
-            <p class="text-sm font-semibold text-slate-900">{{ section.label }}</p>
-            <p class="text-xs text-slate-500">{{ section.description }}</p>
+            <p class="text-sm font-semibold text-base-900">{{ section.label }}</p>
+            <p class="text-xs text-base-500">{{ section.description }}</p>
           </div>
         </div>
 
         <div class="event-shift-scroll overflow-x-auto overscroll-x-none">
           <div class="min-w-full" :style="section.timetableStyle">
-            <div class="grid border-y border-slate-200 bg-slate-100 text-xs font-semibold uppercase text-slate-500" :style="section.timetableStyle">
-              <span class="sticky left-0 z-20 bg-slate-100 px-2 py-2 shadow-[2px_0_0_rgba(226,232,240,0.9)] sm:px-3">{{ t('event.planning.timeBlock') }}</span>
+            <div class="grid border-y border-base-200 bg-base-100 text-xs font-semibold uppercase text-base-500" :style="section.timetableStyle">
+              <span class="sticky left-0 z-20 bg-base-100 px-2 py-2 shadow-[2px_0_0_rgba(226,232,240,0.9)] sm:px-3">{{ t('event.planning.timeBlock') }}</span>
               <div
                 v-for="column in section.columns"
                 :key="column.key"
-                class="min-w-0 border-l border-slate-200 px-2 py-1.5"
+                class="min-w-0 border-l border-base-200 px-2 py-1.5"
               >
                 <div class="flex items-start gap-1">
                   <button
@@ -179,7 +179,7 @@
                         <span class="block min-w-0 truncate" :class="column.collapsed ? 'text-[0.7rem] leading-tight' : ''">{{ column.label }}</span>
                         <Icon :name="column.collapsed ? 'material-symbols:unfold-more-rounded' : 'material-symbols:unfold-less-rounded'" class="shrink-0 text-base" />
                       </span>
-                      <span class="block truncate text-[0.65rem] normal-case" :class="column.hasUnderstaffed ? 'text-amber-700' : 'text-emerald-700'">
+                      <span class="block truncate text-[0.65rem] normal-case" :class="column.hasUnderstaffed ? 'text-warning-700' : 'text-success-700'">
                         {{ t('event.planning.staffedCount', { current: column.assignedPeople, required: column.requiredPeople }) }}
                       </span>
                     </span>
@@ -188,7 +188,7 @@
                     v-if="!column.collapsed && canEditShiftDetails"
                     type="button"
                     class="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-md border disabled:opacity-60 cursor-pointer"
-                    :class="isColumnDescriptionExpanded(column.key) ? 'border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100' : (typeDescriptionValue(column.key) ? 'border-sky-200 bg-sky-50 text-sky-700 hover:bg-sky-100' : 'border-slate-200 bg-white text-slate-500 hover:bg-slate-100')"
+                    :class="isColumnDescriptionExpanded(column.key) ? 'border-success-200 bg-success-50 text-success-700 hover:bg-success-100' : (typeDescriptionValue(column.key) ? 'border-info-200 bg-info-50 text-info-700 hover:bg-info-100' : 'border-base-200 bg-white text-base-500 hover:bg-base-100')"
                     :disabled="disabled || saving"
                     :title="isColumnDescriptionExpanded(column.key) ? t('actions.save') : t('event.planning.editShiftDescription')"
                     @click="isColumnDescriptionExpanded(column.key) ? commitAndCloseColumnDescription(column.key) : toggleColumnDescription(column.key)"
@@ -208,26 +208,26 @@
                 <button
                   v-else-if="!column.collapsed && columnDescriptionOverflows(typeDescriptionValue(column.key))"
                   type="button"
-                  class="mt-1 flex w-full items-start gap-1 text-left text-[0.65rem] font-normal normal-case text-slate-500 cursor-pointer"
+                  class="mt-1 flex w-full items-start gap-1 text-left text-[0.65rem] font-normal normal-case text-base-500 cursor-pointer"
                   @click="toggleColumnTextExpanded(column.key)"
                 >
                   <span :class="isColumnTextExpanded(column.key) ? '' : 'line-clamp-2'">{{ typeDescriptionValue(column.key) }}</span>
                   <Icon
                     :name="isColumnTextExpanded(column.key) ? 'material-symbols:expand-less-rounded' : 'material-symbols:expand-more-rounded'"
-                    class="mt-0.5 shrink-0 text-sm text-slate-400"
+                    class="mt-0.5 shrink-0 text-sm text-base-400"
                   />
                 </button>
                 <p
                   v-else-if="!column.collapsed && typeDescriptionValue(column.key)"
-                  class="mt-1 text-[0.65rem] font-normal normal-case text-slate-500"
+                  class="mt-1 text-[0.65rem] font-normal normal-case text-base-500"
                 >
                   {{ typeDescriptionValue(column.key) }}
                 </p>
               </div>
-              <span v-if="showManageRail" class="sticky right-0 z-20 bg-slate-100 px-3 py-2 text-right shadow-[-2px_0_0_rgba(226,232,240,0.9)]" aria-hidden="true" />
+              <span v-if="showManageRail" class="sticky right-0 z-20 bg-base-100 px-3 py-2 text-right shadow-[-2px_0_0_rgba(226,232,240,0.9)]" aria-hidden="true" />
             </div>
 
-            <div class="divide-y divide-slate-200">
+            <div class="divide-y divide-base-200">
               <div
                 v-for="group in section.groups"
                 :key="group.key"
@@ -236,15 +236,15 @@
                 :style="section.timetableStyle"
               >
                 <div class="sticky left-0 z-10 px-2 py-1.5 shadow-[2px_0_0_rgba(226,232,240,0.8)] sm:px-3" :class="section.rowClass">
-                  <p class="text-sm font-semibold text-slate-900">{{ group.label }}</p>
-                  <p class="text-[0.7rem] text-slate-500">{{ t('event.planning.parallelShiftCount', { count: group.shifts.length }) }}</p>
+                  <p class="text-sm font-semibold text-base-900">{{ group.label }}</p>
+                  <p class="text-[0.7rem] text-base-500">{{ t('event.planning.parallelShiftCount', { count: group.shifts.length }) }}</p>
                 </div>
 
-                <div v-for="column in section.columns" :key="column.key" class="min-w-0 space-y-1 border-l border-slate-200 p-1.5">
+                <div v-for="column in section.columns" :key="column.key" class="min-w-0 space-y-1 border-l border-base-200 p-1.5">
                   <div
                     v-for="shift in shiftsForColumn(group, column.key)"
                     :key="shift.id"
-                    class="rounded-md border border-slate-200 bg-slate-50 p-1.5"
+                    class="rounded-md border border-base-200 bg-base-50 p-1.5"
                     :class="[shiftStateClass(shift), shiftHighlightClass(shift)]"
                   >
                     <div v-if="column.collapsed" class="flex items-center justify-between gap-1">
@@ -263,7 +263,7 @@
                           <Icon
                             v-if="permissionMode === 'own' && isOwnShift(shift)"
                             name="material-symbols:person-pin-circle-rounded"
-                            class="shrink-0 text-base text-sky-600"
+                            class="shrink-0 text-base text-info-600"
                             :title="t('event.planning.yourShift')"
                           />
                           <input
@@ -274,12 +274,12 @@
                             @input="setShiftNameDraft(shift.id, ($event.target as HTMLInputElement).value)"
                             @blur="commitShiftName(shift)"
                           >
-                          <p v-else class="min-w-0 flex-1 truncate text-sm font-semibold text-slate-800">{{ shift.name }}</p>
+                          <p v-else class="min-w-0 flex-1 truncate text-sm font-semibold text-base-800">{{ shift.name }}</p>
                         </div>
 
                         <div class="flex items-center gap-0.5 text-sm font-bold" :class="staffingClass(shift)">
                           <span>{{ shift.memberIds.length }}</span>
-                          <span class="text-slate-400">/</span>
+                          <span class="text-base-400">/</span>
                           <input
                             v-if="canEditShiftDetails"
                             :value="requiredPeopleInputValue(shift)"
@@ -298,7 +298,7 @@
                           <button
                             v-if="permissionMode === 'own' && canSelfSignup"
                             type="button"
-                            class="inline-flex h-7 w-7 items-center justify-center rounded-md border border-sky-200 bg-sky-100 text-sky-700 hover:bg-sky-200 disabled:opacity-60 cursor-pointer"
+                            class="inline-flex h-7 w-7 items-center justify-center rounded-md border border-info-200 bg-info-100 text-info-700 hover:bg-info-200 disabled:opacity-60 cursor-pointer"
                             :disabled="disabled || saving || !currentMemberOption"
                             :title="t('event.planning.assignMe')"
                             @click="assignCurrentMember(shift)"
@@ -308,7 +308,7 @@
                           <button
                             v-if="canManageShift(shift) && isDescriptionExpanded(shift.id)"
                             type="button"
-                            class="inline-flex h-7 w-7 items-center justify-center rounded-md border border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 disabled:opacity-60 cursor-pointer"
+                            class="inline-flex h-7 w-7 items-center justify-center rounded-md border border-success-200 bg-success-50 text-success-700 hover:bg-success-100 disabled:opacity-60 cursor-pointer"
                             :disabled="disabled || saving"
                             :title="t('actions.save')"
                             @click="commitAndCloseShiftDescription(shift)"
@@ -317,7 +317,7 @@
                           </button>
                           <button
                             type="button"
-                            class="inline-flex h-7 w-7 items-center justify-center rounded-md border border-slate-200 bg-white text-slate-600 hover:bg-slate-100 cursor-pointer sm:hidden"
+                            class="inline-flex h-7 w-7 items-center justify-center rounded-md border border-base-200 bg-white text-base-600 hover:bg-base-100 cursor-pointer sm:hidden"
                             :title="isShiftDetailsExpanded(shift.id) ? t('event.planning.hideShiftDetails') : t('event.planning.showShiftDetails')"
                             @click="toggleShiftDetails(shift.id)"
                           >
@@ -334,7 +334,7 @@
                               <button
                                 type="button"
                                 class="inline-flex h-7 w-7 items-center justify-center rounded-md border disabled:opacity-60 cursor-pointer"
-                                :class="openShiftMenuId === shift.id ? 'border-slate-300 bg-slate-100 text-slate-700' : 'border-slate-200 bg-white text-slate-500 hover:bg-slate-100'"
+                                :class="openShiftMenuId === shift.id ? 'border-base-300 bg-base-100 text-base-700' : 'border-base-200 bg-white text-base-500 hover:bg-base-100'"
                                 :disabled="disabled || saving"
                                 :title="t('actions.more')"
                               >
@@ -349,28 +349,28 @@
                                 :disabled="disabled || saving"
                                 @click="openShiftDescriptionEditor(shift.id)"
                               >
-                                <Icon name="material-symbols:sticky-note-2-outline-rounded" class="shrink-0 text-base text-slate-400" />
+                                <Icon name="material-symbols:sticky-note-2-outline-rounded" class="shrink-0 text-base text-base-400" />
                                 {{ t('event.planning.editShiftDescription') }}
                               </button>
                               <button
                                 v-if="canSaveTemplates"
                                 type="button"
-                                :class="[styling, isShiftSavedAsTemplate(shift) ? 'text-emerald-600' : '']"
+                                :class="[styling, isShiftSavedAsTemplate(shift) ? 'text-success-600' : '']"
                                 :disabled="disabled || saving || isShiftSavedAsTemplate(shift)"
                                 @click="saveShiftAsTemplate(shift); openShiftMenuId = null"
                               >
                                 <Icon
                                   name="material-symbols:bookmark-add-rounded"
                                   class="shrink-0 text-base"
-                                  :class="isShiftSavedAsTemplate(shift) ? 'text-emerald-500' : 'text-slate-400'"
+                                  :class="isShiftSavedAsTemplate(shift) ? 'text-success-500' : 'text-base-400'"
                                 />
                                 {{ isShiftSavedAsTemplate(shift) ? t('event.planning.savedAsTemplate') : t('event.planning.saveAsTemplate') }}
                               </button>
-                              <div class="my-1 border-t border-slate-100" />
+                              <div class="my-1 border-t border-base-100" />
                               <button
                                 type="button"
                                 :class="styling"
-                                class="text-red-600 hover:bg-red-50!"
+                                class="text-danger-600 hover:bg-danger-50!"
                                 :disabled="disabled || saving"
                                 @click="removeShift(shift.id); openShiftMenuId = null"
                               >
@@ -391,25 +391,25 @@
                         @input="setShiftDescriptionDraft(shift.id, ($event.target as HTMLTextAreaElement).value)"
                       />
                       <template v-else-if="shiftOwnDescription(shift)">
-                        <p class="hidden whitespace-pre-line text-xs text-slate-600 sm:block">{{ shiftOwnDescription(shift) }}</p>
-                        <p v-if="isShiftDetailsExpanded(shift.id)" class="whitespace-pre-line text-xs text-slate-600 sm:hidden">{{ shiftOwnDescription(shift) }}</p>
+                        <p class="hidden whitespace-pre-line text-xs text-base-600 sm:block">{{ shiftOwnDescription(shift) }}</p>
+                        <p v-if="isShiftDetailsExpanded(shift.id)" class="whitespace-pre-line text-xs text-base-600 sm:hidden">{{ shiftOwnDescription(shift) }}</p>
                       </template>
 
                       <div class="space-y-1">
                         <div class="hidden min-h-6 flex-wrap gap-1 sm:flex">
-                          <span v-if="shift.memberIds.length === 0" class="rounded border border-dashed border-slate-300 bg-white px-1.5 py-0.5 text-[0.7rem] font-medium text-slate-500">
+                          <span v-if="shift.memberIds.length === 0" class="rounded border border-dashed border-base-300 bg-white px-1.5 py-0.5 text-[0.7rem] font-medium text-base-500">
                             {{ t('event.planning.unassigned') }}
                           </span>
                           <span
                             v-for="memberId in shift.memberIds"
                             :key="memberId"
-                            class="inline-flex items-center gap-1 rounded border border-slate-300 bg-white px-1.5 py-0.5 text-[0.7rem] font-medium text-slate-700"
+                            class="inline-flex items-center gap-1 rounded border border-base-300 bg-white px-1.5 py-0.5 text-[0.7rem] font-medium text-base-700"
                           >
                             {{ memberLabel(memberId) }}
                             <button
                               v-if="canRemoveShiftMember(memberId)"
                               type="button"
-                              class="inline-flex h-4 w-4 items-center justify-center rounded text-slate-500 hover:bg-red-50 hover:text-red-600 cursor-pointer"
+                              class="inline-flex h-4 w-4 items-center justify-center rounded text-base-500 hover:bg-danger-50 hover:text-danger-600 cursor-pointer"
                               :disabled="disabled || saving"
                               @click="removeShiftMember(shift.id, memberId)"
                             >
@@ -419,19 +419,19 @@
                         </div>
 
                         <div v-if="isShiftDetailsExpanded(shift.id)" class="flex min-h-6 flex-wrap gap-1 sm:hidden">
-                          <span v-if="shift.memberIds.length === 0" class="rounded border border-dashed border-slate-300 bg-white px-1.5 py-0.5 text-[0.7rem] font-medium text-slate-500">
+                          <span v-if="shift.memberIds.length === 0" class="rounded border border-dashed border-base-300 bg-white px-1.5 py-0.5 text-[0.7rem] font-medium text-base-500">
                             {{ t('event.planning.unassigned') }}
                           </span>
                           <span
                             v-for="memberId in shift.memberIds"
                             :key="memberId"
-                            class="inline-flex items-center gap-1 rounded border border-slate-300 bg-white px-1.5 py-0.5 text-[0.7rem] font-medium text-slate-700"
+                            class="inline-flex items-center gap-1 rounded border border-base-300 bg-white px-1.5 py-0.5 text-[0.7rem] font-medium text-base-700"
                           >
                             {{ memberLabel(memberId) }}
                             <button
                               v-if="canRemoveShiftMember(memberId)"
                               type="button"
-                              class="inline-flex h-4 w-4 items-center justify-center rounded text-slate-500 hover:bg-red-50 hover:text-red-600 cursor-pointer"
+                              class="inline-flex h-4 w-4 items-center justify-center rounded text-base-500 hover:bg-danger-50 hover:text-danger-600 cursor-pointer"
                               :disabled="disabled || saving"
                               @click="removeShiftMember(shift.id, memberId)"
                             >
@@ -460,7 +460,7 @@
                 <div v-if="showManageRail" class="sticky right-0 z-10 flex justify-end px-3 py-1.5 shadow-[-2px_0_0_rgba(226,232,240,0.8)]" :class="section.rowClass">
                   <button
                     type="button"
-                    class="inline-flex h-8 w-8 items-center justify-center rounded-md bg-slate-100 text-slate-600 hover:bg-slate-200 disabled:opacity-60 cursor-pointer"
+                    class="inline-flex h-8 w-8 items-center justify-center rounded-md bg-base-100 text-base-600 hover:bg-base-200 disabled:opacity-60 cursor-pointer"
                     :disabled="disabled || saving"
                     :title="t('event.planning.addParallelShift')"
                     @click="addParallelShift(group)"
@@ -476,19 +476,19 @@
 
       <div
         v-if="timetableSections.length === 0"
-        class="rounded-lg border border-dashed border-slate-300 bg-slate-50 p-4 text-sm text-slate-500"
+        class="rounded-lg border border-dashed border-base-300 bg-base-50 p-4 text-sm text-base-500"
       >
         {{ t('event.planning.noMatchingShifts') }}
       </div>
     </div>
 
     <CommonModal v-model="templateBrowserOpen" :title="t('event.planning.shiftTemplates')" width-class="max-w-lg">
-      <p class="text-sm text-slate-500">{{ t('event.planning.shiftTemplateBrowserHint') }}</p>
+      <p class="text-sm text-base-500">{{ t('event.planning.shiftTemplateBrowserHint') }}</p>
       <div class="space-y-2">
         <article
           v-for="template in shiftTemplates"
           :key="template.id"
-          class="rounded-lg border border-slate-200 bg-slate-50 p-3"
+          class="rounded-lg border border-base-200 bg-base-50 p-3"
         >
           <div class="flex items-start gap-2">
             <button
@@ -499,10 +499,10 @@
             >
               <span class="flex items-start justify-between gap-3">
                 <span class="min-w-0">
-                  <span class="block truncate text-sm font-semibold text-slate-900">{{ template.name }}</span>
-                  <span class="mt-0.5 block line-clamp-2 text-xs text-slate-500">{{ template.description || t('event.planning.noShiftDescription') }}</span>
+                  <span class="block truncate text-sm font-semibold text-base-900">{{ template.name }}</span>
+                  <span class="mt-0.5 block line-clamp-2 text-xs text-base-500">{{ template.description || t('event.planning.noShiftDescription') }}</span>
                 </span>
-                <span class="inline-flex shrink-0 items-center gap-1 rounded-md bg-white px-2 py-1 text-xs font-semibold text-slate-600">
+                <span class="inline-flex shrink-0 items-center gap-1 rounded-md bg-white px-2 py-1 text-xs font-semibold text-base-600">
                   <Icon name="material-symbols:group-rounded" />
                   {{ template.requiredPeople }}
                 </span>
@@ -511,7 +511,7 @@
             <button
               v-if="canSaveTemplates"
               type="button"
-              class="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-red-200 bg-red-50 text-red-700 hover:bg-red-100 disabled:opacity-60 cursor-pointer"
+              class="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-danger-200 bg-danger-50 text-danger-700 hover:bg-danger-100 disabled:opacity-60 cursor-pointer"
               :disabled="disabled || saving"
               :title="t('actions.remove')"
               @click="removeTemplate(template.id)"
@@ -521,19 +521,19 @@
           </div>
         </article>
 
-        <p v-if="shiftTemplates.length === 0" class="rounded-lg border border-dashed border-slate-300 p-3 text-sm text-slate-500">
+        <p v-if="shiftTemplates.length === 0" class="rounded-lg border border-dashed border-base-300 p-3 text-sm text-base-500">
           {{ t('event.planning.noShiftTemplates') }}
         </p>
       </div>
     </CommonModal>
 
     <CommonModal v-model="pdfExportOpen" :title="t('event.planning.exportShiftPlanPdf')">
-      <p class="text-sm text-slate-500">{{ t('event.planning.exportShiftPlanPdfHint') }}</p>
-      <p v-if="permissionMode === 'own'" class="flex items-center gap-1.5 text-sm text-sky-700">
+      <p class="text-sm text-base-500">{{ t('event.planning.exportShiftPlanPdfHint') }}</p>
+      <p v-if="permissionMode === 'own'" class="flex items-center gap-1.5 text-sm text-info-700">
         <Icon name="material-symbols:person-pin-circle-rounded" class="text-base" />
         {{ t('event.planning.exportHighlightsOwnShifts') }}
       </p>
-      <label class="flex cursor-pointer items-center gap-2 text-sm text-slate-700">
+      <label class="flex cursor-pointer items-center gap-2 text-sm text-base-700">
         <input v-model="pdfIncludeDescriptions" type="checkbox" class="checkbox">
         {{ t('event.planning.exportWithDescriptions') }}
       </label>
@@ -715,25 +715,25 @@ const timetableSections = computed(() => {
       key: 'before',
       label: t('event.planning.timetableSections.before'),
       description: t('event.planning.timetableSections.beforeHint'),
-      rowClass: 'bg-orange-50/70',
-      headerClass: 'bg-orange-50',
-      borderClass: 'border-orange-200',
+      rowClass: 'bg-accent-50/70',
+      headerClass: 'bg-accent-50',
+      borderClass: 'border-accent-200',
     },
     {
       key: 'during',
       label: t('event.planning.timetableSections.during'),
       description: t('event.planning.timetableSections.duringHint'),
       rowClass: 'bg-white',
-      headerClass: 'bg-slate-50',
-      borderClass: 'border-slate-200',
+      headerClass: 'bg-base-50',
+      borderClass: 'border-base-200',
     },
     {
       key: 'after',
       label: t('event.planning.timetableSections.after'),
       description: t('event.planning.timetableSections.afterHint'),
-      rowClass: 'bg-orange-50/70',
-      headerClass: 'bg-orange-50',
-      borderClass: 'border-orange-200',
+      rowClass: 'bg-accent-50/70',
+      headerClass: 'bg-accent-50',
+      borderClass: 'border-accent-200',
     },
   ]
   const dayKeys = Array.from(new Set(visibleSlots.value.map(shift => dayKeyForShift(shift)))).sort()
@@ -1404,27 +1404,27 @@ function formatShiftRangeLabel(startsAt: string, endsAt: string) {
 }
 
 function staffingClass(shift: PlanningShiftSlot) {
-  if (isShiftFullyStaffed(shift)) return 'text-emerald-700'
-  if (shift.memberIds.length === 0) return 'text-red-700'
-  return 'text-amber-700'
+  if (isShiftFullyStaffed(shift)) return 'text-success-700'
+  if (shift.memberIds.length === 0) return 'text-danger-700'
+  return 'text-warning-700'
 }
 
 function staffingIconClass(shift: PlanningShiftSlot) {
-  if (isShiftFullyStaffed(shift)) return 'text-emerald-600'
-  if (shift.memberIds.length === 0) return 'text-red-600'
-  return 'text-amber-600'
+  if (isShiftFullyStaffed(shift)) return 'text-success-600'
+  if (shift.memberIds.length === 0) return 'text-danger-600'
+  return 'text-warning-600'
 }
 
 function shiftStateClass(shift: PlanningShiftSlot) {
   if (isShiftFullyStaffed(shift)) {
-    return 'border-l-4 border-l-emerald-500'
+    return 'border-l-4 border-l-success-500'
   }
 
   if (shift.memberIds.length === 0) {
-    return 'border-l-4 border-l-red-500'
+    return 'border-l-4 border-l-danger-500'
   }
 
-  return 'border-l-4 border-l-amber-500'
+  return 'border-l-4 border-l-warning-500'
 }
 
 function isShiftFullyStaffed(shift: PlanningShiftSlot) {
@@ -1436,7 +1436,7 @@ function isOwnShift(shift: PlanningShiftSlot) {
 }
 
 function shiftHighlightClass(shift: PlanningShiftSlot) {
-  return permissionMode.value === 'own' && isOwnShift(shift) ? 'bg-sky-50' : ''
+  return permissionMode.value === 'own' && isOwnShift(shift) ? 'bg-info-50' : ''
 }
 </script>
 

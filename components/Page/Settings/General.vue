@@ -2,10 +2,10 @@
   <div class="-mx-6 -mb-6 bg-white p-4 shadow-sm space-y-3 col-span-12 sm:mx-0 sm:mb-0 sm:space-y-6 sm:rounded-xl sm:p-6 sm:shadow-lg">
     <h2 class="text-base font-semibold sm:text-lg">{{ t('settings.general.title') }}</h2>
 
-    <section class="rounded-xl border border-slate-200 p-4 space-y-3">
+    <section class="rounded-xl border border-base-200 p-4 space-y-3">
       <div>
         <h3 class="font-semibold">{{ t('settings.general.languageTitle') }}</h3>
-        <p class="text-sm text-slate-600">
+        <p class="text-sm text-base-600">
           {{ t('settings.general.languageText', { language: t(`language.${language === 'de' ? 'german' : 'english'}`) }) }}
         </p>
       </div>
@@ -15,10 +15,10 @@
       </button>
     </section>
 
-    <section class="rounded-xl border border-slate-200 p-4 space-y-3">
+    <section class="rounded-xl border border-base-200 p-4 space-y-3">
       <div>
         <h3 class="font-semibold">{{ t('settings.general.passwordTitle') }}</h3>
-        <p class="text-sm text-slate-600">{{ t('settings.general.passwordText') }}</p>
+        <p class="text-sm text-base-600">{{ t('settings.general.passwordText') }}</p>
       </div>
 
       <button class="btn-secondary" @click="openPasswordModal">
@@ -26,10 +26,10 @@
       </button>
     </section>
 
-    <section class="rounded-xl border border-slate-200 p-4 space-y-3">
+    <section class="rounded-xl border border-base-200 p-4 space-y-3">
       <div>
         <h3 class="font-semibold">{{ t('settings.general.logoutTitle') }}</h3>
-        <p class="text-sm text-slate-600">{{ t('settings.general.logoutText') }}</p>
+        <p class="text-sm text-base-600">{{ t('settings.general.logoutText') }}</p>
       </div>
 
       <div class="flex flex-col gap-3 sm:flex-row">
@@ -57,7 +57,7 @@
     :title="t('settings.general.passwordTitle')"
     @close="closePasswordModal"
   >
-    <p class="text-sm text-slate-600">{{ t('settings.general.passwordSessionText') }}</p>
+    <p class="text-sm text-base-600">{{ t('settings.general.passwordSessionText') }}</p>
     <form class="grid gap-4" @submit.prevent="changePassword">
       <div class="field">
         <label for="current-password">{{ t('settings.general.currentPassword') }}</label>
@@ -95,7 +95,7 @@
         >
       </div>
 
-      <p class="text-xs text-slate-500">{{ t('settings.general.passwordHelp', { min: MIN_PASSWORD_LENGTH }) }}</p>
+      <p class="text-xs text-base-500">{{ t('settings.general.passwordHelp', { min: MIN_PASSWORD_LENGTH }) }}</p>
     </form>
 
     <template #footer>
@@ -126,7 +126,7 @@
     :title="t('settings.general.logoutConfirmTitle')"
     @close="closeLogoutModal"
   >
-    <p class="text-sm text-slate-600">{{ t('settings.general.logoutConfirmText') }}</p>
+    <p class="text-sm text-base-600">{{ t('settings.general.logoutConfirmText') }}</p>
 
     <template #footer>
       <button class="btn-secondary" @click="closeLogoutModal">
@@ -144,7 +144,7 @@
     :title="t('settings.general.logoutAllConfirmTitle')"
     @close="closeLogoutAllModal"
   >
-    <p class="text-sm text-slate-600">{{ t('settings.general.logoutAllConfirmText') }}</p>
+    <p class="text-sm text-base-600">{{ t('settings.general.logoutAllConfirmText') }}</p>
 
     <template #footer>
       <button

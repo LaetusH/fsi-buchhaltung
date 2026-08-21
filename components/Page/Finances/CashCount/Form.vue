@@ -3,13 +3,13 @@
     <section class="-mx-6 bg-white shadow-sm sm:mx-0 sm:rounded-xl sm:shadow-lg p-4 space-y-4">
       <h2 class="text-lg font-semibold">{{ t('cashCount.countData') }}</h2>
 
-      <label class="flex items-center gap-2 text-sm font-medium text-slate-700 cursor-pointer">
+      <label class="flex items-center gap-2 text-sm font-medium text-base-700 cursor-pointer">
         <input v-model="isRegisterCheck" type="checkbox" class="checkbox" :disabled="disabled">
         {{ t('cashCount.registerCheck') }}
       </label>
 
       <div v-if="!isRegisterCheck">
-        <label class="text-sm font-medium text-slate-600">{{ t('cashCount.event') }}</label>
+        <label class="text-sm font-medium text-base-600">{{ t('cashCount.event') }}</label>
         <CommonSearchSelect
           v-model="eventQuery"
           :options="eventOptions"
@@ -24,7 +24,7 @@
 
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
-          <label class="text-sm font-medium text-slate-600">{{ t('cashCount.countedByFirst') }}</label>
+          <label class="text-sm font-medium text-base-600">{{ t('cashCount.countedByFirst') }}</label>
           <CommonSearchSelect
             v-model="countedByFirstQuery"
             :options="memberOptions"
@@ -38,7 +38,7 @@
         </div>
 
         <div>
-          <label class="text-sm font-medium text-slate-600">{{ t('cashCount.countedBySecond') }}</label>
+          <label class="text-sm font-medium text-base-600">{{ t('cashCount.countedBySecond') }}</label>
           <CommonSearchSelect
             v-model="countedBySecondQuery"
             :options="memberOptions"
@@ -52,7 +52,7 @@
         </div>
 
         <div class="md:col-span-2">
-          <label class="text-sm font-medium text-slate-600">{{ t('cashCount.checkedBy') }}</label>
+          <label class="text-sm font-medium text-base-600">{{ t('cashCount.checkedBy') }}</label>
           <CommonSearchSelect
             v-model="checkedByQuery"
             :options="memberOptions"
@@ -66,7 +66,7 @@
         </div>
 
         <div v-if="!isRegisterCheck">
-          <label class="text-sm font-medium text-slate-600">{{ t('cashCount.countedBeforeAt') }}</label>
+          <label class="text-sm font-medium text-base-600">{{ t('cashCount.countedBeforeAt') }}</label>
           <CommonDateInput
             v-model="countedBeforeAtInput"
             mode="datetime"
@@ -75,7 +75,7 @@
         </div>
 
         <div :class="isRegisterCheck ? 'md:col-span-2' : ''">
-          <label class="text-sm font-medium text-slate-600">{{ isRegisterCheck ? t('cashCount.countedAt') : t('cashCount.countedAfterAt') }}</label>
+          <label class="text-sm font-medium text-base-600">{{ isRegisterCheck ? t('cashCount.countedAt') : t('cashCount.countedAfterAt') }}</label>
           <CommonDateInput
             v-model="countedAfterAtInput"
             mode="datetime"
@@ -91,7 +91,7 @@
         <button
           v-if="!disabled"
           type="button"
-          class="flex items-center gap-2 text-orange-500 font-medium cursor-pointer"
+          class="flex items-center gap-2 text-accent-500 font-medium cursor-pointer"
           @click="addPosition"
         >
           <span class="text-xl">+</span> {{ t('actions.addPosition') }}
@@ -99,7 +99,7 @@
       </div>
 
       <div
-        class="hidden 2xl:grid gap-3 text-sm font-medium text-slate-500"
+        class="hidden 2xl:grid gap-3 text-sm font-medium text-base-500"
         :class="!disabled && form.positions.length > 1
           ? positionGridWithActionsClass
           : positionGridClass"
@@ -115,7 +115,7 @@
       <div
         v-for="(position, index) in form.positions"
         :key="position.id || index"
-        class="rounded-xl border border-slate-200 bg-slate-50 p-3"
+        class="rounded-xl border border-base-200 bg-base-50 p-3"
       >
         <div
           class="grid grid-cols-1 gap-3 items-start md:grid-cols-8"
@@ -166,7 +166,7 @@
 
           <div v-if="!isRegisterCheck" class="field md:col-span-2 2xl:col-span-1">
             <label class="2xl:hidden">{{ t('cashCount.difference') }}</label>
-            <div class="input bg-slate-50 text-right font-medium">
+            <div class="input bg-base-50 text-right font-medium">
               {{ formatCurrency(positionDifference(position)) }}
             </div>
           </div>
@@ -188,7 +188,7 @@
           <button
             v-if="!disabled && form.positions.length > 1"
             type="button"
-            class="text-red-500 cursor-pointer p-2 w-10 rounded-md hover:bg-white md:col-span-1 2xl:col-span-1 md:self-end"
+            class="text-danger-500 cursor-pointer p-2 w-10 rounded-md hover:bg-white md:col-span-1 2xl:col-span-1 md:self-end"
             @click="removePosition(index)"
           >
             ✕
@@ -205,17 +205,17 @@
           class="grid gap-3 text-sm min-w-full"
           :class="isRegisterCheck ? 'grid-cols-1' : 'grid-cols-2 lg:grid-cols-3 lg:min-w-0 lg:w-auto'"
         >
-          <div v-if="!isRegisterCheck" class="rounded-xl bg-slate-100 px-4 py-3">
-            <div class="text-slate-500">{{ t('cashCount.totalBefore') }}</div>
+          <div v-if="!isRegisterCheck" class="rounded-xl bg-base-100 px-4 py-3">
+            <div class="text-base-500">{{ t('cashCount.totalBefore') }}</div>
             <div class="text-lg font-semibold">{{ formatCurrency(totalBefore) }}</div>
           </div>
-          <div class="rounded-xl bg-slate-100 px-4 py-3" :class="isRegisterCheck ? 'w-full' : ''">
-            <div class="text-slate-500">{{ isRegisterCheck ? t('cashCount.totalAmount') : t('cashCount.totalAfter') }}</div>
+          <div class="rounded-xl bg-base-100 px-4 py-3" :class="isRegisterCheck ? 'w-full' : ''">
+            <div class="text-base-500">{{ isRegisterCheck ? t('cashCount.totalAmount') : t('cashCount.totalAfter') }}</div>
             <div class="text-lg font-semibold">{{ formatCurrency(totalAfter) }}</div>
           </div>
-          <div v-if="!isRegisterCheck" class="rounded-xl bg-emerald-100 px-4 py-3">
-            <div class="text-emerald-700">{{ t('cashCount.totalDifference') }}</div>
-            <div class="text-lg font-semibold text-emerald-800">{{ formatCurrency(totalDifference) }}</div>
+          <div v-if="!isRegisterCheck" class="rounded-xl bg-success-100 px-4 py-3">
+            <div class="text-success-700">{{ t('cashCount.totalDifference') }}</div>
+            <div class="text-lg font-semibold text-success-800">{{ formatCurrency(totalDifference) }}</div>
           </div>
         </div>
       </div>

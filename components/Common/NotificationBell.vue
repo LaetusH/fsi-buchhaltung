@@ -5,7 +5,7 @@
       type="button"
       :class="[
         'relative flex w-full items-center justify-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition cursor-pointer',
-        open ? 'bg-slate-700 text-white' : 'bg-slate-800 text-slate-300 hover:bg-slate-700',
+        open ? 'bg-base-700 text-white' : 'bg-base-800 text-base-300 hover:bg-base-700',
       ]"
       :aria-label="t('notifications.title')"
       :title="t('notifications.title')"
@@ -21,7 +21,7 @@
         />
         <span
           v-if="unreadCount > 0"
-          class="absolute -top-2 -right-2.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-600 px-1 text-[10px] font-semibold text-white ring-2 ring-slate-900"
+          class="absolute -top-2 -right-2.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-danger-600 px-1 text-[10px] font-semibold text-white ring-2 ring-base-900"
         >
           {{ unreadCount > 99 ? '99+' : unreadCount }}
         </span>
@@ -39,12 +39,12 @@
         :style="panelStyle"
         class="fixed z-50 flex flex-col overflow-hidden rounded-2xl bg-white shadow-2xl sm:max-h-128 sm:w-96 sm:rounded-xl"
       >
-        <div class="flex items-center justify-between gap-2 border-b border-slate-200 px-4 py-3">
+        <div class="flex items-center justify-between gap-2 border-b border-base-200 px-4 py-3">
           <div class="flex min-w-0 items-center gap-2">
-            <h2 class="truncate text-sm font-semibold text-slate-900">{{ t('notifications.title') }}</h2>
+            <h2 class="truncate text-sm font-semibold text-base-900">{{ t('notifications.title') }}</h2>
             <span
               v-if="unreadCount > 0"
-              class="shrink-0 rounded-full bg-cyan-100 px-2 py-0.5 text-[11px] font-semibold text-cyan-800"
+              class="shrink-0 rounded-full bg-secondary-100 px-2 py-0.5 text-[11px] font-semibold text-secondary-800"
             >
               {{ unreadCount }} {{ t('notifications.unread') }}
             </span>
@@ -56,7 +56,7 @@
             <button
               v-if="unreadCount > 0"
               type="button"
-              class="inline-flex h-8 w-8 items-center justify-center rounded-lg text-slate-500 transition hover:bg-slate-100 hover:text-cyan-700 cursor-pointer"
+              class="inline-flex h-8 w-8 items-center justify-center rounded-lg text-base-500 transition hover:bg-base-100 hover:text-secondary-700 cursor-pointer"
               :title="t('notifications.markAllRead')"
               :aria-label="t('notifications.markAllRead')"
               @click="markAllRead"
@@ -65,7 +65,7 @@
             </button>
             <button
               type="button"
-              class="inline-flex h-8 w-8 items-center justify-center rounded-lg text-slate-500 transition hover:bg-slate-100 cursor-pointer sm:hidden"
+              class="inline-flex h-8 w-8 items-center justify-center rounded-lg text-base-500 transition hover:bg-base-100 cursor-pointer sm:hidden"
               :title="t('actions.close')"
               :aria-label="t('actions.close')"
               @click="open = false"
@@ -78,29 +78,29 @@
         <div class="min-h-0 flex-1 overflow-y-auto overscroll-contain">
           <div v-if="loading && !items.length" class="space-y-3 p-4">
             <div v-for="n in 3" :key="n" class="flex animate-pulse gap-3">
-              <div class="h-9 w-9 shrink-0 rounded-full bg-slate-200" />
+              <div class="h-9 w-9 shrink-0 rounded-full bg-base-200" />
               <div class="flex-1 space-y-2 py-1">
-                <div class="h-3 w-2/3 rounded bg-slate-200" />
-                <div class="h-3 w-full rounded bg-slate-100" />
+                <div class="h-3 w-2/3 rounded bg-base-200" />
+                <div class="h-3 w-full rounded bg-base-100" />
               </div>
             </div>
           </div>
 
           <div v-else-if="!items.length" class="flex flex-col items-center gap-2 px-4 py-10 text-center">
-            <Icon name="material-symbols:notifications-off-outline-rounded" class="h-8 w-8 text-slate-300" aria-hidden="true" />
-            <p class="text-sm text-slate-500">{{ t('notifications.empty') }}</p>
+            <Icon name="material-symbols:notifications-off-outline-rounded" class="h-8 w-8 text-base-300" aria-hidden="true" />
+            <p class="text-sm text-base-500">{{ t('notifications.empty') }}</p>
           </div>
 
-          <ul v-else class="divide-y divide-slate-100">
+          <ul v-else class="divide-y divide-base-100">
             <li v-for="item in items" :key="item.deliveryId" class="group relative">
               <component
                 :is="item.linkPage ? 'button' : 'div'"
                 :type="item.linkPage ? 'button' : undefined"
                 class="flex w-full items-start gap-3 border-l-4 px-4 py-3 text-left transition"
                 :class="[
-                  item.readAt ? 'border-transparent' : 'border-cyan-500 bg-cyan-100/70',
+                  item.readAt ? 'border-transparent' : 'border-secondary-500 bg-secondary-100/70',
                   item.linkPage ? 'cursor-pointer' : '',
-                  item.linkPage ? (item.readAt ? 'hover:bg-slate-50' : 'hover:bg-cyan-100') : '',
+                  item.linkPage ? (item.readAt ? 'hover:bg-base-50' : 'hover:bg-secondary-100') : '',
                 ]"
                 @click="item.linkPage ? openItem(item) : undefined"
               >
@@ -114,35 +114,35 @@
                 <span class="min-w-0 flex-1">
                   <span class="flex items-start justify-between gap-2">
                     <span
-                      class="truncate text-sm text-slate-900"
+                      class="truncate text-sm text-base-900"
                       :class="item.readAt ? 'font-medium' : 'font-semibold'"
                     >
                       {{ item.subject || typeLabel(item.typeKey) }}
                     </span>
-                    <span class="shrink-0 text-[11px] text-slate-400" :title="absoluteTime(receivedAt(item))">
+                    <span class="shrink-0 text-[11px] text-base-400" :title="absoluteTime(receivedAt(item))">
                       {{ relativeTime(receivedAt(item)) }}
                     </span>
                   </span>
 
-                  <span class="mt-0.5 line-clamp-2 text-xs break-words text-slate-500" v-html="renderNotificationInlineHtml(item.body)"></span>
+                  <span class="mt-0.5 line-clamp-2 text-xs break-words text-base-500" v-html="renderNotificationInlineHtml(item.body)"></span>
                   <span class="mt-1 flex items-center gap-2">
-                    <span class="truncate text-[11px] text-slate-400">{{ typeLabel(item.typeKey) }}</span>
+                    <span class="truncate text-[11px] text-base-400">{{ typeLabel(item.typeKey) }}</span>
                     <Icon
                       v-if="item.linkPage"
                       name="material-symbols:chevron-right-rounded"
-                      class="h-4 w-4 shrink-0 text-slate-300"
+                      class="h-4 w-4 shrink-0 text-base-300"
                       aria-hidden="true"
                     />
                   </span>
                 </span>
 
-                <span v-if="!item.readAt" class="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-cyan-600" aria-hidden="true" />
+                <span v-if="!item.readAt" class="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-secondary-600" aria-hidden="true" />
               </component>
 
               <button
                 v-if="!item.readAt"
                 type="button"
-                class="absolute right-2 bottom-2 inline-flex h-6 w-6 items-center justify-center rounded-lg bg-white/90 text-slate-400 transition hover:text-cyan-700 cursor-pointer sm:opacity-0 sm:focus:opacity-100 sm:group-hover:opacity-100"
+                class="absolute right-2 bottom-2 inline-flex h-6 w-6 items-center justify-center rounded-lg bg-white/90 text-base-400 transition hover:text-secondary-700 cursor-pointer sm:opacity-0 sm:focus:opacity-100 sm:group-hover:opacity-100"
                 :title="t('notifications.markRead')"
                 :aria-label="t('notifications.markRead')"
                 @click.stop="markRead([item.deliveryId])"
@@ -153,11 +153,11 @@
           </ul>
         </div>
 
-        <div class="flex items-center justify-between gap-2 border-t border-slate-200 px-3 py-2">
+        <div class="flex items-center justify-between gap-2 border-t border-base-200 px-3 py-2">
           <button
             v-if="canOpenSettings"
             type="button"
-            class="inline-flex items-center gap-1 rounded-lg px-2 py-1 text-xs font-medium text-slate-500 transition hover:bg-slate-100 hover:text-slate-700 cursor-pointer"
+            class="inline-flex items-center gap-1 rounded-lg px-2 py-1 text-xs font-medium text-base-500 transition hover:bg-base-100 hover:text-base-700 cursor-pointer"
             @click="openPreferences"
           >
             <Icon name="material-symbols:tune-rounded" class="h-4 w-4" aria-hidden="true" />
@@ -165,7 +165,7 @@
           </button>
           <button
             type="button"
-            class="ml-auto inline-flex items-center gap-1 rounded-lg px-2 py-1 text-xs font-medium text-cyan-700 transition hover:bg-cyan-50 cursor-pointer"
+            class="ml-auto inline-flex items-center gap-1 rounded-lg px-2 py-1 text-xs font-medium text-secondary-700 transition hover:bg-secondary-50 cursor-pointer"
             @click="openList"
           >
             {{ t('notifications.showAll') }}

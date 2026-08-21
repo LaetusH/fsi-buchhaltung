@@ -2,17 +2,17 @@
   <div class="-mx-6 -mb-6 bg-white p-4 shadow-sm space-y-3 col-span-12 sm:mx-0 sm:mb-0 sm:space-y-6 sm:rounded-xl sm:p-6 sm:shadow-lg">
     <h2 class="text-base font-semibold sm:text-lg">{{ t('settings.app.title') }}</h2>
 
-    <section class="rounded-xl border border-slate-200 p-4 space-y-4">
+    <section class="rounded-xl border border-base-200 p-4 space-y-4">
       <div>
         <h3 class="font-semibold">{{ t('settings.app.invoiceTextsTitle') }}</h3>
-        <p class="text-sm text-slate-600">{{ t('settings.app.invoiceTextsText') }}</p>
+        <p class="text-sm text-base-600">{{ t('settings.app.invoiceTextsText') }}</p>
       </div>
 
       <div class="flex flex-wrap gap-2">
         <span
           v-for="variable in invoiceTextVariables"
           :key="variable.key"
-          class="rounded-md border border-slate-200 bg-slate-50 px-2 py-1 text-xs font-medium text-slate-700"
+          class="rounded-md border border-base-200 bg-base-50 px-2 py-1 text-xs font-medium text-base-700"
           :title="variable.label"
         >
           {{ variableToken(variable.key) }}
@@ -48,7 +48,7 @@
             >
           </div>
         </div>
-        <label class="inline-flex items-center gap-3 text-sm text-slate-700 select-none cursor-pointer">
+        <label class="inline-flex items-center gap-3 text-sm text-base-700 select-none cursor-pointer">
           <input
             v-model="invoiceTextForm.invoice_number_manual_edit_disabled"
             type="checkbox"
@@ -69,7 +69,7 @@
           <label>{{ t('settings.app.invoiceNotes') }}</label>
           <textarea v-model="invoiceTextForm.notes" rows="4" class="input resize-y" :disabled="isSavingInvoiceTexts" />
         </div>
-        <label class="inline-flex items-center gap-3 text-sm text-slate-700 select-none cursor-pointer">
+        <label class="inline-flex items-center gap-3 text-sm text-base-700 select-none cursor-pointer">
           <input
             v-model="invoiceTextForm.is_kleinunternehmer_default"
             type="checkbox"
@@ -92,10 +92,10 @@
       </div>
     </section>
 
-    <section v-if="canManageSnapshots" class="rounded-xl border border-slate-200 p-4 space-y-3">
+    <section v-if="canManageSnapshots" class="rounded-xl border border-base-200 p-4 space-y-3">
       <div>
         <h3 class="font-semibold">{{ t('settings.app.snapshotTitle') }}</h3>
-        <p class="text-sm text-slate-600">{{ t('settings.app.snapshotText') }}</p>
+        <p class="text-sm text-base-600">{{ t('settings.app.snapshotText') }}</p>
       </div>
 
       <div class="flex flex-wrap gap-2">
@@ -126,14 +126,14 @@
         </button>
       </div>
 
-      <p class="text-xs text-slate-500">{{ t('settings.app.snapshotPasswordHelp') }}</p>
-      <p class="text-xs text-slate-500">{{ t('settings.app.filesArchiveText') }}</p>
+      <p class="text-xs text-base-500">{{ t('settings.app.snapshotPasswordHelp') }}</p>
+      <p class="text-xs text-base-500">{{ t('settings.app.filesArchiveText') }}</p>
     </section>
 
-    <section v-if="canManageSnapshots" class="rounded-xl border border-red-200 bg-red-50 p-4 space-y-3">
+    <section v-if="canManageSnapshots" class="rounded-xl border border-danger-200 bg-danger-50 p-4 space-y-3">
       <div>
-        <h3 class="font-semibold text-red-900">{{ t('settings.app.restoreTitle') }}</h3>
-        <p class="text-sm text-red-800">{{ t('settings.app.restoreText') }}</p>
+        <h3 class="font-semibold text-danger-900">{{ t('settings.app.restoreTitle') }}</h3>
+        <p class="text-sm text-danger-800">{{ t('settings.app.restoreText') }}</p>
       </div>
 
       <input
@@ -154,7 +154,7 @@
       >
 
       <label class="block space-y-1">
-        <span class="text-sm font-medium text-red-900">{{ t('settings.app.filesArchiveLabel') }}</span>
+        <span class="text-sm font-medium text-danger-900">{{ t('settings.app.filesArchiveLabel') }}</span>
         <input
           ref="archiveInput"
           class="input bg-white"
@@ -174,15 +174,15 @@
       </button>
 
       <div v-if="isPreviewing && uploadProgress !== null" class="space-y-1">
-        <div class="h-2 overflow-hidden rounded-full bg-red-100">
-          <div class="h-full bg-orange-500" :style="{ width: `${uploadProgress}%` }" />
+        <div class="h-2 overflow-hidden rounded-full bg-danger-100">
+          <div class="h-full bg-accent-500" :style="{ width: `${uploadProgress}%` }" />
         </div>
-        <p class="text-xs text-red-800">{{ t('settings.app.uploadProgress', { progress: String(uploadProgress) }) }}</p>
+        <p class="text-xs text-danger-800">{{ t('settings.app.uploadProgress', { progress: String(uploadProgress) }) }}</p>
       </div>
     </section>
 
-    <section v-else class="rounded-xl border border-slate-200 p-4">
-      <p class="text-sm text-slate-600">{{ t('settings.app.noSnapshotPermission') }}</p>
+    <section v-else class="rounded-xl border border-base-200 p-4">
+      <p class="text-sm text-base-600">{{ t('settings.app.noSnapshotPermission') }}</p>
     </section>
 
     <CommonModal
@@ -192,53 +192,53 @@
       width-class="max-w-2xl"
       @update:model-value="closeRestorePreview"
     >
-      <p class="text-sm text-slate-600">{{ t('settings.app.restorePreviewText') }}</p>
+      <p class="text-sm text-base-600">{{ t('settings.app.restorePreviewText') }}</p>
 
       <div class="grid md:grid-cols-2 gap-3 text-sm">
-        <div class="rounded-lg border border-slate-200 p-3">
-          <p class="text-xs text-slate-500">{{ t('settings.app.previewCreatedAt') }}</p>
+        <div class="rounded-lg border border-base-200 p-3">
+          <p class="text-xs text-base-500">{{ t('settings.app.previewCreatedAt') }}</p>
           <p class="font-medium">{{ previewCreatedAtLabel }}</p>
         </div>
-        <div class="rounded-lg border border-slate-200 p-3">
-          <p class="text-xs text-slate-500">{{ t('settings.app.previewDatabase') }}</p>
+        <div class="rounded-lg border border-base-200 p-3">
+          <p class="text-xs text-base-500">{{ t('settings.app.previewDatabase') }}</p>
           <p class="font-medium">{{ restorePreview.database || t('settings.app.previewUnknown') }}</p>
         </div>
-        <div class="rounded-lg border border-slate-200 p-3">
-          <p class="text-xs text-slate-500">{{ t('settings.app.previewApp') }}</p>
+        <div class="rounded-lg border border-base-200 p-3">
+          <p class="text-xs text-base-500">{{ t('settings.app.previewApp') }}</p>
           <p class="font-medium">{{ previewAppLabel }}</p>
         </div>
-        <div class="rounded-lg border border-slate-200 p-3">
-          <p class="text-xs text-slate-500">{{ t('settings.app.previewSchema') }}</p>
+        <div class="rounded-lg border border-base-200 p-3">
+          <p class="text-xs text-base-500">{{ t('settings.app.previewSchema') }}</p>
           <p class="font-medium">{{ restorePreview.schemaVersion || t('settings.app.previewUnknown') }}</p>
         </div>
-        <div class="rounded-lg border border-slate-200 p-3">
-          <p class="text-xs text-slate-500">{{ t('settings.app.previewTables') }}</p>
+        <div class="rounded-lg border border-base-200 p-3">
+          <p class="text-xs text-base-500">{{ t('settings.app.previewTables') }}</p>
           <p class="font-medium">{{ restorePreview.tables }}</p>
         </div>
-        <div class="rounded-lg border border-slate-200 p-3">
-          <p class="text-xs text-slate-500">{{ t('settings.app.previewRows') }}</p>
+        <div class="rounded-lg border border-base-200 p-3">
+          <p class="text-xs text-base-500">{{ t('settings.app.previewRows') }}</p>
           <p class="font-medium">{{ restorePreview.rows }}</p>
         </div>
-        <div class="rounded-lg border border-slate-200 p-3 md:col-span-2">
-          <p class="text-xs text-slate-500">{{ t('settings.app.previewIntegrity') }}</p>
+        <div class="rounded-lg border border-base-200 p-3 md:col-span-2">
+          <p class="text-xs text-base-500">{{ t('settings.app.previewIntegrity') }}</p>
           <p class="font-medium">{{ integrityLabel }}</p>
         </div>
-        <div class="rounded-lg border border-slate-200 p-3 md:col-span-2">
-          <p class="text-xs text-slate-500">{{ t('settings.app.previewFilesArchive') }}</p>
+        <div class="rounded-lg border border-base-200 p-3 md:col-span-2">
+          <p class="text-xs text-base-500">{{ t('settings.app.previewFilesArchive') }}</p>
           <p class="font-medium">{{ filesArchiveLabel }}</p>
         </div>
       </div>
 
-      <div class="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-800 space-y-2">
+      <div class="rounded-lg border border-danger-200 bg-danger-50 p-3 text-sm text-danger-800 space-y-2">
         <p>{{ t('settings.app.restoreSessionsWarning') }}</p>
         <div v-if="isRestoring && uploadProgress !== null" class="space-y-1">
-          <div class="h-2 overflow-hidden rounded-full bg-red-100">
-            <div class="h-full bg-orange-500" :style="{ width: `${uploadProgress}%` }" />
+          <div class="h-2 overflow-hidden rounded-full bg-danger-100">
+            <div class="h-full bg-accent-500" :style="{ width: `${uploadProgress}%` }" />
           </div>
-          <p class="text-xs text-red-800">{{ t('settings.app.uploadProgress', { progress: String(uploadProgress) }) }}</p>
+          <p class="text-xs text-danger-800">{{ t('settings.app.uploadProgress', { progress: String(uploadProgress) }) }}</p>
         </div>
         <label class="block">
-          <span class="text-xs font-medium text-red-900">{{ t('settings.app.restoreConfirmLabel') }}</span>
+          <span class="text-xs font-medium text-danger-900">{{ t('settings.app.restoreConfirmLabel') }}</span>
           <input v-model="restoreConfirmation" class="input mt-1 bg-white" autocomplete="off">
         </label>
       </div>

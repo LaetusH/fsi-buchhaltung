@@ -3,7 +3,7 @@
     <div class="bg-white p-6 rounded-xl shadow-lg space-y-4">
       <div>
         <h2 class="text-xl font-semibold">{{ t('passwordChangeRequired.title') }}</h2>
-        <p class="mt-1 text-sm text-slate-600">{{ t('passwordChangeRequired.text') }}</p>
+        <p class="mt-1 text-sm text-base-600">{{ t('passwordChangeRequired.text') }}</p>
       </div>
 
       <form class="space-y-4" @submit.prevent="changePassword">
@@ -43,7 +43,7 @@
           >
         </div>
 
-        <p class="text-xs text-slate-500">{{ t('settings.general.passwordHelp', { min: MIN_PASSWORD_LENGTH }) }}</p>
+        <p class="text-xs text-base-500">{{ t('settings.general.passwordHelp', { min: MIN_PASSWORD_LENGTH }) }}</p>
 
         <div class="flex items-center justify-between gap-3">
           <button type="button" class="btn-secondary" :disabled="isChangingPassword" @click="handleLogout">

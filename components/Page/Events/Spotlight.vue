@@ -9,9 +9,9 @@
     <template #badge>
       <span
         class="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold uppercase tracking-wide"
-        :class="active?.status === 'past' ? 'bg-white/10 text-slate-200' : 'bg-orange-500/20 text-orange-200'"
+        :class="active?.status === 'past' ? 'bg-white/10 text-base-200' : 'bg-accent-500/20 text-accent-200'"
       >
-        <span class="h-1.5 w-1.5 rounded-full" :class="active?.status === 'past' ? 'bg-slate-400' : 'bg-orange-400'" />
+        <span class="h-1.5 w-1.5 rounded-full" :class="active?.status === 'past' ? 'bg-base-400' : 'bg-accent-400'" />
         {{ activeLabel }}
       </span>
     </template>
@@ -21,7 +21,7 @@
         <button
           type="button"
           class="cursor-pointer rounded-md px-3 py-1.5 transition"
-          :class="view === 'upcoming' ? 'bg-white text-slate-900' : 'text-slate-200 hover:text-white'"
+          :class="view === 'upcoming' ? 'bg-white text-base-900' : 'text-base-200 hover:text-white'"
           @click="view = 'upcoming'"
         >
           {{ t('event.spotlight.toggleUpcoming') }}
@@ -29,7 +29,7 @@
         <button
           type="button"
           class="cursor-pointer rounded-md px-3 py-1.5 transition"
-          :class="view === 'latest' ? 'bg-white text-slate-900' : 'text-slate-200 hover:text-white'"
+          :class="view === 'latest' ? 'bg-white text-base-900' : 'text-base-200 hover:text-white'"
           @click="view = 'latest'"
         >
           {{ t('event.spotlight.toggleLatest') }}
@@ -38,8 +38,8 @@
     </template>
 
     <template #subtitle>
-      <p v-if="countdownLabel" class="mt-1 flex items-center gap-1.5 text-sm text-slate-300">
-        <Icon name="material-symbols:schedule-rounded" class="text-base text-slate-400" />
+      <p v-if="countdownLabel" class="mt-1 flex items-center gap-1.5 text-sm text-base-300">
+        <Icon name="material-symbols:schedule-rounded" class="text-base text-base-400" />
         {{ countdownLabel }}
       </p>
     </template>
@@ -50,7 +50,7 @@
 
         <button
           type="button"
-          class="inline-flex shrink-0 items-center gap-1.5 rounded-lg bg-orange-500 px-4 py-2 text-sm font-semibold text-white transition not-disabled:cursor-pointer not-disabled:hover:bg-orange-600 disabled:cursor-not-allowed disabled:opacity-40"
+          class="inline-flex shrink-0 items-center gap-1.5 rounded-lg bg-accent-500 px-4 py-2 text-sm font-semibold text-white transition not-disabled:cursor-pointer not-disabled:hover:bg-accent-600 disabled:cursor-not-allowed disabled:opacity-40"
           :disabled="!active?.canOpen"
           @click="active && $emit('open', active.id)"
         >
@@ -69,81 +69,81 @@
           :class="hasSidePanel ? '' : 'md:grid-cols-4'"
         >
           <div class="col-span-2">
-            <dt class="text-xs font-medium uppercase tracking-wide text-slate-400">{{ t('event.startsOn') }} – {{ t('event.endsOn') }}</dt>
-            <dd class="mt-0.5 flex items-center gap-1.5 text-sm font-medium text-slate-800">
-              <Icon name="material-symbols:event-rounded" class="shrink-0 text-base text-slate-400" />
+            <dt class="text-xs font-medium uppercase tracking-wide text-base-400">{{ t('event.startsOn') }} – {{ t('event.endsOn') }}</dt>
+            <dd class="mt-0.5 flex items-center gap-1.5 text-sm font-medium text-base-800">
+              <Icon name="material-symbols:event-rounded" class="shrink-0 text-base text-base-400" />
               <span>{{ rangeLabel }}</span>
             </dd>
           </div>
 
           <div>
-            <dt class="text-xs font-medium uppercase tracking-wide text-slate-400">{{ t('event.location') }}</dt>
-            <dd class="mt-0.5 flex items-center gap-1.5 text-sm text-slate-800">
-              <Icon name="material-symbols:location-on-rounded" class="shrink-0 text-base text-slate-400" />
+            <dt class="text-xs font-medium uppercase tracking-wide text-base-400">{{ t('event.location') }}</dt>
+            <dd class="mt-0.5 flex items-center gap-1.5 text-sm text-base-800">
+              <Icon name="material-symbols:location-on-rounded" class="shrink-0 text-base text-base-400" />
               <span class="truncate">{{ active.location || t('event.planning.locationMissing') }}</span>
             </dd>
           </div>
 
           <div>
-            <dt class="text-xs font-medium uppercase tracking-wide text-slate-400">{{ t('event.expectedGuests') }}</dt>
-            <dd class="mt-0.5 flex items-center gap-1.5 text-sm text-slate-800">
-              <Icon name="material-symbols:groups-rounded" class="shrink-0 text-base text-slate-400" />
+            <dt class="text-xs font-medium uppercase tracking-wide text-base-400">{{ t('event.expectedGuests') }}</dt>
+            <dd class="mt-0.5 flex items-center gap-1.5 text-sm text-base-800">
+              <Icon name="material-symbols:groups-rounded" class="shrink-0 text-base text-base-400" />
               <span>{{ active.expected_guests != null ? active.expected_guests : t('event.planning.guestsMissing') }}</span>
             </dd>
           </div>
 
           <div class="col-span-2">
-            <dt class="text-xs font-medium uppercase tracking-wide text-slate-400">{{ t('event.organizers') }}</dt>
+            <dt class="text-xs font-medium uppercase tracking-wide text-base-400">{{ t('event.organizers') }}</dt>
             <dd class="mt-1 flex flex-wrap gap-1.5">
               <span
                 v-for="org in organizerLabels"
                 :key="org"
-                class="inline-flex items-center rounded-md bg-slate-100 px-2 py-0.5 text-xs text-slate-700"
+                class="inline-flex items-center rounded-md bg-base-100 px-2 py-0.5 text-xs text-base-700"
               >{{ org }}</span>
-              <span v-if="!organizerLabels.length" class="text-sm text-slate-400">{{ t('event.noOrganizersShort') }}</span>
+              <span v-if="!organizerLabels.length" class="text-sm text-base-400">{{ t('event.noOrganizersShort') }}</span>
             </dd>
           </div>
 
           <div class="col-span-2">
-            <dt class="text-xs font-medium uppercase tracking-wide text-slate-400">{{ t('event.costCentres') }}</dt>
+            <dt class="text-xs font-medium uppercase tracking-wide text-base-400">{{ t('event.costCentres') }}</dt>
             <dd class="mt-1 flex flex-wrap gap-1.5">
               <span
                 v-for="split in active.cost_centre_splits"
                 :key="split.cost_centre_id"
-                class="inline-flex items-center rounded-md bg-slate-100 px-2 py-0.5 text-xs text-slate-700"
+                class="inline-flex items-center rounded-md bg-base-100 px-2 py-0.5 text-xs text-base-700"
               >{{ split.code }} · {{ Number(split.allocation_percentage).toFixed(0) }}%</span>
-              <span v-if="!active.cost_centre_splits.length" class="text-sm text-slate-400">{{ t('event.noCostCentresShort') }}</span>
+              <span v-if="!active.cost_centre_splits.length" class="text-sm text-base-400">{{ t('event.noCostCentresShort') }}</span>
             </dd>
           </div>
         </dl>
 
         <!-- Planning summary (only when the user may view planning details) -->
-        <div v-if="active.planning" class="rounded-xl border border-slate-200 bg-slate-50/60 p-4">
+        <div v-if="active.planning" class="rounded-xl border border-base-200 bg-base-50/60 p-4">
           <button
             type="button"
-            class="-m-1 block w-[calc(100%+0.5rem)] rounded-lg p-1 text-left transition not-disabled:cursor-pointer not-disabled:hover:bg-slate-100/70 disabled:cursor-default"
+            class="-m-1 block w-[calc(100%+0.5rem)] rounded-lg p-1 text-left transition not-disabled:cursor-pointer not-disabled:hover:bg-base-100/70 disabled:cursor-default"
             :disabled="!active.canOpen"
             @click="openTab('overview')"
           >
             <span class="flex items-center justify-between gap-3">
-              <span class="flex items-center gap-1.5 text-sm font-semibold text-slate-700">
+              <span class="flex items-center gap-1.5 text-sm font-semibold text-base-700">
                 <Icon
                   :name="active.status === 'past' ? 'material-symbols:history-rounded' : 'material-symbols:checklist-rtl-rounded'"
-                  class="text-base text-orange-500"
+                  class="text-base text-accent-500"
                 />
                 {{ active.status === 'past' ? t('event.spotlight.recap') : t('event.spotlight.planningState') }}
               </span>
-              <span class="text-sm font-semibold text-slate-900">{{ active.planning.readiness }}%</span>
+              <span class="text-sm font-semibold text-base-900">{{ active.planning.readiness }}%</span>
             </span>
 
-            <span class="mt-2 block h-2 overflow-hidden rounded-full bg-slate-200">
+            <span class="mt-2 block h-2 overflow-hidden rounded-full bg-base-200">
               <span
                 class="block h-full rounded-full transition-all"
-                :class="active.status === 'past' ? 'bg-slate-400' : 'bg-orange-500'"
+                :class="active.status === 'past' ? 'bg-base-400' : 'bg-accent-500'"
                 :style="{ width: `${active.planning.readiness}%` }"
               />
             </span>
-            <span class="mt-1 block text-xs text-slate-500">
+            <span class="mt-1 block text-xs text-base-500">
               {{ active.status === 'past'
                 ? t('event.spotlight.recapHint', { pct: active.planning.readiness })
                 : t('event.planning.completedPercent', { pct: active.planning.readiness }) }}
@@ -159,11 +159,11 @@
               :disabled="!active.canOpen"
               @click="openTab(tile.tab)"
             >
-              <span class="flex items-center gap-1 text-xs text-slate-500">
-                <Icon :name="tile.icon" class="shrink-0 text-sm" :class="tile.variant === 'ok' ? 'text-emerald-500' : tile.variant === 'warning' ? 'text-amber-500' : 'text-slate-400'" />
+              <span class="flex items-center gap-1 text-xs text-base-500">
+                <Icon :name="tile.icon" class="shrink-0 text-sm" :class="tile.variant === 'ok' ? 'text-success-500' : tile.variant === 'warning' ? 'text-warning-500' : 'text-base-400'" />
                 <span class="truncate">{{ tile.label }}</span>
               </span>
-              <span class="mt-0.5 block text-sm font-semibold text-slate-800">{{ tile.value }}</span>
+              <span class="mt-0.5 block text-sm font-semibold text-base-800">{{ tile.value }}</span>
             </button>
           </div>
         </div>

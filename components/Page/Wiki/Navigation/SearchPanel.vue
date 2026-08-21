@@ -4,7 +4,7 @@
       <div class="relative w-full sm:max-w-xs">
         <Icon
           name="material-symbols:search-rounded"
-          class="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-lg text-slate-400"
+          class="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-lg text-base-400"
           aria-hidden="true"
         />
         <input
@@ -19,7 +19,7 @@
         <button
           v-if="term"
           type="button"
-          class="absolute right-2 top-1/2 flex h-6 w-6 -translate-y-1/2 cursor-pointer items-center justify-center rounded-md text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-700"
+          class="absolute right-2 top-1/2 flex h-6 w-6 -translate-y-1/2 cursor-pointer items-center justify-center rounded-md text-base-400 transition-colors hover:bg-base-100 hover:text-base-700"
           :title="t('wiki.search.clear')"
           :aria-label="t('wiki.search.clear')"
           @click="clear"
@@ -55,28 +55,28 @@
 
     <p aria-live="polite" class="sr-only">{{ statusMessage }}</p>
 
-    <p v-if="term.trim().length === 1" class="text-sm text-slate-500">{{ t('wiki.search.hint') }}</p>
-    <p v-else-if="searching" class="text-sm text-slate-500">{{ t('wiki.loading') }}</p>
-    <p v-else-if="searched && !hits.length" class="text-sm text-slate-500">{{ t('wiki.search.empty') }}</p>
-    <p v-else-if="hits.length" class="text-xs text-slate-500">{{ t('wiki.search.results', { count: hits.length }) }}</p>
+    <p v-if="term.trim().length === 1" class="text-sm text-base-500">{{ t('wiki.search.hint') }}</p>
+    <p v-else-if="searching" class="text-sm text-base-500">{{ t('wiki.loading') }}</p>
+    <p v-else-if="searched && !hits.length" class="text-sm text-base-500">{{ t('wiki.search.empty') }}</p>
+    <p v-else-if="hits.length" class="text-xs text-base-500">{{ t('wiki.search.results', { count: hits.length }) }}</p>
 
     <ul v-if="hits.length" class="space-y-2">
       <li v-for="hit in hits" :key="hit.id">
         <button
           type="button"
-          class="flex w-full cursor-pointer items-center gap-3 rounded-lg border border-slate-200 p-3 text-left transition-colors hover:border-orange-300 hover:bg-orange-50/60"
+          class="flex w-full cursor-pointer items-center gap-3 rounded-lg border border-base-200 p-3 text-left transition-colors hover:border-accent-300 hover:bg-accent-50/60"
           @click="$emit('open', hit.id)"
         >
           <span class="min-w-0 flex-1">
-            <span class="block text-xs text-slate-500">{{ hit.spaceTitle }}</span>
-            <span class="block font-semibold text-slate-900" v-html="highlight(hit.title)"></span>
+            <span class="block text-xs text-base-500">{{ hit.spaceTitle }}</span>
+            <span class="block font-semibold text-base-900" v-html="highlight(hit.title)"></span>
             <span
               v-if="hit.snippet"
-              class="mt-1 block text-sm leading-relaxed text-slate-600"
+              class="mt-1 block text-sm leading-relaxed text-base-600"
               v-html="highlight(hit.snippet)"
             ></span>
           </span>
-          <Icon name="material-symbols:chevron-right-rounded" class="shrink-0 text-lg text-slate-300" aria-hidden="true" />
+          <Icon name="material-symbols:chevron-right-rounded" class="shrink-0 text-lg text-base-300" aria-hidden="true" />
         </button>
       </li>
     </ul>

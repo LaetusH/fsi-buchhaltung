@@ -3,33 +3,33 @@
     <div class="flex flex-wrap items-center justify-between gap-2">
       <div>
         <h2 class="text-base font-semibold sm:text-lg">{{ t('wiki.admin.spaces.title') }}</h2>
-        <p class="text-sm text-slate-600">{{ t('wiki.admin.spaces.hint') }}</p>
+        <p class="text-sm text-base-600">{{ t('wiki.admin.spaces.hint') }}</p>
       </div>
       <button type="button" class="btn-primary" @click="openCreate">{{ t('wiki.space.create') }}</button>
     </div>
 
     <CommonValidationSummary v-if="error" :errors="[error]" :title="t('common.validationBlocked')" />
 
-    <p v-if="loading" class="text-sm text-slate-500">{{ t('wiki.loading') }}</p>
-    <p v-else-if="!spaces.length" class="text-sm text-slate-500">{{ t('wiki.home.noSpaces') }}</p>
+    <p v-if="loading" class="text-sm text-base-500">{{ t('wiki.loading') }}</p>
+    <p v-else-if="!spaces.length" class="text-sm text-base-500">{{ t('wiki.home.noSpaces') }}</p>
 
     <ul v-else class="space-y-2">
       <li
         v-for="(space, position) in spaces"
         :key="space.id"
-        class="flex flex-wrap items-start gap-3 rounded-lg border border-slate-200 p-3"
-        :class="space.isArchived ? 'bg-slate-50' : ''"
+        class="flex flex-wrap items-start gap-3 rounded-lg border border-base-200 p-3"
+        :class="space.isArchived ? 'bg-base-50' : ''"
       >
-        <Icon :name="space.icon" class="mt-0.5 shrink-0 text-xl text-slate-500" aria-hidden="true" />
+        <Icon :name="space.icon" class="mt-0.5 shrink-0 text-xl text-base-500" aria-hidden="true" />
 
         <div class="min-w-0 flex-1">
-          <p class="font-medium text-slate-900">
+          <p class="font-medium text-base-900">
             {{ space.title }}
-            <span v-if="space.isArchived" class="ml-2 text-xs font-normal text-slate-500">{{ t('wiki.admin.spaces.archived') }}</span>
+            <span v-if="space.isArchived" class="ml-2 text-xs font-normal text-base-500">{{ t('wiki.admin.spaces.archived') }}</span>
           </p>
-          <p class="text-xs text-slate-500">{{ space.slug }}</p>
-          <p v-if="space.description" class="mt-0.5 text-sm text-slate-600">{{ space.description }}</p>
-          <p class="mt-1 text-xs text-slate-500">
+          <p class="text-xs text-base-500">{{ space.slug }}</p>
+          <p v-if="space.description" class="mt-0.5 text-sm text-base-600">{{ space.description }}</p>
+          <p class="mt-1 text-xs text-base-500">
             {{ t('wiki.admin.spaces.articleCount', { count: space.articleCount }) }}
             <template v-if="space.requiresReview"> · {{ t('wiki.admin.spaces.requiresReview') }}</template>
             <template v-if="ownerLabel(space)"> · {{ t('wiki.article.owner') }}: {{ ownerLabel(space) }}</template>
@@ -37,10 +37,10 @@
         </div>
 
         <div class="flex shrink-0 flex-wrap items-center gap-2">
-          <span class="inline-flex shrink-0 rounded-md border border-slate-200">
+          <span class="inline-flex shrink-0 rounded-md border border-base-200">
             <button
               type="button"
-              class="inline-flex items-center justify-center rounded-l-md p-1.5 text-slate-500 hover:bg-slate-100 disabled:pointer-events-none disabled:opacity-30 cursor-pointer transition-colors"
+              class="inline-flex items-center justify-center rounded-l-md p-1.5 text-base-500 hover:bg-base-100 disabled:pointer-events-none disabled:opacity-30 cursor-pointer transition-colors"
               :disabled="position === 0"
               :aria-label="t('wiki.tree.moveUp')"
               @click="move(position, -1)"
@@ -49,7 +49,7 @@
             </button>
             <button
               type="button"
-              class="inline-flex items-center justify-center rounded-r-md border-l border-slate-200 p-1.5 text-slate-500 hover:bg-slate-100 disabled:pointer-events-none disabled:opacity-30 cursor-pointer transition-colors"
+              class="inline-flex items-center justify-center rounded-r-md border-l border-base-200 p-1.5 text-base-500 hover:bg-base-100 disabled:pointer-events-none disabled:opacity-30 cursor-pointer transition-colors"
               :disabled="position === spaces.length - 1"
               :aria-label="t('wiki.tree.moveDown')"
               @click="move(position, 1)"
@@ -61,7 +61,7 @@
           <button
             v-if="!space.articleCount"
             type="button"
-            class="btn-secondary text-red-600"
+            class="btn-secondary text-danger-600"
             @click="deleteTarget = space"
           >
             {{ t('actions.delete') }}
@@ -82,7 +82,7 @@
     :title="t('wiki.admin.spaces.deleteConfirmTitle')"
     @update:model-value="deleteTarget = null"
   >
-    <p class="text-sm text-slate-700">{{ t('wiki.admin.spaces.deleteConfirmText', { title: deleteTarget.title }) }}</p>
+    <p class="text-sm text-base-700">{{ t('wiki.admin.spaces.deleteConfirmText', { title: deleteTarget.title }) }}</p>
     <template #footer>
       <div class="flex justify-end gap-2">
         <button type="button" class="btn-secondary" @click="deleteTarget = null">{{ t('actions.cancel') }}</button>

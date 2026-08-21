@@ -11,7 +11,7 @@
 
       <div
         v-if="!visibleWidgets.length"
-        class="col-span-12 flex flex-col items-center gap-2 rounded-xl bg-white p-10 text-center text-slate-400 shadow-sm"
+        class="col-span-12 flex flex-col items-center gap-2 rounded-xl bg-white p-10 text-center text-base-400 shadow-sm"
       >
         <Icon name="material-symbols:dashboard-rounded" class="text-3xl" />
         <p class="text-sm">{{ t('home.noWidgets') }}</p>

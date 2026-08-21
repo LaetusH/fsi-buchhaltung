@@ -5,22 +5,22 @@
 
       <div class="grid md:grid-cols-2 gap-4">
         <div>
-          <label class="text-sm font-medium text-slate-600">{{ t('member.firstName') }}</label>
+          <label class="text-sm font-medium text-base-600">{{ t('member.firstName') }}</label>
           <input v-model="form.first_name" class="input" :disabled="disabled">
         </div>
 
         <div>
-          <label class="text-sm font-medium text-slate-600">{{ t('member.lastName') }}</label>
+          <label class="text-sm font-medium text-base-600">{{ t('member.lastName') }}</label>
           <input v-model="form.last_name" class="input" :disabled="disabled">
         </div>
 
         <div>
-          <label class="text-sm font-medium text-slate-600">{{ t('member.birthdate') }}</label>
+          <label class="text-sm font-medium text-base-600">{{ t('member.birthdate') }}</label>
           <CommonDateInput v-model="form.birthdate" :disabled="disabled" />
         </div>
 
         <div>
-          <label class="text-sm font-medium text-slate-600">{{ t('member.status') }}</label>
+          <label class="text-sm font-medium text-base-600">{{ t('member.status') }}</label>
           <MenuDropdown v-model="openStatus" :id="0" :disabled="disabled">
             <template #trigger="{ styling }">
               <button :class="[styling, !disabled ? 'cursor-pointer' : '']" :disabled="disabled">
@@ -39,7 +39,7 @@
         </div>
       </div>
 
-      <label class="inline-flex items-center gap-2 text-sm text-slate-700 cursor-pointer">
+      <label class="inline-flex items-center gap-2 text-sm text-base-700 cursor-pointer">
         <input v-model="form.honorary" type="checkbox" class="checkbox" :disabled="disabled">
         {{ t('member.honorary') }}
       </label>
@@ -50,32 +50,32 @@
 
       <div class="grid md:grid-cols-4 gap-4">
         <div class="md:col-span-3">
-          <label class="text-sm font-medium text-slate-600">{{ t('member.street') }}</label>
+          <label class="text-sm font-medium text-base-600">{{ t('member.street') }}</label>
           <input v-model="form.street" class="input" :disabled="disabled">
         </div>
 
         <div>
-          <label class="text-sm font-medium text-slate-600">{{ t('member.streetNumber') }}</label>
+          <label class="text-sm font-medium text-base-600">{{ t('member.streetNumber') }}</label>
           <input v-model="form.street_number" class="input" :disabled="disabled">
         </div>
 
         <div>
-          <label class="text-sm font-medium text-slate-600">{{ t('member.postalCode') }}</label>
+          <label class="text-sm font-medium text-base-600">{{ t('member.postalCode') }}</label>
           <input v-model="form.postal_code" class="input" :disabled="disabled">
         </div>
 
         <div class="md:col-span-3">
-          <label class="text-sm font-medium text-slate-600">{{ t('member.city') }}</label>
+          <label class="text-sm font-medium text-base-600">{{ t('member.city') }}</label>
           <input v-model="form.city" class="input" :disabled="disabled">
         </div>
 
         <div class="md:col-span-2">
-          <label class="text-sm font-medium text-slate-600">{{ t('member.phone') }}</label>
+          <label class="text-sm font-medium text-base-600">{{ t('member.phone') }}</label>
           <input v-model="form.phone" class="input" :disabled="disabled">
         </div>
 
         <div class="md:col-span-2">
-          <label class="text-sm font-medium text-slate-600">{{ t('member.email') }}</label>
+          <label class="text-sm font-medium text-base-600">{{ t('member.email') }}</label>
           <input v-model="form.email" type="email" class="input" :disabled="disabled">
         </div>
       </div>
@@ -86,7 +86,7 @@
 
       <div class="grid md:grid-cols-3 gap-4 items-end">
         <div class="md:col-span-3">
-          <label class="text-sm font-medium text-slate-600">{{ t('member.subject') }}</label>
+          <label class="text-sm font-medium text-base-600">{{ t('member.subject') }}</label>
 
           <div v-if="renamingSubject" class="flex items-center gap-2">
             <input
@@ -98,7 +98,7 @@
             >
             <button
               type="button"
-              class="flex items-center justify-center h-10 w-10 shrink-0 rounded-md hover:bg-slate-100 text-emerald-600 cursor-pointer disabled:opacity-50"
+              class="flex items-center justify-center h-10 w-10 shrink-0 rounded-md hover:bg-base-100 text-success-600 cursor-pointer disabled:opacity-50"
               :disabled="renamingSubjectSaving"
               :title="t('actions.save')"
               @click="confirmRenameSubject"
@@ -107,7 +107,7 @@
             </button>
             <button
               type="button"
-              class="flex items-center justify-center h-10 w-10 shrink-0 rounded-md hover:bg-slate-100 text-slate-500 cursor-pointer disabled:opacity-50"
+              class="flex items-center justify-center h-10 w-10 shrink-0 rounded-md hover:bg-base-100 text-base-500 cursor-pointer disabled:opacity-50"
               :disabled="renamingSubjectSaving"
               :title="t('actions.cancel')"
               @click="cancelRenameSubject"
@@ -134,7 +134,7 @@
               <button
                 v-if="canEditSubjects && !disabled && selectedSubject"
                 type="button"
-                class="flex items-center justify-center h-10 w-10 rounded-md hover:bg-slate-100 text-orange-500 cursor-pointer"
+                class="flex items-center justify-center h-10 w-10 rounded-md hover:bg-base-100 text-accent-500 cursor-pointer"
                 :title="t('member.renameSubject')"
                 @click.stop.prevent="startRenameSubject"
               >
@@ -145,23 +145,23 @@
         </div>
 
         <div>
-          <label class="text-sm font-medium text-slate-600">{{ t('member.appliedAt') }}</label>
+          <label class="text-sm font-medium text-base-600">{{ t('member.appliedAt') }}</label>
           <CommonDateInput v-model="form.applied_at" :disabled="disabled" />
         </div>
 
         <div>
-          <label class="text-sm font-medium text-slate-600">{{ t('member.joinedAt') }}</label>
+          <label class="text-sm font-medium text-base-600">{{ t('member.joinedAt') }}</label>
           <CommonDateInput v-model="form.joined_at" :disabled="disabled" />
         </div>
 
         <div>
-          <label class="text-sm font-medium text-slate-600">{{ t('member.leftAt') }}</label>
+          <label class="text-sm font-medium text-base-600">{{ t('member.leftAt') }}</label>
           <CommonDateInput v-model="leftAtInput" :disabled="disabled" :empty-value="null" />
         </div>
       </div>
 
       <div>
-        <label class="text-sm font-medium text-slate-600">{{ t('member.notes') }}</label>
+        <label class="text-sm font-medium text-base-600">{{ t('member.notes') }}</label>
         <textarea v-model="form.notes" rows="3" class="input resize-none" :disabled="disabled" />
       </div>
     </section>
@@ -187,7 +187,7 @@
 
       <p
         v-if="hasInactiveSelectedSubdivisions"
-        class="text-sm text-amber-700"
+        class="text-sm text-warning-700"
       >
         {{ t('member.inactiveSubdivisionHintRemove') }}
       </p>
@@ -218,7 +218,7 @@
 
         <button
           v-if="!disabled"
-          class="text-red-500 cursor-pointer p-2 w-10 rounded-md hover:bg-slate-100"
+          class="text-danger-500 cursor-pointer p-2 w-10 rounded-md hover:bg-base-100"
           type="button"
           @click="removePosition(i)"
         >
@@ -227,7 +227,7 @@
 
         <p
           v-if="isAssignedPositionInactive(i)"
-          class="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900 md:col-span-3"
+          class="rounded-lg border border-warning-200 bg-warning-50 px-3 py-2 text-sm text-warning-900 md:col-span-3"
         >
           {{ t('member.inactivePositionHintEndAssignment') }}
         </p>
@@ -236,7 +236,7 @@
       <button
         v-if="!disabled"
         type="button"
-        class="flex items-center gap-2 text-orange-500 font-medium cursor-pointer"
+        class="flex items-center gap-2 text-accent-500 font-medium cursor-pointer"
         @click="addPosition"
       >
         <span class="text-xl">+</span> {{ t('actions.addPosition') }}
@@ -246,14 +246,14 @@
     <section v-if="canManageUsers && showAccountCreation" class="-mx-6 bg-white shadow-sm sm:mx-0 sm:rounded-xl sm:shadow-lg p-4 space-y-3">
       <h3 class="font-semibold">{{ t('member.accountTitle') }}</h3>
 
-      <label class="inline-flex items-center gap-2 text-sm text-slate-700 cursor-pointer">
+      <label class="inline-flex items-center gap-2 text-sm text-base-700 cursor-pointer">
         <input v-model="accountCreationEnabled" type="checkbox" class="checkbox" :disabled="disabled">
         {{ t('member.createAccount') }}
       </label>
 
       <div v-if="accountCreationEnabled" class="grid md:grid-cols-2 gap-4">
         <div>
-          <label class="text-sm font-medium text-slate-600">{{ t('member.accountUsername') }}</label>
+          <label class="text-sm font-medium text-base-600">{{ t('member.accountUsername') }}</label>
           <input
             v-model="form.new_account!.username"
             class="input"
@@ -268,7 +268,7 @@
         </div>
 
         <div>
-          <label class="text-sm font-medium text-slate-600">{{ t('member.accountPassword') }}</label>
+          <label class="text-sm font-medium text-base-600">{{ t('member.accountPassword') }}</label>
           <input
             v-model="form.new_account!.password"
             type="password"
@@ -284,12 +284,12 @@
       </div>
 
       <div class="flex gap-3">
-        <label v-if="accountCreationEnabled" class="inline-flex items-center gap-2 text-sm text-slate-700 cursor-pointer">
+        <label v-if="accountCreationEnabled" class="inline-flex items-center gap-2 text-sm text-base-700 cursor-pointer">
           <input v-model="form.new_account!.is_active" type="checkbox" class="checkbox" :disabled="disabled">
           {{ t('member.accountActive') }}
         </label>
 
-        <label v-if="accountCreationEnabled" class="inline-flex items-center gap-2 text-sm text-slate-700 cursor-pointer">
+        <label v-if="accountCreationEnabled" class="inline-flex items-center gap-2 text-sm text-base-700 cursor-pointer">
           <input v-model="form.new_account!.must_change_password" type="checkbox" class="checkbox" :disabled="disabled">
           {{ t('member.accountMustChangePassword') }}
         </label>

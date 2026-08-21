@@ -22,7 +22,7 @@
           <button
             v-if="selectedCompany && canEditCompany"
             type="button"
-            class="p-2 h-10 w-10 rounded-md hover:bg-slate-100 text-orange-500 cursor-pointer"
+            class="p-2 h-10 w-10 rounded-md hover:bg-base-100 text-accent-500 cursor-pointer"
             :title="t('receipt.editCompany')"
             @click.stop.prevent="openCompanyDrawer"
           >
@@ -34,12 +34,12 @@
 
     <section class="-mx-6 bg-white shadow-sm sm:mx-0 sm:rounded-xl sm:shadow-lg p-4 grid grid-cols-2 gap-4">
       <div>
-        <label class="text-sm font-medium text-slate-600">{{ t('receipt.receiptNumber') }}</label>
+        <label class="text-sm font-medium text-base-600">{{ t('receipt.receiptNumber') }}</label>
         <input v-model="form.receipt_number" class="input" :disabled="disabled">
       </div>
 
       <div>
-        <label class="text-sm font-medium text-slate-600">{{ t('receipt.receiptDate') }}</label>
+        <label class="text-sm font-medium text-base-600">{{ t('receipt.receiptDate') }}</label>
         <CommonDateInput v-model="form.receipt_date" :disabled="disabled" />
       </div>
     </section>
@@ -70,7 +70,7 @@
             >
               {{ sphereOptionLabel(s) }}
             </button>
-            <div v-if="availableSpheres(i).length === 0" class="px-3 py-2 text-sm text-gray-500">
+            <div v-if="availableSpheres(i).length === 0" class="px-3 py-2 text-sm text-base-500">
               {{ t('receipt.noSpheres') }}
             </div>
           </template>
@@ -117,7 +117,7 @@
 
         <button
           v-if="!disabled && form.positions.length > 1"
-          class="text-red-500 cursor-pointer p-2 w-10 rounded-md hover:bg-slate-100"
+          class="text-danger-500 cursor-pointer p-2 w-10 rounded-md hover:bg-base-100"
           @click="removePosition(i)"
         >
           ✕
@@ -128,14 +128,14 @@
         <button
           v-if="!disabled"
           type="button"
-          class="flex items-center gap-2 text-orange-500 font-medium cursor-pointer"
+          class="flex items-center gap-2 text-accent-500 font-medium cursor-pointer"
           @click="addPosition"
         >
           <span class="text-xl">＋</span> {{ t('actions.addPosition') }}
         </button>
 
         <div class="text-sm text-right space-y-1 pt-2 min-w-55 w-48">
-          <div class="flex justify-between text-slate-500">
+          <div class="flex justify-between text-base-500">
             <span>{{ t('receipt.net') }}</span>
             <span>{{ formatCurrency(netTotal) }}</span>
           </div>
@@ -143,7 +143,7 @@
           <div
             v-for="(v, tax) in taxBreakdown"
             :key="tax"
-            class="flex justify-between text-slate-500 space-y-0.5"
+            class="flex justify-between text-base-500 space-y-0.5"
           >
             <span>{{ t('receipt.vat', { tax }) }}</span>
             <span>{{ formatCurrency(v.tax) }}</span>
@@ -192,7 +192,7 @@
       >
         <div class="flex items-center justify-between px-6 py-4 border-b">
           <h2 class="text-lg font-semibold">{{ t('receipt.companyDrawer') }}</h2>
-          <button @click="closeCompanyDrawer" class="text-slate-400 hover:text-slate-600 cursor-pointer">
+          <button @click="closeCompanyDrawer" class="text-base-400 hover:text-base-600 cursor-pointer">
             ✕
           </button>
         </div>

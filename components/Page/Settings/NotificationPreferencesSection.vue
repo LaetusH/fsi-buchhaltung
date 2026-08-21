@@ -3,12 +3,12 @@
     :id="NOTIFICATION_PREFERENCES_SECTION"
     ref="sectionRef"
     class="rounded-xl border p-4 space-y-4 transition-colors"
-    :class="highlighted ? 'border-cyan-400 bg-cyan-50/40' : 'border-slate-200'"
+    :class="highlighted ? 'border-secondary-400 bg-secondary-50/40' : 'border-base-200'"
   >
     <div class="flex flex-wrap items-start justify-between gap-3">
       <div class="min-w-0">
         <h3 class="font-semibold">{{ t('settings.notifications.preferencesTitle') }}</h3>
-        <p class="text-sm text-slate-600">{{ t('settings.notifications.preferencesHelp') }}</p>
+        <p class="text-sm text-base-600">{{ t('settings.notifications.preferencesHelp') }}</p>
       </div>
       <div class="flex w-full flex-wrap gap-2 sm:w-auto sm:shrink-0">
         <button type="button" class="btn-secondary inline-flex items-center gap-2" @click="openNotificationCentre">
@@ -22,15 +22,15 @@
       </div>
     </div>
 
-    <div v-if="push.configured" class="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-slate-100 bg-slate-50 p-3">
+    <div v-if="push.configured" class="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-base-100 bg-base-50 p-3">
       <div class="flex min-w-0 items-start gap-3">
-        <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white text-slate-600">
+        <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white text-base-600">
           <Icon name="material-symbols:phonelink-ring-rounded" class="h-5 w-5" aria-hidden="true" />
         </span>
         <div class="min-w-0">
-          <p class="text-sm font-medium text-slate-700">{{ t('settings.notifications.pushPreferenceTitle') }}</p>
-          <p class="text-xs text-slate-500">{{ t('settings.notifications.pushPreferenceHelp') }}</p>
-          <p v-if="push.subscribed.value" class="mt-1 inline-flex items-center gap-1 text-xs text-green-700">
+          <p class="text-sm font-medium text-base-700">{{ t('settings.notifications.pushPreferenceTitle') }}</p>
+          <p class="text-xs text-base-500">{{ t('settings.notifications.pushPreferenceHelp') }}</p>
+          <p v-if="push.subscribed.value" class="mt-1 inline-flex items-center gap-1 text-xs text-success-700">
             <Icon name="material-symbols:check-circle-rounded" class="h-4 w-4" aria-hidden="true" />
             {{ t('settings.notifications.pushEnabled') }}
           </p>
@@ -47,7 +47,7 @@
       >
         {{ push.subscribed.value ? t('settings.notifications.pushDisable') : t('settings.notifications.pushEnable') }}
       </button>
-      <span v-else class="min-w-0 text-xs text-amber-600 sm:text-right">{{ t('settings.notifications.pushUnsupported') }}</span>
+      <span v-else class="min-w-0 text-xs text-warning-600 sm:text-right">{{ t('settings.notifications.pushUnsupported') }}</span>
     </div>
 
     <CommonModal
@@ -55,54 +55,54 @@
       :title="t('settings.notifications.preferencesTitle')"
       width-class="max-w-3xl"
     >
-      <div v-if="loading" class="flex items-center justify-center p-10 text-slate-400">
+      <div v-if="loading" class="flex items-center justify-center p-10 text-base-400">
         <Icon name="material-symbols:progress-activity" class="animate-spin text-2xl" aria-hidden="true" />
       </div>
 
       <div v-else-if="!categories.length" class="flex flex-col items-center gap-2 py-10 text-center">
-        <Icon name="material-symbols:notifications-off-outline-rounded" class="h-8 w-8 text-slate-300" aria-hidden="true" />
-        <p class="text-sm text-slate-500">{{ t('settings.notifications.preferencesNone') }}</p>
+        <Icon name="material-symbols:notifications-off-outline-rounded" class="h-8 w-8 text-base-300" aria-hidden="true" />
+        <p class="text-sm text-base-500">{{ t('settings.notifications.preferencesNone') }}</p>
       </div>
 
       <div v-else class="space-y-4">
-        <div class="rounded-lg bg-slate-50 p-3 text-xs text-slate-600 space-y-1">
+        <div class="rounded-lg bg-base-50 p-3 text-xs text-base-600 space-y-1">
           <p>{{ t('settings.notifications.preferencesModalHelp') }}</p>
-          <p class="inline-flex items-start gap-1 text-slate-500">
+          <p class="inline-flex items-start gap-1 text-base-500">
             <Icon name="material-symbols:info-outline-rounded" class="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
             {{ t('settings.notifications.preferencesInAppHint') }}
           </p>
         </div>
 
-        <div v-for="category in categories" :key="category.key" class="rounded-lg border border-slate-100">
-          <h4 class="border-b border-slate-100 px-3 py-2 text-sm font-semibold text-slate-700">
+        <div v-for="category in categories" :key="category.key" class="rounded-lg border border-base-100">
+          <h4 class="border-b border-base-100 px-3 py-2 text-sm font-semibold text-base-700">
             {{ t(category.labelKey) }}
           </h4>
 
           <div
             v-for="typeKey in category.types"
             :key="typeKey"
-            class="flex flex-wrap items-start justify-between gap-x-6 gap-y-3 border-b border-slate-50 p-3 last:border-b-0"
+            class="flex flex-wrap items-start justify-between gap-x-6 gap-y-3 border-b border-base-50 p-3 last:border-b-0"
           >
             <div class="min-w-45 flex-1">
               <div class="flex items-center gap-2">
-                <Icon :name="typeIcon(typeKey)" class="h-4 w-4 shrink-0 text-slate-400" aria-hidden="true" />
-                <p class="text-sm font-medium text-slate-700">{{ typeLabel(typeKey) }}</p>
+                <Icon :name="typeIcon(typeKey)" class="h-4 w-4 shrink-0 text-base-400" aria-hidden="true" />
+                <p class="text-sm font-medium text-base-700">{{ typeLabel(typeKey) }}</p>
               </div>
-              <p class="mt-0.5 text-xs text-slate-500">{{ typeDescription(typeKey) }}</p>
+              <p class="mt-0.5 text-xs text-base-500">{{ typeDescription(typeKey) }}</p>
               <button
                 v-if="isOverridden(typeKey)"
                 type="button"
-                class="mt-1 text-xs font-medium text-cyan-700 hover:underline cursor-pointer"
+                class="mt-1 text-xs font-medium text-secondary-700 hover:underline cursor-pointer"
                 @click="resetToDefault(typeKey)"
               >
                 {{ t('settings.notifications.resetToDefault') }}
               </button>
-              <p v-else class="mt-1 text-xs text-slate-400">{{ t('settings.notifications.preferenceDefault') }}</p>
+              <p v-else class="mt-1 text-xs text-base-400">{{ t('settings.notifications.preferenceDefault') }}</p>
             </div>
 
             <div class="flex shrink-0 gap-4">
               <div v-for="channel in channels" :key="channel" class="flex w-16 flex-col items-center gap-1">
-                <span class="text-[11px] font-medium text-slate-500">{{ channelLabel(channel) }}</span>
+                <span class="text-[11px] font-medium text-base-500">{{ channelLabel(channel) }}</span>
                 <template v-if="hasEntry(typeKey, channel)">
                   <CommonToggleSwitch
                     :model-value="effective(typeKey, channel)"
@@ -110,11 +110,11 @@
                     :label="`${typeLabel(typeKey)} – ${channelLabel(channel)}`"
                     @update:model-value="toggle(typeKey, channel, $event)"
                   />
-                  <span v-if="isBlocked(typeKey, channel)" class="text-center text-[10px] text-amber-600">
+                  <span v-if="isBlocked(typeKey, channel)" class="text-center text-[10px] text-warning-600">
                     {{ t('settings.notifications.preferenceBlocked') }}
                   </span>
                 </template>
-                <span v-else class="text-slate-300">—</span>
+                <span v-else class="text-base-300">—</span>
               </div>
             </div>
           </div>

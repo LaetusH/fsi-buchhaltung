@@ -136,13 +136,13 @@ onMounted(async () => {
 function statusTone(status: InvoiceStatus) {
   switch (status) {
     case InvoiceStatus.Draft:
-      return 'slate'
+      return 'base'
     case InvoiceStatus.Open:
-      return 'yellow'
+      return 'warning'
     case InvoiceStatus.Paid:
-      return 'green'
+      return 'success'
     case InvoiceStatus.Cancelled:
-      return 'red'
+      return 'dangerCancelled'
   }
 }
 

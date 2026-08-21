@@ -1,5 +1,5 @@
 <template>
-  <div ref="rootRef" class="text-slate-700 lg:w-full" :class="previewUrl && !compact ? '-mx-6 lg:mx-0' : ''">
+  <div ref="rootRef" class="text-base-700 lg:w-full" :class="previewUrl && !compact ? '-mx-6 lg:mx-0' : ''">
     <div
       v-if="!modelValue && !existingFile"
       @dragover.prevent="isDragging = true"
@@ -8,15 +8,15 @@
       @click="fileInput?.click()"
       :class="[
         'relative flex flex-col items-center justify-center w-full h-64 border-2 border-dashed rounded-lg cursor-pointer transition-colors duration-200',
-        isDragging ? 'border-blue-500 bg-blue-50' : 'border-slate-300 bg-slate-50 hover:bg-slate-100'
+        isDragging ? 'border-link-500 bg-link-50' : 'border-base-300 bg-base-50 hover:bg-base-100'
       ]"
     >
       <div class="flex flex-col items-center justify-center pt-5 pb-6">
-        <svg class="w-10 h-10 mb-3 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg class="w-10 h-10 mb-3 text-base-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
         </svg>
-        <p class="mb-2 text-sm text-slate-500"><span class="font-semibold">{{ t('files.clickUpload') }}</span> {{ t('files.dragDrop') }}</p>
-        <p class="text-xs text-slate-500">{{ allowedTypeLabel }}</p>
+        <p class="mb-2 text-sm text-base-500"><span class="font-semibold">{{ t('files.clickUpload') }}</span> {{ t('files.dragDrop') }}</p>
+        <p class="text-xs text-base-500">{{ allowedTypeLabel }}</p>
       </div>
       <input
         ref="fileInput"
@@ -30,36 +30,36 @@
 
     <div
       v-else-if="previewUrl"
-      :class="compact ? 'relative flex flex-col w-full border border-slate-200 rounded-lg overflow-hidden bg-slate-800 group shadow-lg' : 'relative flex flex-col w-full border-y border-slate-200 lg:border lg:rounded-lg overflow-hidden bg-slate-800 group shadow-lg'"
+      :class="compact ? 'relative flex flex-col w-full border border-base-200 rounded-lg overflow-hidden bg-base-800 group shadow-lg' : 'relative flex flex-col w-full border-y border-base-200 lg:border lg:rounded-lg overflow-hidden bg-base-800 group shadow-lg'"
       :style="compact ? {} : { height: `${previewHeight}px` }"
     >
       <div class="file-preview-toolbar z-20 flex items-center justify-between gap-3 p-3 bg-black/70 backdrop-blur-sm">
         <div class="flex items-center space-x-3 text-white">
           <span class="text-sm font-medium truncate max-w-50">{{ displayName }}</span>
-          <span class="text-xs text-slate-300">({{ displaySize }} MB)</span>
+          <span class="text-xs text-base-300">({{ displaySize }} MB)</span>
         </div>
 
-        <div class="flex items-center space-x-2 bg-slate-700/50 rounded-lg p-1">
-          <button @click="zoomOut" class="p-1.5 hover:bg-slate-600 rounded text-white transition disabled:opacity-50 cursor-pointer" title="Zoom Out">
+        <div class="flex items-center space-x-2 bg-base-700/50 rounded-lg p-1">
+          <button @click="zoomOut" class="p-1.5 hover:bg-base-600 rounded text-white transition disabled:opacity-50 cursor-pointer" title="Zoom Out">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 12H4"/></svg>
           </button>
 
           <span class="text-xs font-mono text-white w-12 text-center">{{ Math.round(zoomLevel * 100) }}%</span>
 
-          <button @click="zoomIn" class="p-1.5 hover:bg-slate-600 rounded text-white transition disabled:opacity-50 cursor-pointer" title="Zoom In">
+          <button @click="zoomIn" class="p-1.5 hover:bg-base-600 rounded text-white transition disabled:opacity-50 cursor-pointer" title="Zoom In">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
           </button>
 
-          <div v-if="isPdf" class="w-px h-4 bg-slate-500 mx-1"></div>
+          <div v-if="isPdf" class="w-px h-4 bg-base-500 mx-1"></div>
 
           <template v-if="isPdf">
-            <button @click="prevPage" :disabled="currentPage <= 1" class="p-1.5 hover:bg-slate-600 rounded text-white transition cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed">
+            <button @click="prevPage" :disabled="currentPage <= 1" class="p-1.5 hover:bg-base-600 rounded text-white transition cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed">
               <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
             </button>
             <span class="text-xs text-white whitespace-nowrap px-1">
               {{ currentPage }} / {{ pdfPageCount }}
             </span>
-            <button @click="nextPage" :disabled="currentPage >= pdfPageCount" class="p-1.5 hover:bg-slate-600 rounded text-white transition cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed">
+            <button @click="nextPage" :disabled="currentPage >= pdfPageCount" class="p-1.5 hover:bg-base-600 rounded text-white transition cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed">
               <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
             </button>
           </template>
@@ -68,7 +68,7 @@
         <div class="flex items-center gap-2">
           <button
             @click="downloadFile"
-            class="flex h-9 items-center gap-1.5 rounded-lg bg-slate-700/50 px-3 text-xs font-medium text-white transition hover:bg-slate-600 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+            class="flex h-9 items-center gap-1.5 rounded-lg bg-base-700/50 px-3 text-xs font-medium text-white transition hover:bg-base-600 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
             :disabled="!previewUrl"
             :aria-label="t('files.download')"
             :title="t('files.download')"
@@ -79,7 +79,7 @@
 
           <button
             @click="removeFile"
-            class="flex h-9 items-center gap-1.5 rounded-lg bg-red-600/80 px-3 text-xs font-medium text-white transition hover:bg-red-600 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+            class="flex h-9 items-center gap-1.5 rounded-lg bg-danger-600/80 px-3 text-xs font-medium text-white transition hover:bg-danger-600 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
             :disabled="!canEdit"
             :aria-label="t('files.remove')"
             :title="t('files.remove')"
@@ -92,7 +92,7 @@
 
       <div
         ref="containerRef"
-        class="file-preview-content w-full flex-1 min-h-0 overflow-auto bg-slate-800 custom-scrollbar"
+        class="file-preview-content w-full flex-1 min-h-0 overflow-auto bg-base-800 custom-scrollbar"
         :style="compact ? { maxHeight: `${COMPACT_MAX_HEIGHT}px` } : {}"
       >
         <div v-if="isPdf" class="relative shadow-2xl bg-white transition-all duration-200">

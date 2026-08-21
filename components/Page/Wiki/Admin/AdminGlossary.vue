@@ -3,7 +3,7 @@
     <div class="-mx-6 space-y-4 bg-white p-4 shadow-sm sm:mx-0 sm:rounded-xl sm:p-6 sm:shadow-lg">
       <div>
         <h2 class="section-title">{{ editingId ? t('wiki.admin.glossary.editTitle') : t('wiki.admin.glossary.addTitle') }}</h2>
-        <p class="text-sm text-slate-600">{{ t('wiki.admin.glossary.hint') }}</p>
+        <p class="text-sm text-base-600">{{ t('wiki.admin.glossary.hint') }}</p>
       </div>
 
       <CommonValidationSummary v-if="errors.length" :errors="errors" :title="t('common.validationBlocked')" />
@@ -12,13 +12,13 @@
         <div class="field">
           <label for="wiki-glossary-term">{{ t('wiki.admin.glossary.fields.term') }}</label>
           <input id="wiki-glossary-term" v-model="term" class="input" maxlength="120" />
-          <p class="mt-1 text-xs text-slate-400">{{ t('wiki.admin.glossary.fields.keyHint', { key: previewKey || '—' }) }}</p>
+          <p class="mt-1 text-xs text-base-400">{{ t('wiki.admin.glossary.fields.keyHint', { key: previewKey || '—' }) }}</p>
         </div>
 
         <div class="field">
           <label for="wiki-glossary-aliases">{{ t('wiki.admin.glossary.fields.aliases') }}</label>
           <input id="wiki-glossary-aliases" v-model="aliases" class="input" :placeholder="t('wiki.admin.glossary.fields.aliasesPlaceholder')" />
-          <p class="mt-1 text-xs text-slate-400">{{ t('wiki.admin.glossary.fields.aliasesHint') }}</p>
+          <p class="mt-1 text-xs text-base-400">{{ t('wiki.admin.glossary.fields.aliasesHint') }}</p>
         </div>
 
         <div class="field sm:col-span-2">
@@ -43,7 +43,7 @@
             @select="onSelectArticle"
             @clear-selection="selectedArticle = null"
           />
-          <p class="mt-1 text-xs text-slate-400">{{ t('wiki.admin.glossary.fields.articleHint') }}</p>
+          <p class="mt-1 text-xs text-base-400">{{ t('wiki.admin.glossary.fields.articleHint') }}</p>
         </div>
       </div>
 
@@ -60,30 +60,30 @@
     <div class="-mx-6 space-y-4 bg-white p-4 shadow-sm sm:mx-0 sm:rounded-xl sm:p-6 sm:shadow-lg">
       <h2 class="section-title">{{ t('wiki.admin.glossary.listTitle') }}</h2>
 
-      <p v-if="loading" class="text-sm text-slate-500">{{ t('wiki.loading') }}</p>
-      <p v-else-if="!terms.length" class="text-sm text-slate-500">{{ t('wiki.admin.glossary.empty') }}</p>
+      <p v-if="loading" class="text-sm text-base-500">{{ t('wiki.loading') }}</p>
+      <p v-else-if="!terms.length" class="text-sm text-base-500">{{ t('wiki.admin.glossary.empty') }}</p>
 
-      <ul v-else class="divide-y divide-slate-100">
+      <ul v-else class="divide-y divide-base-100">
         <li v-for="entry in terms" :key="entry.id" class="flex flex-wrap items-start gap-2 py-3">
           <div class="min-w-0 flex-1">
             <div class="flex flex-wrap items-baseline gap-2">
-              <span class="font-semibold text-slate-900">{{ entry.term }}</span>
-              <code class="rounded bg-slate-100 px-1.5 py-0.5 text-xs text-slate-600">[[glossar:{{ entry.key }}]]</code>
+              <span class="font-semibold text-base-900">{{ entry.term }}</span>
+              <code class="rounded bg-base-100 px-1.5 py-0.5 text-xs text-base-600">[[glossar:{{ entry.key }}]]</code>
             </div>
-            <p class="mt-1 text-sm text-slate-600">{{ entry.shortDefinition }}</p>
-            <p v-if="entry.aliases.length" class="mt-1 text-xs text-slate-400">
+            <p class="mt-1 text-sm text-base-600">{{ entry.shortDefinition }}</p>
+            <p v-if="entry.aliases.length" class="mt-1 text-xs text-base-400">
               {{ t('wiki.glossary.aliasesLabel') }}: {{ entry.aliases.join(', ') }}
             </p>
-            <p v-if="entry.articleTitle" class="mt-1 text-xs text-slate-500">
+            <p v-if="entry.articleTitle" class="mt-1 text-xs text-base-500">
               {{ t('wiki.admin.glossary.linkedTo', { title: entry.articleTitle }) }}
             </p>
           </div>
 
           <div class="flex shrink-0 gap-3 text-xs">
-            <button type="button" class="cursor-pointer text-orange-700 hover:underline" @click="edit(entry)">
+            <button type="button" class="cursor-pointer text-accent-700 hover:underline" @click="edit(entry)">
               {{ t('actions.edit') }}
             </button>
-            <button type="button" class="cursor-pointer text-red-700 hover:underline" @click="askRemove(entry)">
+            <button type="button" class="cursor-pointer text-danger-700 hover:underline" @click="askRemove(entry)">
               {{ t('actions.delete') }}
             </button>
           </div>
@@ -93,7 +93,7 @@
   </div>
 
   <CommonModal v-model="confirmOpen" :title="t('wiki.admin.glossary.removeConfirmTitle')">
-    <p class="text-sm text-slate-600">{{ t('wiki.admin.glossary.removeConfirmText') }}</p>
+    <p class="text-sm text-base-600">{{ t('wiki.admin.glossary.removeConfirmText') }}</p>
     <template #footer>
       <button type="button" class="btn-secondary" @click="confirmOpen = false">{{ t('actions.cancel') }}</button>
       <button type="button" class="btn-primary" :disabled="saving" @click="remove">{{ t('actions.delete') }}</button>

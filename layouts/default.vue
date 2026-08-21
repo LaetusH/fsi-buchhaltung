@@ -9,7 +9,7 @@
       @toggle-collapse="toggleDesktopMenu"
     />
 
-    <main :class="['flex-1 p-6 bg-gray-100 transition-[margin] duration-200', user?.must_change_password ? '' : (menuCollapsed ? 'md:ml-18' : 'md:ml-40')]" @click="handleClick">
+    <main :class="['flex-1 p-6 bg-base-100 transition-[margin] duration-200', user?.must_change_password ? '' : (menuCollapsed ? 'md:ml-18' : 'md:ml-40')]" @click="handleClick">
       <PageRenderer @open-menu="handleOpen" />
     </main>
 

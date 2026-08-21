@@ -1,22 +1,22 @@
 <template>
   <div class="space-y-3">
-    <p v-if="!revisions.length" class="text-sm text-slate-500">{{ t('wiki.revisions.empty') }}</p>
+    <p v-if="!revisions.length" class="text-sm text-base-500">{{ t('wiki.revisions.empty') }}</p>
 
     <ul v-else class="space-y-2">
       <li
         v-for="revision in revisions"
         :key="revision.id"
-        class="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-slate-200 p-3 text-sm"
+        class="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-base-200 p-3 text-sm"
       >
         <div class="min-w-0">
-          <p class="font-medium text-slate-800">
+          <p class="font-medium text-base-800">
             {{ t('wiki.revisions.version', { number: revision.revisionNumber }) }} — {{ revision.title }}
           </p>
-          <p class="text-xs text-slate-500">
+          <p class="text-xs text-base-500">
             {{ formatDateTime(revision.createdAt) }}
             <template v-if="revision.createdBy"> · {{ t('wiki.revisions.by', { name: revision.createdBy }) }}</template>
           </p>
-          <p v-if="revision.changeNote" class="text-xs text-slate-600">{{ revision.changeNote }}</p>
+          <p v-if="revision.changeNote" class="text-xs text-base-600">{{ revision.changeNote }}</p>
         </div>
 
         <div class="flex gap-2">
@@ -34,7 +34,7 @@
       width-class="max-w-3xl"
       @update:model-value="detail = null"
     >
-      <pre class="max-h-[60vh] overflow-auto whitespace-pre-wrap rounded-lg bg-slate-50 p-3 font-mono text-xs">{{ detail?.contentMd }}</pre>
+      <pre class="max-h-[60vh] overflow-auto whitespace-pre-wrap rounded-lg bg-base-50 p-3 font-mono text-xs">{{ detail?.contentMd }}</pre>
       <template #footer>
         <div class="flex justify-end">
           <button type="button" class="btn-secondary" @click="detail = null">{{ t('wiki.revisions.close') }}</button>
@@ -47,7 +47,7 @@
       :title="t('wiki.revisions.restoreConfirmTitle')"
       @update:model-value="confirmRestore = null"
     >
-      <p class="text-sm text-slate-700">{{ t('wiki.revisions.restoreConfirmText') }}</p>
+      <p class="text-sm text-base-700">{{ t('wiki.revisions.restoreConfirmText') }}</p>
       <template #footer>
         <div class="flex justify-end gap-2">
           <button type="button" class="btn-secondary" @click="confirmRestore = null">{{ t('wiki.editor.cancel') }}</button>

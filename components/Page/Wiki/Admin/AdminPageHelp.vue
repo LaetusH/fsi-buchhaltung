@@ -3,7 +3,7 @@
     <div class="-mx-6 space-y-4 bg-white p-4 shadow-sm sm:mx-0 sm:rounded-xl sm:p-6 sm:shadow-lg">
       <div>
         <h2 class="section-title">{{ t('wiki.admin.pageHelp.addTitle') }}</h2>
-        <p class="text-sm text-slate-600">{{ t('wiki.admin.pageHelp.hint') }}</p>
+        <p class="text-sm text-base-600">{{ t('wiki.admin.pageHelp.hint') }}</p>
       </div>
 
       <CommonValidationSummary v-if="errors.length" :errors="errors" :title="t('common.validationBlocked')" />
@@ -56,39 +56,39 @@
         </button>
       </div>
 
-      <p class="text-xs text-slate-400">{{ t('wiki.admin.pageHelp.sectionHint') }}</p>
+      <p class="text-xs text-base-400">{{ t('wiki.admin.pageHelp.sectionHint') }}</p>
     </div>
 
     <div class="-mx-6 space-y-4 bg-white p-4 shadow-sm sm:mx-0 sm:rounded-xl sm:p-6 sm:shadow-lg">
       <h2 class="section-title">{{ t('wiki.admin.pageHelp.listTitle') }}</h2>
 
-      <p v-if="loading" class="text-sm text-slate-500">{{ t('wiki.loading') }}</p>
-      <p v-else-if="!groups.length" class="text-sm text-slate-500">{{ t('wiki.admin.pageHelp.empty') }}</p>
+      <p v-if="loading" class="text-sm text-base-500">{{ t('wiki.loading') }}</p>
+      <p v-else-if="!groups.length" class="text-sm text-base-500">{{ t('wiki.admin.pageHelp.empty') }}</p>
 
       <div v-else class="space-y-3">
-        <section v-for="group in groups" :key="group.pageName" class="rounded-lg border border-slate-200 p-3">
-          <h3 class="font-semibold text-slate-900">{{ pageLabel(group.pageName) }}</h3>
-          <p class="text-xs text-slate-400">{{ group.pageName }}</p>
+        <section v-for="group in groups" :key="group.pageName" class="rounded-lg border border-base-200 p-3">
+          <h3 class="font-semibold text-base-900">{{ pageLabel(group.pageName) }}</h3>
+          <p class="text-xs text-base-400">{{ group.pageName }}</p>
 
           <ul class="mt-2 space-y-1">
             <li
               v-for="entry in group.entries"
               :key="entry.id"
-              class="flex flex-wrap items-center gap-2 border-t border-slate-100 py-2 text-sm first:border-t-0"
+              class="flex flex-wrap items-center gap-2 border-t border-base-100 py-2 text-sm first:border-t-0"
             >
-              <span class="font-medium text-slate-800">{{ entry.title }}</span>
-              <span class="text-xs text-slate-400">{{ entry.spaceTitle }}</span>
+              <span class="font-medium text-base-800">{{ entry.title }}</span>
+              <span class="text-xs text-base-400">{{ entry.spaceTitle }}</span>
               <CommonStatusBadge
                 v-if="entry.status !== 'published'"
                 :label="t(`wiki.status.${entry.status}`)"
-                tone="slate"
+                tone="base"
               />
-              <span v-if="entry.sectionKey" class="rounded-md bg-slate-100 px-2 py-0.5 text-xs text-slate-600">
+              <span v-if="entry.sectionKey" class="rounded-md bg-base-100 px-2 py-0.5 text-xs text-base-600">
                 {{ t('wiki.admin.pageHelp.fields.section') }}: {{ entry.sectionKey }}
               </span>
               <button
                 type="button"
-                class="ml-auto cursor-pointer text-xs text-red-700 hover:underline"
+                class="ml-auto cursor-pointer text-xs text-danger-700 hover:underline"
                 @click="askRemove(entry)"
               >
                 {{ t('wiki.admin.pageHelp.remove') }}
@@ -101,7 +101,7 @@
   </div>
 
   <CommonModal v-model="confirmOpen" :title="t('wiki.admin.pageHelp.removeConfirmTitle')">
-    <p class="text-sm text-slate-600">{{ t('wiki.admin.pageHelp.removeConfirmText') }}</p>
+    <p class="text-sm text-base-600">{{ t('wiki.admin.pageHelp.removeConfirmText') }}</p>
     <template #footer>
       <button type="button" class="btn-secondary" @click="confirmOpen = false">{{ t('actions.cancel') }}</button>
       <button type="button" class="btn-primary" :disabled="saving" @click="removeEntry">

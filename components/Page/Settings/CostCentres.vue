@@ -17,13 +17,13 @@
     :on-error="handleError"
   >
     <template #actions="{ item, items, edit, reload }">
-      <button class="text-blue-600 hover:underline cursor-pointer" @click="edit()">
+      <button class="text-link-600 hover:underline cursor-pointer" @click="edit()">
         {{ t('actions.edit') }}
       </button>
 
       <button
         class="hover:underline cursor-pointer"
-        :class="item.is_active ? 'text-red-500' : 'text-gray-500'"
+        :class="item.is_active ? 'text-danger-500' : 'text-base-500'"
         @click="item.is_active ? openDeactivateModal(item, items, reload) : toggleCostCentre(item, true, false, reload)"
       >
         {{ item.is_active ? t('actions.deactivate') : t('actions.activate') }}
@@ -35,7 +35,7 @@
         class="flex items-center gap-2"
         :style="{ paddingLeft: `${itemDepth(item) * 1.25}rem` }"
       >
-        <span v-if="itemDepth(item) > 0" class="text-slate-400">|-</span>
+        <span v-if="itemDepth(item) > 0" class="text-base-400">|-</span>
         <span>{{ item.name }}</span>
       </div>
     </template>
@@ -67,37 +67,37 @@
     width-class="max-w-xl"
     @close="closeDeactivateModal"
   >
-    <p class="text-sm text-slate-600">
+    <p class="text-sm text-base-600">
       {{ t('settings.costCentres.deactivateConfirm.intro', { costCentre: `${deactivateTarget.code} - ${deactivateTarget.name}` }) }}
     </p>
 
-    <label class="flex cursor-pointer items-center gap-3 rounded-lg border border-slate-200 p-3 transition-colors hover:border-slate-300 hover:bg-slate-50">
+    <label class="flex cursor-pointer items-center gap-3 rounded-lg border border-base-200 p-3 transition-colors hover:border-base-300 hover:bg-base-50">
       <input
         v-model="removeAsParent"
         type="checkbox"
         class="checkbox"
       >
-      <span class="text-sm text-slate-700">
+      <span class="text-sm text-base-700">
         {{ t('settings.costCentres.deactivateConfirm.removeParentAssignments') }}
       </span>
     </label>
 
     <div v-if="deactivateChildCostCentres.length" class="space-y-2">
-      <div class="text-sm font-medium text-slate-700">
+      <div class="text-sm font-medium text-base-700">
         {{ t('settings.costCentres.deactivateConfirm.childCostCentresTitle') }}
       </div>
-      <div class="max-h-48 overflow-y-auto rounded-lg border border-slate-200 bg-slate-50 p-3">
+      <div class="max-h-48 overflow-y-auto rounded-lg border border-base-200 bg-base-50 p-3">
         <div
           v-for="child in deactivateChildCostCentres"
           :key="child.id"
-          class="text-sm text-slate-700"
+          class="text-sm text-base-700"
         >
           {{ child.code }} - {{ child.name }}
         </div>
       </div>
     </div>
 
-    <p v-else class="text-sm text-slate-500">
+    <p v-else class="text-sm text-base-500">
       {{ t('settings.costCentres.deactivateConfirm.noChildCostCentres') }}
     </p>
 

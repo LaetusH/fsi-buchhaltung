@@ -6,7 +6,7 @@
   />
 
   <aside :class="[
-      'fixed top-0 left-0 h-full bg-slate-900 text-slate-300 flex flex-col p-4 shadow-lg z-40 transition-[width,transform] duration-200',
+      'fixed top-0 left-0 h-full bg-base-900 text-base-300 flex flex-col p-4 shadow-lg z-40 transition-[width,transform] duration-200',
       collapsed ? 'md:w-18' : 'md:w-40',
       'w-18',
       open ? 'translate-x-0' : '-translate-x-full',
@@ -27,14 +27,14 @@
           :class="[
             'w-12 h-12 flex items-center justify-center rounded-full transition-colors',
             page.name === currentPage
-              ? 'bg-cyan-600 text-white'
-              : 'bg-slate-800 text-slate-400'
+              ? 'bg-secondary-600 text-white'
+              : 'bg-base-800 text-base-400'
           ]"
         >
           <Icon :name="page.icon" size="30" class="shrink-0" aria-hidden="true" />
         </div>
 
-        <span v-if="!collapsed" class="mt-2 text-sm text-slate-300 font-medium text-center">
+        <span v-if="!collapsed" class="mt-2 text-sm text-base-300 font-medium text-center">
           {{ t(page.labelKey) }}
         </span>
       </li>
@@ -47,7 +47,7 @@
         v-if="user"
         type="button"
         :class="[
-          'flex mb-4 sm:mb-0 items-center justify-center gap-2 rounded-lg bg-slate-800 px-3 py-2 text-sm font-medium text-slate-300 transition hover:bg-slate-700 disabled:cursor-wait disabled:opacity-60 cursor-pointer',
+          'flex mb-4 sm:mb-0 items-center justify-center gap-2 rounded-lg bg-base-800 px-3 py-2 text-sm font-medium text-base-300 transition hover:bg-base-700 disabled:cursor-wait disabled:opacity-60 cursor-pointer',
           isRefreshing ? 'animate-pulse' : '',
         ]"
         :disabled="isRefreshing"
@@ -65,7 +65,7 @@
 
       <button
         type="button"
-        class="hidden md:flex items-center justify-center gap-2 rounded-lg bg-slate-800 px-3 py-2 text-sm font-medium text-slate-300 transition hover:bg-slate-700 cursor-pointer"
+        class="hidden md:flex items-center justify-center gap-2 rounded-lg bg-base-800 px-3 py-2 text-sm font-medium text-base-300 transition hover:bg-base-700 cursor-pointer"
         :title="collapsed ? t('common.expandMenu') : t('common.collapseMenu')"
         @click="$emit('toggle-collapse')"
       >

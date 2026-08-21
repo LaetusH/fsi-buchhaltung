@@ -1,13 +1,13 @@
 <template>
   <div class="space-y-4">
-    <p class="text-sm text-slate-500">{{ t('wiki.checklist.editorHint') }}</p>
-    <p v-if="readOnly" class="text-sm text-slate-500">{{ t('wiki.editor.readOnly') }}</p>
+    <p class="text-sm text-base-500">{{ t('wiki.checklist.editorHint') }}</p>
+    <p v-if="readOnly" class="text-sm text-base-500">{{ t('wiki.editor.readOnly') }}</p>
 
     <CommonValidationSummary v-if="error" :errors="[error]" :title="t('common.validationBlocked')" />
 
-    <p v-if="!drafts.length" class="text-sm text-slate-500">{{ t('wiki.checklist.editorEmpty') }}</p>
+    <p v-if="!drafts.length" class="text-sm text-base-500">{{ t('wiki.checklist.editorEmpty') }}</p>
 
-    <div v-for="(draft, listIndex) in drafts" :key="draft.uid" class="space-y-3 rounded-xl border border-slate-200 p-4">
+    <div v-for="(draft, listIndex) in drafts" :key="draft.uid" class="space-y-3 rounded-xl border border-base-200 p-4">
       <div class="grid gap-3 sm:grid-cols-3">
         <div class="field">
           <label :for="`checklist-title-${draft.uid}`">{{ t('wiki.checklist.fields.title') }}</label>
@@ -28,7 +28,7 @@
             :disabled="readOnly"
             @input="draft.keyTouched = true"
           />
-          <span class="text-xs text-slate-500">{{ t('wiki.checklist.fields.keySlugHint') }}</span>
+          <span class="text-xs text-base-500">{{ t('wiki.checklist.fields.keySlugHint') }}</span>
         </div>
         <div class="field">
           <label :for="`checklist-mode-${draft.uid}`">{{ t('wiki.checklist.fields.mode') }}</label>
@@ -48,11 +48,11 @@
               </button>
             </template>
           </MenuDropdown>
-          <span class="text-xs text-slate-500">{{ t(`wiki.checklist.modeHints.${draft.mode}`) }}</span>
+          <span class="text-xs text-base-500">{{ t(`wiki.checklist.modeHints.${draft.mode}`) }}</span>
         </div>
       </div>
 
-      <p class="rounded-lg bg-slate-50 px-3 py-2 font-mono text-xs text-slate-600">
+      <p class="rounded-lg bg-base-50 px-3 py-2 font-mono text-xs text-base-600">
         :::checklist{id="{{ draft.keySlug || '…' }}"}
       </p>
 
@@ -60,10 +60,10 @@
         <div
           v-for="(item, itemIndex) in draft.items"
           :key="item.uid"
-          class="space-y-2 rounded-lg border border-slate-200 p-3"
+          class="space-y-2 rounded-lg border border-base-200 p-3"
         >
           <div class="flex items-start gap-2">
-            <span class="mt-2 w-5 text-xs text-slate-400">{{ itemIndex + 1 }}.</span>
+            <span class="mt-2 w-5 text-xs text-base-400">{{ itemIndex + 1 }}.</span>
             <input
               v-model="item.label"
               class="input flex-1"
@@ -143,7 +143,7 @@
                 class="input font-mono text-xs"
                 :disabled="readOnly"
               />
-              <span class="text-xs text-slate-500">{{ t('wiki.checklist.fields.targetMetaHint') }}</span>
+              <span class="text-xs text-base-500">{{ t('wiki.checklist.fields.targetMetaHint') }}</span>
             </div>
           </div>
         </div>
@@ -161,7 +161,7 @@
         </button>
         <button
           type="button"
-          class="inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-red-200 px-4 py-2 text-sm text-red-700 transition-colors hover:bg-red-50 disabled:cursor-default disabled:opacity-60"
+          class="inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-danger-200 px-4 py-2 text-sm text-danger-700 transition-colors hover:bg-danger-50 disabled:cursor-default disabled:opacity-60"
           :disabled="readOnly"
           @click="drafts.splice(listIndex, 1)"
         >
@@ -171,7 +171,7 @@
       </div>
     </div>
 
-    <div v-if="!readOnly" class="flex flex-wrap justify-between gap-2 border-t border-slate-200 pt-4">
+    <div v-if="!readOnly" class="flex flex-wrap justify-between gap-2 border-t border-base-200 pt-4">
       <button type="button" class="btn-secondary inline-flex items-center gap-1.5" @click="addChecklist">
         <Icon name="material-symbols:playlist-add-rounded" class="text-base" aria-hidden="true" />
         {{ t('wiki.checklist.addChecklist') }}

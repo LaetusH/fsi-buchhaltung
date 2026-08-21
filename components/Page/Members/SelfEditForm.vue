@@ -1,38 +1,38 @@
 <template>
   <div class="space-y-6">
-    <div v-if="loading" class="flex items-center justify-center p-10 text-slate-400">
+    <div v-if="loading" class="flex items-center justify-center p-10 text-base-400">
       <Icon name="material-symbols:progress-activity" class="animate-spin text-2xl" />
     </div>
 
     <div
       v-else-if="!fields"
-      class="-mx-6 flex flex-col items-center gap-2 rounded-xl bg-white p-10 text-center text-slate-400 shadow-sm sm:mx-0 sm:shadow-lg"
+      class="-mx-6 flex flex-col items-center gap-2 rounded-xl bg-white p-10 text-center text-base-400 shadow-sm sm:mx-0 sm:shadow-lg"
     >
       <Icon name="material-symbols:person-off-outline-rounded" class="text-3xl" />
       <p class="text-sm">{{ t('member.myData.notLinked') }}</p>
     </div>
 
     <template v-else>
-      <p class="text-sm text-slate-500">{{ t('member.myData.intro') }}</p>
+      <p class="text-sm text-base-500">{{ t('member.myData.intro') }}</p>
 
       <section class="-mx-6 bg-white shadow-sm sm:mx-0 sm:rounded-xl sm:shadow-lg p-4 space-y-3">
         <h2 class="text-lg font-semibold">{{ t('member.masterData') }}</h2>
 
         <div class="grid md:grid-cols-2 gap-4">
           <div>
-            <label class="text-sm font-medium text-slate-600">{{ t('member.firstName') }}</label>
+            <label class="text-sm font-medium text-base-600">{{ t('member.firstName') }}</label>
             <input v-model="form.first_name" class="input" :disabled="isFieldLocked('first_name')">
             <PageMembersSelfEditFieldHint :field="fields.first_name" />
           </div>
 
           <div>
-            <label class="text-sm font-medium text-slate-600">{{ t('member.lastName') }}</label>
+            <label class="text-sm font-medium text-base-600">{{ t('member.lastName') }}</label>
             <input v-model="form.last_name" class="input" :disabled="isFieldLocked('last_name')">
             <PageMembersSelfEditFieldHint :field="fields.last_name" />
           </div>
 
           <div>
-            <label class="text-sm font-medium text-slate-600">{{ t('member.birthdate') }}</label>
+            <label class="text-sm font-medium text-base-600">{{ t('member.birthdate') }}</label>
             <CommonDateInput v-model="form.birthdate" :disabled="isFieldLocked('birthdate')" />
             <PageMembersSelfEditFieldHint :field="fields.birthdate" :resolve-value="formatDate" />
           </div>
@@ -44,37 +44,37 @@
 
         <div class="grid md:grid-cols-4 gap-4">
           <div class="md:col-span-3">
-            <label class="text-sm font-medium text-slate-600">{{ t('member.street') }}</label>
+            <label class="text-sm font-medium text-base-600">{{ t('member.street') }}</label>
             <input v-model="form.street" class="input" :disabled="isFieldLocked('street')">
             <PageMembersSelfEditFieldHint :field="fields.street" />
           </div>
 
           <div>
-            <label class="text-sm font-medium text-slate-600">{{ t('member.streetNumber') }}</label>
+            <label class="text-sm font-medium text-base-600">{{ t('member.streetNumber') }}</label>
             <input v-model="form.street_number" class="input" :disabled="isFieldLocked('street_number')">
             <PageMembersSelfEditFieldHint :field="fields.street_number" />
           </div>
 
           <div>
-            <label class="text-sm font-medium text-slate-600">{{ t('member.postalCode') }}</label>
+            <label class="text-sm font-medium text-base-600">{{ t('member.postalCode') }}</label>
             <input v-model="form.postal_code" class="input" :disabled="isFieldLocked('postal_code')">
             <PageMembersSelfEditFieldHint :field="fields.postal_code" />
           </div>
 
           <div class="md:col-span-3">
-            <label class="text-sm font-medium text-slate-600">{{ t('member.city') }}</label>
+            <label class="text-sm font-medium text-base-600">{{ t('member.city') }}</label>
             <input v-model="form.city" class="input" :disabled="isFieldLocked('city')">
             <PageMembersSelfEditFieldHint :field="fields.city" />
           </div>
 
           <div class="md:col-span-2">
-            <label class="text-sm font-medium text-slate-600">{{ t('member.phone') }}</label>
+            <label class="text-sm font-medium text-base-600">{{ t('member.phone') }}</label>
             <input v-model="form.phone" class="input" :disabled="isFieldLocked('phone')">
             <PageMembersSelfEditFieldHint :field="fields.phone" />
           </div>
 
           <div class="md:col-span-2">
-            <label class="text-sm font-medium text-slate-600">{{ t('member.email') }}</label>
+            <label class="text-sm font-medium text-base-600">{{ t('member.email') }}</label>
             <input v-model="form.email" type="email" class="input" :disabled="isFieldLocked('email')">
             <PageMembersSelfEditFieldHint :field="fields.email" />
           </div>
@@ -85,7 +85,7 @@
         <h3 class="font-semibold">{{ t('member.membership') }}</h3>
 
         <div>
-          <label class="text-sm font-medium text-slate-600">{{ t('member.subject') }}</label>
+          <label class="text-sm font-medium text-base-600">{{ t('member.subject') }}</label>
           <CommonSearchSelect
             v-model="subjectQuery"
             :options="subjectOptions"

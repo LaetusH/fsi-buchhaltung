@@ -22,13 +22,13 @@
     </template>
 
     <template #actions="{ item, edit, toggle }">
-      <button class="text-blue-600 hover:underline cursor-pointer" @click="edit()">
+      <button class="text-link-600 hover:underline cursor-pointer" @click="edit()">
         {{ t('actions.edit') }}
       </button>
 
       <button
         class="hover:underline cursor-pointer"
-        :class="item.is_active ? 'text-red-500' : 'text-gray-500'"
+        :class="item.is_active ? 'text-danger-500' : 'text-base-500'"
         @click="item.is_active ? openDeactivateModal(item) : toggle()"
       >
         {{ item.is_active ? t('actions.deactivate') : t('actions.activate') }}
@@ -38,15 +38,15 @@
     <template #modal-fields-after-description="{ editingItem }">
       <div
         v-if="positionBody(editingItem).is_active === false"
-        class="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900"
+        class="rounded-lg border border-warning-200 bg-warning-50 px-4 py-3 text-sm text-warning-900"
       >
         <p class="font-medium">{{ t('settings.positions.inactiveBannerTitle') }}</p>
         <p class="mt-1">{{ t('settings.positions.inactiveBannerText') }}</p>
       </div>
       <div class="space-y-4 pt-1">
-        <div class="rounded-lg overflow-hidden border border-slate-200 p-4 space-y-3 relative z-20">
+        <div class="rounded-lg overflow-hidden border border-base-200 p-4 space-y-3 relative z-20">
           <div class="space-y-3">
-            <h4 class="font-medium text-slate-900">{{ t('settings.positions.manageAssignments') }}</h4>
+            <h4 class="font-medium text-base-900">{{ t('settings.positions.manageAssignments') }}</h4>
 
             <CommonSearchSelect
               v-model="memberQuery"
@@ -61,12 +61,12 @@
 
           <div
             v-if="visibleAssignments(editingItem).length === 0"
-            class="rounded-lg border border-dashed border-slate-300 px-3 py-4 text-sm text-slate-500"
+            class="rounded-lg border border-dashed border-base-300 px-3 py-4 text-sm text-base-500"
           >
             {{ t('settings.positions.noMembersAssigned') }}
           </div>
 
-          <div v-else class="min-h-0 overflow-hidden rounded-lg border border-slate-200 bg-slate-50">
+          <div v-else class="min-h-0 overflow-hidden rounded-lg border border-base-200 bg-base-50">
             <div
               ref="assignmentListRef"
               :class="[
@@ -77,12 +77,12 @@
               <div
                 v-for="{ assignment, index, state } in visibleAssignments(editingItem)"
                 :key="assignmentRowKey(assignment, index)"
-                class="relative z-0 mb-2 rounded-lg border border-slate-200 bg-white px-3 py-2 space-y-2 last:mb-0 focus-within:z-20"
+                class="relative z-0 mb-2 rounded-lg border border-base-200 bg-white px-3 py-2 space-y-2 last:mb-0 focus-within:z-20"
               >
                 <div class="flex items-start justify-between gap-3">
                   <div class="min-w-0 space-y-1">
                     <div class="flex flex-wrap items-center gap-2">
-                      <div class="truncate text-sm font-medium text-slate-800">{{ assignmentLabel(assignment) }}</div>
+                      <div class="truncate text-sm font-medium text-base-800">{{ assignmentLabel(assignment) }}</div>
 
                       <span
                         :class="['inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium', assignmentStateClass(state)]"
@@ -94,7 +94,7 @@
 
                   <button
                     type="button"
-                    class="shrink-0 text-sm text-red-500 hover:underline cursor-pointer"
+                    class="shrink-0 text-sm text-danger-500 hover:underline cursor-pointer"
                     @click="removeAssignment(index, editingItem)"
                   >
                     {{ t('actions.remove') }}
@@ -102,12 +102,12 @@
                 </div>
 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
-                  <label class="flex items-center gap-2 text-sm text-slate-700">
+                  <label class="flex items-center gap-2 text-sm text-base-700">
                     <span class="shrink-0">{{ t('common.from') }}</span>
                     <CommonDateInput v-model="assignment.since" class="min-w-0" />
                   </label>
 
-                  <label class="flex items-center gap-2 text-sm text-slate-700">
+                  <label class="flex items-center gap-2 text-sm text-base-700">
                     <span class="shrink-0">{{ t('common.to') }}</span>
                     <CommonDateInput
                       v-model="assignment.until"
@@ -131,66 +131,66 @@
     width-class="max-w-2xl"
     @close="closeDeactivateModal"
   >
-    <p class="text-sm text-slate-700">
+    <p class="text-sm text-base-700">
       {{ t('settings.positions.deactivateConfirm.intro', { position: deactivatePositionLabel }) }}
     </p>
-    <p class="text-sm text-slate-600">
+    <p class="text-sm text-base-600">
       {{ t('settings.positions.deactivateConfirm.reviewHint') }}
     </p>
 
     <div class="space-y-4">
-      <div class="rounded-lg border border-slate-200 bg-slate-50 p-4">
-        <label class="text-sm font-medium text-slate-700">{{ t('settings.positions.deactivateConfirm.untilDate') }}</label>
+      <div class="rounded-lg border border-base-200 bg-base-50 p-4">
+        <label class="text-sm font-medium text-base-700">{{ t('settings.positions.deactivateConfirm.untilDate') }}</label>
         <CommonDateInput v-model="deactivateForm.assignment_until" class="mt-2" />
-        <p class="mt-2 text-sm text-slate-600">
+        <p class="mt-2 text-sm text-base-600">
           {{ t('settings.positions.deactivateConfirm.untilDateHint') }}
         </p>
       </div>
 
-      <label class="inline-flex items-center gap-2 text-sm text-slate-700 cursor-pointer">
+      <label class="inline-flex items-center gap-2 text-sm text-base-700 cursor-pointer">
         <input v-model="deactivateForm.delete_future_assignments" type="checkbox" class="checkbox">
         {{ t('settings.positions.deactivateConfirm.deleteFuture') }}
       </label>
 
       <section
         v-if="deactivatePreview.closedAssignments.length"
-        class="rounded-lg border border-slate-200 bg-slate-50 p-4"
+        class="rounded-lg border border-base-200 bg-base-50 p-4"
       >
-        <p class="text-sm font-medium text-slate-900">
+        <p class="text-sm font-medium text-base-900">
           {{ t('settings.positions.deactivateConfirm.closedAssignmentsTitle') }}
         </p>
-        <ul class="mt-2 list-disc space-y-1 pl-5 text-sm text-slate-700">
+        <ul class="mt-2 list-disc space-y-1 pl-5 text-sm text-base-700">
           <li
             v-for="assignment in deactivatePreview.closedAssignments"
             :key="assignment.key"
           >
-            <span class="font-medium text-slate-900">{{ assignment.label }}</span>
-            <span class="text-slate-600">{{ ` ${assignment.detail}` }}</span>
+            <span class="font-medium text-base-900">{{ assignment.label }}</span>
+            <span class="text-base-600">{{ ` ${assignment.detail}` }}</span>
           </li>
         </ul>
       </section>
 
       <section
         v-if="deactivatePreview.removedAssignments.length"
-        class="rounded-lg border border-slate-200 bg-slate-50 p-4"
+        class="rounded-lg border border-base-200 bg-base-50 p-4"
       >
-        <p class="text-sm font-medium text-slate-900">
+        <p class="text-sm font-medium text-base-900">
           {{ t('settings.positions.deactivateConfirm.removedAssignmentsTitle') }}
         </p>
-        <ul class="mt-2 list-disc space-y-1 pl-5 text-sm text-slate-700">
+        <ul class="mt-2 list-disc space-y-1 pl-5 text-sm text-base-700">
           <li
             v-for="assignment in deactivatePreview.removedAssignments"
             :key="assignment.key"
           >
-            <span class="font-medium text-slate-900">{{ assignment.label }}</span>
-            <span class="text-slate-600">{{ ` ${assignment.detail}` }}</span>
+            <span class="font-medium text-base-900">{{ assignment.label }}</span>
+            <span class="text-base-600">{{ ` ${assignment.detail}` }}</span>
           </li>
         </ul>
       </section>
 
       <p
         v-if="!deactivatePreview.hasConsequences"
-        class="rounded-lg border border-slate-200 bg-slate-50 p-4 text-sm text-slate-700"
+        class="rounded-lg border border-base-200 bg-base-50 p-4 text-sm text-base-700"
       >
         {{ t('settings.positions.deactivateConfirm.none') }}
       </p>
@@ -452,10 +452,10 @@ function assignmentStateLabel(state: AssignmentState) {
 }
 
 function assignmentStateClass(state: AssignmentState) {
-  if (state === 'current') return 'bg-emerald-100 text-emerald-800'
-  if (state === 'upcoming') return 'bg-amber-100 text-amber-800'
-  if (state === 'past') return 'bg-slate-200 text-slate-700'
-  return 'bg-slate-100 text-slate-700'
+  if (state === 'current') return 'bg-success-100 text-success-800'
+  if (state === 'upcoming') return 'bg-warning-100 text-warning-800'
+  if (state === 'past') return 'bg-base-200 text-base-700'
+  return 'bg-base-100 text-base-700'
 }
 
 function visibleAssignments(editingItem: SaveSettingsEntityBody) {

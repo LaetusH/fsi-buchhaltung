@@ -4,9 +4,9 @@
       :class="[
         'flex items-center gap-1 rounded-md',
         canMove && 'cursor-grab active:cursor-grabbing',
-        dropMode === 'child' && 'ring-2 ring-orange-300',
-        dropMode === 'before' && 'border-t-2 border-orange-400',
-        dropMode === 'after' && 'border-b-2 border-orange-400',
+        dropMode === 'child' && 'ring-2 ring-accent-300',
+        dropMode === 'before' && 'border-t-2 border-accent-400',
+        dropMode === 'after' && 'border-b-2 border-accent-400',
       ]"
       :title="canMove ? t('wiki.tree.dragHint') : undefined"
       :draggable="canMove"
@@ -19,7 +19,7 @@
       <button
         v-if="article.children.length"
         type="button"
-        class="rounded-md p-1 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-700 cursor-pointer"
+        class="rounded-md p-1 text-base-400 transition-colors hover:bg-base-100 hover:text-base-700 cursor-pointer"
         :aria-label="expanded ? t('wiki.tree.collapse') : t('wiki.tree.expand')"
         :aria-expanded="expanded"
         @click="expanded = !expanded"
@@ -37,8 +37,8 @@
         :class="[
           'min-w-0 flex-1 rounded-md px-2 py-2 text-left transition-colors cursor-pointer',
           isCurrent
-            ? 'border-l-2 border-orange-500 bg-orange-50 font-semibold text-orange-700'
-            : 'text-slate-700 hover:bg-slate-100 hover:text-slate-900',
+            ? 'border-l-2 border-accent-500 bg-accent-50 font-semibold text-accent-700'
+            : 'text-base-700 hover:bg-base-100 hover:text-base-900',
         ]"
         :aria-current="isCurrent ? 'page' : undefined"
         @click="$emit('select', { id: article.id, slug: article.slug, spaceSlug })"
@@ -46,7 +46,7 @@
         <span class="block truncate">{{ article.title }}</span>
         <span
           v-if="article.status !== 'published'"
-          class="mt-0.5 inline-block rounded bg-slate-100 px-1 text-[0.65rem] font-medium uppercase tracking-wide text-slate-500"
+          class="mt-0.5 inline-block rounded bg-base-100 px-1 text-[0.65rem] font-medium uppercase tracking-wide text-base-500"
         >
           {{ t(`wiki.status.${article.status}`) }}
         </span>
@@ -55,12 +55,12 @@
       <span v-if="canMove" class="flex shrink-0 items-center">
         <Icon
           name="material-symbols:drag-indicator"
-          class="h-4 w-4 text-slate-300"
+          class="h-4 w-4 text-base-300"
           :aria-label="t('wiki.tree.dragHint')"
         />
         <button
           type="button"
-          class="inline-flex items-center justify-center rounded-md p-1 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-700 cursor-pointer"
+          class="inline-flex items-center justify-center rounded-md p-1 text-base-400 transition-colors hover:bg-base-100 hover:text-base-700 cursor-pointer"
           :title="t('wiki.tree.moveUp')"
           :aria-label="t('wiki.tree.moveUp')"
           @click="$emit('nudge', { id: article.id, direction: -1 })"
@@ -69,7 +69,7 @@
         </button>
         <button
           type="button"
-          class="inline-flex items-center justify-center rounded-md p-1 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-700 cursor-pointer"
+          class="inline-flex items-center justify-center rounded-md p-1 text-base-400 transition-colors hover:bg-base-100 hover:text-base-700 cursor-pointer"
           :title="t('wiki.tree.moveDown')"
           :aria-label="t('wiki.tree.moveDown')"
           @click="$emit('nudge', { id: article.id, direction: 1 })"
@@ -79,7 +79,7 @@
       </span>
     </div>
 
-    <ul v-if="expanded && article.children.length" class="ml-3 space-y-0.5 border-l border-slate-100 pl-1">
+    <ul v-if="expanded && article.children.length" class="ml-3 space-y-0.5 border-l border-base-100 pl-1">
       <PageWikiNavigationTreeSidebarNode
         v-for="child in article.children"
         :key="child.id"

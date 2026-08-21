@@ -1,6 +1,6 @@
 <template>
-  <p v-if="field.pending" class="mt-1 flex flex-wrap items-center gap-1.5 text-xs text-amber-700">
-    <span class="inline-flex items-center rounded-full bg-amber-100 px-2 py-0.5 font-medium">
+  <p v-if="field.pending" class="mt-1 flex flex-wrap items-center gap-1.5 text-xs text-warning-700">
+    <span class="inline-flex items-center rounded-full bg-warning-100 px-2 py-0.5 font-medium">
       {{ t('member.myData.pendingBadge') }}
     </span>
     <span>{{ t('member.myData.pendingValue', { value: displayValue }) }}</span>

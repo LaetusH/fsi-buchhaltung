@@ -5,19 +5,19 @@
       class="-mx-6 bg-white shadow-sm sm:mx-0 sm:rounded-xl sm:shadow-lg p-4 space-y-3"
     >
       <h2 class="text-lg font-semibold">{{ t('member.fieldConfig.title') }}</h2>
-      <p class="text-sm text-slate-500">{{ t('member.fieldConfig.intro') }}</p>
+      <p class="text-sm text-base-500">{{ t('member.fieldConfig.intro') }}</p>
 
-      <div v-if="loadingConfig" class="flex items-center justify-center p-6 text-slate-400">
+      <div v-if="loadingConfig" class="flex items-center justify-center p-6 text-base-400">
         <Icon name="material-symbols:progress-activity" class="animate-spin text-2xl" />
       </div>
 
-      <div v-else class="divide-y divide-slate-100">
+      <div v-else class="divide-y divide-base-100">
         <div
           v-for="field in SELF_EDIT_ELIGIBLE_FIELDS"
           :key="field"
           class="flex flex-wrap items-center justify-between gap-3 py-3"
         >
-          <span class="text-sm font-medium text-slate-700">{{ fieldLabel(field) }}</span>
+          <span class="text-sm font-medium text-base-700">{{ fieldLabel(field) }}</span>
 
           <div class="flex gap-2">
             <button
@@ -26,8 +26,8 @@
               type="button"
               class="rounded-md border px-3 py-1.5 text-xs font-medium cursor-pointer transition"
               :class="config[field] === mode
-                ? 'border-orange-500 bg-orange-50 text-orange-600'
-                : 'border-slate-200 text-slate-600 hover:bg-slate-50'"
+                ? 'border-accent-500 bg-accent-50 text-accent-600'
+                : 'border-base-200 text-base-600 hover:bg-base-50'"
               @click="setMode(field, mode)"
             >
               {{ modeLabel(mode) }}
@@ -55,18 +55,18 @@
     >
       <h2 class="text-lg font-semibold">{{ t('member.fieldConfig.pendingChangesTitle') }}</h2>
 
-      <div v-if="loadingPending" class="flex items-center justify-center p-6 text-slate-400">
+      <div v-if="loadingPending" class="flex items-center justify-center p-6 text-base-400">
         <Icon name="material-symbols:progress-activity" class="animate-spin text-2xl" />
       </div>
 
-      <p v-else-if="!pendingChanges.length" class="text-sm text-slate-500">
+      <p v-else-if="!pendingChanges.length" class="text-sm text-base-500">
         {{ t('member.fieldConfig.pendingChangesNone') }}
       </p>
 
       <div v-else class="overflow-x-auto">
         <table class="w-full text-sm">
           <thead>
-            <tr class="text-left text-xs font-medium uppercase text-slate-400">
+            <tr class="text-left text-xs font-medium uppercase text-base-400">
               <th class="pb-2 pr-3">{{ t('member.fieldConfig.pendingChangesMember') }}</th>
               <th class="pb-2 pr-3">{{ t('member.fieldConfig.pendingChangesField') }}</th>
               <th class="pb-2 pr-3">{{ t('member.fieldConfig.pendingChangesOld') }}</th>
@@ -75,25 +75,25 @@
               <th class="pb-2" />
             </tr>
           </thead>
-          <tbody class="divide-y divide-slate-100">
+          <tbody class="divide-y divide-base-100">
             <tr v-for="change in pendingChanges" :key="change.id">
               <td class="py-2 pr-3">{{ change.member_name }}</td>
               <td class="py-2 pr-3">{{ fieldLabel(change.field_name) }}</td>
-              <td class="py-2 pr-3 text-slate-500">{{ resolveDisplayValue(change.field_name, change.old_value) }}</td>
-              <td class="py-2 pr-3 font-medium text-slate-900">{{ resolveDisplayValue(change.field_name, change.new_value) }}</td>
-              <td class="py-2 pr-3 text-slate-500">{{ formatDateTime(change.requested_at) }}</td>
+              <td class="py-2 pr-3 text-base-500">{{ resolveDisplayValue(change.field_name, change.old_value) }}</td>
+              <td class="py-2 pr-3 font-medium text-base-900">{{ resolveDisplayValue(change.field_name, change.new_value) }}</td>
+              <td class="py-2 pr-3 text-base-500">{{ formatDateTime(change.requested_at) }}</td>
               <td class="py-2">
                 <div class="flex gap-2">
                   <button
                     type="button"
-                    class="rounded-md border border-emerald-200 px-2.5 py-1 text-xs font-medium text-emerald-600 hover:bg-emerald-50 cursor-pointer"
+                    class="rounded-md border border-success-200 px-2.5 py-1 text-xs font-medium text-success-600 hover:bg-success-50 cursor-pointer"
                     @click="resolveChange(change.id, 'approve')"
                   >
                     {{ t('member.fieldConfig.approve') }}
                   </button>
                   <button
                     type="button"
-                    class="rounded-md border border-red-200 px-2.5 py-1 text-xs font-medium text-red-500 hover:bg-red-50 cursor-pointer"
+                    class="rounded-md border border-danger-200 px-2.5 py-1 text-xs font-medium text-danger-500 hover:bg-danger-50 cursor-pointer"
                     @click="resolveChange(change.id, 'reject')"
                   >
                     {{ t('member.fieldConfig.reject') }}

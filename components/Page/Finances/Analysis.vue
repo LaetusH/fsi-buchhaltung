@@ -6,17 +6,17 @@
           <h2 class="text-lg font-semibold">{{ t('financeAnalysis.menuTitle') }}</h2>
         </div>
 
-        <div class="space-y-3 rounded-xl border border-slate-200 p-4">
+        <div class="space-y-3 rounded-xl border border-base-200 p-4">
           <button
             type="button"
             class="flex w-full items-start justify-between gap-3 text-left cursor-pointer"
             @click="periodFiltersExpanded = !periodFiltersExpanded"
           >
             <div>
-              <h3 class="font-semibold text-slate-900">{{ t('financeAnalysis.periodFilters') }}</h3>
-              <p class="text-xs text-slate-500">{{ t('financeAnalysis.periodFiltersHint') }}</p>
+              <h3 class="font-semibold text-base-900">{{ t('financeAnalysis.periodFilters') }}</h3>
+              <p class="text-xs text-base-500">{{ t('financeAnalysis.periodFiltersHint') }}</p>
             </div>
-            <Icon :name="periodFiltersExpanded ? 'material-symbols:keyboard-arrow-up-rounded' : 'material-symbols:keyboard-arrow-down-rounded'" class="mt-0.5 h-5 w-5 shrink-0 text-slate-500" />
+            <Icon :name="periodFiltersExpanded ? 'material-symbols:keyboard-arrow-up-rounded' : 'material-symbols:keyboard-arrow-down-rounded'" class="mt-0.5 h-5 w-5 shrink-0 text-base-500" />
           </button>
 
           <div v-if="periodFiltersExpanded" class="space-y-4">
@@ -85,22 +85,22 @@
                 </div>
               </div>
 
-              <p class="text-xs text-slate-500">{{ t('financeAnalysis.quickHint') }}</p>
+              <p class="text-xs text-base-500">{{ t('financeAnalysis.quickHint') }}</p>
             </div>
           </div>
         </div>
 
-        <div v-if="hasCostCentreAccess" class="space-y-3 rounded-xl border border-slate-200 p-4">
+        <div v-if="hasCostCentreAccess" class="space-y-3 rounded-xl border border-base-200 p-4">
           <button
             type="button"
             class="flex w-full items-start justify-between gap-3 text-left cursor-pointer"
             @click="costCentreFiltersExpanded = !costCentreFiltersExpanded"
           >
             <div>
-              <h3 class="font-semibold text-slate-900">{{ t('financeAnalysis.costCentre') }}</h3>
-              <p class="text-xs text-slate-500">{{ t('financeAnalysis.costCentreHint') }}</p>
+              <h3 class="font-semibold text-base-900">{{ t('financeAnalysis.costCentre') }}</h3>
+              <p class="text-xs text-base-500">{{ t('financeAnalysis.costCentreHint') }}</p>
             </div>
-            <Icon :name="costCentreFiltersExpanded ? 'material-symbols:keyboard-arrow-up-rounded' : 'material-symbols:keyboard-arrow-down-rounded'" class="mt-0.5 h-5 w-5 shrink-0 text-slate-500" />
+            <Icon :name="costCentreFiltersExpanded ? 'material-symbols:keyboard-arrow-up-rounded' : 'material-symbols:keyboard-arrow-down-rounded'" class="mt-0.5 h-5 w-5 shrink-0 text-base-500" />
           </button>
 
           <div v-if="costCentreFiltersExpanded" class="field">
@@ -116,24 +116,24 @@
               @select="selectCostCentreFromOption"
               @clear-selection="clearSelectedCostCentre"
             />
-            <label v-if="selectedCostCentreHasChildren" class="mt-3 flex w-fit cursor-pointer items-center gap-2 text-sm text-slate-700">
+            <label v-if="selectedCostCentreHasChildren" class="mt-3 flex w-fit cursor-pointer items-center gap-2 text-sm text-base-700">
               <input v-model="includeChildCostCentres" type="checkbox" class="checkbox">
               <span>{{ t('financeAnalysis.includeChildCostCentres') }}</span>
             </label>
           </div>
         </div>
 
-        <div class="space-y-3 rounded-xl border border-slate-200 p-4">
+        <div class="space-y-3 rounded-xl border border-base-200 p-4">
           <button
             type="button"
             class="flex w-full items-start justify-between gap-3 text-left cursor-pointer"
             @click="receiptFiltersExpanded = !receiptFiltersExpanded"
           >
             <div>
-              <h3 class="font-semibold text-slate-900">{{ t('financeAnalysis.receiptStateFilters') }}</h3>
-              <p class="text-xs text-slate-500">{{ t('financeAnalysis.receiptStateHint') }}</p>
+              <h3 class="font-semibold text-base-900">{{ t('financeAnalysis.receiptStateFilters') }}</h3>
+              <p class="text-xs text-base-500">{{ t('financeAnalysis.receiptStateHint') }}</p>
             </div>
-            <Icon :name="receiptFiltersExpanded ? 'material-symbols:keyboard-arrow-up-rounded' : 'material-symbols:keyboard-arrow-down-rounded'" class="mt-0.5 h-5 w-5 shrink-0 text-slate-500" />
+            <Icon :name="receiptFiltersExpanded ? 'material-symbols:keyboard-arrow-up-rounded' : 'material-symbols:keyboard-arrow-down-rounded'" class="mt-0.5 h-5 w-5 shrink-0 text-base-500" />
           </button>
 
           <div v-if="receiptFiltersExpanded" class="space-y-3">
@@ -143,7 +143,7 @@
                 <template #trigger="{ styling }">
                   <button :class="[styling, 'cursor-pointer']" type="button">
                     <span class="truncate">{{ selectedReceiptDateFieldLabel }}</span>
-                    <Icon name="material-symbols:keyboard-arrow-down-rounded" class="mt-0.5 h-5 w-5 shrink-0 text-slate-500" />
+                    <Icon name="material-symbols:keyboard-arrow-down-rounded" class="mt-0.5 h-5 w-5 shrink-0 text-base-500" />
                   </button>
                 </template>
 
@@ -173,23 +173,23 @@
               </button>
             </div>
 
-            <p v-if="selectedStatuses.length === 0" class="text-xs text-red-700">
+            <p v-if="selectedStatuses.length === 0" class="text-xs text-danger-700">
               {{ t('financeAnalysis.noReceiptStatesSelected') }}
             </p>
           </div>
         </div>
 
-        <div class="space-y-3 rounded-xl border border-slate-200 p-4">
+        <div class="space-y-3 rounded-xl border border-base-200 p-4">
           <button
             type="button"
             class="flex w-full items-start justify-between gap-3 text-left cursor-pointer"
             @click="invoiceFiltersExpanded = !invoiceFiltersExpanded"
           >
             <div>
-              <h3 class="font-semibold text-slate-900">{{ t('financeAnalysis.invoiceStateFilters') }}</h3>
-              <p class="text-xs text-slate-500">{{ t('financeAnalysis.invoiceStateHint') }}</p>
+              <h3 class="font-semibold text-base-900">{{ t('financeAnalysis.invoiceStateFilters') }}</h3>
+              <p class="text-xs text-base-500">{{ t('financeAnalysis.invoiceStateHint') }}</p>
             </div>
-            <Icon :name="invoiceFiltersExpanded ? 'material-symbols:keyboard-arrow-up-rounded' : 'material-symbols:keyboard-arrow-down-rounded'" class="mt-0.5 h-5 w-5 shrink-0 text-slate-500" />
+            <Icon :name="invoiceFiltersExpanded ? 'material-symbols:keyboard-arrow-up-rounded' : 'material-symbols:keyboard-arrow-down-rounded'" class="mt-0.5 h-5 w-5 shrink-0 text-base-500" />
           </button>
 
           <div v-if="invoiceFiltersExpanded" class="space-y-3">
@@ -199,7 +199,7 @@
                 <template #trigger="{ styling }">
                   <button :class="[styling, 'cursor-pointer']" type="button">
                     <span class="truncate">{{ selectedInvoiceDateFieldLabel }}</span>
-                    <Icon name="material-symbols:keyboard-arrow-down-rounded" class="mt-0.5 h-5 w-5 shrink-0 text-slate-500" />
+                    <Icon name="material-symbols:keyboard-arrow-down-rounded" class="mt-0.5 h-5 w-5 shrink-0 text-base-500" />
                   </button>
                 </template>
 
@@ -229,7 +229,7 @@
               </button>
             </div>
 
-            <p v-if="selectedInvoiceStatuses.length === 0" class="text-xs text-red-700">
+            <p v-if="selectedInvoiceStatuses.length === 0" class="text-xs text-danger-700">
               {{ t('financeAnalysis.noInvoiceStatesSelected') }}
             </p>
           </div>
@@ -250,7 +250,7 @@
           </button>
         </div>
 
-        <div v-if="!hasValidDateRange" class="rounded-xl bg-red-50 px-3 py-2 text-sm text-red-700">
+        <div v-if="!hasValidDateRange" class="rounded-xl bg-danger-50 px-3 py-2 text-sm text-danger-700">
           {{ t('financeAnalysis.invalidRange') }}
         </div>
       </section>
@@ -259,15 +259,15 @@
         <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <div class="space-y-1">
             <h2 class="text-lg font-semibold">{{ t('financeAnalysis.analysisTitle') }}</h2>
-            <p class="text-sm text-slate-500">{{ activePeriodLabel }}</p>
+            <p class="text-sm text-base-500">{{ activePeriodLabel }}</p>
           </div>
 
           <div class="flex flex-wrap items-center justify-end gap-3">
             <div ref="exportMenuWrapper" class="relative">
               <button
                 type="button"
-                class="inline-flex items-center gap-2 rounded-xl bg-orange-500 px-4 py-3 text-sm font-medium text-white transition hover:bg-orange-600 cursor-pointer"
-                :class="!canExportAnalysis ? 'cursor-not-allowed opacity-70 hover:bg-orange-500' : ''"
+                class="inline-flex items-center gap-2 rounded-xl bg-accent-500 px-4 py-3 text-sm font-medium text-white transition hover:bg-accent-600 cursor-pointer"
+                :class="!canExportAnalysis ? 'cursor-not-allowed opacity-70 hover:bg-accent-500' : ''"
                 :disabled="!canExportAnalysis"
                 :title="t('financeAnalysis.exportReport')"
                 @click="toggleExportMenu"
@@ -278,18 +278,18 @@
 
               <div
                 v-if="isExportMenuOpen && canExportAnalysis"
-                class="absolute top-full z-20 mt-2 w-[calc(100vw-4rem)] max-w-[20rem] rounded-xl border border-slate-200 bg-white p-3 shadow-xl space-y-3 sm:right-0 sm:left-auto sm:w-100 sm:max-w-none"
+                class="absolute top-full z-20 mt-2 w-[calc(100vw-4rem)] max-w-[20rem] rounded-xl border border-base-200 bg-white p-3 shadow-xl space-y-3 sm:right-0 sm:left-auto sm:w-100 sm:max-w-none"
                 :style="exportMenuPositionStyle"
               >
                 <div class="space-y-0.5">
-                  <div class="text-sm font-semibold text-slate-900">{{ t('financeAnalysis.exportOptionsTitle') }}</div>
-                  <p class="text-xs text-slate-500">{{ t('financeAnalysis.exportOptionsHint') }}</p>
+                  <div class="text-sm font-semibold text-base-900">{{ t('financeAnalysis.exportOptionsTitle') }}</div>
+                  <p class="text-xs text-base-500">{{ t('financeAnalysis.exportOptionsHint') }}</p>
                 </div>
 
-                <section class="space-y-2 rounded-xl border border-slate-200 p-2.5">
+                <section class="space-y-2 rounded-xl border border-base-200 p-2.5">
                   <div>
-                    <div class="text-sm font-semibold text-slate-900">{{ t('financeAnalysis.exportFormatTitle') }}</div>
-                    <p class="text-[11px] text-slate-500">{{ t('financeAnalysis.exportFormatHint') }}</p>
+                    <div class="text-sm font-semibold text-base-900">{{ t('financeAnalysis.exportFormatTitle') }}</div>
+                    <p class="text-[11px] text-base-500">{{ t('financeAnalysis.exportFormatHint') }}</p>
                   </div>
 
                   <div class="grid grid-cols-2 gap-2">
@@ -312,10 +312,10 @@
                   </div>
                 </section>
 
-                <section class="space-y-2 rounded-xl border border-slate-200 p-2.5">
+                <section class="space-y-2 rounded-xl border border-base-200 p-2.5">
                   <div>
-                    <div class="text-sm font-semibold text-slate-900">{{ t('financeAnalysis.exportPartsTitle') }}</div>
-                    <p class="text-[11px] text-slate-500">{{ t('financeAnalysis.exportPartsHint') }}</p>
+                    <div class="text-sm font-semibold text-base-900">{{ t('financeAnalysis.exportPartsTitle') }}</div>
+                    <p class="text-[11px] text-base-500">{{ t('financeAnalysis.exportPartsHint') }}</p>
                   </div>
 
                   <div class="grid grid-cols-2 gap-2">
@@ -350,17 +350,17 @@
                   </div>
                 </section>
 
-                <section v-if="showReportPagesExportOptions" class="space-y-2 rounded-xl border border-slate-200 p-2.5">
+                <section v-if="showReportPagesExportOptions" class="space-y-2 rounded-xl border border-base-200 p-2.5">
                   <div>
-                    <div class="text-sm font-semibold text-slate-900">{{ t('financeAnalysis.exportReportPagesTitle') }}</div>
-                    <p class="text-[11px] text-slate-500">{{ t('financeAnalysis.exportReportPagesHint') }}</p>
+                    <div class="text-sm font-semibold text-base-900">{{ t('financeAnalysis.exportReportPagesTitle') }}</div>
+                    <p class="text-[11px] text-base-500">{{ t('financeAnalysis.exportReportPagesHint') }}</p>
                   </div>
 
                   <MenuDropdown v-model="openFilterDropdown" :id="3">
                     <template #trigger="{ styling }">
                       <button :class="[styling, 'cursor-pointer']" type="button">
                         <span class="truncate">{{ selectedReportPagesExportLabel }}</span>
-                        <Icon name="material-symbols:keyboard-arrow-down-rounded" class="mt-0.5 h-5 w-5 shrink-0 text-slate-500" />
+                        <Icon name="material-symbols:keyboard-arrow-down-rounded" class="mt-0.5 h-5 w-5 shrink-0 text-base-500" />
                       </button>
                     </template>
 
@@ -370,7 +370,7 @@
                         :key="option.value"
                         :class="[
                           styling,
-                          option.disabled ? 'cursor-not-allowed text-slate-400 hover:bg-white' : '',
+                          option.disabled ? 'cursor-not-allowed text-base-400 hover:bg-white' : '',
                         ]"
                         type="button"
                         :disabled="option.disabled"
@@ -385,8 +385,8 @@
                     :class="[
                       'rounded-lg px-2.5 py-1.5 text-[11px]',
                       canCompareToBudget
-                        ? 'bg-emerald-50 text-emerald-800'
-                        : 'bg-slate-100 text-slate-600',
+                        ? 'bg-success-50 text-success-800'
+                        : 'bg-base-100 text-base-600',
                     ]"
                   >
                     {{ compareToBudgetHint }}
@@ -394,10 +394,10 @@
 
                 </section>
 
-                <section class="space-y-2 rounded-xl border border-slate-200 p-2.5">
+                <section class="space-y-2 rounded-xl border border-base-200 p-2.5">
                   <div>
-                    <div class="text-sm font-semibold text-slate-900">{{ t('financeAnalysis.liquidity.exportInclude') }}</div>
-                    <p class="text-[11px] text-slate-500">{{ t('financeAnalysis.liquidity.exportHint') }}</p>
+                    <div class="text-sm font-semibold text-base-900">{{ t('financeAnalysis.liquidity.exportInclude') }}</div>
+                    <p class="text-[11px] text-base-500">{{ t('financeAnalysis.liquidity.exportHint') }}</p>
                   </div>
 
                   <button
@@ -409,14 +409,14 @@
                   </button>
                 </section>
 
-                <section class="space-y-2 rounded-xl border border-slate-200 p-2.5">
+                <section class="space-y-2 rounded-xl border border-base-200 p-2.5">
                   <div>
-                    <div class="text-sm font-semibold text-slate-900">{{ t('financeAnalysis.exportOverviewSheetsTitle') }}</div>
-                    <p class="text-[11px] text-slate-500">{{ t('financeAnalysis.exportOverviewSheetsHint') }}</p>
+                    <div class="text-sm font-semibold text-base-900">{{ t('financeAnalysis.exportOverviewSheetsTitle') }}</div>
+                    <p class="text-[11px] text-base-500">{{ t('financeAnalysis.exportOverviewSheetsHint') }}</p>
                   </div>
 
-                  <div class="space-y-1.5 rounded-lg bg-slate-50 p-2">
-                    <div class="text-[11px] font-semibold uppercase tracking-wide text-slate-500">{{ t('financeAnalysis.exportGroupingLabel') }}</div>
+                  <div class="space-y-1.5 rounded-lg bg-base-50 p-2">
+                    <div class="text-[11px] font-semibold uppercase tracking-wide text-base-500">{{ t('financeAnalysis.exportGroupingLabel') }}</div>
                     <div :class="['grid grid-cols-2 gap-2', showCostCentreGroupingOption ? 'sm:grid-cols-3' : 'sm:grid-cols-2']">
                       <button
                         type="button"
@@ -443,8 +443,8 @@
                     </div>
                   </div>
 
-                  <div class="space-y-1.5 rounded-lg bg-slate-50 p-2">
-                    <div class="text-[11px] font-semibold uppercase tracking-wide text-slate-500">{{ t('financeAnalysis.exportSplitLabel') }}</div>
+                  <div class="space-y-1.5 rounded-lg bg-base-50 p-2">
+                    <div class="text-[11px] font-semibold uppercase tracking-wide text-base-500">{{ t('financeAnalysis.exportSplitLabel') }}</div>
                     <div class="grid grid-cols-2 gap-2">
                       <button
                         type="button"
@@ -464,7 +464,7 @@
                   </div>
                 </section>
 
-                <p v-if="!hasSelectedExportContent" class="text-xs text-red-700">
+                <p v-if="!hasSelectedExportContent" class="text-xs text-danger-700">
                   {{ t('financeAnalysis.exportNothingSelected') }}
                 </p>
 
@@ -485,8 +485,8 @@
               </div>
             </div>
 
-            <div class="flex items-center justify-between gap-3 rounded-xl border border-slate-200 px-4 py-2.25 sm:min-w-fit">
-              <label class="text-sm font-medium text-slate-900" for="comparison-toggle">
+            <div class="flex items-center justify-between gap-3 rounded-xl border border-base-200 px-4 py-2.25 sm:min-w-fit">
+              <label class="text-sm font-medium text-base-900" for="comparison-toggle">
                 {{ t('financeAnalysis.compareWithPreviousYear') }}
               </label>
               <button
@@ -496,7 +496,7 @@
                 :aria-checked="compareWithPreviousYear"
                 :title="t('financeAnalysis.compareWithPreviousYear')"
                 class="relative inline-flex h-6 w-11 items-center rounded-full transition cursor-pointer"
-                :class="compareWithPreviousYear ? 'bg-orange-500' : 'bg-slate-300'"
+                :class="compareWithPreviousYear ? 'bg-accent-500' : 'bg-base-300'"
                 @click="toggleComparisonMode"
               >
                 <span
@@ -508,63 +508,63 @@
           </div>
         </div>
 
-        <div v-if="errorMessage" class="rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700">
+        <div v-if="errorMessage" class="rounded-xl bg-danger-50 px-4 py-3 text-sm text-danger-700">
           {{ errorMessage }}
         </div>
 
-        <div v-else-if="isLoading && !analysis" class="rounded-xl bg-slate-50 px-4 py-10 text-center text-slate-500">
+        <div v-else-if="isLoading && !analysis" class="rounded-xl bg-base-50 px-4 py-10 text-center text-base-500">
           {{ t('financeAnalysis.loading') }}
         </div>
 
         <template v-else-if="summary">
           <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-5 gap-3">
-            <div class="rounded-xl bg-orange-50 px-4 py-4">
-              <div class="text-sm text-orange-700">{{ t('financeAnalysis.cards.receiptTotal') }}</div>
-              <div class="mt-2 text-2xl font-semibold text-orange-950">{{ formatCurrency(summary.receipt_total) }}</div>
-              <div class="mt-1 text-xs text-orange-700">{{ t('financeAnalysis.cards.receiptCount', { count: summary.receipt_count }) }}</div>
+            <div class="rounded-xl bg-accent-50 px-4 py-4">
+              <div class="text-sm text-accent-700">{{ t('financeAnalysis.cards.receiptTotal') }}</div>
+              <div class="mt-2 text-2xl font-semibold text-accent-950">{{ formatCurrency(summary.receipt_total) }}</div>
+              <div class="mt-1 text-xs text-accent-700">{{ t('financeAnalysis.cards.receiptCount', { count: summary.receipt_count }) }}</div>
             </div>
 
-            <div class="rounded-xl bg-emerald-50 px-4 py-4">
-              <div class="text-sm text-emerald-700">{{ t('financeAnalysis.cards.cashCountRevenue') }}</div>
-              <div class="mt-2 text-2xl font-semibold text-emerald-950">{{ formatCurrency(summary.cash_count_total_difference) }}</div>
-              <div class="mt-1 text-xs text-emerald-700">{{ t('financeAnalysis.cards.cashCountCount', { count: summary.cash_count_count }) }}</div>
+            <div class="rounded-xl bg-success-50 px-4 py-4">
+              <div class="text-sm text-success-700">{{ t('financeAnalysis.cards.cashCountRevenue') }}</div>
+              <div class="mt-2 text-2xl font-semibold text-success-950">{{ formatCurrency(summary.cash_count_total_difference) }}</div>
+              <div class="mt-1 text-xs text-success-700">{{ t('financeAnalysis.cards.cashCountCount', { count: summary.cash_count_count }) }}</div>
             </div>
 
-            <div class="rounded-xl bg-sky-50 px-4 py-4">
-              <div class="text-sm text-sky-700">{{ t('financeAnalysis.cards.invoiceRevenue') }}</div>
-              <div class="mt-2 text-2xl font-semibold text-sky-950">{{ formatCurrency(summary.invoice_total) }}</div>
-              <div class="mt-1 text-xs text-sky-700">{{ t('financeAnalysis.cards.invoiceCountCount', { count: summary.invoice_count }) }}</div>
+            <div class="rounded-xl bg-info-50 px-4 py-4">
+              <div class="text-sm text-info-700">{{ t('financeAnalysis.cards.invoiceRevenue') }}</div>
+              <div class="mt-2 text-2xl font-semibold text-info-950">{{ formatCurrency(summary.invoice_total) }}</div>
+              <div class="mt-1 text-xs text-info-700">{{ t('financeAnalysis.cards.invoiceCountCount', { count: summary.invoice_count }) }}</div>
             </div>
 
-            <div :class="['rounded-xl px-4 py-4', summary.net_result >= 0 ? 'bg-cyan-50' : 'bg-red-50']">
-              <div :class="['text-sm', summary.net_result >= 0 ? 'text-cyan-700' : 'text-red-700']">{{ t('financeAnalysis.cards.netResult') }}</div>
-              <div :class="['mt-2 text-2xl font-semibold', summary.net_result >= 0 ? 'text-cyan-950' : 'text-red-900']">
+            <div :class="['rounded-xl px-4 py-4', summary.net_result >= 0 ? 'bg-success-50' : 'bg-danger-50']">
+              <div :class="['text-sm', summary.net_result >= 0 ? 'text-success-700' : 'text-danger-700']">{{ t('financeAnalysis.cards.netResult') }}</div>
+              <div :class="['mt-2 text-2xl font-semibold', summary.net_result >= 0 ? 'text-success-950' : 'text-danger-900']">
                 {{ formatCurrency(summary.net_result) }}
               </div>
-              <div :class="['mt-1 text-xs', summary.net_result >= 0 ? 'text-cyan-700' : 'text-red-700']">
+              <div :class="['mt-1 text-xs', summary.net_result >= 0 ? 'text-success-700' : 'text-danger-700']">
                 {{ summary.net_result >= 0 ? t('financeAnalysis.cards.positiveResult') : t('financeAnalysis.cards.negativeResult') }}
               </div>
             </div>
 
-            <div class="rounded-xl bg-slate-100 px-4 py-4">
-              <div class="text-sm text-slate-600">{{ t('financeAnalysis.cards.entriesReviewed') }}</div>
-              <div class="mt-2 text-2xl font-semibold text-slate-900">{{ summary.receipt_count + summary.cash_count_count + summary.invoice_count }}</div>
-              <div class="mt-1 text-xs text-slate-600">{{ t('financeAnalysis.cards.registerCount', { count: summary.cash_count_register_total }) }}</div>
+            <div class="rounded-xl bg-base-100 px-4 py-4">
+              <div class="text-sm text-base-600">{{ t('financeAnalysis.cards.entriesReviewed') }}</div>
+              <div class="mt-2 text-2xl font-semibold text-base-900">{{ summary.receipt_count + summary.cash_count_count + summary.invoice_count }}</div>
+              <div class="mt-1 text-xs text-base-600">{{ t('financeAnalysis.cards.registerCount', { count: summary.cash_count_register_total }) }}</div>
             </div>
           </div>
 
-          <section v-if="compareWithPreviousYear && comparisonSummary" class="rounded-xl border border-slate-200 p-4 space-y-4">
+          <section v-if="compareWithPreviousYear && comparisonSummary" class="rounded-xl border border-base-200 p-4 space-y-4">
             <div class="space-y-1">
               <h3 class="font-semibold">{{ t('financeAnalysis.comparisonTitle') }}</h3>
-              <p class="text-sm text-slate-500">{{ t('financeAnalysis.previousYearRange', { start: formatDate(comparisonSummary.start_date), end: formatDate(comparisonSummary.end_date) }) }}</p>
+              <p class="text-sm text-base-500">{{ t('financeAnalysis.previousYearRange', { start: formatDate(comparisonSummary.start_date), end: formatDate(comparisonSummary.end_date) }) }}</p>
             </div>
 
             <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-5 gap-3">
-              <div v-for="card in comparisonCards" :key="card.key" class="rounded-xl bg-slate-50 px-4 py-4">
-                <div class="text-sm text-slate-700">{{ card.label }}</div>
-                <div class="mt-3 space-y-1 text-sm text-slate-600">
-                  <div>{{ t('financeAnalysis.currentValue') }}: <span class="font-medium text-slate-900">{{ formatComparisonValue(card.current, card.type) }}</span></div>
-                  <div>{{ t('financeAnalysis.previousValue') }}: <span class="font-medium text-slate-900">{{ formatComparisonValue(card.previous, card.type) }}</span></div>
+              <div v-for="card in comparisonCards" :key="card.key" class="rounded-xl bg-base-50 px-4 py-4">
+                <div class="text-sm text-base-700">{{ card.label }}</div>
+                <div class="mt-3 space-y-1 text-sm text-base-600">
+                  <div>{{ t('financeAnalysis.currentValue') }}: <span class="font-medium text-base-900">{{ formatComparisonValue(card.current, card.type) }}</span></div>
+                  <div>{{ t('financeAnalysis.previousValue') }}: <span class="font-medium text-base-900">{{ formatComparisonValue(card.previous, card.type) }}</span></div>
                 </div>
                 <div class="mt-3 text-sm font-semibold" :class="comparisonDifferenceClass(card.difference)">
                   {{ t('financeAnalysis.differenceValue', { value: formatSignedComparisonValue(card.difference, card.type) }) }}
@@ -574,54 +574,54 @@
           </section>
 
           <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
-            <section class="w-full sm:col-span-2 rounded-xl border border-slate-200 p-4 space-y-4">
+            <section class="w-full sm:col-span-2 rounded-xl border border-base-200 p-4 space-y-4">
               <div>
                 <h3 class="font-semibold">{{ t('financeAnalysis.receiptsSectionTitle') }}</h3>
-                <p class="text-sm text-slate-500">{{ t('financeAnalysis.receiptsSectionDescription') }}</p>
+                <p class="text-sm text-base-500">{{ t('financeAnalysis.receiptsSectionDescription') }}</p>
               </div>
 
               <div class="grid grid-cols-2 sm:grid-cols-4 xl:grid-cols-2 2xl:grid-cols-4 gap-3">
-                <div v-for="card in receiptStateCards" :key="card.key" class="rounded-xl bg-slate-100 px-4 py-3">
-                  <div class="text-xs text-slate-500">{{ card.label }}</div>
+                <div v-for="card in receiptStateCards" :key="card.key" class="rounded-xl bg-base-100 px-4 py-3">
+                  <div class="text-xs text-base-500">{{ card.label }}</div>
                   <div class="mt-1 font-semibold">{{ formatCurrency(card.total) }}</div>
-                  <div class="text-xs text-slate-500">{{ t('financeAnalysis.countLabel', { count: card.count }) }}</div>
+                  <div class="text-xs text-base-500">{{ t('financeAnalysis.countLabel', { count: card.count }) }}</div>
                 </div>
               </div>
             </section>
 
-            <section class="w-full rounded-xl border border-slate-200 p-4 space-y-4">
+            <section class="w-full rounded-xl border border-base-200 p-4 space-y-4">
               <div>
                 <h3 class="font-semibold">{{ t('financeAnalysis.cashCountsSectionTitle') }}</h3>
-                <p class="text-sm text-slate-500">{{ t('financeAnalysis.cashCountsSectionDescription') }}</p>
+                <p class="text-sm text-base-500">{{ t('financeAnalysis.cashCountsSectionDescription') }}</p>
               </div>
 
               <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-1 2xl:grid-cols-2 gap-3">
-                <div class="rounded-xl bg-slate-100 px-4 py-3">
-                  <div class="text-xs text-slate-500">{{ t('financeAnalysis.cashCards.totalBefore') }}</div>
+                <div class="rounded-xl bg-base-100 px-4 py-3">
+                  <div class="text-xs text-base-500">{{ t('financeAnalysis.cashCards.totalBefore') }}</div>
                   <div class="mt-1 font-semibold">{{ formatCurrency(summary.money_before) }}</div>
                 </div>
 
-                <div class="rounded-xl bg-slate-100 px-4 py-3">
-                  <div class="text-xs text-slate-500">{{ t('financeAnalysis.cashCards.totalAfter') }}</div>
+                <div class="rounded-xl bg-base-100 px-4 py-3">
+                  <div class="text-xs text-base-500">{{ t('financeAnalysis.cashCards.totalAfter') }}</div>
                   <div class="mt-1 font-semibold">{{ formatCurrency(summary.money_after) }}</div>
                 </div>
               </div>
             </section>
 
-            <section class="w-full rounded-xl border border-slate-200 p-4 space-y-4">
+            <section class="w-full rounded-xl border border-base-200 p-4 space-y-4">
               <div>
                 <h3 class="font-semibold">{{ t('financeAnalysis.invoicesSectionTitle') }}</h3>
-                <p class="text-sm text-slate-500">{{ t('financeAnalysis.invoicesSectionDescription') }}</p>
+                <p class="text-sm text-base-500">{{ t('financeAnalysis.invoicesSectionDescription') }}</p>
               </div>
 
               <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-1 2xl:grid-cols-2 gap-3">
-                <div class="rounded-xl bg-slate-100 px-4 py-3">
-                  <div class="text-xs text-slate-500">{{ t('financeAnalysis.cards.invoiceRevenue') }}</div>
+                <div class="rounded-xl bg-base-100 px-4 py-3">
+                  <div class="text-xs text-base-500">{{ t('financeAnalysis.cards.invoiceRevenue') }}</div>
                   <div class="mt-1 font-semibold">{{ formatCurrency(summary.invoice_total) }}</div>
                 </div>
 
-                <div class="rounded-xl bg-slate-100 px-4 py-3">
-                  <div class="text-xs text-slate-500">{{ t('financeAnalysis.cards.invoiceCount') }}</div>
+                <div class="rounded-xl bg-base-100 px-4 py-3">
+                  <div class="text-xs text-base-500">{{ t('financeAnalysis.cards.invoiceCount') }}</div>
                   <div class="mt-1 font-semibold">{{ summary.invoice_count }}</div>
                 </div>
               </div>
@@ -629,16 +629,16 @@
           </div>
 
           <div class="grid grid-cols-1 2xl:grid-cols-2 gap-4 items-start">
-            <section class="self-start w-full rounded-xl border border-slate-200 p-4 space-y-4">
+            <section class="self-start w-full rounded-xl border border-base-200 p-4 space-y-4">
               <div class="flex items-center justify-between gap-3">
                 <div>
                   <h3 class="font-semibold">{{ t('financeAnalysis.receiptsTableTitle') }}</h3>
-                  <span class="text-xs text-slate-500">{{ t('financeAnalysis.countLabel', { count: receipts.length }) }}</span>
+                  <span class="text-xs text-base-500">{{ t('financeAnalysis.countLabel', { count: receipts.length }) }}</span>
                 </div>
 
                 <button
                   type="button"
-                  class="inline-flex items-center gap-2 rounded-md bg-slate-100 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-200 cursor-pointer"
+                  class="inline-flex items-center gap-2 rounded-md bg-base-100 px-3 py-2 text-sm font-medium text-base-700 hover:bg-base-200 cursor-pointer"
                   :title="receiptsExpanded ? t('financeAnalysis.collapseSection', { section: t('financeAnalysis.receiptListSection') }) : t('financeAnalysis.expandSection', { section: t('financeAnalysis.receiptListSection') })"
                   @click="receiptsExpanded = !receiptsExpanded"
                 >
@@ -688,7 +688,7 @@
                         <div class="flex items-center justify-end">
                           <button
                             type="button"
-                            class="inline-flex items-center justify-center rounded-md p-1 text-slate-600 transition hover:bg-slate-200 hover:text-slate-900 cursor-pointer"
+                            class="inline-flex items-center justify-center rounded-md p-1 text-base-600 transition hover:bg-base-200 hover:text-base-900 cursor-pointer"
                             :title="t('actions.open')"
                             @click="openReceipt(receipt.id)"
                           >
@@ -700,7 +700,7 @@
                     </tr>
 
                     <tr v-if="receipts.length === 0">
-                      <td colspan="6" class="py-6 text-center text-slate-500">
+                      <td colspan="6" class="py-6 text-center text-base-500">
                         {{ t('financeAnalysis.noReceipts') }}
                       </td>
                     </tr>
@@ -710,16 +710,16 @@
             </section>
 
             <div class="space-y-4">
-              <section class="self-start w-full rounded-xl border border-slate-200 p-4 space-y-4">
+              <section class="self-start w-full rounded-xl border border-base-200 p-4 space-y-4">
                 <div class="flex items-center justify-between gap-3">
                   <div>
                     <h3 class="font-semibold">{{ t('financeAnalysis.cashCountsTableTitle') }}</h3>
-                    <span class="text-xs text-slate-500">{{ t('financeAnalysis.countLabel', { count: cashCounts.length }) }}</span>
+                    <span class="text-xs text-base-500">{{ t('financeAnalysis.countLabel', { count: cashCounts.length }) }}</span>
                   </div>
 
                   <button
                     type="button"
-                    class="inline-flex items-center gap-2 rounded-md bg-slate-100 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-200 cursor-pointer"
+                    class="inline-flex items-center gap-2 rounded-md bg-base-100 px-3 py-2 text-sm font-medium text-base-700 hover:bg-base-200 cursor-pointer"
                     :title="cashCountsExpanded ? t('financeAnalysis.collapseSection', { section: t('financeAnalysis.cashCountListSection') }) : t('financeAnalysis.expandSection', { section: t('financeAnalysis.cashCountListSection') })"
                     @click="cashCountsExpanded = !cashCountsExpanded"
                   >
@@ -753,7 +753,7 @@
                             <button
                               v-if="!cashCount.source_type"
                               type="button"
-                              class="inline-flex items-center justify-center rounded-md p-1 text-slate-600 transition hover:bg-slate-200 hover:text-slate-900 cursor-pointer"
+                              class="inline-flex items-center justify-center rounded-md p-1 text-base-600 transition hover:bg-base-200 hover:text-base-900 cursor-pointer"
                               :title="t('actions.open')"
                               @click="openCashCount(cashCount.id)"
                             >
@@ -763,7 +763,7 @@
                             <button
                               v-else-if="cashCount.bank_statement_id"
                               type="button"
-                              class="inline-flex items-center justify-center rounded-md p-1 text-slate-600 transition hover:bg-slate-200 hover:text-slate-900 cursor-pointer"
+                              class="inline-flex items-center justify-center rounded-md p-1 text-base-600 transition hover:bg-base-200 hover:text-base-900 cursor-pointer"
                               :title="t('actions.open')"
                               @click="openBankStatement(cashCount.bank_statement_id)"
                             >
@@ -775,7 +775,7 @@
                       </tr>
 
                       <tr v-if="cashCounts.length === 0">
-                        <td colspan="6" class="py-6 text-center text-slate-500">
+                        <td colspan="6" class="py-6 text-center text-base-500">
                           {{ t('financeAnalysis.noCashCounts') }}
                         </td>
                       </tr>
@@ -784,16 +784,16 @@
                 </div>
               </section>
 
-              <section class="self-start w-full rounded-xl border border-slate-200 p-4 space-y-4">
+              <section class="self-start w-full rounded-xl border border-base-200 p-4 space-y-4">
                 <div class="flex items-center justify-between gap-3">
                   <div>
                     <h3 class="font-semibold">{{ t('financeAnalysis.invoicesTableTitle') }}</h3>
-                    <span class="text-xs text-slate-500">{{ t('financeAnalysis.countLabel', { count: invoices.length }) }}</span>
+                    <span class="text-xs text-base-500">{{ t('financeAnalysis.countLabel', { count: invoices.length }) }}</span>
                   </div>
 
                   <button
                     type="button"
-                    class="inline-flex items-center gap-2 rounded-md bg-slate-100 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-200 cursor-pointer"
+                    class="inline-flex items-center gap-2 rounded-md bg-base-100 px-3 py-2 text-sm font-medium text-base-700 hover:bg-base-200 cursor-pointer"
                     :title="invoicesExpanded ? t('financeAnalysis.collapseSection', { section: t('financeAnalysis.invoiceListSection') }) : t('financeAnalysis.expandSection', { section: t('financeAnalysis.invoiceListSection') })"
                     @click="invoicesExpanded = !invoicesExpanded"
                   >
@@ -835,7 +835,7 @@
                         <div class="flex items-center justify-end">
                           <button
                             type="button"
-                            class="inline-flex items-center justify-center rounded-md p-1 text-slate-600 transition hover:bg-slate-200 hover:text-slate-900 cursor-pointer"
+                            class="inline-flex items-center justify-center rounded-md p-1 text-base-600 transition hover:bg-base-200 hover:text-base-900 cursor-pointer"
                             :title="t('actions.open')"
                             @click="openInvoice(invoice.id)"
                           >
@@ -847,7 +847,7 @@
                       </tr>
 
                       <tr v-if="invoices.length === 0">
-                        <td colspan="6" class="py-6 text-center text-slate-500">
+                        <td colspan="6" class="py-6 text-center text-base-500">
                           {{ t('financeAnalysis.noInvoices') }}
                         </td>
                       </tr>
@@ -1531,8 +1531,8 @@ function statusButtonClass(status: ReceiptStatus | InvoiceStatus, selectedValues
   return [
     'w-full rounded-lg border px-3 py-2 text-sm font-medium transition cursor-pointer',
     selected
-      ? 'border-orange-400 bg-orange-50 text-orange-700'
-      : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50',
+      ? 'border-accent-400 bg-accent-50 text-accent-700'
+      : 'border-base-200 bg-white text-base-700 hover:bg-base-50',
   ]
 }
 
@@ -1541,8 +1541,8 @@ function semesterButtonClass(value: Exclude<QuickSemester, ''>) {
   return [
     'rounded-lg border px-3 py-2 text-sm font-medium transition cursor-pointer',
     selected
-      ? 'border-orange-400 bg-orange-50 text-orange-700'
-      : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50',
+      ? 'border-accent-400 bg-accent-50 text-accent-700'
+      : 'border-base-200 bg-white text-base-700 hover:bg-base-50',
   ]
 }
 
@@ -1551,8 +1551,8 @@ function monthButtonClass(value: string) {
   return [
     'rounded-lg border px-3 py-2 text-sm font-medium transition cursor-pointer',
     selected
-      ? 'border-orange-400 bg-orange-50 text-orange-700'
-      : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50',
+      ? 'border-accent-400 bg-accent-50 text-accent-700'
+      : 'border-base-200 bg-white text-base-700 hover:bg-base-50',
   ]
 }
 
@@ -1561,8 +1561,8 @@ function exportGroupingButtonClass(value: FinanceAnalysisExportGrouping) {
   return [
     'rounded-lg border px-2.5 py-1.5 text-xs font-medium leading-tight transition cursor-pointer',
     selected
-      ? 'border-orange-400 bg-orange-50 text-orange-700'
-      : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50',
+      ? 'border-accent-400 bg-accent-50 text-accent-700'
+      : 'border-base-200 bg-white text-base-700 hover:bg-base-50',
   ]
 }
 
@@ -1571,8 +1571,8 @@ function exportFormatButtonClass(format: FinanceAnalysisExportFormat) {
   return [
     'inline-flex w-full items-center justify-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-xs font-medium leading-tight transition cursor-pointer',
     selected
-      ? 'border-orange-400 bg-orange-50 text-orange-700'
-      : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50',
+      ? 'border-accent-400 bg-accent-50 text-accent-700'
+      : 'border-base-200 bg-white text-base-700 hover:bg-base-50',
   ]
 }
 
@@ -1580,8 +1580,8 @@ function exportToggleButtonClass(selected: boolean) {
   return [
     'w-full rounded-lg border px-2.5 py-1.5 text-xs font-medium leading-tight transition cursor-pointer',
     selected
-      ? 'border-orange-400 bg-orange-50 text-orange-700'
-      : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50',
+      ? 'border-accent-400 bg-accent-50 text-accent-700'
+      : 'border-base-200 bg-white text-base-700 hover:bg-base-50',
   ]
 }
 
@@ -1664,9 +1664,9 @@ function formatReceiptDateByBasis(receipt: FinanceAnalysisReceiptItem) {
 }
 
 function comparisonDifferenceClass(value: number) {
-  if (value > 0) return 'text-emerald-700'
-  if (value < 0) return 'text-red-700'
-  return 'text-slate-600'
+  if (value > 0) return 'text-success-700'
+  if (value < 0) return 'text-danger-700'
+  return 'text-base-600'
 }
 
 async function loadExportLogo(): Promise<FinanceAnalysisExportLogo | null> {
@@ -2039,30 +2039,30 @@ async function loadAnalysis() {
 function receiptStatusTone(status: ReceiptStatus | InvoiceStatus) {
   switch (status) {
     case ReceiptStatus.Draft:
-      return 'slate'
+      return 'base'
     case ReceiptStatus.Open:
-      return 'yellow'
+      return 'warning'
     case ReceiptStatus.Paid:
-      return 'green'
+      return 'success'
     case ReceiptStatus.Cancelled:
-      return 'red'
+      return 'danger'
     default:
-      return 'gray'
+      return 'baseMuted'
   }
 }
 
 function receiptStatusDotClass(status: ReceiptStatus | InvoiceStatus) {
   switch (receiptStatusTone(status)) {
-    case 'green':
-      return 'bg-emerald-500'
-    case 'yellow':
-      return 'bg-amber-400'
-    case 'red':
-      return 'bg-red-500'
-    case 'slate':
-      return 'bg-slate-400'
+    case 'success':
+      return 'bg-success-500'
+    case 'warning':
+      return 'bg-warning-400'
+    case 'danger':
+      return 'bg-danger-500'
+    case 'base':
+      return 'bg-base-400'
     default:
-      return 'bg-slate-300'
+      return 'bg-base-300'
   }
 }
 

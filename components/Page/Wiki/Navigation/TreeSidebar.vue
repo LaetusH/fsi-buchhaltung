@@ -1,27 +1,27 @@
 <template>
   <nav class="space-y-4 text-sm">
-    <div v-if="!spaces.length" class="text-slate-500">{{ t('wiki.tree.empty') }}</div>
+    <div v-if="!spaces.length" class="text-base-500">{{ t('wiki.tree.empty') }}</div>
 
     <div v-for="space in spaces" :key="space.id" class="space-y-1">
       <button
         type="button"
-        class="flex w-full items-center gap-2 rounded-md px-2 py-2 text-left font-semibold text-slate-800 transition-colors hover:bg-slate-100 cursor-pointer"
+        class="flex w-full items-center gap-2 rounded-md px-2 py-2 text-left font-semibold text-base-800 transition-colors hover:bg-base-100 cursor-pointer"
         :aria-expanded="expandedSpaces.has(space.id)"
         @click="toggleSpace(space.id)"
       >
         <Icon
           :name="expandedSpaces.has(space.id) ? 'material-symbols:expand-more-rounded' : 'material-symbols:chevron-right-rounded'"
-          class="h-4 w-4 shrink-0 text-slate-400"
+          class="h-4 w-4 shrink-0 text-base-400"
           aria-hidden="true"
         />
-        <Icon :name="space.icon" class="h-4 w-4 shrink-0 text-orange-500" aria-hidden="true" />
+        <Icon :name="space.icon" class="h-4 w-4 shrink-0 text-accent-500" aria-hidden="true" />
         <span class="min-w-0 flex-1 truncate">{{ space.title }}</span>
-        <span class="shrink-0 rounded-full bg-slate-100 px-1.5 text-xs font-normal text-slate-500">
+        <span class="shrink-0 rounded-full bg-base-100 px-1.5 text-xs font-normal text-base-500">
           {{ space.articles.length }}
         </span>
       </button>
 
-      <ul v-if="expandedSpaces.has(space.id)" class="ml-4 space-y-0.5 border-l border-slate-100 pl-1">
+      <ul v-if="expandedSpaces.has(space.id)" class="ml-4 space-y-0.5 border-l border-base-100 pl-1">
         <PageWikiNavigationTreeSidebarNode
           v-for="article in space.articles"
           :key="article.id"

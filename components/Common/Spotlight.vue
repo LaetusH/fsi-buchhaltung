@@ -1,17 +1,17 @@
 <template>
   <section class="-mx-6 col-span-12 overflow-hidden bg-white shadow-sm sm:mx-0 sm:rounded-xl sm:shadow-lg">
-    <div v-if="loading" class="flex items-center justify-center p-8 text-slate-400">
+    <div v-if="loading" class="flex items-center justify-center p-8 text-base-400">
       <Icon name="material-symbols:progress-activity" class="animate-spin text-2xl" />
     </div>
 
-    <div v-else-if="isEmpty" class="flex flex-col items-center gap-2 p-8 text-center text-slate-400">
+    <div v-else-if="isEmpty" class="flex flex-col items-center gap-2 p-8 text-center text-base-400">
       <Icon :name="emptyIcon" class="text-3xl" />
       <p class="text-sm">{{ emptyText }}</p>
     </div>
 
     <template v-else>
       <!-- Hero -->
-      <div class="bg-slate-900 px-4 py-4 text-white sm:px-6 sm:py-5">
+      <div class="bg-base-900 px-4 py-4 text-white sm:px-6 sm:py-5">
         <div v-if="$slots.badge || $slots.toggle" class="flex flex-wrap items-start justify-between gap-3">
           <slot name="badge" />
           <slot name="toggle" />

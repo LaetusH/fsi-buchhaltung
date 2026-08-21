@@ -26,16 +26,16 @@
           :title="t('common.validationBlocked')"
         />
 
-        <p v-if="loading" class="text-sm text-slate-500">{{ t('wiki.loading') }}</p>
+        <p v-if="loading" class="text-sm text-base-500">{{ t('wiki.loading') }}</p>
 
         <template v-else-if="path">
           <div class="flex items-start gap-3">
-            <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-orange-50 text-orange-600">
+            <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-accent-50 text-accent-600">
               <Icon :name="path.icon" class="text-2xl" aria-hidden="true" />
             </span>
             <div class="min-w-0">
-              <p v-if="path.description" class="max-w-[70ch] text-base leading-relaxed text-slate-600">{{ path.description }}</p>
-              <p v-if="!path.isPublished" class="mt-1 inline-flex items-center gap-1 text-xs text-amber-700">
+              <p v-if="path.description" class="max-w-[70ch] text-base leading-relaxed text-base-600">{{ path.description }}</p>
+              <p v-if="!path.isPublished" class="mt-1 inline-flex items-center gap-1 text-xs text-warning-700">
                 <Icon name="material-symbols:visibility-off-outline-rounded" class="text-sm" aria-hidden="true" />
                 {{ t('wiki.path.unpublished') }}
               </p>
@@ -44,17 +44,17 @@
 
           <div>
             <div class="flex items-center justify-between text-sm">
-              <span class="font-medium text-slate-700">
+              <span class="font-medium text-base-700">
                 {{ t('wiki.path.progress', { done: path.doneCount, total: path.totalCount }) }}
               </span>
-              <span v-if="isComplete" class="inline-flex items-center gap-1 font-medium text-emerald-700">
+              <span v-if="isComplete" class="inline-flex items-center gap-1 font-medium text-success-700">
                 <Icon name="material-symbols:check-circle-rounded" class="text-base" aria-hidden="true" />
                 {{ t('wiki.path.completed') }}
               </span>
-              <span v-else class="font-semibold text-slate-500">{{ progressPercent }} %</span>
+              <span v-else class="font-semibold text-base-500">{{ progressPercent }} %</span>
             </div>
             <div
-              class="mt-1 h-2.5 w-full overflow-hidden rounded-full bg-slate-200"
+              class="mt-1 h-2.5 w-full overflow-hidden rounded-full bg-base-200"
               role="progressbar"
               :aria-valuenow="progressPercent"
               aria-valuemin="0"
@@ -63,25 +63,25 @@
             >
               <div
                 class="h-full rounded-full transition-all"
-                :class="isComplete ? 'bg-emerald-500' : 'bg-orange-500'"
+                :class="isComplete ? 'bg-success-500' : 'bg-accent-500'"
                 :style="{ width: `${progressPercent}%` }"
               ></div>
             </div>
           </div>
 
-          <p v-if="!path.items.length" class="text-sm text-slate-500">{{ t('wiki.path.empty') }}</p>
+          <p v-if="!path.items.length" class="text-sm text-base-500">{{ t('wiki.path.empty') }}</p>
 
           <ol v-else class="space-y-2">
             <li v-for="(item, position) in path.items" :key="item.id">
               <label
                 class="flex cursor-pointer flex-wrap items-start gap-3 rounded-xl border p-3 transition-colors"
                 :class="item.done
-                  ? 'border-emerald-200 bg-emerald-50/50 hover:border-emerald-300'
-                  : 'border-slate-200 hover:border-orange-300 hover:bg-orange-50/40'"
+                  ? 'border-success-200 bg-success-50/50 hover:border-success-300'
+                  : 'border-base-200 hover:border-accent-300 hover:bg-accent-50/40'"
               >
                 <span
                   class="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-semibold"
-                  :class="item.done ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-500'"
+                  :class="item.done ? 'bg-success-100 text-success-700' : 'bg-base-100 text-base-500'"
                   aria-hidden="true"
                 >
                   <Icon v-if="item.done" name="material-symbols:check-rounded" class="text-base" />
@@ -97,13 +97,13 @@
                 />
 
                 <span class="min-w-0 flex-1">
-                  <span class="block text-xs text-slate-500">
+                  <span class="block text-xs text-base-500">
                     {{ t('wiki.path.step', { number: position + 1 }) }} · {{ item.spaceTitle }}
                   </span>
-                  <span class="block font-medium" :class="item.done ? 'text-slate-500' : 'text-slate-900'">{{ item.title }}</span>
-                  <span v-if="item.note" class="mt-0.5 block text-sm leading-relaxed text-slate-600">{{ item.note }}</span>
-                  <span v-else-if="item.summary" class="mt-0.5 block text-sm leading-relaxed text-slate-600">{{ item.summary }}</span>
-                  <span v-if="item.done && item.completedAt" class="mt-1 block text-xs text-emerald-700">
+                  <span class="block font-medium" :class="item.done ? 'text-base-500' : 'text-base-900'">{{ item.title }}</span>
+                  <span v-if="item.note" class="mt-0.5 block text-sm leading-relaxed text-base-600">{{ item.note }}</span>
+                  <span v-else-if="item.summary" class="mt-0.5 block text-sm leading-relaxed text-base-600">{{ item.summary }}</span>
+                  <span v-if="item.done && item.completedAt" class="mt-1 block text-xs text-success-700">
                     {{ t('wiki.path.doneAt', { date: formatDate(item.completedAt) }) }}
                   </span>
                 </span>

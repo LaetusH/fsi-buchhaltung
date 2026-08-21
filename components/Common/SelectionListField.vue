@@ -11,18 +11,18 @@
       @clear-selection="emit('clear-selection')"
     />
 
-    <div v-if="selectedItems.length > 0" class="min-h-0 rounded-lg border border-slate-200 bg-slate-50">
+    <div v-if="selectedItems.length > 0" class="min-h-0 rounded-lg border border-base-200 bg-base-50">
       <div class="selection-scroll max-h-[min(38vh,20rem)] overflow-y-auto p-2">
         <div
           v-for="item in selectedItems"
           :key="item.id"
-          class="mb-2 flex items-start justify-between gap-3 rounded-lg border border-slate-200 bg-white px-3 py-2 last:mb-0"
+          class="mb-2 flex items-start justify-between gap-3 rounded-lg border border-base-200 bg-white px-3 py-2 last:mb-0"
         >
           <div class="min-w-0">
-            <p class="truncate text-sm font-medium text-slate-800">
+            <p class="truncate text-sm font-medium text-base-800">
               {{ item.label }}
             </p>
-            <p v-if="item.meta" class="truncate text-xs text-slate-500">
+            <p v-if="item.meta" class="truncate text-xs text-base-500">
               {{ item.meta }}
             </p>
           </div>
@@ -30,7 +30,7 @@
           <button
             v-if="!disabled"
             type="button"
-            class="shrink-0 text-sm text-red-500 hover:underline cursor-pointer"
+            class="shrink-0 text-sm text-danger-500 hover:underline cursor-pointer"
             @click="emit('remove', item.id)"
           >
             {{ removeLabel }}
@@ -39,7 +39,7 @@
       </div>
     </div>
 
-    <div v-else class="rounded-lg border border-dashed border-slate-300 px-3 py-4 text-sm text-slate-500">
+    <div v-else class="rounded-lg border border-dashed border-base-300 px-3 py-4 text-sm text-base-500">
       {{ emptySelectionText }}
     </div>
   </div>

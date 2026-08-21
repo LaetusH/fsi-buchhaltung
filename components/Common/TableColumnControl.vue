@@ -2,7 +2,7 @@
   <div class="inline-flex items-center gap-1 relative">
     <button
       type="button"
-      class="inline-flex items-center gap-1 hover:text-blue-700 cursor-pointer"
+      class="inline-flex items-center gap-1 hover:text-link-700 cursor-pointer"
       @click="$emit('toggle-sort')"
     >
       <span>{{ label }}</span>
@@ -13,8 +13,8 @@
       v-if="filterable"
       ref="triggerRef"
       type="button"
-      class="pt-1 pr-1 pl-1 rounded-lg border hover:bg-slate-50 cursor-pointer"
-      :class="isFilterActive ? 'border-blue-500 text-blue-600' : 'border-slate-300 text-slate-500'"
+      class="pt-1 pr-1 pl-1 rounded-lg border hover:bg-base-50 cursor-pointer"
+      :class="isFilterActive ? 'border-link-500 text-link-600' : 'border-base-300 text-base-500'"
       @click.stop="toggleMenu"
     >
       <Icon name="material-symbols:filter-list-rounded" class="w-4 h-4" />
@@ -24,7 +24,7 @@
       <div
         v-if="filterable && menuOpen"
         ref="menuRef"
-        class="fixed z-100 w-72 rounded-lg border border-slate-200 bg-white shadow-xl ring-1 ring-slate-900/5 overflow-hidden"
+        class="fixed z-100 w-72 rounded-lg border border-base-200 bg-white shadow-xl ring-1 ring-base-900/5 overflow-hidden"
         :style="{ top: `${menuPosition.top}px`, left: `${menuPosition.left}px` }"
         @click.stop
       >

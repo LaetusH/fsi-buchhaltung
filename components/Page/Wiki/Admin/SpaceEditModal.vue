@@ -11,7 +11,7 @@
       :title="t('common.validationBlocked')"
     />
 
-    <p class="text-sm text-slate-500">{{ t('wiki.space.createHint') }}</p>
+    <p class="text-sm text-base-500">{{ t('wiki.space.createHint') }}</p>
 
     <div class="field">
       <label for="wiki-space-title">{{ t('wiki.space.fields.title') }}</label>
@@ -21,7 +21,7 @@
     <div class="field">
       <label for="wiki-space-slug">{{ t('wiki.space.fields.slug') }}</label>
       <input id="wiki-space-slug" v-model="form.slug" class="input" :placeholder="t('wiki.space.fields.slugPlaceholder')" />
-      <p class="mt-1 text-xs text-slate-500">
+      <p class="mt-1 text-xs text-base-500">
         {{ t('wiki.space.fields.slugHint') }}
         <template v-if="!isCreate"> {{ t('wiki.space.fields.slugRenameHint') }}</template>
       </p>
@@ -35,10 +35,10 @@
     <div class="field">
       <label for="wiki-space-icon">{{ t('wiki.space.fields.icon') }}</label>
       <div class="flex items-center gap-2">
-        <Icon :name="previewIcon" class="shrink-0 text-xl text-slate-500" />
+        <Icon :name="previewIcon" class="shrink-0 text-xl text-base-500" />
         <input id="wiki-space-icon" v-model="form.icon" class="input" :placeholder="DEFAULT_ICON" />
       </div>
-      <p class="mt-1 text-xs text-slate-500">{{ t('wiki.space.fields.iconHint') }}</p>
+      <p class="mt-1 text-xs text-base-500">{{ t('wiki.space.fields.iconHint') }}</p>
     </div>
 
     <div class="grid gap-3 sm:grid-cols-2">
@@ -95,17 +95,17 @@
       </div>
     </div>
 
-    <label class="flex w-fit cursor-pointer items-center gap-2 text-sm text-slate-700">
+    <label class="flex w-fit cursor-pointer items-center gap-2 text-sm text-base-700">
       <input v-model="form.createGrant" type="checkbox" class="checkbox" />
       {{ t('wiki.editor.fields.createOwnerGrant') }}
     </label>
 
-    <label class="flex w-fit cursor-pointer items-center gap-2 text-sm text-slate-700">
+    <label class="flex w-fit cursor-pointer items-center gap-2 text-sm text-base-700">
       <input v-model="form.requiresReview" type="checkbox" class="checkbox" />
       {{ t('wiki.space.fields.requiresReview') }}
     </label>
 
-    <label v-if="!isCreate" class="flex w-fit cursor-pointer items-center gap-2 text-sm text-slate-700">
+    <label v-if="!isCreate" class="flex w-fit cursor-pointer items-center gap-2 text-sm text-base-700">
       <input v-model="form.isArchived" type="checkbox" class="checkbox" />
       {{ t('wiki.space.fields.isArchived') }}
     </label>

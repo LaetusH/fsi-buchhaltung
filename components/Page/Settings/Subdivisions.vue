@@ -17,13 +17,13 @@
     :on-error="handleError"
   >
     <template #actions="{ item, edit, reload }">
-      <button class="text-blue-600 hover:underline cursor-pointer" @click="edit()">
+      <button class="text-link-600 hover:underline cursor-pointer" @click="edit()">
         {{ t('actions.edit') }}
       </button>
 
       <button
         class="hover:underline cursor-pointer"
-        :class="item.is_active ? 'text-red-500' : 'text-gray-500'"
+        :class="item.is_active ? 'text-danger-500' : 'text-base-500'"
         @click="item.is_active ? openDeactivateModal(item, reload) : toggleSubdivision(item, true, false, reload)"
       >
         {{ item.is_active ? t('actions.deactivate') : t('actions.activate') }}
@@ -35,7 +35,7 @@
     </template>
 
     <template #cell-count="{ item }">
-      <span class="font-medium text-slate-800">{{ memberCount(item) }}</span>
+      <span class="font-medium text-base-800">{{ memberCount(item) }}</span>
     </template>
 
     <template #modal-fields-after-description="{ editingItem }">
@@ -65,37 +65,37 @@
     width-class="max-w-xl"
     @close="closeDeactivateModal"
   >
-    <p class="text-sm text-slate-600">
+    <p class="text-sm text-base-600">
       {{ t('settings.subdivisions.deactivateConfirm.intro', { subdivision: `${deactivateTarget.code} - ${deactivateTarget.name}` }) }}
     </p>
 
-    <label class="flex cursor-pointer items-center gap-3 rounded-lg border border-slate-200 p-3 transition-colors hover:border-slate-300 hover:bg-slate-50">
+    <label class="flex cursor-pointer items-center gap-3 rounded-lg border border-base-200 p-3 transition-colors hover:border-base-300 hover:bg-base-50">
       <input
         v-model="removeAssignedMembers"
         type="checkbox"
         class="checkbox"
       >
-      <span class="text-sm text-slate-700">
+      <span class="text-sm text-base-700">
         {{ t('settings.subdivisions.deactivateConfirm.removeMembers') }}
       </span>
     </label>
 
     <div v-if="deactivateMembers.length" class="space-y-2">
-      <div class="text-sm font-medium text-slate-700">
+      <div class="text-sm font-medium text-base-700">
         {{ t('settings.subdivisions.deactivateConfirm.assignedMembersTitle') }}
       </div>
-      <div class="max-h-48 overflow-y-auto rounded-lg border border-slate-200 bg-slate-50 p-3">
+      <div class="max-h-48 overflow-y-auto rounded-lg border border-base-200 bg-base-50 p-3">
         <div
           v-for="member in deactivateMembers"
           :key="member.id"
-          class="text-sm text-slate-700"
+          class="text-sm text-base-700"
         >
           {{ member.full_name }}
         </div>
       </div>
     </div>
 
-    <p v-else class="text-sm text-slate-500">
+    <p v-else class="text-sm text-base-500">
       {{ t('settings.subdivisions.deactivateConfirm.noAssignedMembers') }}
     </p>
 

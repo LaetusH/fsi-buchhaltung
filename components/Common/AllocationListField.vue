@@ -11,19 +11,19 @@
       @clear-selection="emit('clear-selection')"
     />
 
-    <div v-if="items.length > 0" class="min-h-0 rounded-lg border border-slate-200 bg-slate-50">
+    <div v-if="items.length > 0" class="min-h-0 rounded-lg border border-base-200 bg-base-50">
       <div class="selection-scroll max-h-[min(38vh,20rem)] overflow-y-auto p-2">
         <div
           v-for="item in items"
           :key="item.id"
-          class="mb-2 rounded-lg border border-slate-200 bg-white px-3 py-3 last:mb-0"
+          class="mb-2 rounded-lg border border-base-200 bg-white px-3 py-3 last:mb-0"
         >
           <div class="flex items-start justify-between gap-3">
             <div class="min-w-0">
-              <p class="truncate text-sm font-medium text-slate-800">
+              <p class="truncate text-sm font-medium text-base-800">
                 {{ item.label }}
               </p>
-              <p v-if="item.meta" class="truncate text-xs text-slate-500">
+              <p v-if="item.meta" class="truncate text-xs text-base-500">
                 {{ item.meta }}
               </p>
             </div>
@@ -31,7 +31,7 @@
             <button
               v-if="!disabled"
               type="button"
-              class="shrink-0 text-sm text-red-500 hover:underline cursor-pointer"
+              class="shrink-0 text-sm text-danger-500 hover:underline cursor-pointer"
               @click="emit('remove', item.id)"
             >
               {{ removeLabel }}
@@ -39,7 +39,7 @@
           </div>
 
           <div class="mt-3 flex items-center gap-3">
-            <label class="text-sm text-slate-600">{{ allocationLabel }}</label>
+            <label class="text-sm text-base-600">{{ allocationLabel }}</label>
             <div class="flex items-center gap-2">
               <input
                 :value="displayAllocation(item.id, item.allocation)"
@@ -51,14 +51,14 @@
                 @blur="onAllocationBlur(item.id)"
                 @input="onAllocationInput(item.id, $event)"
               >
-              <span class="text-sm text-slate-500">%</span>
+              <span class="text-sm text-base-500">%</span>
             </div>
           </div>
         </div>
       </div>
     </div>
 
-    <div v-else class="rounded-lg border border-dashed border-slate-300 px-3 py-4 text-sm text-slate-500">
+    <div v-else class="rounded-lg border border-dashed border-base-300 px-3 py-4 text-sm text-base-500">
       {{ emptySelectionText }}
     </div>
   </div>

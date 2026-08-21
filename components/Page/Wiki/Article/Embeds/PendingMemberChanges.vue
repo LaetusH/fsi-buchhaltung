@@ -1,15 +1,15 @@
 <template>
   <div class="space-y-2">
-    <p class="text-2xl font-semibold text-slate-900">{{ data.count }}</p>
-    <p class="text-sm text-slate-600">{{ t('wiki.embeds.pendingMemberChangesSummary', { members: data.memberCount }) }}</p>
+    <p class="text-2xl font-semibold text-base-900">{{ data.count }}</p>
+    <p class="text-sm text-base-600">{{ t('wiki.embeds.pendingMemberChangesSummary', { members: data.memberCount }) }}</p>
 
-    <ul v-if="data.latest.length" class="space-y-1 text-xs text-slate-500">
+    <ul v-if="data.latest.length" class="space-y-1 text-xs text-base-500">
       <li v-for="(change, position) in data.latest" :key="`${change.memberName}-${change.fieldName}-${position}`">
         {{ change.memberName }} · {{ fieldLabel(change.fieldName) }} · {{ formatDateTime(change.requestedAt) }}
       </li>
     </ul>
 
-    <p v-if="!data.count" class="text-sm text-slate-500">{{ t('wiki.embeds.empty') }}</p>
+    <p v-if="!data.count" class="text-sm text-base-500">{{ t('wiki.embeds.empty') }}</p>
   </div>
 </template>
 

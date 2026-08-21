@@ -5,7 +5,7 @@
 
       <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-1 xl:grid-cols-3 gap-4">
         <div class="field">
-          <label class="text-sm font-medium text-slate-600">{{ t('bankStatement.statementNumber') }}</label>
+          <label class="text-sm font-medium text-base-600">{{ t('bankStatement.statementNumber') }}</label>
           <input
             v-model="form.statement_number"
             class="input"
@@ -15,7 +15,7 @@
 
         <div class="grid grid-cols-2 gap-4 md:contents lg:grid lg:grid-cols-2 xl:contents">
           <div class="field">
-            <label class="text-sm font-medium text-slate-600">{{ t('bankStatement.checkedBy') }}</label>
+            <label class="text-sm font-medium text-base-600">{{ t('bankStatement.checkedBy') }}</label>
             <CommonSearchSelect
               v-model="checkedByQuery"
               :options="memberOptions"
@@ -29,7 +29,7 @@
           </div>
 
           <div class="field">
-            <label class="text-sm font-medium text-slate-600">{{ t('bankStatement.statementDate') }}</label>
+            <label class="text-sm font-medium text-base-600">{{ t('bankStatement.statementDate') }}</label>
             <CommonDateInput
               v-model="statementDateInput"
               mode="datetime"
@@ -46,7 +46,7 @@
         <button
           v-if="!disabled"
           type="button"
-          class="flex items-center gap-2 text-orange-500 font-medium cursor-pointer"
+          class="flex items-center gap-2 text-accent-500 font-medium cursor-pointer"
           @click="addPosition"
         >
           <span class="text-xl">+</span> {{ t('actions.addPosition') }}
@@ -56,7 +56,7 @@
       <div
         v-for="(position, i) in form.positions"
         :key="i"
-        class="rounded-xl border border-slate-200 bg-slate-50 p-3"
+        class="rounded-xl border border-base-200 bg-base-50 p-3"
       >
         <div
           class="grid gap-3 items-start"
@@ -105,7 +105,7 @@
                 <button
                   v-if="!disabled && canEditSelectedReceipt(i)"
                   type="button"
-                  class="p-2 h-9.5 w-9.5 rounded-md hover:bg-slate-100 text-orange-500 cursor-pointer shrink-0"
+                  class="p-2 h-9.5 w-9.5 rounded-md hover:bg-base-100 text-accent-500 cursor-pointer shrink-0"
                   :title="t('actions.edit')"
                   @click.stop.prevent="editSelectedReceipt(i)"
                 >
@@ -114,7 +114,7 @@
                 <button
                   v-if="!disabled && canEditSelectedInvoice(i)"
                   type="button"
-                  class="p-2 h-9.5 w-9.5 rounded-md hover:bg-slate-100 text-orange-500 cursor-pointer shrink-0"
+                  class="p-2 h-9.5 w-9.5 rounded-md hover:bg-base-100 text-accent-500 cursor-pointer shrink-0"
                   :title="t('actions.edit')"
                   @click.stop.prevent="editSelectedInvoice(i)"
                 >
@@ -137,7 +137,7 @@
           <button
             v-if="form.positions.length > 1 && !disabled"
             type="button"
-            class="text-red-500 cursor-pointer flex items-center justify-center h-9.5 w-9.5 rounded-md hover:bg-white self-end 2xl:order-6"
+            class="text-danger-500 cursor-pointer flex items-center justify-center h-9.5 w-9.5 rounded-md hover:bg-white self-end 2xl:order-6"
             @click="removePosition(i)"
           >✕</button>
 
@@ -155,7 +155,7 @@
             <!-- Amount: plain text for receipt/invoice, editable input for event -->
             <div
               v-if="position.position_type !== 'event'"
-              class="shrink-0 w-24 2xl:w-auto 2xl:order-4 h-9.5 flex items-center justify-end self-end text-sm text-slate-600 whitespace-nowrap"
+              class="shrink-0 w-24 2xl:w-auto 2xl:order-4 h-9.5 flex items-center justify-end self-end text-sm text-base-600 whitespace-nowrap"
             >
               {{ position.receipt_id || position.invoice_id ? formatCurrency(positionEffectiveAmount(position)) : '---' }}
             </div>
@@ -180,21 +180,21 @@
       <h3 class="font-semibold">{{ t('bankStatement.overview') }}</h3>
 
       <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-2 xl:grid-cols-4 gap-3 text-sm">
-        <div class="rounded-xl bg-slate-100 px-4 py-3">
-          <div class="text-slate-500">{{ t('bankStatement.openingBalance') }}</div>
+        <div class="rounded-xl bg-base-100 px-4 py-3">
+          <div class="text-base-500">{{ t('bankStatement.openingBalance') }}</div>
           <div class="text-lg font-semibold">{{ formatCurrency(props.openingBalance) }}</div>
         </div>
-        <div class="rounded-xl bg-emerald-50 px-4 py-3">
-          <div class="text-emerald-700">{{ t('bankStatement.totalIncome') }}</div>
-          <div class="text-lg font-semibold text-emerald-800">{{ formatCurrency(totalIncome) }}</div>
+        <div class="rounded-xl bg-success-50 px-4 py-3">
+          <div class="text-success-700">{{ t('bankStatement.totalIncome') }}</div>
+          <div class="text-lg font-semibold text-success-800">{{ formatCurrency(totalIncome) }}</div>
         </div>
-        <div class="rounded-xl bg-red-50 px-4 py-3">
-          <div class="text-red-700">{{ t('bankStatement.totalExpenses') }}</div>
-          <div class="text-lg font-semibold text-red-800">{{ formatCurrency(totalExpenses) }}</div>
+        <div class="rounded-xl bg-danger-50 px-4 py-3">
+          <div class="text-danger-700">{{ t('bankStatement.totalExpenses') }}</div>
+          <div class="text-lg font-semibold text-danger-800">{{ formatCurrency(totalExpenses) }}</div>
         </div>
-        <div class="rounded-xl bg-blue-50 px-4 py-3">
-          <div class="text-blue-700">{{ t('bankStatement.closingBalance') }}</div>
-          <div class="text-lg font-semibold text-blue-800">{{ formatCurrency(closingBalance) }}</div>
+        <div class="rounded-xl bg-info-50 px-4 py-3">
+          <div class="text-info-700">{{ t('bankStatement.closingBalance') }}</div>
+          <div class="text-lg font-semibold text-info-800">{{ formatCurrency(closingBalance) }}</div>
         </div>
       </div>
     </section>

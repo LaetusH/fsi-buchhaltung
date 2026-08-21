@@ -22,13 +22,13 @@
       </template>
       <template #actions="{ row }">
         <button
-          class="text-blue-600 hover:underline cursor-pointer disabled:cursor-not-allowed disabled:opacity-60"
+          class="text-link-600 hover:underline cursor-pointer disabled:cursor-not-allowed disabled:opacity-60"
           :disabled="downloadingBudgetId === row.id"
           @click="downloadBudget(row)"
         >
           {{ t('budget.downloadPdfShort') }}
         </button>
-        <button class="text-blue-600 hover:underline cursor-pointer" @click="openBudget(row.id)">
+        <button class="text-link-600 hover:underline cursor-pointer" @click="openBudget(row.id)">
           {{ t('actions.open') }}
         </button>
       </template>
@@ -73,7 +73,7 @@ const columns = computed<AdvancedTableColumn<BudgetListItem>[]>(() => [
     filterType: 'text',
     globalSearchable: true,
     getValue: row => budgetLabel(row.year, row.semester),
-    cellClass: 'font-medium text-slate-900',
+    cellClass: 'font-medium text-base-900',
     mobile: 'title',
   },
   {
@@ -129,9 +129,9 @@ function budgetLabel(year: number, semester: BudgetSemester) {
 }
 
 function saldoTextClass(value: number) {
-  if (value > 0) return 'text-green-700'
-  if (value < 0) return 'text-red-700'
-  return 'text-slate-700'
+  if (value > 0) return 'text-success-700'
+  if (value < 0) return 'text-danger-700'
+  return 'text-base-700'
 }
 
 async function downloadBudget(budget: BudgetListItem) {

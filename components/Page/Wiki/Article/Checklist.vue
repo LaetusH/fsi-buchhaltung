@@ -1,19 +1,19 @@
 <template>
-  <div class="my-4 rounded-xl border border-slate-200 bg-slate-50/70 p-4">
-    <p class="flex items-center gap-2 text-sm font-semibold text-slate-800">
-      <Icon name="material-symbols:checklist-rounded" class="text-lg text-slate-400" aria-hidden="true" />
+  <div class="my-4 rounded-xl border border-base-200 bg-base-50/70 p-4">
+    <p class="flex items-center gap-2 text-sm font-semibold text-base-800">
+      <Icon name="material-symbols:checklist-rounded" class="text-lg text-base-400" aria-hidden="true" />
       {{ checklist ? checklist.title : t('wiki.checklist.unknownTitle') }}
     </p>
 
-    <p v-if="!checklist" class="mt-3 text-sm text-slate-500">
+    <p v-if="!checklist" class="mt-3 text-sm text-base-500">
       {{ t('wiki.checklist.unknown', { key: keySlug }) }}
     </p>
 
     <template v-else>
       <div class="mt-3 flex flex-wrap items-center justify-between gap-2">
-        <p class="flex items-center gap-2 text-sm text-slate-600">
+        <p class="flex items-center gap-2 text-sm text-base-600">
           <span
-            class="h-1.5 w-16 shrink-0 overflow-hidden rounded-full bg-slate-200"
+            class="h-1.5 w-16 shrink-0 overflow-hidden rounded-full bg-base-200"
             role="progressbar"
             :aria-valuenow="doneCount"
             aria-valuemin="0"
@@ -21,12 +21,12 @@
             :aria-label="t('wiki.checklist.progress', { done: doneCount, total: checklist.items.length })"
           >
             <span
-              class="block h-full rounded-full bg-emerald-500 transition-all"
+              class="block h-full rounded-full bg-success-500 transition-all"
               :style="{ width: `${checklist.items.length ? Math.round((doneCount / checklist.items.length) * 100) : 0}%` }"
             ></span>
           </span>
           {{ t('wiki.checklist.progress', { done: doneCount, total: checklist.items.length }) }}
-          <span v-if="checklist.mode === 'shared'" class="text-slate-400"> · {{ t('wiki.checklist.sharedHint') }}</span>
+          <span v-if="checklist.mode === 'shared'" class="text-base-400"> · {{ t('wiki.checklist.sharedHint') }}</span>
         </p>
 
         <div v-if="checklist.mode === 'shared'" class="flex flex-wrap items-center gap-2">
@@ -56,13 +56,13 @@
         </div>
       </div>
 
-      <p v-if="checklist.mode === 'shared' && activeRun" class="mt-1 text-xs text-slate-500">
+      <p v-if="checklist.mode === 'shared' && activeRun" class="mt-1 text-xs text-base-500">
         {{ t('wiki.checklist.runStartedBy', { name: activeRun.createdByName }) }}
         <span v-if="activeRun.dueDate"> · {{ t('wiki.checklist.runDue', { date: formatDate(activeRun.dueDate) }) }}</span>
         <span v-if="activeRun.closedAt"> · {{ t('wiki.checklist.runClosed') }}</span>
       </p>
 
-      <p v-else-if="checklist.mode === 'shared'" class="mt-1 text-xs text-slate-500">
+      <p v-else-if="checklist.mode === 'shared'" class="mt-1 text-xs text-base-500">
         {{ t('wiki.checklist.noRuns') }}
       </p>
 
@@ -71,8 +71,8 @@
           <label
             class="flex flex-wrap items-start gap-x-3 gap-y-1 rounded-lg border p-3 transition-colors"
             :class="[
-              isDone(item) ? 'border-emerald-200 bg-emerald-50/40' : 'border-slate-200 bg-white',
-              canTick ? 'cursor-pointer hover:border-orange-300 hover:bg-orange-50/40' : 'cursor-default',
+              isDone(item) ? 'border-success-200 bg-success-50/40' : 'border-base-200 bg-white',
+              canTick ? 'cursor-pointer hover:border-accent-300 hover:bg-accent-50/40' : 'cursor-default',
             ]"
           >
             <input
@@ -84,11 +84,11 @@
             />
 
             <span class="min-w-0 flex-1">
-              <span class="block text-sm" :class="isDone(item) ? 'text-slate-400 line-through' : 'text-slate-800'">
+              <span class="block text-sm" :class="isDone(item) ? 'text-base-400 line-through' : 'text-base-800'">
                 {{ item.label }}
               </span>
-              <span v-if="item.hint" class="mt-0.5 block text-xs text-slate-500">{{ item.hint }}</span>
-              <span v-if="attribution(item)" class="mt-0.5 block text-xs text-emerald-700">{{ attribution(item) }}</span>
+              <span v-if="item.hint" class="mt-0.5 block text-xs text-base-500">{{ item.hint }}</span>
+              <span v-if="attribution(item)" class="mt-0.5 block text-xs text-success-700">{{ attribution(item) }}</span>
             </span>
 
             <PageWikiArticleToolLink

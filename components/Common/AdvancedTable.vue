@@ -9,8 +9,8 @@
       <button
         v-if="sortableColumns.length > 0"
         type="button"
-        class="inline-flex items-center gap-1.5 rounded-lg border bg-white px-3 py-1.5 text-sm transition cursor-pointer hover:bg-slate-50"
-        :class="activeSortColumn ? 'border-blue-500 text-blue-600' : 'border-slate-300 text-slate-600'"
+        class="inline-flex items-center gap-1.5 rounded-lg border bg-white px-3 py-1.5 text-sm transition cursor-pointer hover:bg-base-50"
+        :class="activeSortColumn ? 'border-link-500 text-link-600' : 'border-base-300 text-base-600'"
         @click="sortOpen = true"
       >
         <Icon name="material-symbols:swap-vert-rounded" class="text-base" />
@@ -21,15 +21,15 @@
       <button
         v-if="filterableColumns.length > 0"
         type="button"
-        class="inline-flex items-center gap-1.5 rounded-lg border bg-white px-3 py-1.5 text-sm transition cursor-pointer hover:bg-slate-50"
-        :class="activeFilterColumns.length > 0 ? 'border-blue-500 text-blue-600' : 'border-slate-300 text-slate-600'"
+        class="inline-flex items-center gap-1.5 rounded-lg border bg-white px-3 py-1.5 text-sm transition cursor-pointer hover:bg-base-50"
+        :class="activeFilterColumns.length > 0 ? 'border-link-500 text-link-600' : 'border-base-300 text-base-600'"
         @click="filterOpen = true"
       >
         <Icon name="material-symbols:filter-list-rounded" class="text-base" />
         <span>{{ t('common.filter') }}</span>
         <span
           v-if="activeFilterColumns.length > 0"
-          class="rounded-full bg-blue-600 px-1.5 text-xs font-medium text-white"
+          class="rounded-full bg-link-600 px-1.5 text-xs font-medium text-white"
         >
           {{ activeFilterColumns.length }}
         </span>
@@ -39,7 +39,7 @@
         v-for="column in activeFilterColumns"
         :key="column.key"
         type="button"
-        class="inline-flex items-center gap-1 rounded-full bg-blue-50 px-2.5 py-1 text-xs font-medium text-blue-700 transition cursor-pointer hover:bg-blue-100"
+        class="inline-flex items-center gap-1 rounded-full bg-link-50 px-2.5 py-1 text-xs font-medium text-link-700 transition cursor-pointer hover:bg-link-100"
         @click="resetFilter(column.key)"
       >
         {{ column.label }}
@@ -96,7 +96,7 @@
               <div class="inline-flex items-center justify-end gap-3">
                 <slot name="actions" :row="row">
                   <button
-                    class="text-blue-600 not-disabled:hover:underline disabled:opacity-40 disabled:cursor-not-allowed not-disabled:cursor-pointer"
+                    class="text-link-600 not-disabled:hover:underline disabled:opacity-40 disabled:cursor-not-allowed not-disabled:cursor-pointer"
                     :disabled="!canOpen(row)"
                     @click="$emit('row-open', row)"
                   >
@@ -108,7 +108,7 @@
           </tr>
 
           <tr v-if="processedRows.length === 0">
-            <td :colspan="visibleColumns.length + (showActions ? 1 : 0)" class="py-6 text-center text-slate-500">
+            <td :colspan="visibleColumns.length + (showActions ? 1 : 0)" class="py-6 text-center text-base-500">
               {{ emptyText }}
             </td>
           </tr>
@@ -118,19 +118,19 @@
 
     <!-- Compact mobile list -->
     <ul
-      class="overflow-hidden rounded-xl border border-slate-200 divide-y divide-slate-200 bg-white"
+      class="overflow-hidden rounded-xl border border-base-200 divide-y divide-base-200 bg-white"
       :class="{ 'xl:hidden': viewMode === 'table' }"
     >
       <li v-for="(row, index) in processedRows" :key="rowKeyOf(row, index)" class="flex items-stretch">
         <button
           type="button"
-          class="flex min-w-0 flex-1 items-center gap-3 bg-white px-3 py-2.5 text-left transition not-disabled:cursor-pointer not-disabled:hover:bg-slate-50 disabled:cursor-default"
+          class="flex min-w-0 flex-1 items-center gap-3 bg-white px-3 py-2.5 text-left transition not-disabled:cursor-pointer not-disabled:hover:bg-base-50 disabled:cursor-default"
           :disabled="!canOpen(row)"
           @click="$emit('row-open', row)"
         >
           <div class="min-w-0 flex-1">
             <slot name="mobile-row" :row="row">
-              <p class="truncate font-medium text-slate-800">
+              <p class="truncate font-medium text-base-800">
                 <slot name="mobile-title" :row="row">
                   <slot v-if="mobileTitleColumns.length === 1" :name="`cell-${mobileTitleColumns[0]!.key}`" :row="row">
                     {{ mobileTitle(row) }}
@@ -140,14 +140,14 @@
               </p>
               <p
                 v-if="mobileMetaColumns.length > 0 || $slots['mobile-meta']"
-                class="mt-0.5 flex flex-wrap items-baseline gap-x-1.5 gap-y-0.5 text-xs text-slate-500"
+                class="mt-0.5 flex flex-wrap items-baseline gap-x-1.5 gap-y-0.5 text-xs text-base-500"
               >
                 <slot name="mobile-meta" :row="row">
                   <template v-for="(column, metaIndex) in mobileMetaColumns" :key="column.key">
                     <span class="inline-flex max-w-full items-baseline gap-1.5" :class="metaVisibilityClass(column)">
-                      <span v-if="metaIndex > 0" class="text-slate-300">·</span>
+                      <span v-if="metaIndex > 0" class="text-base-300">·</span>
                       <span class="inline-flex max-w-full items-baseline gap-1">
-                        <span v-if="column.mobileLabel" class="shrink-0 text-slate-400">{{ column.label }}:</span>
+                        <span v-if="column.mobileLabel" class="shrink-0 text-base-400">{{ column.label }}:</span>
                         <slot :name="`cell-${column.key}`" :row="row">
                           <span class="truncate">{{ cellText(column, row) }}</span>
                         </slot>
@@ -162,7 +162,7 @@
           <Icon
             :name="canOpen(row) ? 'material-symbols:chevron-right-rounded' : 'material-symbols:lock-outline'"
             class="shrink-0 text-xl"
-            :class="canOpen(row) ? 'text-slate-400' : 'text-slate-300'"
+            :class="canOpen(row) ? 'text-base-400' : 'text-base-300'"
           />
         </button>
 
@@ -175,7 +175,7 @@
           <template #trigger>
             <button
               type="button"
-              class="flex h-full w-full items-center justify-center border-l border-slate-100 px-2.5 text-slate-400 transition cursor-pointer hover:bg-slate-50 hover:text-slate-600"
+              class="flex h-full w-full items-center justify-center border-l border-base-100 px-2.5 text-base-400 transition cursor-pointer hover:bg-base-50 hover:text-base-600"
               :aria-label="t('common.actions')"
             >
               <Icon name="material-symbols:more-vert" class="text-xl" />
@@ -189,7 +189,7 @@
               still gets one full-width row per action; `[&>div]:contents` dissolves that wrapper.
             -->
             <div
-              class="flex min-w-40 flex-col [&>div]:contents [&_button]:flex [&_button]:w-full [&_button]:items-center [&_button]:gap-2 [&_button]:rounded-md [&_button]:px-3 [&_button]:py-2 [&_button]:text-left [&_button]:text-sm [&_button]:whitespace-nowrap [&_button]:transition [&_button]:hover:bg-slate-100 [&_button]:hover:no-underline"
+              class="flex min-w-40 flex-col [&>div]:contents [&_button]:flex [&_button]:w-full [&_button]:items-center [&_button]:gap-2 [&_button]:rounded-md [&_button]:px-3 [&_button]:py-2 [&_button]:text-left [&_button]:text-sm [&_button]:whitespace-nowrap [&_button]:transition [&_button]:hover:bg-base-100 [&_button]:hover:no-underline"
               @click="actionMenuKey = null"
             >
               <slot name="actions" :row="row" />
@@ -198,24 +198,24 @@
         </MenuDropdown>
       </li>
 
-      <li v-if="processedRows.length === 0" class="py-6 text-center text-sm text-slate-500">
+      <li v-if="processedRows.length === 0" class="py-6 text-center text-sm text-base-500">
         {{ emptyText }}
       </li>
     </ul>
 
     <!-- Mobile sort sheet -->
     <CommonModal v-model="sortOpen" :title="t('common.sort')">
-      <ul class="divide-y divide-slate-100">
+      <ul class="divide-y divide-base-100">
         <li v-for="column in sortableColumns" :key="column.key">
           <button
             type="button"
             class="flex w-full items-center justify-between gap-3 py-2.5 text-sm cursor-pointer"
             @click="toggleSort(column.key)"
           >
-            <span :class="sortKey === column.key ? 'font-medium text-blue-600' : 'text-slate-700'">
+            <span :class="sortKey === column.key ? 'font-medium text-link-600' : 'text-base-700'">
               {{ column.label }}
             </span>
-            <Icon :name="columnSortIcon(column.key)" class="text-lg" :class="sortKey === column.key ? 'text-blue-600' : 'text-slate-400'" />
+            <Icon :name="columnSortIcon(column.key)" class="text-lg" :class="sortKey === column.key ? 'text-link-600' : 'text-base-400'" />
           </button>
         </li>
       </ul>
@@ -228,25 +228,25 @@
 
     <!-- Mobile filter sheet -->
     <CommonModal v-model="filterOpen" :title="t('common.filter')">
-      <div class="divide-y divide-slate-100">
+      <div class="divide-y divide-base-100">
         <div v-for="column in filterableColumns" :key="column.key">
           <button
             type="button"
             class="flex w-full items-center justify-between gap-3 py-2.5 text-sm cursor-pointer"
             @click="expandedFilterKey = expandedFilterKey === column.key ? null : column.key"
           >
-            <span class="inline-flex items-center gap-2 text-slate-700">
+            <span class="inline-flex items-center gap-2 text-base-700">
               {{ column.label }}
-              <span v-if="isFilterActive(column.key)" class="h-1.5 w-1.5 rounded-full bg-blue-600" />
+              <span v-if="isFilterActive(column.key)" class="h-1.5 w-1.5 rounded-full bg-link-600" />
             </span>
             <Icon
               :name="expandedFilterKey === column.key ? 'material-symbols:keyboard-arrow-up-rounded' : 'material-symbols:keyboard-arrow-down-rounded'"
-              class="text-lg text-slate-400"
+              class="text-lg text-base-400"
             />
           </button>
           <div
             v-if="expandedFilterKey === column.key"
-            class="mb-2 overflow-hidden rounded-lg border border-slate-200"
+            class="mb-2 overflow-hidden rounded-lg border border-base-200"
           >
             <CommonTableFilterEditor
               :filter-type="column.filterType ?? 'text'"
@@ -262,7 +262,7 @@
       <template #footer>
         <button
           type="button"
-          class="rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-600 transition cursor-pointer hover:bg-slate-50"
+          class="rounded-lg border border-base-300 px-3 py-2 text-sm text-base-600 transition cursor-pointer hover:bg-base-50"
           @click="resetAllFilters"
         >
           {{ t('common.resetAllFilters') }}

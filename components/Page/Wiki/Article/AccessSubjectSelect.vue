@@ -64,8 +64,8 @@
 
     <!-- The option belongs to the grant being built, so it sits on its own line together with the
          action instead of floating between two full-height dropdowns. -->
-    <div class="flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 pt-3">
-      <label class="flex cursor-pointer items-center gap-2 text-sm text-slate-600">
+    <div class="flex flex-wrap items-center justify-between gap-3 border-t border-base-100 pt-3">
+      <label class="flex cursor-pointer items-center gap-2 text-sm text-base-600">
         <input v-model="includeDescendants" type="checkbox" class="checkbox" />
         {{ t('wiki.access.includeDescendants') }}
       </label>

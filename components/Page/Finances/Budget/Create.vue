@@ -4,25 +4,25 @@
       <section class="-mx-6 -mb-6 col-span-12 isolate bg-white shadow-sm sm:m-0 sm:rounded-xl sm:shadow-lg">
         <div ref="headerSentinelRef" class="h-px" />
         <div
-          class="sticky top-0 z-20 flex flex-wrap items-center gap-x-4 gap-y-2 bg-slate-900 px-4 py-3 text-white transition-[border-radius] sm:px-6"
+          class="sticky top-0 z-20 flex flex-wrap items-center gap-x-4 gap-y-2 bg-base-900 px-4 py-3 text-white transition-[border-radius] sm:px-6"
           :class="isHeaderStuck ? '' : 'sm:rounded-t-xl'"
         >
           <div class="min-w-0">
             <h2 class="text-base font-semibold sm:text-lg">{{ t('budget.title') }}</h2>
-            <p v-if="periodShortLabel" class="text-xs text-slate-300">{{ periodShortLabel }}</p>
+            <p v-if="periodShortLabel" class="text-xs text-base-300">{{ periodShortLabel }}</p>
           </div>
 
           <div class="ml-auto flex flex-wrap items-center justify-end gap-x-4 gap-y-2">
             <div class="hidden items-baseline gap-1.5 text-sm xl:flex">
-              <span class="text-slate-400">{{ t('budget.totalExpenses') }}</span>
+              <span class="text-base-400">{{ t('budget.totalExpenses') }}</span>
               <span class="font-medium tabular-nums text-white">{{ formatCurrency(totalSummary.totalExpense) }}</span>
             </div>
             <div class="hidden items-baseline gap-1.5 text-sm xl:flex">
-              <span class="text-slate-400">{{ t('budget.totalIncome') }}</span>
+              <span class="text-base-400">{{ t('budget.totalIncome') }}</span>
               <span class="font-medium tabular-nums text-white">{{ formatCurrency(totalSummary.totalIncome) }}</span>
             </div>
             <div class="flex items-baseline gap-1.5 text-sm">
-              <span class="text-slate-400">{{ t('budget.totalSaldo') }}</span>
+              <span class="text-base-400">{{ t('budget.totalSaldo') }}</span>
               <span class="font-semibold tabular-nums" :class="saldoTextClassOnDark(totalSummary.totalSaldo)">
                 {{ formatCurrency(totalSummary.totalSaldo) }}
               </span>
@@ -42,7 +42,7 @@
               </button>
               <button
                 type="button"
-                class="rounded-md px-3 py-2 text-sm text-slate-300 transition cursor-pointer hover:text-white hover:underline"
+                class="rounded-md px-3 py-2 text-sm text-base-300 transition cursor-pointer hover:text-white hover:underline"
                 :disabled="isSaving"
                 @click="cancel"
               >
@@ -73,12 +73,12 @@
         </div>
 
         <div class="space-y-6 p-4 sm:p-6">
-          <div v-if="isLoadingBudget" class="rounded-xl border border-slate-200 px-4 py-6 text-sm text-slate-500">
+          <div v-if="isLoadingBudget" class="rounded-xl border border-base-200 px-4 py-6 text-sm text-base-500">
             {{ t('budget.loading') }}
           </div>
 
           <template v-else>
-            <p class="text-sm text-slate-500">{{ t('budget.editorHint') }}</p>
+            <p class="text-sm text-base-500">{{ t('budget.editorHint') }}</p>
 
             <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
               <div class="field">
@@ -114,12 +114,12 @@
 
               <div class="field">
                 <label>{{ t('budget.startDate') }}</label>
-                <input :value="periodBounds.startDate" type="date" class="input bg-slate-50" disabled>
+                <input :value="periodBounds.startDate" type="date" class="input bg-base-50" disabled>
               </div>
 
               <div class="field">
                 <label>{{ t('budget.endDate') }}</label>
-                <input :value="periodBounds.endDate" type="date" class="input bg-slate-50" disabled>
+                <input :value="periodBounds.endDate" type="date" class="input bg-base-50" disabled>
               </div>
             </div>
 
@@ -136,13 +136,13 @@
               />
             </div>
 
-            <div class="overflow-hidden rounded-xl border border-slate-200">
-              <div class="border-b border-slate-200 px-4 py-3">
-                <h3 class="font-semibold text-slate-900">{{ t('budget.costCentreBudgets') }}</h3>
-                <p class="text-sm text-slate-500">{{ t('budget.structureHint') }}</p>
+            <div class="overflow-hidden rounded-xl border border-base-200">
+              <div class="border-b border-base-200 px-4 py-3">
+                <h3 class="font-semibold text-base-900">{{ t('budget.costCentreBudgets') }}</h3>
+                <p class="text-sm text-base-500">{{ t('budget.structureHint') }}</p>
               </div>
 
-              <div class="hidden gap-x-3 border-b border-slate-200 bg-slate-50 px-4 py-2 text-xs font-semibold text-slate-600 md:grid md:grid-cols-[minmax(0,1fr)_8.5rem_8.5rem_7.5rem]">
+              <div class="hidden gap-x-3 border-b border-base-200 bg-base-50 px-4 py-2 text-xs font-semibold text-base-600 md:grid md:grid-cols-[minmax(0,1fr)_8.5rem_8.5rem_7.5rem]">
                 <div>{{ t('budget.costCentre') }}</div>
                 <div class="pr-2 text-right">{{ t('budget.expenses') }}</div>
                 <div class="pr-2 text-right">{{ t('budget.income') }}</div>
@@ -153,14 +153,14 @@
                 <div
                   v-for="costCentre in orderedCostCentres"
                   :key="costCentre.id"
-                  class="border-b border-slate-200 last:border-b-0"
-                  :class="!costCentre.is_active ? 'bg-amber-50/60' : costCentre.hasChildren ? 'bg-slate-50/50' : 'bg-white'"
+                  class="border-b border-base-200 last:border-b-0"
+                  :class="!costCentre.is_active ? 'bg-warning-50/60' : costCentre.hasChildren ? 'bg-base-50/50' : 'bg-white'"
                 >
                   <div class="grid grid-cols-2 gap-x-3 gap-y-2 px-4 py-3 md:grid-cols-[minmax(0,1fr)_8.5rem_8.5rem_7.5rem] md:items-center md:py-2">
                     <div class="col-span-2 flex min-w-0 items-center gap-2 md:col-span-1" :style="{ paddingLeft: `${costCentre.depth * 1.25}rem` }">
-                      <span v-if="costCentre.depth > 0" class="shrink-0 text-slate-300" aria-hidden="true">└</span>
+                      <span v-if="costCentre.depth > 0" class="shrink-0 text-base-300" aria-hidden="true">└</span>
                       <span
-                        class="min-w-0 truncate text-sm text-slate-900"
+                        class="min-w-0 truncate text-sm text-base-900"
                         :class="costCentre.hasChildren ? 'font-semibold' : 'font-medium'"
                         :title="`${costCentre.code} - ${costCentre.name}`"
                       >
@@ -168,7 +168,7 @@
                       </span>
                       <span
                         v-if="!costCentre.is_active"
-                        class="shrink-0 rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-800"
+                        class="shrink-0 rounded-full bg-warning-100 px-2 py-0.5 text-xs font-medium text-warning-800"
                         :title="t('budget.inactiveCostCentreNotice')"
                       >
                         {{ t('budget.inactiveShort') }}
@@ -176,7 +176,7 @@
                       <button
                         type="button"
                         class="ml-auto flex h-7 w-7 shrink-0 cursor-pointer items-center justify-center rounded-md transition"
-                        :class="hasLineNote(costCentre.id) ? 'text-orange-600 hover:bg-orange-100' : 'text-slate-400 hover:bg-slate-200 hover:text-slate-600'"
+                        :class="hasLineNote(costCentre.id) ? 'text-accent-600 hover:bg-accent-100' : 'text-base-400 hover:bg-base-200 hover:text-base-600'"
                         :title="t('budget.toggleNote')"
                         @click="toggleLineNotes(costCentre.id)"
                       >
@@ -185,7 +185,7 @@
                     </div>
 
                     <div class="space-y-1">
-                      <label class="text-xs text-slate-600 md:hidden">{{ t('budget.expenses') }}</label>
+                      <label class="text-xs text-base-600 md:hidden">{{ t('budget.expenses') }}</label>
                       <input
                         :value="displayCurrencyField(costCentre.id, 'expense_amount')"
                         type="text"
@@ -199,7 +199,7 @@
                     </div>
 
                     <div class="space-y-1">
-                      <label class="text-xs text-slate-600 md:hidden">{{ t('budget.income') }}</label>
+                      <label class="text-xs text-base-600 md:hidden">{{ t('budget.income') }}</label>
                       <input
                         :value="displayCurrencyField(costCentre.id, 'income_amount')"
                         type="text"
@@ -213,7 +213,7 @@
                     </div>
 
                     <div class="col-span-2 flex items-center justify-between md:col-span-1 md:block md:pr-2 md:text-right">
-                      <span class="text-xs text-slate-600 md:hidden">{{ t('budget.saldo') }}</span>
+                      <span class="text-xs text-base-600 md:hidden">{{ t('budget.saldo') }}</span>
                       <span class="text-sm font-medium tabular-nums" :class="saldoTextClass(summaryByCostCentre[costCentre.id]?.ownSaldo ?? 0)">
                         {{ formatCurrency(summaryByCostCentre[costCentre.id]?.ownSaldo ?? 0) }}
                       </span>
@@ -234,7 +234,7 @@
 
                   <div
                     v-if="costCentre.hasChildren"
-                    class="grid grid-cols-2 gap-x-3 gap-y-1 border-t border-slate-100 bg-slate-100/70 px-4 py-2 text-xs text-slate-600 md:grid-cols-[minmax(0,1fr)_8.5rem_8.5rem_7.5rem] md:items-center"
+                    class="grid grid-cols-2 gap-x-3 gap-y-1 border-t border-base-100 bg-base-100/70 px-4 py-2 text-xs text-base-600 md:grid-cols-[minmax(0,1fr)_8.5rem_8.5rem_7.5rem] md:items-center"
                   >
                     <div class="col-span-2 md:col-span-1" :style="{ paddingLeft: `${costCentre.depth * 1.25}rem` }">
                       {{ t('budget.sumWithChildren') }}
@@ -257,18 +257,18 @@
                 </div>
               </div>
 
-              <div class="grid grid-cols-2 gap-x-3 gap-y-1 border-t-2 border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-900 md:grid-cols-[minmax(0,1fr)_8.5rem_8.5rem_7.5rem] md:items-center">
+              <div class="grid grid-cols-2 gap-x-3 gap-y-1 border-t-2 border-base-200 bg-base-50 px-4 py-3 text-sm font-semibold text-base-900 md:grid-cols-[minmax(0,1fr)_8.5rem_8.5rem_7.5rem] md:items-center">
                 <div class="col-span-2 md:col-span-1">{{ t('budget.grandTotal') }}</div>
                 <div class="flex items-baseline justify-between md:block md:pr-2 md:text-right">
-                  <span class="font-normal text-slate-500 md:hidden">{{ t('budget.expenses') }}</span>
+                  <span class="font-normal text-base-500 md:hidden">{{ t('budget.expenses') }}</span>
                   <span class="tabular-nums">{{ formatCurrency(totalSummary.totalExpense) }}</span>
                 </div>
                 <div class="flex items-baseline justify-between md:block md:pr-2 md:text-right">
-                  <span class="font-normal text-slate-500 md:hidden">{{ t('budget.income') }}</span>
+                  <span class="font-normal text-base-500 md:hidden">{{ t('budget.income') }}</span>
                   <span class="tabular-nums">{{ formatCurrency(totalSummary.totalIncome) }}</span>
                 </div>
                 <div class="col-span-2 flex items-baseline justify-between md:col-span-1 md:block md:pr-2 md:text-right">
-                  <span class="font-normal text-slate-500 md:hidden">{{ t('budget.saldo') }}</span>
+                  <span class="font-normal text-base-500 md:hidden">{{ t('budget.saldo') }}</span>
                   <span class="tabular-nums" :class="saldoTextClass(totalSummary.totalSaldo)">{{ formatCurrency(totalSummary.totalSaldo) }}</span>
                 </div>
               </div>
@@ -681,22 +681,22 @@ function getPeriodBounds(year: number, semester: BudgetSemester) {
 }
 
 function saldoTextClass(value: number) {
-  if (value > 0) return 'text-green-700'
-  if (value < 0) return 'text-red-700'
-  return 'text-slate-700'
+  if (value > 0) return 'text-success-700'
+  if (value < 0) return 'text-danger-700'
+  return 'text-base-700'
 }
 
 function saldoTextClassOnDark(value: number) {
-  if (value > 0) return 'text-emerald-400'
-  if (value < 0) return 'text-rose-400'
-  return 'text-slate-300'
+  if (value > 0) return 'text-success-400'
+  if (value < 0) return 'text-danger-400'
+  return 'text-base-300'
 }
 
 function semesterButtonClass(value: BudgetSemester) {
   const selected = form.value.semester === value
   return [
     'rounded-lg border px-3 py-2 text-sm font-medium transition cursor-pointer',
-    selected ? 'border-orange-400 bg-orange-50 text-orange-700' : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50',
+    selected ? 'border-accent-400 bg-accent-50 text-accent-700' : 'border-base-200 bg-white text-base-700 hover:bg-base-50',
     !canEdit.value ? 'cursor-not-allowed opacity-70' : '',
   ]
 }

@@ -2,15 +2,15 @@
   <div v-if="hasAccess" class="-mx-6 -mb-6 bg-white p-4 shadow-sm space-y-3 col-span-12 sm:mx-0 sm:mb-0 sm:space-y-6 sm:rounded-xl sm:p-6 sm:shadow-lg">
     <div class="space-y-1">
       <h2 class="text-base font-semibold sm:text-lg">{{ t('settings.association.title') }}</h2>
-      <p class="text-sm text-slate-600">{{ t('settings.association.intro') }}</p>
+      <p class="text-sm text-base-600">{{ t('settings.association.intro') }}</p>
     </div>
 
-    <section class="rounded-xl border border-slate-200 p-4 space-y-4">
+    <section class="rounded-xl border border-base-200 p-4 space-y-4">
       <h3 class="font-semibold">{{ t('settings.association.legalTitle') }}</h3>
 
       <div class="field">
         <label>{{ t('settings.association.fields.logo') }}</label>
-        <p class="mb-2 text-sm text-slate-500">{{ t('settings.association.logoHelp') }}</p>
+        <p class="mb-2 text-sm text-base-500">{{ t('settings.association.logoHelp') }}</p>
         <ClientOnly>
           <div class="max-w-xl">
             <PageFinancesFileDrop
@@ -79,7 +79,7 @@
       </div>
     </section>
 
-    <section class="rounded-xl border border-slate-200 p-4 space-y-4">
+    <section class="rounded-xl border border-base-200 p-4 space-y-4">
       <h3 class="font-semibold">{{ t('settings.association.contactTitle') }}</h3>
 
       <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -100,7 +100,7 @@
       </div>
     </section>
 
-    <section class="rounded-xl border border-slate-200 p-4 space-y-4">
+    <section class="rounded-xl border border-base-200 p-4 space-y-4">
       <h3 class="font-semibold">{{ t('settings.association.bankingTitle') }}</h3>
 
       <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -121,7 +121,7 @@
       </div>
     </section>
 
-    <section class="rounded-xl border border-slate-200 p-4 space-y-4">
+    <section class="rounded-xl border border-base-200 p-4 space-y-4">
       <div class="field">
         <label>{{ t('settings.association.responsibleMembers') }}</label>
         <CommonSelectionListField
@@ -157,23 +157,23 @@
       </div>
     </section>
 
-    <section class="rounded-xl border border-slate-200 p-4 space-y-3">
+    <section class="rounded-xl border border-base-200 p-4 space-y-3">
       <h3 class="font-semibold">{{ t('settings.association.effectiveResponsibleTitle') }}</h3>
 
-      <div v-if="effectiveResponsiblePeople.length" class="rounded-lg border border-slate-200 bg-slate-50">
+      <div v-if="effectiveResponsiblePeople.length" class="rounded-lg border border-base-200 bg-base-50">
         <div class="selection-scroll max-h-[min(38vh,20rem)] overflow-y-auto p-2">
           <div
             v-for="person in effectiveResponsiblePeople"
             :key="person.key"
-            class="mb-2 rounded-lg border border-slate-200 bg-white px-3 py-2 last:mb-0"
+            class="mb-2 rounded-lg border border-base-200 bg-white px-3 py-2 last:mb-0"
           >
-            <p class="truncate text-sm font-medium text-slate-800">{{ person.label }}</p>
-            <p class="truncate text-xs text-slate-500">{{ person.meta }}</p>
+            <p class="truncate text-sm font-medium text-base-800">{{ person.label }}</p>
+            <p class="truncate text-xs text-base-500">{{ person.meta }}</p>
           </div>
         </div>
       </div>
 
-      <div v-else class="rounded-lg border border-dashed border-slate-300 px-3 py-4 text-sm text-slate-500">
+      <div v-else class="rounded-lg border border-dashed border-base-300 px-3 py-4 text-sm text-base-500">
         {{ t('settings.association.noEffectiveResponsible') }}
       </div>
     </section>
@@ -492,7 +492,7 @@ useAppRefresh().onRefresh(async () => {
 <style scoped>
 .selection-scroll {
   scrollbar-width: auto;
-  scrollbar-color: #94a3b8 #e2e8f0;
+  scrollbar-color: var(--color-base-400) var(--color-base-200);
 }
 
 .selection-scroll::-webkit-scrollbar {
@@ -500,13 +500,13 @@ useAppRefresh().onRefresh(async () => {
 }
 
 .selection-scroll::-webkit-scrollbar-track {
-  background: #e2e8f0;
+  background: var(--color-base-200);
   border-radius: 9999px;
 }
 
 .selection-scroll::-webkit-scrollbar-thumb {
-  background: #94a3b8;
+  background: var(--color-base-400);
   border-radius: 9999px;
-  border: 2px solid #e2e8f0;
+  border: 2px solid var(--color-base-200);
 }
 </style>

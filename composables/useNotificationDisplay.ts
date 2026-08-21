@@ -3,7 +3,7 @@ import { useLocaleFormatters } from '~/composables/useLocaleFormatters'
 import { NOTIFICATION_TYPE_MAP, type NotificationTypeKey } from '~/config/notificationTypes'
 import type { NotificationChannelKey } from '~/config/notificationChannels'
 
-type BadgeTone = 'slate' | 'yellow' | 'green' | 'red' | 'redSolid' | 'gray'
+type BadgeTone = 'base' | 'warning' | 'success' | 'dangerCancelled' | 'danger' | 'baseMuted'
 
 /**
  * Anchor id of the personal preference matrix in the general settings tab, and the `section`
@@ -29,10 +29,10 @@ const TYPE_ICONS: Record<NotificationTypeKey, string> = {
 
 /** Colour per category so the bell and the inbox stay readable at a glance. */
 const CATEGORY_COLORS: Record<string, string> = {
-  'notifications.categories.shifts': 'bg-cyan-100 text-cyan-700',
-  'notifications.categories.tasks': 'bg-amber-100 text-amber-700',
-  'notifications.categories.events': 'bg-violet-100 text-violet-700',
-  'notifications.categories.custom': 'bg-slate-200 text-slate-700',
+  'notifications.categories.shifts': 'bg-info-100 text-info-700',
+  'notifications.categories.tasks': 'bg-warning-100 text-warning-700',
+  'notifications.categories.events': 'bg-accent-100 text-accent-700',
+  'notifications.categories.custom': 'bg-base-200 text-base-700',
 }
 
 const CHANNEL_ICONS: Record<NotificationChannelKey, string> = {
@@ -42,13 +42,13 @@ const CHANNEL_ICONS: Record<NotificationChannelKey, string> = {
 }
 
 const NOTIFICATION_STATUS_TONES: Record<string, BadgeTone> = {
-  scheduled: 'yellow',
-  sent: 'green',
-  partially_failed: 'redSolid',
-  cancelled: 'gray',
-  pending: 'yellow',
-  failed: 'redSolid',
-  skipped: 'gray',
+  scheduled: 'warning',
+  sent: 'success',
+  partially_failed: 'danger',
+  cancelled: 'baseMuted',
+  pending: 'warning',
+  failed: 'danger',
+  skipped: 'baseMuted',
 }
 
 /**
@@ -74,7 +74,7 @@ export function useNotificationDisplay() {
 
   function typeColorClass(typeKey: NotificationTypeKey) {
     const categoryKey = NOTIFICATION_TYPE_MAP[typeKey]?.categoryKey
-    return (categoryKey && CATEGORY_COLORS[categoryKey]) || 'bg-slate-200 text-slate-700'
+    return (categoryKey && CATEGORY_COLORS[categoryKey]) || 'bg-base-200 text-base-700'
   }
 
   function typeLabel(typeKey: NotificationTypeKey) {
@@ -111,7 +111,7 @@ export function useNotificationDisplay() {
   }
 
   function statusTone(status: string): BadgeTone {
-    return NOTIFICATION_STATUS_TONES[status] || 'gray'
+    return NOTIFICATION_STATUS_TONES[status] || 'baseMuted'
   }
 
   function relativeTime(value: string) {

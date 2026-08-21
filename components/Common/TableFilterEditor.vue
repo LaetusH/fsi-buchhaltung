@@ -5,13 +5,13 @@
         <input
           v-model="textSearchInput"
           type="text"
-          class="w-full border-0 border-b border-r border-slate-300 rounded-tl-lg px-2 py-2 text-xs"
+          class="w-full border-0 border-b border-r border-base-300 rounded-tl-lg px-2 py-2 text-xs"
           :placeholder="t('common.searchFilter')"
           @keydown.enter.prevent="applyTextSearch"
         >
         <button
           type="button"
-          class="px-3 py-2 text-xs border-0 border-b border-slate-300 hover:bg-slate-50 cursor-pointer"
+          class="px-3 py-2 text-xs border-0 border-b border-base-300 hover:bg-base-50 cursor-pointer"
           @click="applyTextSearch"
         >
           <Icon name="material-symbols:search-rounded" class="w-4 h-4" />
@@ -32,10 +32,10 @@
           >
           <span class="truncate">{{ option }}</span>
         </label>
-        <div v-if="filteredTextOptions.length === 0" class="text-xs text-slate-400">
+        <div v-if="filteredTextOptions.length === 0" class="text-xs text-base-400">
           {{ t('common.noEntries') }}
         </div>
-        <div v-else-if="filteredTextOptions.length > MAX_FILTER_OPTIONS" class="text-[11px] text-slate-500 pt-1">
+        <div v-else-if="filteredTextOptions.length > MAX_FILTER_OPTIONS" class="text-[11px] text-base-500 pt-1">
           {{ t('common.firstOptionsShown', { count: MAX_FILTER_OPTIONS }) }}
         </div>
       </div>
@@ -43,7 +43,7 @@
 
     <template v-else-if="filterType === 'date'">
       <div class="px-2 pt-2 flex items-center gap-2">
-        <label class="text-xs text-slate-600 w-8 shrink-0">{{ t('common.from') }}</label>
+        <label class="text-xs text-base-600 w-8 shrink-0">{{ t('common.from') }}</label>
         <CommonDateInput
           v-model="rangeMin"
           size="sm"
@@ -52,7 +52,7 @@
         />
       </div>
       <div class="px-2 py-2 flex items-center gap-2">
-        <label class="text-xs text-slate-600 w-8 shrink-0">{{ t('common.to') }}</label>
+        <label class="text-xs text-base-600 w-8 shrink-0">{{ t('common.to') }}</label>
         <CommonDateInput
           v-model="rangeMax"
           size="sm"
@@ -64,31 +64,31 @@
 
     <template v-else>
       <div class="px-2 pt-2 space-y-1">
-        <label class="text-xs text-slate-600">{{ t('common.from') }}</label>
+        <label class="text-xs text-base-600">{{ t('common.from') }}</label>
         <input
           v-model="rangeMin"
           type="text"
           inputmode="decimal"
-          class="w-full border border-slate-300 rounded px-2 py-1 text-xs"
+          class="w-full border border-base-300 rounded px-2 py-1 text-xs"
           @keydown.enter.prevent="onConfirm"
         >
       </div>
       <div class="px-2 py-2 space-y-1">
-        <label class="text-xs text-slate-600">{{ t('common.to') }}</label>
+        <label class="text-xs text-base-600">{{ t('common.to') }}</label>
         <input
           v-model="rangeMax"
           type="text"
           inputmode="decimal"
-          class="w-full border border-slate-300 rounded px-2 py-1 text-xs"
+          class="w-full border border-base-300 rounded px-2 py-1 text-xs"
           @keydown.enter.prevent="onConfirm"
         >
       </div>
     </template>
 
-    <div class="grid grid-cols-2 gap-0 border-t border-slate-300">
+    <div class="grid grid-cols-2 gap-0 border-t border-base-300">
       <button
         type="button"
-        class="px-3 py-2 border-0 border-r border-slate-300 text-xs hover:bg-slate-50 cursor-pointer"
+        class="px-3 py-2 border-0 border-r border-base-300 text-xs hover:bg-base-50 cursor-pointer"
         @click="onReset"
       >
         {{ t('actions.reset') }}

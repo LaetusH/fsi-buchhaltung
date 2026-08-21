@@ -6,19 +6,19 @@
 
         <section class="space-y-4 rounded-xl bg-white p-4 shadow-sm sm:p-6 sm:shadow-lg">
           <header class="flex items-center gap-2">
-            <Icon name="material-symbols:group-rounded" class="h-5 w-5 text-cyan-700" aria-hidden="true" />
+            <Icon name="material-symbols:group-rounded" class="h-5 w-5 text-secondary-700" aria-hidden="true" />
             <h3 class="font-semibold">{{ t('notifications.compose.recipients') }}</h3>
-            <span class="ml-auto text-xs text-slate-500">{{ recipientSummary }}</span>
+            <span class="ml-auto text-xs text-base-500">{{ recipientSummary }}</span>
           </header>
 
           <label
             class="flex cursor-pointer items-start gap-3 rounded-xl border p-3 transition"
-            :class="form.allActiveMembers ? 'border-cyan-500 bg-cyan-50' : 'border-slate-200 hover:border-slate-300'"
+            :class="form.allActiveMembers ? 'border-secondary-500 bg-secondary-50' : 'border-base-200 hover:border-base-300'"
           >
             <input v-model="form.allActiveMembers" type="checkbox" class="checkbox mt-0.5">
             <span>
-              <span class="block text-sm font-medium text-slate-800">{{ t('notifications.compose.allActiveMembers') }}</span>
-              <span class="block text-xs text-slate-500">
+              <span class="block text-sm font-medium text-base-800">{{ t('notifications.compose.allActiveMembers') }}</span>
+              <span class="block text-xs text-base-500">
                 {{ t('notifications.compose.allActiveMembersHelp', { count: memberCount }) }}
               </span>
             </span>
@@ -26,9 +26,9 @@
 
           <div v-if="!form.allActiveMembers" class="space-y-4">
             <div class="space-y-2">
-              <p class="text-sm font-medium text-slate-600">
+              <p class="text-sm font-medium text-base-600">
                 {{ t('notifications.compose.recipientsMembers') }}
-                <span v-if="form.memberIds.length" class="text-slate-400">({{ form.memberIds.length }})</span>
+                <span v-if="form.memberIds.length" class="text-base-400">({{ form.memberIds.length }})</span>
               </p>
               <CommonSelectionListField
                 :query="memberQuery"
@@ -45,9 +45,9 @@
             </div>
 
             <div class="space-y-2">
-              <p class="text-sm font-medium text-slate-600">
+              <p class="text-sm font-medium text-base-600">
                 {{ t('notifications.compose.recipientsSubdivisions') }}
-                <span v-if="form.subdivisionIds.length" class="text-slate-400">({{ form.subdivisionIds.length }})</span>
+                <span v-if="form.subdivisionIds.length" class="text-base-400">({{ form.subdivisionIds.length }})</span>
               </p>
               <CommonSelectionListField
                 :query="subdivisionQuery"
@@ -64,9 +64,9 @@
             </div>
 
             <div class="space-y-2">
-              <p class="text-sm font-medium text-slate-600">
+              <p class="text-sm font-medium text-base-600">
                 {{ t('notifications.compose.recipientsUsers') }}
-                <span v-if="form.userIds.length" class="text-slate-400">({{ form.userIds.length }})</span>
+                <span v-if="form.userIds.length" class="text-base-400">({{ form.userIds.length }})</span>
               </p>
               <CommonSelectionListField
                 :query="userQuery"
@@ -86,7 +86,7 @@
 
         <section class="space-y-4 rounded-xl bg-white p-4 shadow-sm sm:p-6 sm:shadow-lg">
           <header class="flex items-center gap-2">
-            <Icon name="material-symbols:edit-note-rounded" class="h-5 w-5 text-cyan-700" aria-hidden="true" />
+            <Icon name="material-symbols:edit-note-rounded" class="h-5 w-5 text-secondary-700" aria-hidden="true" />
             <h3 class="font-semibold">{{ t('notifications.compose.content') }}</h3>
           </header>
 
@@ -100,7 +100,7 @@
               class="input"
               :placeholder="t('notifications.compose.subjectPlaceholder')"
             >
-            <p class="mt-1 text-right text-xs text-slate-400">{{ form.subject.length }} / 255</p>
+            <p class="mt-1 text-right text-xs text-base-400">{{ form.subject.length }} / 255</p>
           </div>
 
           <div class="field">
@@ -116,17 +116,17 @@
               class="input resize-y"
               :placeholder="t('notifications.compose.bodyPlaceholder')"
             ></textarea>
-            <p class="mt-1 text-xs text-slate-400">{{ t('notifications.compose.formatHelp') }}</p>
+            <p class="mt-1 text-xs text-base-400">{{ t('notifications.compose.formatHelp') }}</p>
           </div>
 
           <div class="space-y-2">
-            <p class="text-xs font-medium text-slate-500">{{ t('notifications.compose.variables') }}</p>
+            <p class="text-xs font-medium text-base-500">{{ t('notifications.compose.variables') }}</p>
             <div class="flex flex-wrap gap-2">
               <button
                 v-for="variable in variables"
                 :key="variable"
                 type="button"
-                class="rounded-md border border-slate-200 bg-slate-50 px-2 py-1 text-xs font-medium text-slate-700 transition hover:border-cyan-400 hover:text-cyan-700 cursor-pointer"
+                class="rounded-md border border-base-200 bg-base-50 px-2 py-1 text-xs font-medium text-base-700 transition hover:border-secondary-400 hover:text-secondary-700 cursor-pointer"
                 :title="`${variableDescription(variable)} — ${t('notifications.compose.insertVariable')}`"
                 @click="insertVariable(variable)"
               >
@@ -138,7 +138,7 @@
 
         <section class="space-y-4 rounded-xl bg-white p-4 shadow-sm sm:p-6 sm:shadow-lg">
           <header class="flex items-center gap-2">
-            <Icon name="material-symbols:send-rounded" class="h-5 w-5 text-cyan-700" aria-hidden="true" />
+            <Icon name="material-symbols:send-rounded" class="h-5 w-5 text-secondary-700" aria-hidden="true" />
             <h3 class="font-semibold">{{ t('notifications.compose.channels') }}</h3>
           </header>
 
@@ -148,8 +148,8 @@
               :key="channel.key"
               class="flex items-start gap-3 rounded-xl border p-3 transition"
               :class="[
-                form.channels.includes(channel.key) ? 'border-cyan-500 bg-cyan-50' : 'border-slate-200',
-                channel.key === 'in_app' || channelOffGlobally(channel.key) ? 'cursor-not-allowed opacity-60' : 'cursor-pointer hover:border-slate-300',
+                form.channels.includes(channel.key) ? 'border-secondary-500 bg-secondary-50' : 'border-base-200',
+                channel.key === 'in_app' || channelOffGlobally(channel.key) ? 'cursor-not-allowed opacity-60' : 'cursor-pointer hover:border-base-300',
               ]"
             >
               <input
@@ -160,11 +160,11 @@
                 :disabled="channel.key === 'in_app' || channelOffGlobally(channel.key)"
               >
               <span class="min-w-0">
-                <span class="flex items-center gap-1.5 text-sm font-medium text-slate-800">
+                <span class="flex items-center gap-1.5 text-sm font-medium text-base-800">
                   <Icon :name="channelIcon(channel.key)" class="h-4 w-4" aria-hidden="true" />
                   {{ t(channel.labelKey) }}
                 </span>
-                <span class="block text-xs text-slate-500">
+                <span class="block text-xs text-base-500">
                   {{ channelOffGlobally(channel.key) ? t('settings.notifications.channelOffGlobally') : t(`notifications.compose.channelHelp.${channel.key}`) }}
                 </span>
               </span>
@@ -174,7 +174,7 @@
 
         <section class="space-y-4 rounded-xl bg-white p-4 shadow-sm sm:p-6 sm:shadow-lg">
           <header class="flex items-center gap-2">
-            <Icon name="material-symbols:schedule-rounded" class="h-5 w-5 text-cyan-700" aria-hidden="true" />
+            <Icon name="material-symbols:schedule-rounded" class="h-5 w-5 text-secondary-700" aria-hidden="true" />
             <h3 class="font-semibold">{{ t('notifications.compose.timing') }}</h3>
           </header>
 
@@ -183,12 +183,12 @@
               v-for="option in timingOptions"
               :key="option.value"
               class="flex cursor-pointer items-start gap-3 rounded-xl border p-3 transition"
-              :class="timing === option.value ? 'border-cyan-500 bg-cyan-50' : 'border-slate-200 hover:border-slate-300'"
+              :class="timing === option.value ? 'border-secondary-500 bg-secondary-50' : 'border-base-200 hover:border-base-300'"
             >
               <input v-model="timing" type="radio" :value="option.value" class="mt-0.5 h-4 w-4 cursor-pointer">
               <span>
-                <span class="block text-sm font-medium text-slate-800">{{ option.label }}</span>
-                <span class="block text-xs text-slate-500">{{ option.help }}</span>
+                <span class="block text-sm font-medium text-base-800">{{ option.label }}</span>
+                <span class="block text-xs text-base-500">{{ option.help }}</span>
               </span>
             </label>
           </div>
@@ -211,46 +211,46 @@
       <div class="col-span-12 lg:col-span-5 xl:col-span-4">
         <section class="space-y-3 rounded-xl bg-white p-4 shadow-sm sm:p-6 sm:shadow-lg lg:sticky lg:top-4">
           <header class="flex items-center gap-2">
-            <Icon name="material-symbols:visibility-outline-rounded" class="h-5 w-5 text-cyan-700" aria-hidden="true" />
+            <Icon name="material-symbols:visibility-outline-rounded" class="h-5 w-5 text-secondary-700" aria-hidden="true" />
             <h3 class="font-semibold">{{ t('notifications.compose.preview') }}</h3>
           </header>
 
-          <div class="rounded-xl border border-slate-200 p-3">
+          <div class="rounded-xl border border-base-200 p-3">
             <div class="flex items-start gap-3">
-              <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-slate-200 text-slate-700">
+              <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-base-200 text-base-700">
                 <Icon name="material-symbols:campaign-rounded" class="h-5 w-5" aria-hidden="true" />
               </span>
               <div class="min-w-0 flex-1">
-                <p class="truncate text-sm font-semibold text-slate-900">
+                <p class="truncate text-sm font-semibold text-base-900">
                   {{ previewSubject || t('notifications.compose.previewEmptySubject') }}
                 </p>
                 <div
                   v-if="previewBody"
-                  class="notification-body-html mt-1 text-sm text-slate-600"
+                  class="notification-body-html mt-1 text-sm text-base-600"
                   v-html="previewBodyHtml"
                 ></div>
-                <p v-else class="mt-1 text-sm text-slate-600">
+                <p v-else class="mt-1 text-sm text-base-600">
                   {{ t('notifications.compose.previewEmptyBody') }}
                 </p>
-                <p class="mt-2 text-[11px] text-slate-400">{{ t('notifications.relativeTime.now') }}</p>
+                <p class="mt-2 text-[11px] text-base-400">{{ t('notifications.relativeTime.now') }}</p>
               </div>
             </div>
           </div>
 
-          <p class="text-xs text-slate-400">{{ t('notifications.compose.previewHelp') }}</p>
+          <p class="text-xs text-base-400">{{ t('notifications.compose.previewHelp') }}</p>
 
-          <dl class="space-y-1 border-t border-slate-100 pt-3 text-xs">
+          <dl class="space-y-1 border-t border-base-100 pt-3 text-xs">
             <div class="flex justify-between gap-2">
-              <dt class="text-slate-500">{{ t('notifications.compose.recipients') }}</dt>
-              <dd class="text-right font-medium text-slate-700">{{ recipientSummary }}</dd>
+              <dt class="text-base-500">{{ t('notifications.compose.recipients') }}</dt>
+              <dd class="text-right font-medium text-base-700">{{ recipientSummary }}</dd>
             </div>
             <div class="flex justify-between gap-2">
-              <dt class="text-slate-500">{{ t('notifications.compose.channels') }}</dt>
-              <dd class="text-right font-medium text-slate-700">{{ selectedChannelLabels }}</dd>
+              <dt class="text-base-500">{{ t('notifications.compose.channels') }}</dt>
+              <dd class="text-right font-medium text-base-700">{{ selectedChannelLabels }}</dd>
             </div>
             <div class="flex justify-between gap-2">
-              <dt class="text-slate-500">{{ t('notifications.compose.timing') }}</dt>
-              <dd class="text-right font-medium text-slate-700">
+              <dt class="text-base-500">{{ t('notifications.compose.timing') }}</dt>
+              <dd class="text-right font-medium text-base-700">
                 {{ timing === 'now' ? t('notifications.compose.sendNow') : (scheduledForDisplay || t('notifications.compose.schedule')) }}
               </dd>
             </div>

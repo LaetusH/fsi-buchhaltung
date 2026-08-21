@@ -5,7 +5,7 @@
 
       <div class="grid grid-cols-2 gap-4">
         <div>
-          <label class="text-sm font-medium text-slate-600">{{ t('reimbursement.paidBy') }}</label>
+          <label class="text-sm font-medium text-base-600">{{ t('reimbursement.paidBy') }}</label>
           <CommonSearchSelect
             v-model="paidByQuery"
             :options="memberOptions"
@@ -19,14 +19,14 @@
         </div>
 
         <div>
-          <label class="text-sm font-medium text-slate-600">{{ t('reimbursement.submittedAt') }}</label>
+          <label class="text-sm font-medium text-base-600">{{ t('reimbursement.submittedAt') }}</label>
           <CommonDateInput v-model="submittedAtDate" :disabled="disabled" />
         </div>
       </div>
 
       <div class="flex items-center justify-between">
         <h3 class="font-medium">{{ t('reimbursement.bankDetails') }}</h3>
-        <label class="inline-flex items-center gap-2 text-sm text-slate-700 cursor-pointer">
+        <label class="inline-flex items-center gap-2 text-sm text-base-700 cursor-pointer">
           <input v-model="form.cash" type="checkbox" class="checkbox" :disabled="disabled">
           {{ t('reimbursement.cash') }}
         </label>
@@ -34,22 +34,22 @@
 
       <div class="grid grid-cols-2 gap-4 transition-opacity" :class="form.cash ? 'opacity-50' : 'opacity-100'">
         <div>
-          <label class="text-sm font-medium text-slate-600">{{ t('reimbursement.bankname') }}</label>
+          <label class="text-sm font-medium text-base-600">{{ t('reimbursement.bankname') }}</label>
           <input v-model="form.bankname" class="input" :disabled="disabled || form.cash">
         </div>
 
         <div>
-          <label class="text-sm font-medium text-slate-600">{{ t('reimbursement.accountHolder') }}</label>
+          <label class="text-sm font-medium text-base-600">{{ t('reimbursement.accountHolder') }}</label>
           <input v-model="form.account_holder" class="input" :disabled="disabled || form.cash">
         </div>
 
         <div>
-          <label class="text-sm font-medium text-slate-600">{{ t('reimbursement.iban') }}</label>
+          <label class="text-sm font-medium text-base-600">{{ t('reimbursement.iban') }}</label>
           <input v-model="form.iban" class="input" :disabled="disabled || form.cash">
         </div>
 
         <div>
-          <label class="text-sm font-medium text-slate-600">{{ t('reimbursement.bic') }}</label>
+          <label class="text-sm font-medium text-base-600">{{ t('reimbursement.bic') }}</label>
           <input v-model="form.bic" class="input" :disabled="disabled || form.cash">
         </div>
       </div>
@@ -85,7 +85,7 @@
             <button
               v-if="canEditSelectedReceipt(i)"
               type="button"
-              class="p-2 h-10 w-10 rounded-md hover:bg-slate-100 text-orange-500 cursor-pointer"
+              class="p-2 h-10 w-10 rounded-md hover:bg-base-100 text-accent-500 cursor-pointer"
               :title="t('actions.edit')"
               @click.stop.prevent="editSelectedReceipt(i)"
             >
@@ -94,14 +94,14 @@
           </template>
         </CommonSearchSelect>
 
-        <div class="text-right text-sm text-slate-600">
+        <div class="text-right text-sm text-base-600">
           {{ selectedReceiptAmount(i) }}
         </div>
 
         <button
           v-if="!disabled && form.positions.length > 1"
           type="button"
-          class="text-red-500 cursor-pointer p-2 w-10 rounded-md hover:bg-slate-100"
+          class="text-danger-500 cursor-pointer p-2 w-10 rounded-md hover:bg-base-100"
           @click="removePosition(i)"
         >
           ✕
@@ -112,7 +112,7 @@
         <button
           v-if="!disabled"
           type="button"
-          class="flex items-center gap-2 text-orange-500 font-medium cursor-pointer"
+          class="flex items-center gap-2 text-accent-500 font-medium cursor-pointer"
           @click="addPosition"
         >
           <span class="text-xl">+</span> {{ t('actions.addPosition') }}
@@ -120,7 +120,7 @@
 
         <div class="text-sm text-right space-y-1 pt-2 min-w-55 w-72">
           <div class="flex items-center justify-between gap-3">
-            <span class="text-slate-600">{{ t('reimbursement.advance') }}</span>
+            <span class="text-base-600">{{ t('reimbursement.advance') }}</span>
             <input
               type="text"
               class="input text-right w-42"
@@ -132,11 +132,11 @@
               @input="onAdvanceInput"
             >
           </div>
-          <div class="flex justify-between text-slate-500">
+          <div class="flex justify-between text-base-500">
             <span>{{ t('reimbursement.receiptsTotal') }}</span>
             <span>{{ formatCurrency(receiptsTotal) }}</span>
           </div>
-          <div class="flex justify-between text-slate-500">
+          <div class="flex justify-between text-base-500">
             <span>{{ t('reimbursement.advance') }}</span>
             <span>- {{ formatCurrency(Number(form.advance || 0)) }}</span>
           </div>
@@ -153,7 +153,7 @@
 
       <div class="grid grid-cols-2 gap-4">
         <div>
-          <label class="text-sm font-medium text-slate-600">{{ t('reimbursement.checkedBy') }}</label>
+          <label class="text-sm font-medium text-base-600">{{ t('reimbursement.checkedBy') }}</label>
           <CommonSearchSelect
             v-model="checkedByQuery"
             :options="memberOptions"
@@ -167,12 +167,12 @@
         </div>
 
         <div>
-          <label class="text-sm font-medium text-slate-600">{{ t('reimbursement.checkedAt') }}</label>
+          <label class="text-sm font-medium text-base-600">{{ t('reimbursement.checkedAt') }}</label>
           <CommonDateInput v-model="checkedAtDate" :disabled="disabled" :empty-value="null" />
         </div>
 
         <div>
-          <label class="text-sm font-medium text-slate-600">{{ t('reimbursement.disbursedBy') }}</label>
+          <label class="text-sm font-medium text-base-600">{{ t('reimbursement.disbursedBy') }}</label>
           <CommonSearchSelect
             v-model="disbursedByQuery"
             :options="memberOptions"
@@ -186,7 +186,7 @@
         </div>
 
         <div>
-          <label class="text-sm font-medium text-slate-600">{{ t('reimbursement.disbursedAt') }}</label>
+          <label class="text-sm font-medium text-base-600">{{ t('reimbursement.disbursedAt') }}</label>
           <CommonDateInput v-model="disbursedAtDate" :disabled="disabled" :empty-value="null" />
         </div>
       </div>

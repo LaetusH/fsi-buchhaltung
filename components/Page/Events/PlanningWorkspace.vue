@@ -4,7 +4,7 @@
       <div class="col-span-12 min-w-0">
         <div class="-mb-6 space-y-6">
           <section class="-mx-6 overflow-hidden bg-white shadow-sm sm:mx-0 sm:rounded-xl sm:shadow-lg">
-            <div class="border-b border-slate-200 bg-slate-900 px-5 py-5 text-white">
+            <div class="border-b border-base-200 bg-base-900 px-5 py-5 text-white">
               <div class="flex flex-wrap items-start justify-between gap-4">
                 <div class="flex min-w-0 items-start gap-3">
                   <button
@@ -16,9 +16,9 @@
                     <Icon name="material-symbols:arrow-back-rounded" />
                   </button>
                   <div class="min-w-0">
-                    <p class="text-xs font-semibold uppercase tracking-wide text-orange-200">{{ t('event.planning.workspace') }}</p>
+                    <p class="text-xs font-semibold uppercase tracking-wide text-accent-200">{{ t('event.planning.workspace') }}</p>
                     <h2 class="mt-1 truncate text-2xl font-semibold">{{ eventTitle }}</h2>
-                    <div class="mt-3 flex flex-wrap gap-2 text-sm text-slate-200">
+                    <div class="mt-3 flex flex-wrap gap-2 text-sm text-base-200">
                       <span class="inline-flex items-center gap-1 rounded-md bg-white/10 px-2.5 py-1">
                         <Icon name="material-symbols:event-rounded" class="text-base" />
                         {{ eventRangeLabel }}
@@ -40,13 +40,13 @@
 
                   <div class="grid flex-1 gap-2 text-sm">
                     <div class="rounded-lg bg-white/10 px-3 py-2">
-                      <p class="text-xs text-slate-300">{{ t('event.planning.readiness') }}</p>
+                      <p class="text-xs text-base-300">{{ t('event.planning.readiness') }}</p>
                       <p class="text-lg font-semibold">{{ planningProgress }}%</p>
                       <div class="mt-2 h-2 rounded-full bg-white/15">
-                        <div class="h-2 rounded-full bg-orange-400" :style="{ width: `${planningProgress}%` }" />
+                        <div class="h-2 rounded-full bg-accent-400" :style="{ width: `${planningProgress}%` }" />
                       </div>
-                      <p v-if="daysToEvent !== null" class="mt-2 flex items-center gap-1.5 text-xs font-semibold text-slate-300">
-                        <Icon name="material-symbols:schedule-rounded" class="text-sm text-slate-400" />
+                      <p v-if="daysToEvent !== null" class="mt-2 flex items-center gap-1.5 text-xs font-semibold text-base-300">
+                        <Icon name="material-symbols:schedule-rounded" class="text-sm text-base-400" />
                         <template v-if="daysToEvent > 0">{{ t('event.planning.daysUntilEvent', { days: daysToEvent }) }}</template>
                         <template v-else-if="daysToEvent === 0">{{ t('event.planning.eventToday') }}</template>
                         <template v-else>{{ t('event.planning.daysPastEvent', { days: Math.abs(daysToEvent) }) }}</template>
@@ -59,7 +59,7 @@
 
             <nav
               v-if="eventId && planningTabs.length > 1"
-              class="grid grid-cols-2 gap-2 border-b border-slate-200 bg-slate-200 px-3 py-3 sm:grid-cols-3"
+              class="grid grid-cols-2 gap-2 border-b border-base-200 bg-base-200 px-3 py-3 sm:grid-cols-3"
               :class="planningTabs.length > 6 ? 'lg:grid-cols-7' : 'lg:grid-cols-6'"
             >
               <button
@@ -67,7 +67,7 @@
                 :key="tab.key"
                 type="button"
                 class="inline-flex w-full items-center justify-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition cursor-pointer"
-                :class="activeTab === tab.key ? 'bg-orange-500 text-white' : 'bg-slate-100 text-slate-700 hover:bg-white'"
+                :class="activeTab === tab.key ? 'bg-accent-500 text-white' : 'bg-base-100 text-base-700 hover:bg-white'"
                 @click="activeTab = tab.key"
               >
                 <Icon :name="tab.icon" class="text-lg" />
@@ -83,12 +83,12 @@
                   <div class="-mx-6 bg-white p-4 shadow-sm sm:mx-0 sm:rounded-xl sm:shadow-lg">
                     <div class="mb-2 flex items-center justify-between gap-3">
                       <div class="flex items-center gap-2">
-                        <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-orange-50 text-orange-600">
+                        <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-accent-50 text-accent-600">
                           <Icon name="material-symbols:dashboard-rounded" class="text-base" />
                         </span>
                         <h2 class="text-lg font-semibold">{{ t('event.planning.status') }}</h2>
                       </div>
-                      <span class="text-xs font-semibold text-slate-500">
+                      <span class="text-xs font-semibold text-base-500">
                         {{ t('event.planning.statusSummaryDone', { done: planningStatusItems.filter(s => s.variant === 'ok').length, total: planningStatusItems.length }) }}
                       </span>
                     </div>
@@ -98,13 +98,13 @@
                         :key="item.label"
                         class="h-1.5 flex-1 rounded-full"
                         :class="{
-                          'bg-emerald-400': item.variant === 'ok',
-                          'bg-amber-400': item.variant === 'warning',
-                          'bg-slate-200': item.variant === 'neutral',
+                          'bg-success-400': item.variant === 'ok',
+                          'bg-warning-400': item.variant === 'warning',
+                          'bg-base-200': item.variant === 'neutral',
                         }"
                       />
                     </div>
-                    <div class="mb-3 mt-1 flex justify-between text-xs text-slate-500">
+                    <div class="mb-3 mt-1 flex justify-between text-xs text-base-500">
                       <span>{{ t('event.planning.completedPercent', { pct: planningProgress }) }}</span>
                       <span>{{ t('event.planning.statusSummaryOpen', { count: planningStatusItems.filter(s => s.variant !== 'ok').length }) }}</span>
                     </div>
@@ -113,24 +113,24 @@
                         v-for="status in planningStatusItems"
                         :key="status.label"
                         type="button"
-                        class="-mx-2 flex w-[calc(100%+1rem)] cursor-pointer items-center justify-between gap-3 rounded-md px-2 py-1.5 transition hover:bg-slate-50"
+                        class="-mx-2 flex w-[calc(100%+1rem)] cursor-pointer items-center justify-between gap-3 rounded-md px-2 py-1.5 transition hover:bg-base-50"
                         @click="activeTab = status.tab"
                       >
-                        <span class="text-sm text-slate-600">{{ status.label }}</span>
+                        <span class="text-sm text-base-600">{{ status.label }}</span>
                         <span
                           class="inline-flex shrink-0 items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold"
                           :class="{
-                            'bg-emerald-100 text-emerald-700': status.variant === 'ok',
-                            'bg-amber-100 text-amber-700': status.variant === 'warning',
-                            'bg-slate-100 text-slate-500': status.variant === 'neutral',
+                            'bg-success-100 text-success-700': status.variant === 'ok',
+                            'bg-warning-100 text-warning-700': status.variant === 'warning',
+                            'bg-base-100 text-base-500': status.variant === 'neutral',
                           }"
                         >
                           <span
                             class="h-1.5 w-1.5 shrink-0 rounded-full"
                             :class="{
-                              'bg-emerald-500': status.variant === 'ok',
-                              'bg-amber-500': status.variant === 'warning',
-                              'bg-slate-400': status.variant === 'neutral',
+                              'bg-success-500': status.variant === 'ok',
+                              'bg-warning-500': status.variant === 'warning',
+                              'bg-base-400': status.variant === 'neutral',
                             }"
                           />
                           {{ status.status }}
@@ -142,16 +142,16 @@
                   <div class="-mx-6 bg-white p-4 shadow-sm sm:mx-0 sm:rounded-xl sm:shadow-lg">
                     <div class="flex items-center justify-between gap-3">
                       <div class="flex items-center gap-2">
-                        <button type="button" class="flex h-7 w-7 shrink-0 cursor-pointer items-center justify-center rounded-lg bg-orange-50 text-orange-600 transition hover:bg-orange-100" @click="activeTab = 'timeline'">
+                        <button type="button" class="flex h-7 w-7 shrink-0 cursor-pointer items-center justify-center rounded-lg bg-accent-50 text-accent-600 transition hover:bg-accent-100" @click="activeTab = 'timeline'">
                           <Icon name="material-symbols:view-timeline-rounded" class="text-base" />
                         </button>
                         <h2 class="text-lg font-semibold">{{ t('event.planning.timelinePreview') }}</h2>
                       </div>
-                      <button type="button" class="cursor-pointer text-sm font-medium text-orange-600 hover:text-orange-700" @click="activeTab = 'timeline'">
+                      <button type="button" class="cursor-pointer text-sm font-medium text-accent-600 hover:text-accent-700" @click="activeTab = 'timeline'">
                         {{ t('event.planning.openTimeline') }}
                       </button>
                     </div>
-                    <div v-if="overviewTimelineItems.length === 0" class="mt-4 rounded-lg border border-slate-200 bg-slate-50 p-6 text-center text-sm text-slate-400">
+                    <div v-if="overviewTimelineItems.length === 0" class="mt-4 rounded-lg border border-base-200 bg-base-50 p-6 text-center text-sm text-base-400">
                       <Icon name="material-symbols:view-timeline-rounded" class="mb-1 text-2xl" />
                       <p>{{ t('event.planning.noTimelineItems') }}</p>
                     </div>
@@ -160,22 +160,22 @@
                         v-for="item in overviewTimelineItems.slice(0, 5)"
                         :key="item.id"
                         type="button"
-                        class="-mx-2 flex w-[calc(100%+1rem)] cursor-pointer items-center gap-3 rounded-md px-2 py-2 text-left transition hover:bg-slate-50"
+                        class="-mx-2 flex w-[calc(100%+1rem)] cursor-pointer items-center gap-3 rounded-md px-2 py-2 text-left transition hover:bg-base-50"
                         @click="activeTab = overviewItemTab(item)"
                       >
                         <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg" :class="overviewItemChipClass(item)">
                           <Icon :name="overviewItemIcon(item)" class="text-lg" />
                         </span>
                         <span class="min-w-0 flex-1">
-                          <span class="block truncate text-sm font-medium text-slate-800">{{ item.title }}</span>
-                          <span class="block truncate text-xs text-slate-500">{{ item.timeLabel }}</span>
+                          <span class="block truncate text-sm font-medium text-base-800">{{ item.title }}</span>
+                          <span class="block truncate text-xs text-base-500">{{ item.timeLabel }}</span>
                         </span>
-                        <span class="shrink-0 text-xs font-medium text-slate-400">{{ overviewRelativeLabel(item) }}</span>
+                        <span class="shrink-0 text-xs font-medium text-base-400">{{ overviewRelativeLabel(item) }}</span>
                       </button>
                       <button
                         v-if="overviewTimelineItems.length > 5"
                         type="button"
-                        class="w-full cursor-pointer rounded-md py-2 text-center text-sm font-medium text-slate-500 hover:bg-slate-50 hover:text-slate-700"
+                        class="w-full cursor-pointer rounded-md py-2 text-center text-sm font-medium text-base-500 hover:bg-base-50 hover:text-base-700"
                         @click="activeTab = 'timeline'"
                       >
                         {{ t('event.planning.moreTimelineItems', { count: overviewTimelineItems.length - 5 }) }}
@@ -188,19 +188,19 @@
                   <div class="-mx-6 bg-white p-4 shadow-sm sm:mx-0 sm:rounded-xl sm:shadow-lg">
                     <div class="flex items-center justify-between gap-3">
                       <div class="flex items-center gap-2">
-                        <button type="button" class="flex h-7 w-7 shrink-0 cursor-pointer items-center justify-center rounded-lg bg-orange-50 text-orange-600 transition hover:bg-orange-100" @click="activeTab = 'tasks'">
+                        <button type="button" class="flex h-7 w-7 shrink-0 cursor-pointer items-center justify-center rounded-lg bg-accent-50 text-accent-600 transition hover:bg-accent-100" @click="activeTab = 'tasks'">
                           <Icon name="material-symbols:task-alt-rounded" class="text-base" />
                         </button>
                         <h2 class="text-lg font-semibold">{{ t('event.planning.nextTasks') }}</h2>
                       </div>
-                      <button type="button" class="cursor-pointer text-sm font-medium text-orange-600 hover:text-orange-700" @click="activeTab = 'tasks'">
+                      <button type="button" class="cursor-pointer text-sm font-medium text-accent-600 hover:text-accent-700" @click="activeTab = 'tasks'">
                         {{ t('event.planning.viewAllTasks') }}
                       </button>
                     </div>
-                    <div v-if="planningTasks.length === 0" class="mt-4 rounded-lg border border-slate-200 bg-slate-50 p-4 text-center text-sm text-slate-400">
+                    <div v-if="planningTasks.length === 0" class="mt-4 rounded-lg border border-base-200 bg-base-50 p-4 text-center text-sm text-base-400">
                       {{ t('event.planning.noTasksYet') }}
                     </div>
-                    <div v-else-if="nextPendingTasks.length === 0" class="mt-4 rounded-lg bg-emerald-50 p-4 text-center text-sm text-emerald-700">
+                    <div v-else-if="nextPendingTasks.length === 0" class="mt-4 rounded-lg bg-success-50 p-4 text-center text-sm text-success-700">
                       <Icon name="material-symbols:check-circle-rounded" class="mb-1 text-xl" />
                       <p>{{ t('event.planning.allTasksDone') }}</p>
                     </div>
@@ -208,7 +208,7 @@
                       <label
                         v-for="task in nextPendingTasks"
                         :key="task.id"
-                        :class="['flex items-start gap-3 rounded-lg border border-slate-200 p-3 text-sm', canManagePlanning ? 'cursor-pointer' : '']"
+                        :class="['flex items-start gap-3 rounded-lg border border-base-200 p-3 text-sm', canManagePlanning ? 'cursor-pointer' : '']"
                       >
                         <input
                           v-if="canManagePlanning"
@@ -218,14 +218,14 @@
                           @change="setTaskDone(task.id, ($event.target as HTMLInputElement).checked)"
                         >
                         <span class="min-w-0">
-                          <span class="block font-medium text-slate-800">{{ task.title }}</span>
-                          <span class="block text-slate-500">{{ task.deadline ? formatMaybeDateTime(task.deadline) : t('event.planning.dateMissing') }} · {{ taskAssigneeSummary(task) }}</span>
+                          <span class="block font-medium text-base-800">{{ task.title }}</span>
+                          <span class="block text-base-500">{{ task.deadline ? formatMaybeDateTime(task.deadline) : t('event.planning.dateMissing') }} · {{ taskAssigneeSummary(task) }}</span>
                         </span>
                       </label>
                       <button
                         v-if="pendingTasks.length > 3"
                         type="button"
-                        class="w-full cursor-pointer rounded-md py-2 text-center text-sm font-medium text-slate-500 hover:bg-slate-50 hover:text-slate-700"
+                        class="w-full cursor-pointer rounded-md py-2 text-center text-sm font-medium text-base-500 hover:bg-base-50 hover:text-base-700"
                         @click="activeTab = 'tasks'"
                       >
                         {{ t('event.planning.morePendingTasks', { count: pendingTasks.length - 3 }) }}
@@ -236,31 +236,31 @@
                   <div class="-mx-6 bg-white p-4 shadow-sm sm:mx-0 sm:rounded-xl sm:shadow-lg">
                     <div class="flex items-center justify-between gap-3">
                       <div class="flex items-center gap-2">
-                        <button type="button" class="flex h-7 w-7 shrink-0 cursor-pointer items-center justify-center rounded-lg bg-orange-50 text-orange-600 transition hover:bg-orange-100" @click="activeTab = 'checklists'">
+                        <button type="button" class="flex h-7 w-7 shrink-0 cursor-pointer items-center justify-center rounded-lg bg-accent-50 text-accent-600 transition hover:bg-accent-100" @click="activeTab = 'checklists'">
                           <Icon name="material-symbols:checklist-rounded" class="text-base" />
                         </button>
                         <h2 class="text-lg font-semibold">{{ t('event.planning.tabs.checklists') }}</h2>
                       </div>
-                      <button type="button" class="cursor-pointer text-sm font-medium text-orange-600 hover:text-orange-700" @click="activeTab = 'checklists'">
+                      <button type="button" class="cursor-pointer text-sm font-medium text-accent-600 hover:text-accent-700" @click="activeTab = 'checklists'">
                         {{ t('event.planning.openChecklists') }}
                       </button>
                     </div>
-                    <div v-if="reusableChecklists.length === 0" class="mt-4 rounded-lg border border-slate-200 bg-slate-50 p-4 text-center text-sm text-slate-400">
+                    <div v-if="reusableChecklists.length === 0" class="mt-4 rounded-lg border border-base-200 bg-base-50 p-4 text-center text-sm text-base-400">
                       {{ t('event.planning.noChecklists') }}
                     </div>
                     <div v-else class="mt-4 space-y-3">
                       <div v-for="checklist in sortedChecklists.slice(0, 5)" :key="checklist.id">
                         <div class="flex items-center justify-between gap-2 text-sm">
-                          <span class="min-w-0 truncate font-medium text-slate-700">{{ checklist.title }}</span>
-                          <span class="shrink-0 text-slate-500">{{ t('event.planning.checklistItemsDone', { done: checklist.items.filter(i => i.done).length, total: checklist.items.length }) }}</span>
+                          <span class="min-w-0 truncate font-medium text-base-700">{{ checklist.title }}</span>
+                          <span class="shrink-0 text-base-500">{{ t('event.planning.checklistItemsDone', { done: checklist.items.filter(i => i.done).length, total: checklist.items.length }) }}</span>
                         </div>
-                        <p v-if="checklist.taskId" class="mt-0.5 flex items-center gap-1 text-xs text-slate-400">
+                        <p v-if="checklist.taskId" class="mt-0.5 flex items-center gap-1 text-xs text-base-400">
                           <Icon name="material-symbols:task-alt-rounded" class="shrink-0 text-sm" />
                           <span class="truncate">{{ planningTasks.find(t => t.id === checklist.taskId)?.title }}</span>
                         </p>
-                        <div class="mt-1 h-1.5 overflow-hidden rounded-full bg-slate-100">
+                        <div class="mt-1 h-1.5 overflow-hidden rounded-full bg-base-100">
                           <div
-                            class="h-1.5 rounded-full bg-emerald-400 transition-all"
+                            class="h-1.5 rounded-full bg-success-400 transition-all"
                             :style="{ width: checklist.items.length ? `${(checklist.items.filter(i => i.done).length / checklist.items.length) * 100}%` : '0%' }"
                           />
                         </div>
@@ -268,7 +268,7 @@
                       <button
                         v-if="reusableChecklists.length > 5"
                         type="button"
-                        class="w-full cursor-pointer rounded-md py-2 text-center text-sm font-medium text-slate-500 hover:bg-slate-50 hover:text-slate-700"
+                        class="w-full cursor-pointer rounded-md py-2 text-center text-sm font-medium text-base-500 hover:bg-base-50 hover:text-base-700"
                         @click="activeTab = 'checklists'"
                       >
                         {{ t('event.planning.moreChecklists', { count: reusableChecklists.length - 5 }) }}
@@ -279,28 +279,28 @@
                   <div class="-mx-6 bg-white p-4 shadow-sm sm:mx-0 sm:rounded-xl sm:shadow-lg">
                     <div class="flex items-center justify-between gap-3">
                       <div class="flex items-center gap-2">
-                        <button type="button" class="flex h-7 w-7 shrink-0 cursor-pointer items-center justify-center rounded-lg bg-orange-50 text-orange-600 transition hover:bg-orange-100" @click="activeTab = 'shifts'">
+                        <button type="button" class="flex h-7 w-7 shrink-0 cursor-pointer items-center justify-center rounded-lg bg-accent-50 text-accent-600 transition hover:bg-accent-100" @click="activeTab = 'shifts'">
                           <Icon name="material-symbols:calendar-month-rounded" class="text-base" />
                         </button>
                         <h2 class="text-lg font-semibold">{{ t('event.planning.tabs.shifts') }}</h2>
                       </div>
-                      <button type="button" class="cursor-pointer text-sm font-medium text-orange-600 hover:text-orange-700" @click="activeTab = 'shifts'">
+                      <button type="button" class="cursor-pointer text-sm font-medium text-accent-600 hover:text-accent-700" @click="activeTab = 'shifts'">
                         {{ t('event.planning.openShifts') }}
                       </button>
                     </div>
-                    <div v-if="shiftSlots.length === 0" class="mt-4 rounded-lg border border-slate-200 bg-slate-50 p-4 text-center text-sm text-slate-400">
+                    <div v-if="shiftSlots.length === 0" class="mt-4 rounded-lg border border-base-200 bg-base-50 p-4 text-center text-sm text-base-400">
                       {{ t('event.planning.noShiftsYet') }}
                     </div>
                     <div v-else class="mt-4 space-y-2">
                       <div class="flex items-center justify-between gap-2 text-sm">
-                        <span class="text-slate-700">{{ t('event.planning.shiftsStaffed', { staffed: shiftsSummary.fullyStaffed, total: shiftsSummary.total }) }}</span>
-                        <span v-if="shiftsSummary.partiallyStaffed > 0" class="shrink-0 text-slate-700">
+                        <span class="text-base-700">{{ t('event.planning.shiftsStaffed', { staffed: shiftsSummary.fullyStaffed, total: shiftsSummary.total }) }}</span>
+                        <span v-if="shiftsSummary.partiallyStaffed > 0" class="shrink-0 text-base-700">
                           {{ t('event.planning.shiftsPartiallyStaffed', { count: shiftsSummary.partiallyStaffed }) }}
                         </span>
                       </div>
-                      <div class="flex h-2 overflow-hidden rounded-full bg-slate-100">
-                        <div class="h-full bg-emerald-400 transition-all" :style="{ width: `${(shiftsSummary.fullyStaffed / shiftsSummary.total) * 100}%` }" />
-                        <div class="h-full bg-amber-400 transition-all" :style="{ width: `${(shiftsSummary.partiallyStaffed / shiftsSummary.total) * 100}%` }" />
+                      <div class="flex h-2 overflow-hidden rounded-full bg-base-100">
+                        <div class="h-full bg-success-400 transition-all" :style="{ width: `${(shiftsSummary.fullyStaffed / shiftsSummary.total) * 100}%` }" />
+                        <div class="h-full bg-warning-400 transition-all" :style="{ width: `${(shiftsSummary.partiallyStaffed / shiftsSummary.total) * 100}%` }" />
                       </div>
                     </div>
                   </div>
@@ -950,7 +950,7 @@ function overviewItemIcon(item: EventTimelineItem): string {
 function overviewItemChipClass(item: EventTimelineItem): string {
   if (item.kind === 'shift' && item.requiredPeople !== undefined) {
     const count = item.memberCount ?? 0
-    if (count < item.requiredPeople) return count > 0 ? 'bg-amber-100 text-amber-600' : 'bg-red-100 text-red-600'
+    if (count < item.requiredPeople) return count > 0 ? 'bg-warning-100 text-warning-600' : 'bg-danger-100 text-danger-600'
   }
   return overviewKindMeta[item.kind].chip
 }

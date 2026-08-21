@@ -1,5 +1,216 @@
 @import "tailwindcss";
 
+/*
+ * App color palette, as tokens independent from Tailwind's built-in palette names.
+ * Change the theme by repointing these vars at different Tailwind colors (or custom
+ * oklch/hex values) here only - the utility classes (bg-base-500, text-danger-600, ...)
+ * stay the same everywhere they're used in components.
+ *
+ *   base      - neutral scale (surfaces, borders, body text)
+ *   accent    - brand color (primary actions, links, highlights)
+ *   secondary - secondary accent (notifications, active/selected nav & toggle state, highlighted KPIs)
+ *   link      - interactive affordances: edit links, active table sort/filter state, drop-zone highlight
+ *   danger    - errors, destructive actions
+ *   success   - confirmations, positive states
+ *   warning   - cautions, pending states
+ *   info      - informational badges, banners and stat cards
+ */
+:root {
+    --color-base-50: var(--color-slate-50);
+    --color-base-100: var(--color-slate-100);
+    --color-base-200: var(--color-slate-200);
+    --color-base-300: var(--color-slate-300);
+    --color-base-400: var(--color-slate-400);
+    --color-base-500: var(--color-slate-500);
+    --color-base-600: var(--color-slate-600);
+    --color-base-700: var(--color-slate-700);
+    --color-base-800: var(--color-slate-800);
+    --color-base-900: var(--color-slate-900);
+    --color-base-950: var(--color-slate-950);
+
+    --color-accent-50: var(--color-orange-50);
+    --color-accent-100: var(--color-orange-100);
+    --color-accent-200: var(--color-orange-200);
+    --color-accent-300: var(--color-orange-300);
+    --color-accent-400: var(--color-orange-400);
+    --color-accent-500: var(--color-orange-500);
+    --color-accent-600: var(--color-orange-600);
+    --color-accent-700: var(--color-orange-700);
+    --color-accent-800: var(--color-orange-800);
+    --color-accent-900: var(--color-orange-900);
+    --color-accent-950: var(--color-orange-950);
+
+    --color-secondary-50: var(--color-cyan-50);
+    --color-secondary-100: var(--color-cyan-100);
+    --color-secondary-200: var(--color-cyan-200);
+    --color-secondary-300: var(--color-cyan-300);
+    --color-secondary-400: var(--color-cyan-400);
+    --color-secondary-500: var(--color-cyan-500);
+    --color-secondary-600: var(--color-cyan-600);
+    --color-secondary-700: var(--color-cyan-700);
+    --color-secondary-800: var(--color-cyan-800);
+    --color-secondary-900: var(--color-cyan-900);
+    --color-secondary-950: var(--color-cyan-950);
+
+    --color-link-50: var(--color-blue-50);
+    --color-link-100: var(--color-blue-100);
+    --color-link-200: var(--color-blue-200);
+    --color-link-300: var(--color-blue-300);
+    --color-link-400: var(--color-blue-400);
+    --color-link-500: var(--color-blue-500);
+    --color-link-600: var(--color-blue-600);
+    --color-link-700: var(--color-blue-700);
+    --color-link-800: var(--color-blue-800);
+    --color-link-900: var(--color-blue-900);
+    --color-link-950: var(--color-blue-950);
+
+    --color-danger-50: var(--color-red-50);
+    --color-danger-100: var(--color-red-100);
+    --color-danger-200: var(--color-red-200);
+    --color-danger-300: var(--color-red-300);
+    --color-danger-400: var(--color-red-400);
+    --color-danger-500: var(--color-red-500);
+    --color-danger-600: var(--color-red-600);
+    --color-danger-700: var(--color-red-700);
+    --color-danger-800: var(--color-red-800);
+    --color-danger-900: var(--color-red-900);
+    --color-danger-950: var(--color-red-950);
+
+    --color-success-50: var(--color-emerald-50);
+    --color-success-100: var(--color-emerald-100);
+    --color-success-200: var(--color-emerald-200);
+    --color-success-300: var(--color-emerald-300);
+    --color-success-400: var(--color-emerald-400);
+    --color-success-500: var(--color-emerald-500);
+    --color-success-600: var(--color-emerald-600);
+    --color-success-700: var(--color-emerald-700);
+    --color-success-800: var(--color-emerald-800);
+    --color-success-900: var(--color-emerald-900);
+    --color-success-950: var(--color-emerald-950);
+
+    --color-warning-50: var(--color-amber-50);
+    --color-warning-100: var(--color-amber-100);
+    --color-warning-200: var(--color-amber-200);
+    --color-warning-300: var(--color-amber-300);
+    --color-warning-400: var(--color-amber-400);
+    --color-warning-500: var(--color-amber-500);
+    --color-warning-600: var(--color-amber-600);
+    --color-warning-700: var(--color-amber-700);
+    --color-warning-800: var(--color-amber-800);
+    --color-warning-900: var(--color-amber-900);
+    --color-warning-950: var(--color-amber-950);
+
+    --color-info-50: var(--color-sky-50);
+    --color-info-100: var(--color-sky-100);
+    --color-info-200: var(--color-sky-200);
+    --color-info-300: var(--color-sky-300);
+    --color-info-400: var(--color-sky-400);
+    --color-info-500: var(--color-sky-500);
+    --color-info-600: var(--color-sky-600);
+    --color-info-700: var(--color-sky-700);
+    --color-info-800: var(--color-sky-800);
+    --color-info-900: var(--color-sky-900);
+    --color-info-950: var(--color-sky-950);
+}
+
+@theme inline {
+    --color-base-50: var(--color-base-50);
+    --color-base-100: var(--color-base-100);
+    --color-base-200: var(--color-base-200);
+    --color-base-300: var(--color-base-300);
+    --color-base-400: var(--color-base-400);
+    --color-base-500: var(--color-base-500);
+    --color-base-600: var(--color-base-600);
+    --color-base-700: var(--color-base-700);
+    --color-base-800: var(--color-base-800);
+    --color-base-900: var(--color-base-900);
+    --color-base-950: var(--color-base-950);
+
+    --color-accent-50: var(--color-accent-50);
+    --color-accent-100: var(--color-accent-100);
+    --color-accent-200: var(--color-accent-200);
+    --color-accent-300: var(--color-accent-300);
+    --color-accent-400: var(--color-accent-400);
+    --color-accent-500: var(--color-accent-500);
+    --color-accent-600: var(--color-accent-600);
+    --color-accent-700: var(--color-accent-700);
+    --color-accent-800: var(--color-accent-800);
+    --color-accent-900: var(--color-accent-900);
+    --color-accent-950: var(--color-accent-950);
+
+    --color-secondary-50: var(--color-secondary-50);
+    --color-secondary-100: var(--color-secondary-100);
+    --color-secondary-200: var(--color-secondary-200);
+    --color-secondary-300: var(--color-secondary-300);
+    --color-secondary-400: var(--color-secondary-400);
+    --color-secondary-500: var(--color-secondary-500);
+    --color-secondary-600: var(--color-secondary-600);
+    --color-secondary-700: var(--color-secondary-700);
+    --color-secondary-800: var(--color-secondary-800);
+    --color-secondary-900: var(--color-secondary-900);
+    --color-secondary-950: var(--color-secondary-950);
+
+    --color-link-50: var(--color-link-50);
+    --color-link-100: var(--color-link-100);
+    --color-link-200: var(--color-link-200);
+    --color-link-300: var(--color-link-300);
+    --color-link-400: var(--color-link-400);
+    --color-link-500: var(--color-link-500);
+    --color-link-600: var(--color-link-600);
+    --color-link-700: var(--color-link-700);
+    --color-link-800: var(--color-link-800);
+    --color-link-900: var(--color-link-900);
+    --color-link-950: var(--color-link-950);
+
+    --color-danger-50: var(--color-danger-50);
+    --color-danger-100: var(--color-danger-100);
+    --color-danger-200: var(--color-danger-200);
+    --color-danger-300: var(--color-danger-300);
+    --color-danger-400: var(--color-danger-400);
+    --color-danger-500: var(--color-danger-500);
+    --color-danger-600: var(--color-danger-600);
+    --color-danger-700: var(--color-danger-700);
+    --color-danger-800: var(--color-danger-800);
+    --color-danger-900: var(--color-danger-900);
+    --color-danger-950: var(--color-danger-950);
+
+    --color-success-50: var(--color-success-50);
+    --color-success-100: var(--color-success-100);
+    --color-success-200: var(--color-success-200);
+    --color-success-300: var(--color-success-300);
+    --color-success-400: var(--color-success-400);
+    --color-success-500: var(--color-success-500);
+    --color-success-600: var(--color-success-600);
+    --color-success-700: var(--color-success-700);
+    --color-success-800: var(--color-success-800);
+    --color-success-900: var(--color-success-900);
+    --color-success-950: var(--color-success-950);
+
+    --color-warning-50: var(--color-warning-50);
+    --color-warning-100: var(--color-warning-100);
+    --color-warning-200: var(--color-warning-200);
+    --color-warning-300: var(--color-warning-300);
+    --color-warning-400: var(--color-warning-400);
+    --color-warning-500: var(--color-warning-500);
+    --color-warning-600: var(--color-warning-600);
+    --color-warning-700: var(--color-warning-700);
+    --color-warning-800: var(--color-warning-800);
+    --color-warning-900: var(--color-warning-900);
+    --color-warning-950: var(--color-warning-950);
+
+    --color-info-50: var(--color-info-50);
+    --color-info-100: var(--color-info-100);
+    --color-info-200: var(--color-info-200);
+    --color-info-300: var(--color-info-300);
+    --color-info-400: var(--color-info-400);
+    --color-info-500: var(--color-info-500);
+    --color-info-600: var(--color-info-600);
+    --color-info-700: var(--color-info-700);
+    --color-info-800: var(--color-info-800);
+    --color-info-900: var(--color-info-900);
+    --color-info-950: var(--color-info-950);
+}
+
 ::-webkit-scrollbar {
     display: none;
 }
@@ -10,7 +221,7 @@ html {
 
 .scroll-panel {
     scrollbar-width: thin;
-    scrollbar-color: rgb(203 213 225) transparent;
+    scrollbar-color: var(--color-base-300) transparent;
 }
 
 .scroll-panel::-webkit-scrollbar {
@@ -24,12 +235,12 @@ html {
 }
 
 .scroll-panel::-webkit-scrollbar-thumb {
-    background-color: rgb(203 213 225);
+    background-color: var(--color-base-300);
     border-radius: 9999px;
 }
 
 .scroll-panel::-webkit-scrollbar-thumb:hover {
-    background-color: rgb(148 163 184);
+    background-color: var(--color-base-400);
 }
 
 body > .hiddenCanvasElement,
@@ -46,7 +257,7 @@ body > #hiddenCopyElement,
 @layer components {
     /* Radius scale: cards rounded-xl > inputs/buttons/floating panels rounded-lg > menu items rounded-md. */
     .input {
-        @apply w-full border rounded-lg border-slate-300 border-solid p-2 text-sm bg-white transition-colors;
+        @apply w-full border rounded-lg border-base-300 border-solid p-2 text-sm bg-white transition-colors;
     }
 
     .input:disabled {
@@ -54,19 +265,19 @@ body > #hiddenCopyElement,
     }
 
     .input:focus {
-        @apply outline-0 border-slate-700 shadow-sm;
+        @apply outline-0 border-base-700 shadow-sm;
     }
 
     .checkbox {
-        @apply relative h-[1.15rem] w-[1.15rem] shrink-0 cursor-pointer appearance-none rounded-md border border-slate-300 bg-white transition-colors;
+        @apply relative h-[1.15rem] w-[1.15rem] shrink-0 cursor-pointer appearance-none rounded-md border border-base-300 bg-white transition-colors;
     }
 
     .checkbox:hover:not(:disabled) {
-        @apply border-orange-400 bg-orange-50;
+        @apply border-accent-400 bg-accent-50;
     }
 
     .checkbox:checked {
-        @apply border-orange-500 bg-orange-500;
+        @apply border-accent-500 bg-accent-500;
         background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M3.5 8.4l3 3 6-6' fill='none' stroke='white' stroke-width='2.25' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
         background-repeat: no-repeat;
         background-position: center;
@@ -74,11 +285,11 @@ body > #hiddenCopyElement,
     }
 
     .checkbox:checked:hover:not(:disabled) {
-        @apply border-orange-600 bg-orange-600;
+        @apply border-accent-600 bg-accent-600;
     }
 
     .checkbox:focus-visible {
-        @apply outline-none ring-2 ring-orange-400 ring-offset-1;
+        @apply outline-none ring-2 ring-accent-400 ring-offset-1;
     }
 
     /* Shared target for v-html'd notification bodies (markdown-lite rendered via notificationFormatting.ts). */
@@ -99,15 +310,15 @@ body > #hiddenCopyElement,
     }
 
     .notification-body-html hr {
-        @apply my-2 border-slate-200;
+        @apply my-2 border-base-200;
     }
 
     .checkbox:disabled {
-        @apply cursor-default border-slate-200 bg-slate-100 opacity-70;
+        @apply cursor-default border-base-200 bg-base-100 opacity-70;
     }
 
     .checkbox:disabled:checked {
-        @apply border-slate-300 bg-slate-400;
+        @apply border-base-300 bg-base-400;
     }
 
     .checkbox-row {
@@ -115,31 +326,31 @@ body > #hiddenCopyElement,
     }
     
     .btn-primary {
-        @apply bg-orange-500 rounded-lg py-2 px-4 text-white text-sm cursor-pointer transition-colors;
+        @apply bg-accent-500 rounded-lg py-2 px-4 text-white text-sm cursor-pointer transition-colors;
     }
     
     .btn-primary:hover {
-        @apply bg-orange-600;
+        @apply bg-accent-600;
     }
     
     .btn-secondary {
-        @apply bg-slate-200 rounded-lg py-2 px-4 text-black text-sm cursor-pointer transition-colors;
+        @apply bg-base-200 rounded-lg py-2 px-4 text-black text-sm cursor-pointer transition-colors;
     }
 
     .btn-secondary:hover {
-        @apply bg-slate-300
+        @apply bg-base-300
     }
 
     .btn-outline {
-        @apply bg-white border border-orange-500 rounded-lg py-2 px-4 text-orange-600 text-sm cursor-pointer transition-colors;
+        @apply bg-white border border-accent-500 rounded-lg py-2 px-4 text-accent-600 text-sm cursor-pointer transition-colors;
     }
 
     .btn-outline:hover {
-        @apply bg-orange-50;
+        @apply bg-accent-50;
     }
 
     .wiki-article-body {
-        @apply text-base text-slate-800 leading-7;
+        @apply text-base text-base-800 leading-7;
     }
 
     .wiki-article-measure {
@@ -151,19 +362,19 @@ body > #hiddenCopyElement,
     }
 
     .wiki-article-body h1 {
-        @apply mt-8 mb-3 text-2xl font-bold text-slate-900 first:mt-0;
+        @apply mt-8 mb-3 text-2xl font-bold text-base-900 first:mt-0;
     }
 
     .wiki-article-body h2 {
-        @apply mt-8 mb-3 border-b border-slate-100 pb-1 text-xl font-semibold text-slate-900 first:mt-0;
+        @apply mt-8 mb-3 border-b border-base-100 pb-1 text-xl font-semibold text-base-900 first:mt-0;
     }
 
     .wiki-article-body h3 {
-        @apply mt-6 mb-2 text-lg font-semibold text-slate-900 first:mt-0;
+        @apply mt-6 mb-2 text-lg font-semibold text-base-900 first:mt-0;
     }
 
     .wiki-article-body h4 {
-        @apply mt-5 mb-1 text-base font-semibold text-slate-900 first:mt-0;
+        @apply mt-5 mb-1 text-base font-semibold text-base-900 first:mt-0;
     }
 
     .wiki-article-body p {
@@ -171,11 +382,11 @@ body > #hiddenCopyElement,
     }
 
     .wiki-article-body ul {
-        @apply mb-4 list-disc pl-6 space-y-1.5 marker:text-slate-400;
+        @apply mb-4 list-disc pl-6 space-y-1.5 marker:text-base-400;
     }
 
     .wiki-article-body ol {
-        @apply mb-4 list-decimal pl-6 space-y-1.5 marker:text-slate-400;
+        @apply mb-4 list-decimal pl-6 space-y-1.5 marker:text-base-400;
     }
 
     .wiki-article-body li > ul,
@@ -184,27 +395,27 @@ body > #hiddenCopyElement,
     }
 
     .wiki-article-body blockquote {
-        @apply mb-4 rounded-r-lg border-l-4 border-slate-200 bg-slate-50 py-2 pl-4 pr-3 text-slate-600;
+        @apply mb-4 rounded-r-lg border-l-4 border-base-200 bg-base-50 py-2 pl-4 pr-3 text-base-600;
     }
 
     .wiki-article-body pre {
-        @apply mb-4 overflow-x-auto rounded-lg bg-slate-900 p-4 text-xs leading-relaxed text-slate-100;
+        @apply mb-4 overflow-x-auto rounded-lg bg-base-900 p-4 text-xs leading-relaxed text-base-100;
     }
 
     .wiki-article-body code {
-        @apply rounded border border-slate-200 bg-slate-100 px-1 py-0.5 text-[0.85em] text-slate-800;
+        @apply rounded border border-base-200 bg-base-100 px-1 py-0.5 text-[0.85em] text-base-800;
     }
 
     .wiki-article-body pre code {
-        @apply border-0 bg-transparent p-0 text-slate-100;
+        @apply border-0 bg-transparent p-0 text-base-100;
     }
 
     .wiki-article-body hr {
-        @apply my-6 border-slate-200;
+        @apply my-6 border-base-200;
     }
 
     .wiki-article-body img {
-        @apply my-4 max-w-full rounded-lg border border-slate-200;
+        @apply my-4 max-w-full rounded-lg border border-base-200;
     }
 
     .wiki-article-body table {
@@ -213,27 +424,27 @@ body > #hiddenCopyElement,
 
     .wiki-article-body th,
     .wiki-article-body td {
-        @apply border border-slate-200 px-3 py-2 align-top;
+        @apply border border-base-200 px-3 py-2 align-top;
     }
 
     .wiki-article-body th {
-        @apply bg-slate-50 font-semibold text-slate-800;
+        @apply bg-base-50 font-semibold text-base-800;
     }
 
     .wiki-article-body tbody tr:nth-child(even) {
-        @apply bg-slate-50/50;
+        @apply bg-base-50/50;
     }
 
     .wiki-article-body a {
-        @apply text-orange-700 underline decoration-orange-300 decoration-2 underline-offset-2 cursor-pointer transition-colors;
+        @apply text-accent-700 underline decoration-accent-300 decoration-2 underline-offset-2 cursor-pointer transition-colors;
     }
 
     .wiki-article-body a:hover {
-        @apply text-orange-800 decoration-orange-600;
+        @apply text-accent-800 decoration-accent-600;
     }
 
     .wiki-article-body .wiki-link-broken {
-        @apply text-red-600 no-underline decoration-dotted cursor-default;
+        @apply text-danger-600 no-underline decoration-dotted cursor-default;
     }
 
     .wiki-article-body .wiki-glossary {
@@ -249,55 +460,55 @@ body > #hiddenCopyElement,
     }
 
     .wiki-article-body .wiki-callout-hinweis {
-        @apply border-sky-400 bg-sky-50 text-sky-900;
+        @apply border-info-400 bg-info-50 text-info-900;
     }
 
     .wiki-article-body .wiki-callout-warnung {
-        @apply border-amber-400 bg-amber-50 text-amber-900;
+        @apply border-warning-400 bg-warning-50 text-warning-900;
     }
 
     .wiki-article-body .wiki-callout-tipp {
-        @apply border-emerald-400 bg-emerald-50 text-emerald-900;
+        @apply border-success-400 bg-success-50 text-success-900;
     }
 
     .wiki-article-body .wiki-placeholder {
-        @apply mb-3 rounded-lg border border-dashed border-slate-300 bg-slate-50 px-3 py-2 text-xs text-slate-500;
+        @apply mb-3 rounded-lg border border-dashed border-base-300 bg-base-50 px-3 py-2 text-xs text-base-500;
     }
 
     .wiki-link-row {
-        @apply flex w-full items-center gap-2 rounded-lg px-2 py-2 text-left text-slate-700 cursor-pointer transition-colors;
+        @apply flex w-full items-center gap-2 rounded-lg px-2 py-2 text-left text-base-700 cursor-pointer transition-colors;
     }
 
     .wiki-link-row:hover {
-        @apply bg-orange-50 text-orange-800;
+        @apply bg-accent-50 text-accent-800;
     }
 
     .wiki-link-row:focus-visible {
-        @apply outline-none ring-2 ring-orange-400 ring-offset-1;
+        @apply outline-none ring-2 ring-accent-400 ring-offset-1;
     }
 
     .wiki-link-chevron {
-        @apply shrink-0 text-base text-slate-300 transition-transform;
+        @apply shrink-0 text-base text-base-300 transition-transform;
     }
 
     .wiki-link-row:hover .wiki-link-chevron {
-        @apply translate-x-0.5 text-orange-500;
+        @apply translate-x-0.5 text-accent-500;
     }
 
     .wiki-toc-link {
-        @apply block w-full border-l-2 border-slate-100 py-1 pl-3 text-left text-slate-600 cursor-pointer transition-colors;
+        @apply block w-full border-l-2 border-base-100 py-1 pl-3 text-left text-base-600 cursor-pointer transition-colors;
     }
 
     .wiki-toc-link:hover {
-        @apply border-orange-200 text-orange-700;
+        @apply border-accent-200 text-accent-700;
     }
 
     .wiki-toc-link:focus-visible {
-        @apply outline-none ring-2 ring-orange-400;
+        @apply outline-none ring-2 ring-accent-400;
     }
 
     .wiki-toc-link-active {
-        @apply border-orange-500 font-semibold text-orange-700;
+        @apply border-accent-500 font-semibold text-accent-700;
     }
 
     .wiki-search-input::-webkit-search-cancel-button {
@@ -305,39 +516,39 @@ body > #hiddenCopyElement,
     }
 
     .search-hit-mark {
-        @apply rounded bg-orange-100 px-0.5 font-semibold text-orange-900;
+        @apply rounded bg-accent-100 px-0.5 font-semibold text-accent-900;
     }
 
     .wiki-toolbar-group {
-        @apply flex items-center gap-0.5 rounded-lg border border-slate-200 bg-white p-0.5;
+        @apply flex items-center gap-0.5 rounded-lg border border-base-200 bg-white p-0.5;
     }
 
     .wiki-toolbar-btn {
-        @apply flex h-8 min-w-8 items-center justify-center gap-1 rounded-md px-2 text-xs font-medium text-slate-600 cursor-pointer transition-colors;
+        @apply flex h-8 min-w-8 items-center justify-center gap-1 rounded-md px-2 text-xs font-medium text-base-600 cursor-pointer transition-colors;
     }
 
     .wiki-toolbar-btn:hover {
-        @apply bg-slate-100 text-slate-900;
+        @apply bg-base-100 text-base-900;
     }
 
     .wiki-toolbar-btn:active {
-        @apply bg-slate-200;
+        @apply bg-base-200;
     }
 
     .wiki-toolbar-btn:focus-visible {
-        @apply outline-none ring-2 ring-orange-400;
+        @apply outline-none ring-2 ring-accent-400;
     }
 
     .icon-btn {
-        @apply flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 cursor-pointer transition-colors;
+        @apply flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-base-200 bg-white text-base-500 cursor-pointer transition-colors;
     }
 
     .icon-btn:hover:not(:disabled) {
-        @apply border-slate-300 bg-slate-100 text-slate-800;
+        @apply border-base-300 bg-base-100 text-base-800;
     }
 
     .icon-btn:focus-visible {
-        @apply outline-none ring-2 ring-orange-400;
+        @apply outline-none ring-2 ring-accent-400;
     }
 
     .icon-btn:disabled {
@@ -345,27 +556,27 @@ body > #hiddenCopyElement,
     }
 
     .icon-btn-danger:hover:not(:disabled) {
-        @apply border-red-200 bg-red-50 text-red-700;
+        @apply border-danger-200 bg-danger-50 text-danger-700;
     }
 
     .segmented {
-        @apply flex items-center gap-0.5 rounded-lg border border-slate-200 bg-slate-100 p-0.5;
+        @apply flex items-center gap-0.5 rounded-lg border border-base-200 bg-base-100 p-0.5;
     }
 
     .segmented-option {
-        @apply flex-1 rounded-md px-3 py-1.5 text-sm font-medium text-slate-600 cursor-pointer transition-colors;
+        @apply flex-1 rounded-md px-3 py-1.5 text-sm font-medium text-base-600 cursor-pointer transition-colors;
     }
 
     .segmented-option:hover {
-        @apply text-slate-900;
+        @apply text-base-900;
     }
 
     .segmented-option-active {
-        @apply bg-white text-slate-900 shadow-sm;
+        @apply bg-white text-base-900 shadow-sm;
     }
 
     .section-title {
-        @apply text-sm font-semibold text-slate-800 mb-1
+        @apply text-sm font-semibold text-base-800 mb-1
     }
 
     .field {
@@ -373,7 +584,7 @@ body > #hiddenCopyElement,
     }
 
     .field label {
-        @apply text-xs text-slate-600
+        @apply text-xs text-base-600
     }
 }
 
