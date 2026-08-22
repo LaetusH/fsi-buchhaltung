@@ -12,6 +12,7 @@
 <script setup lang="ts">
 import { usePage } from '~/composables/usePage'
 import { useAuth } from '~/composables/useAuth'
+import { useViewAsSimulation } from '~/composables/useViewAsSimulation'
 import { PAGES } from '~/config/pages'
 
 import LoginPage from '~/components/Page/Login.vue'
@@ -23,6 +24,7 @@ const emit = defineEmits<{
 
 const { currentPage } = usePage()
 const { user, fetchSession, hasPermission, hasAllPermissions } = useAuth()
+const { restore: restoreViewAsSimulation } = useViewAsSimulation()
 const { refreshKey } = useAppRefresh()
 
 const loaded = ref(false)
@@ -33,6 +35,7 @@ function handleVisibilityChange() {
 
 onMounted(async () => {
   await fetchSession()
+  restoreViewAsSimulation()
   loaded.value = true
 
   watch(currentPage, async () => {

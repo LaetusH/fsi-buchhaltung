@@ -109,6 +109,7 @@ import { useAuth } from '~/composables/useAuth'
 import { useBodyScrollLock } from '~/composables/useBodyScrollLock'
 import { useI18n } from '~/composables/useI18n'
 import { usePage } from '~/composables/usePage'
+import { useViewAsSimulation } from '~/composables/useViewAsSimulation'
 import { useWikiHelp } from '~/composables/useWikiHelp'
 import { buildReturnTarget } from '~/composables/useReturnTarget'
 import type { WikiPageHelpArticle } from '~/server/api/wiki/page-help.get'
@@ -127,6 +128,7 @@ const { t } = useI18n()
 const { user, hasPermission } = useAuth()
 const { currentPage, pageMeta, setPage } = usePage()
 const { loadPageHelp } = useWikiHelp()
+const { simulation } = useViewAsSimulation()
 
 const allEntries = ref<WikiPageHelpArticle[]>([])
 const panelOpen = ref(false)
@@ -216,7 +218,7 @@ watch(selectedId, (articleId) => {
   if (panelOpen.value && articleId) loadArticle(articleId)
 })
 
-watch([pageName, () => user.value?.id], () => {
+watch([pageName, () => user.value?.id, simulation], () => {
   panelOpen.value = false
   selectedId.value = null
   article.value = null
