@@ -1,6 +1,6 @@
 <template>
-  <Page :headline1="t('finances.title')" flush-header-with-cards :help-section="currentTab" @open-menu="$emit('openMenu')">
-    <template #header="{ headerContainerRef, headlineGroupRef }">
+  <Page :headline1="t('finances.title')" :flush-header-with-cards="tabs.length > 1" :help-section="currentTab" @open-menu="$emit('openMenu')">
+    <template v-if="tabs.length > 1" #header="{ headerContainerRef, headlineGroupRef }">
       <CommonTabOverview
         v-model="currentTab"
         :tabs="tabs"

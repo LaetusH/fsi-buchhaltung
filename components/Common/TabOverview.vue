@@ -1,6 +1,6 @@
 <template>
   <div
-    v-if="tabs.length > 0"
+    v-if="tabs.length > 1"
     :class="[
       'relative min-w-0 max-w-full',
       isBelowHeadline ? 'basis-full w-full' : 'ml-auto shrink-0',
