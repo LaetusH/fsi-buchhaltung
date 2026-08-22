@@ -39,11 +39,22 @@
         v-for="column in activeFilterColumns"
         :key="column.key"
         type="button"
-        class="inline-flex items-center gap-1 rounded-full bg-link-50 px-2.5 py-1 text-xs font-medium text-link-700 transition cursor-pointer hover:bg-link-100"
+        class="inline-flex max-w-full items-center gap-1 rounded-full bg-link-50 px-2.5 py-1 text-xs text-link-700 transition cursor-pointer hover:bg-link-100"
+        :title="t('common.removeFilter', { label: column.label })"
         @click="resetFilter(column.key)"
       >
-        {{ column.label }}
-        <Icon name="material-symbols:close-rounded" class="text-sm" />
+        <span class="font-medium">{{ column.label }}:</span>
+        <span class="min-w-0 truncate">{{ filterSummary(column.key) }}</span>
+        <Icon name="material-symbols:close-rounded" class="shrink-0 text-sm" />
+      </button>
+
+      <button
+        v-if="activeFilterColumns.length > 1"
+        type="button"
+        class="inline-flex items-center gap-1 rounded-full px-2 py-1 text-xs text-base-500 underline-offset-2 transition cursor-pointer hover:text-base-700 hover:underline"
+        @click="resetAllFilters"
+      >
+        {{ t('common.resetAllFilters') }}
       </button>
     </div>
 
@@ -67,6 +78,7 @@
                 :is-filter-active="isFilterActive(column.key)"
                 :filter="getFilter(column.key)"
                 :text-options="textOptionsByColumn[column.key]"
+                :number-bounds="numberBoundsByColumn[column.key] ?? null"
                 @toggle-sort="toggleSort(column.key)"
                 @apply-text-filter="setTextFilter(column.key, $event)"
                 @apply-range-filter="setRangeFilter(column.key, $event.min, $event.max)"
@@ -254,6 +266,14 @@
         </li>
       </ul>
       <template #footer>
+        <button
+          type="button"
+          class="rounded-lg border border-base-300 px-3 py-2 text-sm text-base-600 transition not-disabled:cursor-pointer not-disabled:hover:bg-base-50 disabled:opacity-40 disabled:cursor-not-allowed"
+          :disabled="!activeSortColumn"
+          @click="resetSort"
+        >
+          {{ t('actions.reset') }}
+        </button>
         <button type="button" class="btn-primary" @click="sortOpen = false">
           {{ t('actions.done') }}
         </button>
@@ -269,9 +289,14 @@
             class="flex w-full items-center justify-between gap-3 py-2.5 text-sm cursor-pointer"
             @click="expandedFilterKey = expandedFilterKey === column.key ? null : column.key"
           >
-            <span class="inline-flex items-center gap-2 text-base-700">
-              {{ column.label }}
-              <span v-if="isFilterActive(column.key)" class="h-1.5 w-1.5 rounded-full bg-link-600" />
+            <span class="flex min-w-0 flex-col items-start">
+              <span class="inline-flex items-center gap-2 text-base-700">
+                {{ column.label }}
+                <span v-if="isFilterActive(column.key)" class="h-1.5 w-1.5 rounded-full bg-link-600" />
+              </span>
+              <span v-if="isFilterActive(column.key)" class="max-w-full truncate text-xs text-link-600">
+                {{ filterSummary(column.key) }}
+              </span>
             </span>
             <Icon
               :name="expandedFilterKey === column.key ? 'material-symbols:keyboard-arrow-up-rounded' : 'material-symbols:keyboard-arrow-down-rounded'"
@@ -286,6 +311,7 @@
               :filter-type="column.filterType ?? 'text'"
               :filter="getFilter(column.key)"
               :text-options="textOptionsByColumn[column.key]"
+              :number-bounds="numberBoundsByColumn[column.key] ?? null"
               @apply-text-filter="setTextFilter(column.key, $event); expandedFilterKey = null"
               @apply-range-filter="setRangeFilter(column.key, $event.min, $event.max); expandedFilterKey = null"
               @reset-filter="resetFilter(column.key); expandedFilterKey = null"
@@ -338,6 +364,7 @@ const props = withDefaults(defineProps<{
 })
 
 const SKELETON_ROWS = 5
+const FILTER_SUMMARY_VALUES = 2
 
 const emit = defineEmits<{
   (e: 'row-open', row: T): void
@@ -354,11 +381,13 @@ defineSlots<{
 const search = defineModel<string>('search', { default: '' })
 
 const { t } = useI18n()
+const { formatDate } = useLocaleFormatters()
 
 const {
   sortKey,
   sortDirection,
   textOptionsByColumn,
+  numberBoundsByColumn,
   globalSearchInput,
   processedRows,
   getFilter,
@@ -440,11 +469,37 @@ function columnSortIcon(key: string): string {
     : 'material-symbols:arrow-downward-rounded'
 }
 
+function filterSummary(key: string): string {
+  const filter = getFilter(key)
+  if (filter.type === 'text') {
+    if (filter.selected.length <= FILTER_SUMMARY_VALUES) return filter.selected.join(', ')
+    return t('common.filterSummaryMore', {
+      values: filter.selected.slice(0, FILTER_SUMMARY_VALUES).join(', '),
+      count: filter.selected.length - FILTER_SUMMARY_VALUES,
+    })
+  }
+
+  const min = filter.min === '' ? t('common.openEnded') : formatRangeBound(filter.type, filter.min)
+  const max = filter.max === '' ? t('common.openEnded') : formatRangeBound(filter.type, filter.max)
+  return `${min} – ${max}`
+}
+
+function formatRangeBound(type: 'number' | 'date', value: string): string {
+  if (type !== 'date') return value
+  const ts = Date.parse(value)
+  return Number.isFinite(ts) ? formatDate(value) : value
+}
+
 function resetAllFilters() {
   for (const column of filterableColumns.value) {
     resetFilter(column.key)
   }
   expandedFilterKey.value = null
+}
+
+function resetSort() {
+  sortKey.value = null
+  sortDirection.value = null
 }
 
 const isNarrowed = computed(() => search.value.trim().length > 0 || activeFilterColumns.value.length > 0)

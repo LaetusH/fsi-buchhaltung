@@ -41,6 +41,11 @@ export interface RangeColumnFilter {
 
 export type ColumnFilter = TextColumnFilter | RangeColumnFilter
 
+export interface TextFilterOption {
+  value: string
+  count: number
+}
+
 function normalizeText(value: unknown): string {
   if (value === null || value === undefined) return ''
   return String(value).trim().toLocaleLowerCase('de-DE')
@@ -150,17 +155,35 @@ export function useAdvancedTable<T, K extends string>(
     ? useState<Record<string, ColumnFilter>>(`table:${persistKey}:filters`, () => defaultFilters(columns))
     : ref<Record<string, ColumnFilter>>(defaultFilters(columns))
 
-  const textOptionsByColumn = computed<Record<string, string[]>>(() => {
-    const result: Record<string, string[]> = {}
+  const textOptionsByColumn = computed<Record<string, TextFilterOption[]>>(() => {
+    const result: Record<string, TextFilterOption[]> = {}
     for (const column of columns) {
       if (column.filterable === false || (column.filterType ?? 'text') !== 'text') continue
-      const values = new Set<string>()
+      const counts = new Map<string, number>()
       for (const row of rows.value) {
         const value = column.getValue(row)
         const text = value === null || value === undefined || value === '' ? '-' : String(value)
-        values.add(text)
+        counts.set(text, (counts.get(text) ?? 0) + 1)
       }
-      result[column.key] = Array.from(values).sort((a, b) => a.localeCompare(b, 'de-DE'))
+      result[column.key] = Array.from(counts, ([value, count]) => ({ value, count }))
+        .sort((a, b) => a.value.localeCompare(b.value, 'de-DE'))
+    }
+    return result
+  })
+
+  const numberBoundsByColumn = computed<Record<string, { min: number, max: number } | null>>(() => {
+    const result: Record<string, { min: number, max: number } | null> = {}
+    for (const column of columns) {
+      if (column.filterable === false || column.filterType !== 'number') continue
+      let min: number | null = null
+      let max: number | null = null
+      for (const row of rows.value) {
+        const comparable = toComparableValue('number', column.getValue(row))
+        if (typeof comparable !== 'number') continue
+        if (min === null || comparable < min) min = comparable
+        if (max === null || comparable > max) max = comparable
+      }
+      result[column.key] = min === null || max === null ? null : { min, max }
     }
     return result
   })
@@ -303,6 +326,7 @@ export function useAdvancedTable<T, K extends string>(
     sortDirection,
     filters,
     textOptionsByColumn,
+    numberBoundsByColumn,
     globalSearchInput,
     globalSearchTerm,
     processedRows,
