@@ -51,7 +51,7 @@
         <button
           type="button"
           class="inline-flex shrink-0 items-center gap-1.5 rounded-lg bg-accent-500 px-4 py-2 text-sm font-semibold text-white transition not-disabled:cursor-pointer not-disabled:hover:bg-accent-600 disabled:cursor-not-allowed disabled:opacity-40"
-          :disabled="!active?.canOpen"
+          :disabled="!canOpenActive"
           @click="active && $emit('open', active.id)"
         >
           <Icon name="material-symbols:open-in-new-rounded" class="text-base" />
@@ -118,11 +118,11 @@
         </dl>
 
         <!-- Planning summary (only when the user may view planning details) -->
-        <div v-if="active.planning" class="rounded-xl border border-base-200 bg-base-50/60 p-4">
+        <div v-if="active.planning && showPlanning" class="rounded-xl border border-base-200 bg-base-50/60 p-4">
           <button
             type="button"
             class="-m-1 block w-[calc(100%+0.5rem)] rounded-lg p-1 text-left transition not-disabled:cursor-pointer not-disabled:hover:bg-base-100/70 disabled:cursor-default"
-            :disabled="!active.canOpen"
+            :disabled="!canOpenActive"
             @click="openTab('overview')"
           >
             <span class="flex items-center justify-between gap-3">
@@ -156,7 +156,7 @@
               :key="tile.label"
               type="button"
               class="rounded-lg bg-white p-2.5 text-left shadow-sm transition not-disabled:cursor-pointer not-disabled:hover:shadow-md disabled:cursor-default"
-              :disabled="!active.canOpen"
+              :disabled="!canOpenActive"
               @click="openTab(tile.tab)"
             >
               <span class="flex items-center gap-1 text-xs text-base-500">
@@ -170,10 +170,10 @@
 
         <!-- Shift overview (signup users without planning access) -->
         <PageEventsSpotlightShifts
-          v-else-if="active.shiftOverview"
+          v-else-if="active.shiftOverview && showShiftOverview"
           :shifts="active.shiftOverview"
           :status="active.status"
-          :can-open="active.canOpen"
+          :can-open="canOpenActive"
           @open="openTab('shifts')"
         />
       </div>
@@ -182,6 +182,7 @@
 </template>
 
 <script setup lang="ts">
+import { useEventSpotlightAccess } from '~/composables/useEventSpotlightAccess'
 import { useI18n } from '~/composables/useI18n'
 import type { GetEventSpotlightResponse } from '~/server/api/events/spotlight.get'
 import type { EventSpotlight } from '~/types/event'
@@ -206,11 +207,12 @@ const active = computed<EventSpotlight | null>(() => {
 })
 
 const { statusLabel: activeLabel, countdownLabel, rangeLabel, organizerLabels, summaryTiles } = useEventSpotlightView(active)
+const { canOpenActive, showPlanning, showShiftOverview } = useEventSpotlightAccess(active)
 
-const hasSidePanel = computed(() => Boolean(active.value?.planning || active.value?.shiftOverview))
+const hasSidePanel = computed(() => showPlanning.value || showShiftOverview.value)
 
 function openTab(tab: EventPlanningTabKey) {
-  if (active.value?.canOpen) emit('open', active.value.id, tab)
+  if (active.value && canOpenActive.value) emit('open', active.value.id, tab)
 }
 
 async function load() {

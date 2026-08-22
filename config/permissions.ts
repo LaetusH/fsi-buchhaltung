@@ -35,6 +35,7 @@ export type PermissionKey =
   | 'settings.cost_centres.manage'
   | 'settings.subdivisions.manage'
   | 'settings.positions.manage'
+  | 'settings.viewAs'
   | 'settings.app.access'
   | 'settings.app.snapshots.manage'
   | 'permissions.manage'
@@ -95,6 +96,7 @@ export const PERMISSIONS: PermissionDefinition[] = [
   { key: 'settings.cost_centres.manage', labelKey: 'permissions.items.settingsCostCentresManage', categoryKey: 'permissions.categories.settings' },
   { key: 'settings.subdivisions.manage', labelKey: 'permissions.items.settingsSubdivisionsManage', categoryKey: 'permissions.categories.settings' },
   { key: 'settings.positions.manage', labelKey: 'permissions.items.settingsPositionsManage', categoryKey: 'permissions.categories.settings' },
+  { key: 'settings.viewAs', labelKey: 'permissions.items.settingsViewAs', categoryKey: 'permissions.categories.settings' },
   { key: 'settings.app.access', labelKey: 'permissions.items.settingsAppAccess', categoryKey: 'permissions.categories.settings' },
   { key: 'settings.app.snapshots.manage', labelKey: 'permissions.items.settingsAppSnapshotsManage', categoryKey: 'permissions.categories.settings' },
   { key: 'permissions.manage', labelKey: 'permissions.items.permissionsManage', categoryKey: 'permissions.categories.settings' },
@@ -131,6 +133,7 @@ export const implied: Partial<Record<PermissionKey, PermissionKey[]>> = {
   'settings.cost_centres.manage': ['cost_centres.view', 'settings.access'],
   'settings.subdivisions.manage': ['subdivisions.view', 'settings.access'],
   'settings.positions.manage': ['positions.view', 'settings.access'],
+  'settings.viewAs': ['settings.access'],
   'settings.app.access': ['settings.access'],
   'settings.app.snapshots.manage': ['settings.app.access'],
   'permissions.manage': ['settings.access', 'users.view'],

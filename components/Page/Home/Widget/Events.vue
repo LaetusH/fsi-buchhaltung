@@ -59,13 +59,13 @@
         <button
           type="button"
           class="mt-1.5 flex w-full items-center gap-1.5 text-left"
-          :class="active.canOpen ? 'cursor-pointer' : 'cursor-default'"
-          :disabled="!active.canOpen"
+          :class="canOpenActive ? 'cursor-pointer' : 'cursor-default'"
+          :disabled="!canOpenActive"
           @click="openActive()"
         >
-          <span class="truncate text-lg font-semibold text-base-900" :class="{ 'hover:underline': active.canOpen }">{{ active.name }}</span>
+          <span class="truncate text-lg font-semibold text-base-900" :class="{ 'hover:underline': canOpenActive }">{{ active.name }}</span>
           <Icon
-            v-if="active.canOpen"
+            v-if="canOpenActive"
             name="material-symbols:open-in-new-rounded"
             class="shrink-0 text-base text-base-400"
           />
@@ -100,11 +100,11 @@
       </dl>
 
       <!-- Planning summary (only when the user may view planning details) -->
-      <div v-if="active.planning" class="mt-auto rounded-xl border border-base-200 bg-base-50/60 p-4">
+      <div v-if="active.planning && showPlanning" class="mt-auto rounded-xl border border-base-200 bg-base-50/60 p-4">
         <button
           type="button"
           class="-m-1 block w-[calc(100%+0.5rem)] rounded-lg p-1 text-left transition not-disabled:cursor-pointer not-disabled:hover:bg-base-100/70 disabled:cursor-default"
-          :disabled="!active.canOpen"
+          :disabled="!canOpenActive"
           @click="openActive('overview')"
         >
           <span class="flex items-center justify-between gap-3">
@@ -133,7 +133,7 @@
             :key="tile.label"
             type="button"
             class="rounded-lg bg-white p-2.5 text-left shadow-sm transition not-disabled:cursor-pointer not-disabled:hover:shadow-md disabled:cursor-default"
-            :disabled="!active.canOpen"
+            :disabled="!canOpenActive"
             @click="openActive(tile.tab)"
           >
             <span class="flex items-center gap-1 text-xs text-base-500">
@@ -147,11 +147,11 @@
 
       <!-- Shift overview (signup users without planning access) -->
       <PageEventsSpotlightShifts
-        v-else-if="active.shiftOverview"
+        v-else-if="active.shiftOverview && showShiftOverview"
         class="mt-auto"
         :shifts="active.shiftOverview"
         :status="active.status"
-        :can-open="active.canOpen"
+        :can-open="canOpenActive"
         @open="openActive('shifts')"
       />
     </div>
@@ -159,6 +159,7 @@
 </template>
 
 <script setup lang="ts">
+import { useEventSpotlightAccess } from '~/composables/useEventSpotlightAccess'
 import { useI18n } from '~/composables/useI18n'
 import type { GetEventSpotlightResponse } from '~/server/api/events/spotlight.get'
 import type { EventSpotlight } from '~/types/event'
@@ -182,9 +183,10 @@ const active = computed<EventSpotlight | null>(() => {
 })
 
 const { statusLabel, countdownLabel, rangeLabel, summaryTiles } = useEventSpotlightView(active)
+const { canOpenActive, showPlanning, showShiftOverview } = useEventSpotlightAccess(active)
 
 function openActive(tab?: EventPlanningTabKey) {
-  if (!active.value?.canOpen) return
+  if (!active.value || !canOpenActive.value) return
   setPage('EventCreate', {
     eventId: active.value.id,
     ...(tab ? { tab } : {}),

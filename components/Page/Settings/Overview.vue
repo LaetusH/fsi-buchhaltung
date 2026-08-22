@@ -51,7 +51,7 @@ const tabs = computed(() => {
     { key: 'subdivisions', label: t('settings.tabs.subdivisions'), show: hasPermission('settings.subdivisions.manage') },
     { key: 'positions', label: t('settings.tabs.positions'), show: hasPermission('settings.positions.manage') },
     { key: 'users', label: t('settings.tabs.users'), show: hasPermission('users.manage') },
-    { key: 'permissions', label: t('settings.tabs.permissions'), show: hasPermission('permissions.manage') },
+    { key: 'permissions', label: t('settings.tabs.permissions'), show: hasPermission(['permissions.manage', 'settings.viewAs']) },
     { key: 'app', label: t('settings.tabs.app'), show: hasPermission('settings.app.access') },
     { key: 'notifications', label: t('settings.tabs.notifications'), show: hasPermission('settings.notifications.manage') },
   ] as const

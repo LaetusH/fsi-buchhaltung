@@ -1,3 +1,4 @@
+import { useAuth } from '~/composables/useAuth'
 import { useI18n } from '~/composables/useI18n'
 import { useToast } from '~/composables/useToast'
 import type { EventTask as PersistedEventTask, SaveEventTask } from '~/types/event'
@@ -8,6 +9,7 @@ import type { EventPlanningTask } from '~/components/Page/Events/planning/types'
 export function useEventTasks(eventId: Ref<number | null>) {
   const { t } = useI18n()
   const toast = useToast()
+  const { resolveFlag } = useAuth()
 
   const planningTasks = ref<EventPlanningTask[]>([])
   const taskLoading = ref(false)
@@ -48,7 +50,7 @@ export function useEventTasks(eventId: Ref<number | null>) {
       if (!res.ok) throw new Error(res.error)
 
       planningTasks.value = res.tasks.map(mapPersistedTaskToPanel)
-      canManageTasks.value = res.canManageTasks
+      canManageTasks.value = resolveFlag(res.canManageTasks, 'events.edit')
     }
     catch (err: any) {
       toast.error(err?.message || t('event.planning.failedLoadTasks'))

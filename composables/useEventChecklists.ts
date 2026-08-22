@@ -1,3 +1,4 @@
+import { useAuth } from '~/composables/useAuth'
 import { useI18n } from '~/composables/useI18n'
 import { useToast } from '~/composables/useToast'
 import type {
@@ -14,6 +15,7 @@ import type { PlanningChecklist } from '~/components/Page/Events/planning/types'
 export function useEventChecklists(eventId: Ref<number | null>) {
   const { t } = useI18n()
   const toast = useToast()
+  const { resolveFlag } = useAuth()
 
   const reusableChecklists = ref<PlanningChecklist[]>([])
   const checklistTemplates = ref<PlanningChecklist[]>([])
@@ -86,7 +88,7 @@ export function useEventChecklists(eventId: Ref<number | null>) {
 
       reusableChecklists.value = res.checklists.map(mapPersistedChecklistToPanel)
       checklistTemplates.value = res.templates.map(mapPersistedChecklistTemplateToPanel)
-      canManageChecklists.value = res.canManageChecklists
+      canManageChecklists.value = resolveFlag(res.canManageChecklists, 'events.edit')
     }
     catch (err: any) {
       toast.error(err?.message || t('event.planning.failedLoadChecklists'))

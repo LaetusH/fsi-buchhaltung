@@ -66,7 +66,7 @@ export default defineEventHandler(async (event): Promise<GetEventSpotlightRespon
       // Organizer status also unlocks the planning summary, so it matters for
       // everyone without events.view — not just for users who cannot open events.
       canViewAll ? Promise.resolve<number[]>([]) : getOrganizerEventIds(current.user.id),
-      canSignup && !canViewAll ? loadCurrentMemberIdForUser(current.user.id) : Promise.resolve(null),
+      canSignup ? loadCurrentMemberIdForUser(current.user.id) : Promise.resolve(null),
     ])
 
     const upcomingRow = upcomingRows[0] ?? null
@@ -112,8 +112,8 @@ export default defineEventHandler(async (event): Promise<GetEventSpotlightRespon
           organizerCount: memberOrganizers.length + subdivisionOrganizers.length,
           costCentreSplits,
         })
-      } else if (canSignup) {
-        // Signup-only users get a shift overview instead of the planning summary.
+      }
+      if (canSignup) {
         const slots = await loadEventShiftSlots(id)
         base.shiftOverview = slots.map(slot => ({
           id: slot.id,

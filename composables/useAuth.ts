@@ -50,16 +50,33 @@ export const useAuth = () => {
     redirectToLogin()
   }
 
+  function effectivePermissions(): PermissionKey[] {
+    if (!user.value) return []
+    const { simulation } = useViewAsSimulation()
+    return simulation.value ? simulation.value.permissions : user.value.permissions
+  }
+
   function hasPermission(permissions: PermissionKey[] | PermissionKey) {
     if (!user.value) return false
-    if (Array.isArray(permissions)) return permissions.some(p => user.value!.permissions.includes(p))
-    return user.value.permissions.includes(permissions)
+    const granted = effectivePermissions()
+    if (Array.isArray(permissions)) return permissions.some(p => granted.includes(p))
+    return granted.includes(permissions)
   }
 
   function hasAllPermissions(permissions: PermissionKey[]) {
     if (!user.value) return false
-    return permissions.every(p => user.value!.permissions.includes(p))
+    const granted = effectivePermissions()
+    return permissions.every(p => granted.includes(p))
   }
 
-  return { user, fetchSession, login, logout, redirectToLogin, hasPermission, hasAllPermissions }
+  function isSimulating() {
+    const { simulation } = useViewAsSimulation()
+    return !!simulation.value
+  }
+
+  function resolveFlag(realFlag: boolean, permissions: PermissionKey[] | PermissionKey) {
+    return isSimulating() ? hasPermission(permissions) : realFlag
+  }
+
+  return { user, fetchSession, login, logout, redirectToLogin, hasPermission, hasAllPermissions, isSimulating, resolveFlag }
 }

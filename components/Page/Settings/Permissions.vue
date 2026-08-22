@@ -1,6 +1,6 @@
 <template>
   <div v-if="hasAccess" class="contents">
-    <CommonCard :title="t('settings.permissions.rolesTitle')">
+    <CommonCard v-if="canManagePermissions" :title="t('settings.permissions.rolesTitle')">
       <template #actions>
         <CommonAdvancedTableViewToggle persist-key="settings-permissions-roles" />
         <CommonGlobalSearchBar v-model="roleSearchInput" />
@@ -31,7 +31,7 @@
       </CommonAdvancedTable>
     </CommonCard>
 
-    <CommonCard :title="t('settings.permissions.positionsTitle')">
+    <CommonCard v-if="canManagePermissions" :title="t('settings.permissions.positionsTitle')">
       <template #actions>
         <CommonAdvancedTableViewToggle persist-key="settings-permissions-positions" />
         <CommonGlobalSearchBar v-model="positionSearchInput" />
@@ -53,7 +53,7 @@
       </CommonAdvancedTable>
     </CommonCard>
 
-    <CommonCard :title="t('settings.permissions.usersTitle')">
+    <CommonCard v-if="canManagePermissions" :title="t('settings.permissions.usersTitle')">
       <template #actions>
         <CommonAdvancedTableViewToggle persist-key="settings-permissions-users" />
         <CommonGlobalSearchBar v-model="userSearchInput" />
@@ -76,6 +76,7 @@
     </CommonCard>
 
     <CommonModal
+      v-if="canManagePermissions"
       v-model="showRoleModal"
       :title="roleForm.isNew ? t('settings.permissions.newRole') : t('settings.permissions.editRole')"
       width-class="max-w-lg"
@@ -191,15 +192,19 @@
         <button class="btn-primary" :disabled="savingUserAccess" :class="{ 'opacity-50 cursor-not-allowed': savingUserAccess }" @click="saveUserAccess">{{ t('actions.save') }}</button>
       </template>
     </CommonModal>
+
+    <SettingsViewAs v-if="canUseViewAs" />
   </div>
 </template>
 
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import type { AdvancedTableColumn } from '~/composables/useAdvancedTable'
+import { useAuth } from '~/composables/useAuth'
 import { useI18n } from '~/composables/useI18n'
 import { useToast } from '~/composables/useToast'
 import type { PermissionDefinition } from '~/config/permissions'
+import SettingsViewAs from './ViewAs.vue'
 
 interface RoleRow {
   id: number
@@ -228,7 +233,11 @@ interface UserRow {
 }
 
 const { t } = useI18n()
+const { hasPermission } = useAuth()
 const toast = useToast()
+
+const canManagePermissions = computed(() => hasPermission('permissions.manage'))
+const canUseViewAs = computed(() => hasPermission('settings.viewAs'))
 
 const permissions = ref<PermissionDefinition[]>([])
 const roles = ref<RoleRow[]>([])
@@ -571,6 +580,8 @@ onMounted(async () => {
 useAppRefresh().onRefresh(loadSupportData)
 
 async function loadSupportData() {
+  // Reachable with only settings.viewAs, where these endpoints would reject the request.
+  if (!canManagePermissions.value) return
   await Promise.all([loadDefinitions(), loadRoles(), loadPositions(), loadUsers()])
 }
 </script>

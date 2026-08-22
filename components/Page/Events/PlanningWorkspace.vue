@@ -442,7 +442,7 @@ import type {
 
 defineEmits<{ (e: 'openMenu'): void }>()
 
-const { hasPermission } = useAuth()
+const { hasPermission, resolveFlag, isSimulating } = useAuth()
 const { t } = useI18n()
 const { formatDate, formatDateTime, formatLocalDate, formatLocalDateTime } = useLocaleFormatters()
 const { pageMeta, setPage } = usePage()
@@ -453,9 +453,10 @@ const canEdit = computed(() => hasPermission('events.edit'))
 const isOrganizer = ref(false)
 const canEditDetails = ref(canEdit.value)
 const canViewAll = ref(hasPermission('events.view'))
-const canManagePlanning = computed(() => canEdit.value || isOrganizer.value)
+const effectiveIsOrganizer = computed(() => !isSimulating() && isOrganizer.value)
+const canManagePlanning = computed(() => canEdit.value || effectiveIsOrganizer.value)
 const canSaveChecklistTemplates = computed(() => canEdit.value)
-const canUseShiftPlanning = computed(() => canEdit.value || hasPermission('events.shifts.signup') || isOrganizer.value)
+const canUseShiftPlanning = computed(() => canEdit.value || hasPermission('events.shifts.signup') || effectiveIsOrganizer.value)
 
 const runtimeConfig = useRuntimeConfig()
 const cashRegisterAvailable = computed(() =>
@@ -600,9 +601,9 @@ async function loadEvent(id: number | null) {
   }
 
   isOrganizer.value = res.isOrganizer
-  canEditDetails.value = res.canEditDetails
-  canViewAll.value = res.canViewAll
-  if (!res.canViewAll) activeTab.value = 'shifts'
+  canEditDetails.value = resolveFlag(res.canEditDetails, 'events.edit')
+  canViewAll.value = resolveFlag(res.canViewAll, 'events.view')
+  if (!canViewAll.value) activeTab.value = 'shifts'
 
   form.value = {
     name: res.event.name,
@@ -622,13 +623,13 @@ async function loadEvent(id: number | null) {
   takeSnapshot()
 
   const loads: Promise<void>[] = []
-  if (res.canViewAll) {
+  if (canViewAll.value) {
     loads.push(loadEventTasks(id), loadEventChecklists(id))
   } else {
     resetTasks()
     resetChecklists()
   }
-  if (res.canViewAll || hasPermission('events.shifts.signup')) {
+  if (canViewAll.value || hasPermission('events.shifts.signup')) {
     loads.push(loadShiftSlots(id))
   } else {
     resetShifts()

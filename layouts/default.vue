@@ -9,7 +9,8 @@
       @toggle-collapse="toggleDesktopMenu"
     />
 
-    <main :class="['flex-1 p-6 bg-base-100 transition-[margin] duration-200', user?.must_change_password ? '' : (menuCollapsed ? 'md:ml-18' : 'md:ml-40')]" @click="handleClick">
+    <main :class="['flex-1 flex flex-col p-6 bg-base-100 transition-[margin] duration-200', user?.must_change_password ? '' : (menuCollapsed ? 'md:ml-18' : 'md:ml-40')]" @click="handleClick">
+      <CommonViewAsBanner class="-m-6 mb-6" />
       <PageRenderer @open-menu="handleOpen" />
     </main>
 
@@ -22,6 +23,7 @@ import { useAuth } from '~/composables/useAuth'
 import { PAGES } from '~/config/pages'
 
 const { user, fetchSession, hasPermission, hasAllPermissions } = useAuth()
+const { restore: restoreViewAsSimulation } = useViewAsSimulation()
 
 const menuOpen = ref(false)
 const openMenu = ref(false)
@@ -75,8 +77,9 @@ function toggleDesktopMenu() {
   menuCollapsed.value = !menuCollapsed.value
 }
 
-onMounted(() => {
-  fetchSession()
+onMounted(async () => {
+  await fetchSession()
+  restoreViewAsSimulation()
   desktopMediaQuery.value = window.matchMedia('(min-width: 768px)')
   syncMenuMode(desktopMediaQuery.value)
   desktopMediaQuery.value.addEventListener('change', syncMenuMode)

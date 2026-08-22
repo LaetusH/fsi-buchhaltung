@@ -1,3 +1,4 @@
+import { useAuth } from '~/composables/useAuth'
 import { useI18n } from '~/composables/useI18n'
 import { useToast } from '~/composables/useToast'
 import type { EventShiftSlot as PersistedEventShiftSlot, EventShiftTemplate as PersistedEventShiftTemplate, EventShiftTypeDescriptions, SaveEventShiftSlot, SaveEventShiftTemplate } from '~/types/event'
@@ -12,6 +13,7 @@ import type { EventShiftPermissionMode, PlanningShiftSlot, PlanningShiftTemplate
 export function useEventShifts(eventId: Ref<number | null>) {
   const { t } = useI18n()
   const toast = useToast()
+  const { resolveFlag } = useAuth()
 
   const shiftSlots = ref<PlanningShiftSlot[]>([])
   const shiftTemplates = ref<PlanningShiftTemplate[]>([])
@@ -78,9 +80,9 @@ export function useEventShifts(eventId: Ref<number | null>) {
       shiftTemplates.value = res.templates.map(mapPersistedShiftTemplateToPanel)
       shiftTypeDescriptions.value = res.typeDescriptions
       currentMemberId.value = res.currentMemberId
-      canManageShifts.value = res.canManageShifts
-      canSelfSignup.value = res.canSelfSignup
-      shiftPermissionMode.value = res.canManageShifts ? 'manage' : 'own'
+      canManageShifts.value = resolveFlag(res.canManageShifts, 'events.edit')
+      canSelfSignup.value = resolveFlag(res.canSelfSignup, ['events.edit', 'events.shifts.signup'])
+      shiftPermissionMode.value = canManageShifts.value ? 'manage' : 'own'
     }
     catch (err: any) {
       toast.error(err?.message || t('event.planning.failedLoadShifts'))

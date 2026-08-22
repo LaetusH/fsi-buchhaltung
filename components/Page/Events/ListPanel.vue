@@ -40,7 +40,7 @@ const props = defineProps<{
 }>()
 
 const { setPage } = usePage()
-const { hasPermission } = useAuth()
+const { hasPermission, resolveFlag, isSimulating } = useAuth()
 const { t } = useI18n()
 const { formatLocalDateTime } = useLocaleFormatters()
 
@@ -129,8 +129,8 @@ onMounted(async () => {
     const res = await $fetch('/api/events')
     if (res.ok) {
       events.value = res.events
-      canOpenAll.value = res.canOpenAll
-      organizerEventIds.value = new Set(res.organizerEventIds)
+      canOpenAll.value = resolveFlag(res.canOpenAll, ['events.view', 'events.edit', 'events.shifts.signup'])
+      organizerEventIds.value = isSimulating() ? new Set() : new Set(res.organizerEventIds)
     }
   } finally {
     loading.value = false
