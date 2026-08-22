@@ -43,6 +43,7 @@ const errorMessagesByCode: Record<string, string> = {
   inactive_user: 'login.errorInactiveUser',
   server_error: 'login.errorServer',
   network_error: 'login.errorNetwork',
+  session_not_established: 'login.errorSessionNotEstablished',
 }
 
 async function doLogin() {

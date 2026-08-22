@@ -124,6 +124,7 @@ const messages = {
       errorInactiveUser: 'Dieses Benutzerkonto ist deaktiviert. Bitte wende dich an die Verwaltung.',
       errorServer: 'Es ist ein unerwarteter Fehler aufgetreten. Bitte versuche es erneut.',
       errorNetwork: 'Verbindung zum Server fehlgeschlagen. Bitte überprüfe deine Internetverbindung.',
+      errorSessionNotEstablished: 'Anmeldung war erfolgreich, aber die Sitzung konnte im Browser nicht gespeichert werden. Bitte überprüfe die Cookie-Einstellungen deines Browsers oder kontaktiere die Administration.',
     },
     passwordChangeRequired: {
       title: 'Passwort ändern',
@@ -2540,6 +2541,7 @@ const messages = {
       errorInactiveUser: 'This account is deactivated. Please contact your administrator.',
       errorServer: 'An unexpected error occurred. Please try again.',
       errorNetwork: 'Could not connect to the server. Please check your internet connection.',
+      errorSessionNotEstablished: 'Login succeeded, but the session could not be stored in your browser. Please check your browser\'s cookie settings or contact your administrator.',
     },
     passwordChangeRequired: {
       title: 'Change password',

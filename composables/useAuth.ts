@@ -40,6 +40,9 @@ export const useAuth = () => {
 
       if (res.ok) {
         await fetchSession()
+        if (!user.value) {
+          return { ok: false, error: 'Session cookie was not established', code: 'session_not_established' }
+        }
         return res
       }
 

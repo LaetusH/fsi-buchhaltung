@@ -15,7 +15,7 @@ interface LoginSuccess {
   user: User
 }
 
-export type LoginErrorCode = 'missing_credentials' | 'invalid_credentials' | 'inactive_user' | 'server_error' | 'network_error'
+export type LoginErrorCode = 'missing_credentials' | 'invalid_credentials' | 'inactive_user' | 'server_error' | 'network_error' | 'session_not_established'
 
 interface LoginError {
   ok: false
