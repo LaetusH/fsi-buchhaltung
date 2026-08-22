@@ -3,6 +3,8 @@ import type { PageName } from '~/types/page'
 const currentPage = ref<PageName>('Home')
 const pageMeta = ref<Record<string, any> | null>(null)
 
+const pendingLoginTarget = ref<{ page: PageName; meta: Record<string, any> | null } | null>(null)
+
 // Only these meta keys are persisted in the URL hash; ephemeral keys like returnTarget are excluded
 const HASH_META_KEYS = ['eventId', 'tab', 'articleId', 'slug', 'pathId', 'tag']
 
@@ -47,6 +49,10 @@ if (import.meta.client) {
 
 export const usePage = () => {
   const setPage = (page: PageName, meta?: Record<string, any>) => {
+    if (page === 'Login' && currentPage.value !== 'Login') {
+      pendingLoginTarget.value = { page: currentPage.value, meta: pageMeta.value }
+    }
+
     currentPage.value = page
     pageMeta.value = meta || null
     // Skip hash update for Login so deep links survive auth redirects
@@ -58,5 +64,11 @@ export const usePage = () => {
     }
   }
 
-  return { currentPage, setPage, pageMeta }
+  function consumePendingLoginTarget() {
+    const target = pendingLoginTarget.value
+    pendingLoginTarget.value = null
+    return target
+  }
+
+  return { currentPage, setPage, pageMeta, consumePendingLoginTarget }
 }

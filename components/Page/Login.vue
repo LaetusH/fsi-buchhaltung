@@ -34,13 +34,19 @@ const password = ref('')
 const error = ref('')
 
 const { login } = useAuth()
-const { setPage } = usePage()
+const { setPage, consumePendingLoginTarget } = usePage()
 const { t } = useI18n()
 
 async function doLogin() {
   error.value = ''
   const res = await login(username.value, password.value)
   if (res.ok) {
+    const pendingTarget = consumePendingLoginTarget()
+    if (pendingTarget) {
+      setPage(pendingTarget.page, pendingTarget.meta || undefined)
+      return
+    }
+
     const deepLink = parseDeepLinkHash()
     if (deepLink && deepLink.page !== 'Login') {
       setPage(deepLink.page, deepLink.meta || undefined)
