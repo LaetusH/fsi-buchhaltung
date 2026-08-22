@@ -37,6 +37,14 @@ const { login } = useAuth()
 const { setPage, consumePendingLoginTarget } = usePage()
 const { t } = useI18n()
 
+const errorMessagesByCode: Record<string, string> = {
+  missing_credentials: 'login.errorMissingCredentials',
+  invalid_credentials: 'login.errorInvalidCredentials',
+  inactive_user: 'login.errorInactiveUser',
+  server_error: 'login.errorServer',
+  network_error: 'login.errorNetwork',
+}
+
 async function doLogin() {
   error.value = ''
   const res = await login(username.value, password.value)
@@ -54,7 +62,8 @@ async function doLogin() {
       setPage('Home')
     }
   } else {
-    error.value = res.error || t('login.error')
+    const key = res.code ? errorMessagesByCode[res.code] : undefined
+    error.value = key ? t(key) : (res.error || t('login.error'))
   }
 }
 </script>

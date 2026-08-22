@@ -119,6 +119,11 @@ const messages = {
       username: 'Benutzername',
       password: 'Passwort',
       error: 'Anmeldung fehlgeschlagen',
+      errorMissingCredentials: 'Bitte Benutzername und Passwort eingeben.',
+      errorInvalidCredentials: 'Benutzername oder Passwort ist falsch.',
+      errorInactiveUser: 'Dieses Benutzerkonto ist deaktiviert. Bitte wende dich an die Verwaltung.',
+      errorServer: 'Es ist ein unerwarteter Fehler aufgetreten. Bitte versuche es erneut.',
+      errorNetwork: 'Verbindung zum Server fehlgeschlagen. Bitte überprüfe deine Internetverbindung.',
     },
     passwordChangeRequired: {
       title: 'Passwort ändern',
@@ -2530,6 +2535,11 @@ const messages = {
       username: 'Username',
       password: 'Password',
       error: 'Login failed',
+      errorMissingCredentials: 'Please enter your username and password.',
+      errorInvalidCredentials: 'Username or password is incorrect.',
+      errorInactiveUser: 'This account is deactivated. Please contact your administrator.',
+      errorServer: 'An unexpected error occurred. Please try again.',
+      errorNetwork: 'Could not connect to the server. Please check your internet connection.',
     },
     passwordChangeRequired: {
       title: 'Change password',

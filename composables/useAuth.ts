@@ -32,17 +32,21 @@ export const useAuth = () => {
   }
 
   async function login(username: string, password: string): Promise<LoginResponse> {
-    const res = await $fetch<LoginResponse>('/api/auth/login', {
-      method: 'POST',
-      body: { username, password }
-    })
+    try {
+      const res = await $fetch<LoginResponse>('/api/auth/login', {
+        method: 'POST',
+        body: { username, password }
+      })
 
-    if (res.ok) {
-      await fetchSession()
+      if (res.ok) {
+        await fetchSession()
+        return res
+      }
+
       return res
+    } catch (err: any) {
+      return { ok: false, error: err?.message || 'Network error', code: 'network_error' }
     }
-
-    return res
   }
 
   async function logout() {
