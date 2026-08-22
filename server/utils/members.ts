@@ -234,7 +234,7 @@ async function closeMemberPositionsAfterLeftDate(
   }
 }
 
-async function applyMemberLeftStatusActions({
+export async function applyMemberLeftStatusActions({
   memberId,
   accountId,
   leftAt,
@@ -255,6 +255,11 @@ async function applyMemberLeftStatusActions({
   }
 }
 
+function isLeftDateDue(leftAt: string) {
+  const today = new Date().toISOString().slice(0, 10)
+  return leftAt <= today
+}
+
 export async function applyMemberStatusActions({
   memberId,
   accountId,
@@ -266,6 +271,10 @@ export async function applyMemberStatusActions({
   conn,
 }: ApplyMemberStatusActionsOptions): Promise<MemberStatusActionSummary | null> {
   if (previousStatus === MemberStatus.Left || nextStatus !== MemberStatus.Left || !leftAt) {
+    return null
+  }
+
+  if (!isLeftDateDue(leftAt)) {
     return null
   }
 

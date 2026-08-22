@@ -92,8 +92,8 @@ const columns = computed<AdvancedTableColumn<MemberListItem>[]>(() => [
     label: t('member.status'),
     filterType: 'text',
     globalSearchable: true,
-    getValue: row => statusLabel(row.status),
-    format: row => statusLabel(row.status) || t('common.notAvailable'),
+    getValue: row => statusLabel(row),
+    format: row => statusLabel(row) || t('common.notAvailable'),
   },
   {
     key: 'joined_at',
@@ -139,10 +139,14 @@ async function load() {
 
 onMounted(load)
 
-function statusLabel(status: MemberStatus) {
-  if (status === MemberStatus.Active) return t('member.states.active')
-  if (status === MemberStatus.Passive) return t('member.states.passive')
-  if (status === MemberStatus.Hold) return t('member.states.hold')
+function statusLabel(member: MemberListItem) {
+  if (member.status === MemberStatus.Active) return t('member.states.active')
+  if (member.status === MemberStatus.Passive) return t('member.states.passive')
+  if (member.status === MemberStatus.Hold) return t('member.states.hold')
+  const today = new Date().toISOString().slice(0, 10)
+  if (member.left_at && member.left_at > today) {
+    return t('member.states.leaving')
+  }
   return t('member.states.left')
 }
 

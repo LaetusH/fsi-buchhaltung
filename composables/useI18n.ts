@@ -715,10 +715,12 @@ const messages = {
         failedCreate: 'Mitglied konnte nicht erstellt werden',
         failedUpdate: 'Mitglied konnte nicht aktualisiert werden',
         failedSave: 'Mitglied konnte nicht gespeichert werden.',
+        scheduledLeave: 'Mitglied gespeichert. Der Austritt wird automatisch am {date} ausgeführt.',
       },
       leftStatusConfirm: {
         title: 'Austritt speichern?',
         introUpdate: 'Der Status dieses Mitglieds wird auf AUSGETRETEN gesetzt. Beim Speichern werden automatisch Folgeänderungen ausgeführt.',
+        introScheduled: 'Der Status dieses Mitglieds wird auf AUSGETRETEN mit Austrittsdatum {date} gesetzt. Da dieses Datum in der Zukunft liegt, bleibt das Mitglied bis dahin aktiv - die folgenden Änderungen werden erst am Austrittsdatum automatisch ausgeführt:',
         reviewHint: 'Bitte prüfe diese Auswirkungen vor dem Speichern:',
         continue: 'Trotzdem speichern',
         accountDeactivate: 'Das verknüpfte Benutzerkonto wird auf inaktiv gesetzt.',
@@ -757,6 +759,7 @@ const messages = {
         passive: 'Passiv',
         hold: 'Ruhend',
         left: 'Ausgetreten',
+        leaving: 'Austritt geplant',
       },
       export: {
         button: 'Exportieren',
@@ -3141,10 +3144,12 @@ const messages = {
         failedCreate: 'Failed to create member',
         failedUpdate: 'Failed to update member',
         failedSave: 'Failed to save member.',
+        scheduledLeave: 'Member saved. The leave will be applied automatically on {date}.',
       },
       leftStatusConfirm: {
         title: 'Save leaving status?',
         introUpdate: 'This member status will be changed to LEFT. Saving will trigger automatic follow-up changes.',
+        introScheduled: 'This member status will be changed to LEFT with a leaving date of {date}. Since that date is in the future, the member stays active until then - the following changes will only be applied automatically on the leaving date:',
         reviewHint: 'Please review these effects before saving:',
         continue: 'Save anyway',
         accountDeactivate: 'The linked user account will be set to inactive.',
@@ -3183,6 +3188,7 @@ const messages = {
         passive: 'Passive',
         hold: 'On hold',
         left: 'Left',
+        leaving: 'Leave scheduled',
       },
       export: {
         button: 'Export',

@@ -23,7 +23,9 @@
     width-class="max-w-2xl"
   >
     <p class="text-sm text-base-700">
-      {{ t('member.leftStatusConfirm.introUpdate') }}
+      {{ isLeftDateDue
+        ? t('member.leftStatusConfirm.introUpdate')
+        : t('member.leftStatusConfirm.introScheduled', { date: formatDate(form.left_at || '') }) }}
     </p>
     <p class="text-sm text-base-600">
       {{ t('member.leftStatusConfirm.reviewHint') }}
@@ -365,6 +367,13 @@ const isLeftStatusTransition = computed(() => {
   return originalStatus.value !== MemberStatus.Left
 })
 
+const isLeftDateDue = computed(() => {
+  const leftAt = form.value.left_at
+  if (!leftAt) return false
+  const today = new Date().toISOString().slice(0, 10)
+  return leftAt <= today
+})
+
 const positionLabelById = computed(() => {
   return new Map(positionCatalog.value.map(position => [position.id, `${position.code} - ${position.name}`]))
 })
@@ -486,9 +495,15 @@ async function persistMember(showStatusActionsModal: boolean) {
       if (!response.ok) throw new Error(response.error || t('member.saved.failedCreate'))
     }
 
-    if (showStatusActionsModal) {
-      leftStatusResult.value = response.status_actions ?? createEmptyStatusActionSummary(form.value.left_at || '')
+    if (showStatusActionsModal && response.status_actions) {
+      leftStatusResult.value = response.status_actions
       showLeftStatusResultModal.value = true
+      return
+    }
+
+    if (showStatusActionsModal && !isLeftDateDue.value) {
+      toast.success(t('member.saved.scheduledLeave', { date: formatDate(form.value.left_at || '') }))
+      setPage(pageMeta.value?.returnTo || 'MemberList')
       return
     }
 
@@ -498,16 +513,6 @@ async function persistMember(showStatusActionsModal: boolean) {
     toast.error(translatePositionAssignmentToast(err?.message) || t('member.saved.failedSave'))
   } finally {
     isSaving.value = false
-  }
-}
-
-function createEmptyStatusActionSummary(leftAt: string): MemberStatusActionSummary {
-  return {
-    left_at: leftAt,
-    account_deactivated: null,
-    removed_subdivisions: [],
-    closed_positions: [],
-    removed_positions: [],
   }
 }
 
