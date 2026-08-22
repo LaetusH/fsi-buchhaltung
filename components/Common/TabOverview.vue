@@ -48,6 +48,7 @@
 <script setup lang="ts">
 import { computed, ref, watch, type CSSProperties, type ComponentPublicInstance } from 'vue'
 import { useTabOverviewLayout, type TabOverviewItem } from '~/composables/useTabOverviewLayout'
+import { useAuth } from '~/composables/useAuth'
 
 const props = defineProps<{
   modelValue: string
@@ -59,6 +60,15 @@ const props = defineProps<{
 const emit = defineEmits<{
   (e: 'update:modelValue', value: string): void
 }>()
+
+const { user, fetchSession } = useAuth()
+
+watch(
+  () => props.modelValue,
+  () => {
+    if (user.value) fetchSession()
+  },
+)
 
 const labelMeasureRefs = ref<Array<HTMLElement | null>>([])
 
