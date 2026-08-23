@@ -10,6 +10,7 @@
     save-endpoint="/api/positions/save"
     activate-endpoint="/api/positions/activate"
     response-list-key="positions"
+    :history-tables="['positions', 'member_positions']"
     :extra-columns="tableColumns"
     :can-manage="hasAccess"
     :create-item="createItem"

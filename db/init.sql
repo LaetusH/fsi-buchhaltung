@@ -61,9 +61,11 @@ CREATE TABLE IF NOT EXISTS entity_versions (
   changed_by BIGINT UNSIGNED NULL,
   changed_by_username VARCHAR(255) NULL,
   changed_at TIMESTAMP(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+  change_group_id CHAR(36) NULL,
   INDEX idx_entity_versions_lookup (table_name, record_key, id),
   INDEX idx_entity_versions_changed_at (changed_at),
-  INDEX idx_entity_versions_changed_by (changed_by)
+  INDEX idx_entity_versions_changed_by (changed_by),
+  INDEX idx_entity_versions_change_group (change_group_id, id)
 );
 
 CREATE TABLE IF NOT EXISTS app_settings (

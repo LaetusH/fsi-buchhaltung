@@ -9,6 +9,10 @@
     @update:search-value="search = $event"
     @create="createReceipt"
   >
+    <template #actions>
+      <PageAuditTableHistoryButton :tables="['receipts', 'receipt_positions']" />
+    </template>
+
     <CommonAdvancedTable
       :loading="loading"
       v-model:search="search"

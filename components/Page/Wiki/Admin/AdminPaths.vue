@@ -1,6 +1,7 @@
 <template>
   <CommonCard :title="t('wiki.admin.paths.title')" :description="t('wiki.admin.paths.hint')">
     <template #actions>
+      <PageAuditTableHistoryButton :tables="['wiki_paths', 'wiki_path_items', 'wiki_path_audiences']" :return-meta="{ tab: 'paths' }" />
       <button type="button" class="btn-primary" @click="openCreate">{{ t('wiki.admin.paths.create') }}</button>
     </template>
 

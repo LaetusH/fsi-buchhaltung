@@ -9,6 +9,10 @@
     @update:search-value="search = $event"
     @create="createCashCount"
   >
+    <template #actions>
+      <PageAuditTableHistoryButton :tables="['cash_counts', 'cash_count_positions']" />
+    </template>
+
     <CommonAdvancedTable
       :loading="loading"
       v-model:search="search"

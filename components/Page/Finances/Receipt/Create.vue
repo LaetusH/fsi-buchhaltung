@@ -9,6 +9,10 @@
     @update:model-value="file = $event"
     @remove-existing="onRemoveFile"
   >
+    <div v-if="isEditMode && receiptId" class="mb-3 flex justify-end">
+      <PageAuditHistoryButton table="receipts" :record-id="receiptId" />
+    </div>
+
     <ReceiptForm
       v-model="form"
       :has-file="!!file || (!!existingFile && !removeExistingFile)"

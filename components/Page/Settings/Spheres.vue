@@ -10,6 +10,7 @@
     save-endpoint="/api/spheres/save"
     activate-endpoint="/api/spheres/activate"
     response-list-key="spheres"
+    :history-tables="['spheres']"
   />
 </template>
 

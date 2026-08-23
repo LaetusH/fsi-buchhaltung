@@ -1,0 +1,112 @@
+import { ref, computed } from 'vue'
+import { useToast } from '~/composables/useToast'
+import type { AuditFilters, AuditGroup } from '~/types/audit'
+import type { GetAuditLogResponse } from '~/server/api/audit/index.get'
+
+export interface AuditQuickRange {
+  key: 'today' | '7d' | '30d' | 'all'
+}
+
+function quickRangeFrom(key: AuditQuickRange['key']): string | undefined {
+  if (key === 'all') return undefined
+  const now = new Date()
+  const from = new Date(now)
+  if (key === 'today') {
+    from.setHours(0, 0, 0, 0)
+  } else if (key === '7d') {
+    from.setDate(from.getDate() - 7)
+  } else if (key === '30d') {
+    from.setDate(from.getDate() - 30)
+  }
+  return from.toISOString().slice(0, 19).replace('T', ' ')
+}
+
+export function useAuditLog() {
+  const toast = useToast()
+
+  const groups = ref<AuditGroup[]>([])
+  const loading = ref(false)
+  const loadingMore = ref(false)
+  const nextCursor = ref<number | null>(null)
+
+  const search = ref('')
+  const quickRange = ref<AuditQuickRange['key']>('30d')
+  const domainFilter = ref<string[]>([])
+  const tableFilter = ref<string[]>([])
+  const operationFilter = ref<string[]>([])
+  const userFilter = ref<number | 'system' | undefined>(undefined)
+
+  const hasMore = computed(() => nextCursor.value !== null)
+
+  function buildFilters(): AuditFilters {
+    return {
+      from: quickRangeFrom(quickRange.value),
+      userId: userFilter.value,
+      tables: tableFilter.value.length ? tableFilter.value : undefined,
+      domains: domainFilter.value.length ? domainFilter.value : undefined,
+      operations: operationFilter.value.length ? operationFilter.value as any : undefined,
+      search: search.value.trim() || undefined,
+    }
+  }
+
+  async function fetchPage(before?: number) {
+    const filters = buildFilters()
+    const query: Record<string, string> = {}
+    if (filters.from) query.from = filters.from
+    if (filters.to) query.to = filters.to
+    if (filters.userId) query.userId = String(filters.userId)
+    if (filters.tables) query.tables = filters.tables.join(',')
+    if (filters.domains) query.domains = filters.domains.join(',')
+    if (filters.operations) query.operations = filters.operations.join(',')
+    if (filters.search) query.search = filters.search
+    if (before) query.before = String(before)
+
+    return await $fetch<GetAuditLogResponse>('/api/audit', { query })
+  }
+
+  async function load() {
+    loading.value = true
+    try {
+      const res = await fetchPage()
+      if (res.ok) {
+        groups.value = res.groups
+        nextCursor.value = res.nextCursor
+      } else {
+        toast.error(res.error)
+      }
+    } finally {
+      loading.value = false
+    }
+  }
+
+  async function loadMore() {
+    if (!hasMore.value || loadingMore.value) return
+    loadingMore.value = true
+    try {
+      const res = await fetchPage(nextCursor.value ?? undefined)
+      if (res.ok) {
+        groups.value = [...groups.value, ...res.groups]
+        nextCursor.value = res.nextCursor
+      } else {
+        toast.error(res.error)
+      }
+    } finally {
+      loadingMore.value = false
+    }
+  }
+
+  return {
+    groups,
+    loading,
+    loadingMore,
+    hasMore,
+    search,
+    quickRange,
+    domainFilter,
+    tableFilter,
+    operationFilter,
+    userFilter,
+    load,
+    loadMore,
+  }
+}

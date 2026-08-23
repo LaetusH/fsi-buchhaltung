@@ -18,7 +18,7 @@ export default defineEventHandler(async (event): Promise<ActivateResponse> => {
       entityType: 'user',
       id,
       isActive: is_active,
-      userId: current.user.id,
+      user: current.user,
       notFoundMessage: 'No matching user in database',
     })
   } catch (err: any) {

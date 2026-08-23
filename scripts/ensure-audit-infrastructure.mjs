@@ -19,8 +19,34 @@ const EXCLUDED_AUDIT_TABLES = new Set([
   'wiki_checklist_personal_state',
   'wiki_checklist_run_state',
   'wiki_article_views',
-  'wiki_articles',
 ])
+
+// Columns that must not, on their own, make an UPDATE count as a change worth recording. The AFTER
+// UPDATE trigger compares OLD/NEW over every *other* column, so a write touching only these writes
+// no entity_versions row at all -- the churn never reaches the table, not just the UI.
+//
+// `updated_at` is excluded everywhere because the audit log never displays it (see
+// GLOBALLY_IGNORED_COLUMNS in server/utils/audit/fields.ts): a row whose only change is that
+// timestamp would render as an empty "changed by X" entry.
+const COMPARISON_IGNORED_COLUMNS = ['updated_at']
+
+// Per table, on top of COMPARISON_IGNORED_COLUMNS. wiki_articles is written every few seconds by
+// the editor's autosave, which only ever touches the draft columns; the published content, title,
+// status and owner changes that matter still produce entries as usual.
+const TABLE_COMPARISON_IGNORED_COLUMNS = new Map([
+  ['wiki_articles', ['draft_md', 'draft_updated_at', 'draft_updated_by']],
+])
+
+function buildComparisonColumns(table) {
+  const ignored = new Set([
+    ...COMPARISON_IGNORED_COLUMNS,
+    ...(TABLE_COMPARISON_IGNORED_COLUMNS.get(table.name) ?? []),
+  ])
+  const columns = table.columns.filter(column => !ignored.has(column))
+  // A table made up entirely of ignored columns would compare as "never changed" -- fall back to
+  // the full row rather than silently dropping all of its updates.
+  return columns.length ? columns : table.columns
+}
 
 function quoteIdentifier(value) {
   return `\`${String(value).replace(/`/g, '``')}\``
@@ -171,9 +197,11 @@ async function ensureAuditInfrastructure() {
           changed_by BIGINT UNSIGNED NULL,
           changed_by_username VARCHAR(255) NULL,
           changed_at TIMESTAMP(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+          change_group_id CHAR(36) NULL,
           INDEX idx_entity_versions_lookup (table_name, record_key, id),
           INDEX idx_entity_versions_changed_at (changed_at),
-          INDEX idx_entity_versions_changed_by (changed_by)
+          INDEX idx_entity_versions_changed_by (changed_by),
+          INDEX idx_entity_versions_change_group (change_group_id, id)
         )
       `)
       console.log('ensure-audit-infrastructure: created entity_versions table')
@@ -198,6 +226,9 @@ async function ensureAuditInfrastructure() {
       const primaryKeyOld = buildPrimaryKeyJsonExpression(table.primaryKeyColumns, 'OLD')
       const rowJsonNew = buildJsonObjectExpression(table.columns, 'NEW')
       const rowJsonOld = buildJsonObjectExpression(table.columns, 'OLD')
+      const comparisonColumns = buildComparisonColumns(table)
+      const comparisonNew = buildJsonObjectExpression(comparisonColumns, 'NEW')
+      const comparisonOld = buildJsonObjectExpression(comparisonColumns, 'OLD')
 
       await conn.query(`DROP TRIGGER IF EXISTS ${buildTriggerName(table.name, 'ai')}`)
       await conn.query(`DROP TRIGGER IF EXISTS ${buildTriggerName(table.name, 'au')}`)
@@ -214,7 +245,8 @@ async function ensureAuditInfrastructure() {
           operation,
           state,
           changed_by,
-          changed_by_username
+          changed_by_username,
+          change_group_id
         ) VALUES (
           ${quoteString(table.name)},
           ${recordKeyNew},
@@ -222,7 +254,8 @@ async function ensureAuditInfrastructure() {
           'insert',
           ${rowJsonNew},
           @audit_user_id,
-          @audit_username
+          @audit_username,
+          @audit_change_group_id
         )
       `)
       console.log(`ensure-audit-infrastructure: created trigger ${afterInsertTrigger}`)
@@ -232,7 +265,7 @@ async function ensureAuditInfrastructure() {
         AFTER UPDATE ON ${tableName}
         FOR EACH ROW
         BEGIN
-          IF NOT (${rowJsonOld} <=> ${rowJsonNew}) THEN
+          IF NOT (${comparisonOld} <=> ${comparisonNew}) THEN
             INSERT INTO entity_versions (
               table_name,
               record_key,
@@ -240,7 +273,8 @@ async function ensureAuditInfrastructure() {
               operation,
               state,
               changed_by,
-              changed_by_username
+              changed_by_username,
+              change_group_id
             ) VALUES (
               ${quoteString(table.name)},
               ${recordKeyNew},
@@ -248,7 +282,8 @@ async function ensureAuditInfrastructure() {
               'update',
               ${rowJsonNew},
               @audit_user_id,
-              @audit_username
+              @audit_username,
+              @audit_change_group_id
             );
           END IF;
         END
@@ -266,7 +301,8 @@ async function ensureAuditInfrastructure() {
           operation,
           state,
           changed_by,
-          changed_by_username
+          changed_by_username,
+          change_group_id
         ) VALUES (
           ${quoteString(table.name)},
           ${recordKeyOld},
@@ -274,7 +310,8 @@ async function ensureAuditInfrastructure() {
           'delete',
           ${rowJsonOld},
           @audit_user_id,
-          @audit_username
+          @audit_username,
+          @audit_change_group_id
         )
       `)
       console.log(`ensure-audit-infrastructure: created trigger ${afterDeleteTrigger}`)

@@ -10,6 +10,7 @@
     @create="create"
   >
     <template #actions>
+      <PageAuditTableHistoryButton v-if="tab === 'outbox'" :tables="['notifications', 'notification_deliveries']" />
       <div v-if="canViewOutbox" class="flex gap-1 rounded-lg bg-base-100 p-1">
         <button
           v-for="entry in tabs"

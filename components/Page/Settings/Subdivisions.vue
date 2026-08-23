@@ -10,6 +10,7 @@
     save-endpoint="/api/subdivisions/save"
     activate-endpoint="/api/subdivisions/activate"
     response-list-key="subdivisions"
+    :history-tables="['subdivisions', 'subdivision_members']"
     :extra-columns="tableColumns"
     :can-manage="hasAccess"
     :create-item="createItem"

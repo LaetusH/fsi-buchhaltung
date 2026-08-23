@@ -9,6 +9,10 @@
     @update:model-value="file = $event"
     @remove-existing="onRemoveFile"
   >
+    <div v-if="isEditMode && bankStatementId" class="mb-3 flex justify-end">
+      <PageAuditHistoryButton table="bank_statements" :record-id="bankStatementId" />
+    </div>
+
     <BankStatementForm
       v-model="form"
       :has-file="!!file || (!!existingFile && !removeExistingFile)"

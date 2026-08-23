@@ -26,6 +26,10 @@
         <p v-if="loading" class="text-sm text-base-500">{{ t('wiki.loading') }}</p>
 
         <template v-else>
+          <div v-if="articleId && historyTables.length" class="mb-4 flex justify-end">
+            <PageAuditScopedHistoryButton :tables="historyTables" :parent-id="articleId" />
+          </div>
+
           <div v-show="activeTab === 'content'" class="space-y-4">
             <div class="grid gap-3 sm:grid-cols-2">
               <div class="field">
@@ -424,11 +428,13 @@ const toast = useToast()
 const articleId = ref<number | null>(pageMeta.value?.articleId ? Number(pageMeta.value.articleId) : null)
 const isCreate = computed(() => articleId.value === null)
 
+const EDIT_TABS = ['content', 'checklists', 'settings', 'attachments', 'access', 'history']
+
 const loading = ref(true)
 const saving = ref(false)
 const readOnly = ref(false)
 const errors = ref<string[]>([])
-const activeTab = ref('content')
+const activeTab = ref(EDIT_TABS.includes(String(pageMeta.value?.tab)) ? String(pageMeta.value?.tab) : 'content')
 const confirmArchive = ref(false)
 const attachments = ref<WikiAttachment[]>([])
 const checklists = ref<WikiChecklistView[]>([])
@@ -504,6 +510,23 @@ const tabs = computed<TabOverviewItem[]>(() => [
   { key: 'access', label: t('wiki.editor.tabs.access') },
   { key: 'history', label: t('wiki.editor.tabs.history') },
 ])
+
+// One history button for the whole editor, showing exactly what the visible tab edits — the tab
+// components deliberately don't render their own so there is never a second button on screen.
+const HISTORY_TABLES_BY_TAB: Record<string, string[]> = {
+  content: ['wiki_articles:id'],
+  settings: ['wiki_articles:id', 'wiki_article_tags'],
+  checklists: [
+    'wiki_checklists',
+    'wiki_checklist_items>wiki_checklists:article_id',
+    'wiki_checklist_runs>wiki_checklists:article_id',
+  ],
+  attachments: ['file_attachments:entity_id;entity_type=wiki_article'],
+  access: ['wiki_access_grants:scope_id;scope_type=article'],
+  history: ['wiki_article_revisions'],
+}
+
+const historyTables = computed(() => HISTORY_TABLES_BY_TAB[activeTab.value] ?? [])
 
 const writableSpaces = computed(() => spaces.value.filter(space => space.accessLevel !== 'read'))
 

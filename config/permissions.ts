@@ -51,6 +51,8 @@ export type PermissionKey =
   | 'wiki.edit'
   | 'wiki.review'
   | 'wiki.manage'
+  | 'audit.view'
+  | 'audit.viewAll'
 
 export interface PermissionDefinition {
   key: PermissionKey
@@ -112,6 +114,8 @@ export const PERMISSIONS: PermissionDefinition[] = [
   { key: 'wiki.edit', labelKey: 'permissions.items.wikiEdit', categoryKey: 'permissions.categories.wiki' },
   { key: 'wiki.review', labelKey: 'permissions.items.wikiReview', categoryKey: 'permissions.categories.wiki' },
   { key: 'wiki.manage', labelKey: 'permissions.items.wikiManage', categoryKey: 'permissions.categories.wiki' },
+  { key: 'audit.view', labelKey: 'permissions.items.auditView', categoryKey: 'permissions.categories.audit' },
+  { key: 'audit.viewAll', labelKey: 'permissions.items.auditViewAll', categoryKey: 'permissions.categories.audit' },
 ]
 
 export const implied: Partial<Record<PermissionKey, PermissionKey[]>> = {
@@ -144,4 +148,5 @@ export const implied: Partial<Record<PermissionKey, PermissionKey[]>> = {
   'wiki.edit': ['wiki.view'],
   'wiki.review': ['wiki.edit', 'wiki.view'],
   'wiki.manage': ['wiki.review', 'wiki.edit', 'wiki.view'],
+  'audit.viewAll': ['audit.view'],
 }

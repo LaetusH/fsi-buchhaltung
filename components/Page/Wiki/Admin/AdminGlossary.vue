@@ -55,6 +55,10 @@
   </CommonCard>
 
   <CommonCard :title="t('wiki.admin.glossary.listTitle')">
+    <template #actions>
+      <PageAuditTableHistoryButton :tables="['wiki_glossary_terms', 'wiki_glossary_aliases']" :return-meta="{ tab: 'glossary' }" />
+    </template>
+
     <p v-if="loading" class="text-sm text-base-500">{{ t('wiki.loading') }}</p>
     <p v-else-if="!terms.length" class="text-sm text-base-500">{{ t('wiki.admin.glossary.empty') }}</p>
 

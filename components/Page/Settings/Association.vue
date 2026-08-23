@@ -4,6 +4,12 @@
       :title="t('settings.association.legalTitle')"
       :description="t('settings.association.intro')"
     >
+      <template #actions>
+        <PageAuditTableHistoryButton
+          :tables="['association_profiles', 'association_responsible_members', 'association_responsible_positions']"
+          restricted
+        />
+      </template>
 
       <div class="field">
         <label>{{ t('settings.association.fields.logo') }}</label>

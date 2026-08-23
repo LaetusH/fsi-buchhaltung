@@ -7,6 +7,7 @@
       </div>
 
       <div class="flex w-full flex-wrap items-center gap-2 sm:w-auto sm:justify-end">
+        <PageAuditScopedHistoryButton v-if="eventId" :tables="['event_shift_slots', 'event_shift_type_descriptions', 'event_shift_members>event_shift_slots:event_id']" :parent-id="eventId" />
         <div v-if="canManage" class="flex w-full rounded-lg bg-base-100 p-1 sm:inline-flex sm:w-auto">
           <button
             type="button"
@@ -483,7 +484,10 @@
     </div>
 
     <CommonModal v-model="templateBrowserOpen" :title="t('event.planning.shiftTemplates')" width-class="max-w-lg">
-      <p class="text-sm text-base-500">{{ t('event.planning.shiftTemplateBrowserHint') }}</p>
+      <div class="flex flex-wrap items-center justify-between gap-3">
+        <p class="text-sm text-base-500">{{ t('event.planning.shiftTemplateBrowserHint') }}</p>
+        <PageAuditTableHistoryButton :tables="['event_shift_templates']" :return-meta="{ tab: 'shifts' }" />
+      </div>
       <div class="space-y-2">
         <article
           v-for="template in shiftTemplates"

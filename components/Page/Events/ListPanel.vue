@@ -11,6 +11,10 @@
     @update:search-value="search = $event"
     @create="createEvent"
   >
+    <template #actions>
+      <PageAuditTableHistoryButton :tables="['events']" />
+    </template>
+
     <CommonAdvancedTable
       :loading="loading"
       v-model:search="search"

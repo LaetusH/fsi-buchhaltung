@@ -20,10 +20,12 @@
     "setup:migrate:calendar-token": "node --env-file=.env scripts/migrate-calendar-token.mjs",
     "setup:migrate:member-self-service": "node --env-file=.env scripts/migrate-member-self-service.mjs",
     "setup:migrate:notifications": "node --env-file=.env scripts/migrate-notifications.mjs",
+    "setup:migrate:audit-log": "node --env-file=.env scripts/migrate-audit-log.mjs",
     "setup:migrate:wiki": "node --env-file=.env scripts/migrate-wiki.mjs",
     "setup:seed:wiki-content": "node --env-file=.env scripts/migrate-wiki.mjs --seed-content",
     "setup:seed-admin": "node --env-file=.env scripts/seed-admin.mjs",
     "setup:audit": "node --env-file=.env scripts/ensure-audit-infrastructure.mjs",
+    "setup:prune:audit-log": "node --env-file=.env scripts/prune-audit-log.mjs",
     "setup:connection-db-user": "node --env-file=.env scripts/create-connection-db-user.mjs",
     "postinstall": "nuxt prepare"
   },

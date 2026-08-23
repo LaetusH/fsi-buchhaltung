@@ -9,6 +9,10 @@
     @update:search-value="search = $event"
     @create="createBudget"
   >
+    <template #actions>
+      <PageAuditTableHistoryButton :tables="['budgets', 'budget_cost_centre_lines']" />
+    </template>
+
     <CommonAdvancedTable
       :loading="loading"
       v-model:search="search"

@@ -64,7 +64,7 @@ export default defineEventHandler(async (event): Promise<ActivateResponse> => {
         entityType: 'position',
         id,
         isActive: is_active,
-        userId: current.user.id,
+        user: current.user,
         notFoundMessage: 'No matching positions in database',
       })
     }

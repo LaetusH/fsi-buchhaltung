@@ -8,6 +8,7 @@
         </div>
 
         <div class="flex flex-wrap items-center justify-end gap-2">
+          <PageAuditScopedHistoryButton v-if="props.eventId" :tables="['event_tasks', 'event_task_members>event_tasks:event_id', 'event_task_subdivisions>event_tasks:event_id']" :parent-id="props.eventId" />
           <button
             type="button"
             class="inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1.5 text-sm font-medium cursor-pointer"
@@ -388,6 +389,7 @@ const props = defineProps<{
   canManage?: boolean
   saving?: boolean
   loading?: boolean
+  eventId?: number | null
   members: EventMemberOption[]
   subdivisions: EventSubdivisionOption[]
   currentMemberId?: number | null

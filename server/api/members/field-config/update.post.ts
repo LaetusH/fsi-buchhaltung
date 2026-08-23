@@ -1,6 +1,6 @@
 import { defineEventHandler, readBody } from 'h3'
 import { requirePermission } from '~/server/utils/api/guards'
-import { query } from '~/server/utils/db'
+import { withAuditTransaction } from '~/server/utils/db'
 import { isSelfEditFieldMode, isSelfEditFieldName } from '~/config/memberSelfEdit'
 
 interface UpdateFieldConfigSuccess {
@@ -27,13 +27,16 @@ export default defineEventHandler(async (event): Promise<UpdateFieldConfigRespon
     }
   }
 
-  for (const entry of body) {
-    await query(
-      `INSERT INTO member_self_edit_field_config (field_name, mode) VALUES (?, ?)
-       ON DUPLICATE KEY UPDATE mode = VALUES(mode)`,
-      [entry.field_name, entry.mode],
-    )
-  }
+  await withAuditTransaction(current.user, async (conn) => {
+    for (const entry of body) {
+      await query(
+        `INSERT INTO member_self_edit_field_config (field_name, mode) VALUES (?, ?)
+         ON DUPLICATE KEY UPDATE mode = VALUES(mode)`,
+        [entry.field_name, entry.mode],
+        conn,
+      )
+    }
+  })
 
   return { ok: true }
 })

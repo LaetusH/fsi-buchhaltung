@@ -10,6 +10,7 @@
     save-endpoint="/api/cost_centres/save"
     activate-endpoint="/api/cost_centres/activate"
     response-list-key="costCentres"
+    :history-tables="['cost_centres']"
     :extra-columns="tableColumns"
     :create-item="createItem"
     :map-edit-item="mapEditItem"

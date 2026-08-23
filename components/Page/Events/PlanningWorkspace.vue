@@ -313,6 +313,7 @@
             <EventTasksPanel
               v-else-if="activeTab === 'tasks' && canViewAll"
               v-model:tasks="planningTasks"
+              :event-id="eventId"
               :can-manage="canManagePlanning"
               :disabled="!canManagePlanning || taskLoading || taskSaving || !canManageTasks"
               :saving="taskSaving"
@@ -330,6 +331,7 @@
               v-else-if="activeTab === 'checklists' && canViewAll"
               v-model:checklists="reusableChecklists"
               v-model:templates="checklistTemplates"
+              :event-id="eventId"
               :can-manage="canManagePlanning"
               :disabled="!canManagePlanning || checklistLoading || checklistSaving || !canManageChecklists"
               :can-save-templates="canSaveChecklistTemplates"

@@ -29,6 +29,7 @@ import WikiArticleEditPage from '~/components/Page/Wiki/Article/Edit.vue'
 import WikiPathPage from '~/components/Page/Wiki/Path.vue'
 import WikiAdminPage from '~/components/Page/Wiki/Admin/Admin.vue'
 import WikiGlossaryPage from '~/components/Page/Wiki/Glossary/Glossary.vue'
+import AuditLogPage from '~/components/Page/Audit/Log.vue'
 
 // Do not display more than 8 pages at once
 export const PAGES: Record<string, AppPage> = {
@@ -62,4 +63,5 @@ export const PAGES: Record<string, AppPage> = {
   WikiPath: { main: false, labelKey: 'pages.wikiPath', component: WikiPathPage, permissions: ['wiki.view'], preserveOnRefresh: true },
   WikiGlossary: { main: false, labelKey: 'pages.wikiGlossary', component: WikiGlossaryPage, permissions: ['wiki.view'], preserveOnRefresh: true },
   WikiAdmin: { main: false, labelKey: 'pages.wikiAdmin', component: WikiAdminPage, permissions: ['wiki.manage'], preserveOnRefresh: true },
+  AuditLog: { main: false, labelKey: 'pages.auditLog', component: AuditLogPage, permissions: ['audit.view'] },
 }

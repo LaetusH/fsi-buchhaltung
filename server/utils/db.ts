@@ -61,7 +61,7 @@ export async function withAuditTransaction<T>(
 
   try {
     await conn.beginTransaction()
-    await setAuditActor(conn, actor)
+    await setAuditActor(conn, actor, crypto.randomUUID())
     const result = await callback(conn)
     await conn.commit()
     return normalizeBigInt(result)

@@ -9,6 +9,10 @@
     @update:search-value="search = $event"
     @create="createReimbursement"
   >
+    <template #actions>
+      <PageAuditTableHistoryButton :tables="['reimbursements', 'reimbursement_positions']" />
+    </template>
+
     <CommonAdvancedTable
       :loading="loading"
       v-model:search="search"

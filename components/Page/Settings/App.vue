@@ -3,6 +3,10 @@
     :title="t('settings.app.invoiceTextsTitle')"
     :description="t('settings.app.invoiceTextsText')"
   >
+    <template #actions>
+      <PageAuditTableHistoryButton :tables="['app_settings']" restricted />
+    </template>
+
     <div class="flex flex-wrap gap-2">
       <span
         v-for="variable in invoiceTextVariables"
@@ -85,6 +89,55 @@
         {{ isSavingInvoiceTexts ? t('settings.app.invoiceTextsSaving') : t('settings.app.invoiceTextsSave') }}
       </button>
     </div>
+  </CommonCard>
+
+  <CommonCard
+    :title="t('audit.retention.title')"
+    :description="t('audit.retention.intro')"
+  >
+    <div class="grid gap-4 md:grid-cols-2">
+      <div class="field">
+        <label>{{ t('audit.retention.retentionDays') }}</label>
+        <input
+          v-model.number="auditRetentionForm.retentionDays"
+          type="number"
+          min="0"
+          step="1"
+          class="input"
+          :disabled="isSavingAuditRetention"
+        >
+        <p class="text-xs text-base-500">{{ t('audit.retention.retentionDaysHelp') }}</p>
+      </div>
+      <div class="field">
+        <label>{{ t('audit.retention.financeRetentionDays') }}</label>
+        <input
+          v-model.number="auditRetentionForm.financeRetentionDays"
+          type="number"
+          min="0"
+          step="1"
+          class="input"
+          :disabled="isSavingAuditRetention"
+        >
+        <p class="text-xs text-base-500">{{ t('audit.retention.financeRetentionDaysHelp') }}</p>
+      </div>
+    </div>
+
+    <div class="flex flex-wrap items-center justify-between gap-3">
+      <p class="text-xs text-base-500">
+        {{ t('audit.retention.rowCount', { count: String(auditRowCount) }) }}
+        · {{ t('audit.retention.sizeOnDisk', { size: auditSizeLabel }) }}
+      </p>
+      <button
+        class="btn-primary"
+        :disabled="isSavingAuditRetention"
+        :class="{ 'opacity-50 cursor-not-allowed': isSavingAuditRetention }"
+        @click="saveAuditRetention"
+      >
+        {{ t('audit.retention.save') }}
+      </button>
+    </div>
+
+    <p class="text-xs text-base-400">{{ t('audit.retention.pruneHint') }}</p>
   </CommonCard>
 
   <CommonCard
@@ -265,6 +318,9 @@ import type { PreviewFilesSnapshotResponse } from '~/server/api/settings/app/sna
 import type { RestoreSnapshotResponse } from '~/server/api/settings/app/snapshot.restore.post'
 import type { SnapshotErrorCode } from '~/server/utils/databaseSnapshots'
 import type { InvoiceTextSettings, InvoiceTextVariable } from '~/types/appSettings'
+import type { AuditRetentionSettings } from '~/types/audit'
+import type { GetAuditSettingsResponse } from '~/server/api/audit/settings.get'
+import type { SaveAuditSettingsResponse } from '~/server/api/audit/settings.save.post'
 
 const { t } = useI18n()
 const { formatDateTime } = useLocaleFormatters()
@@ -298,6 +354,19 @@ const invoiceTextForm = ref<InvoiceTextSettings>({
   is_kleinunternehmer_default: false,
 })
 const invoiceTextVariables = ref<InvoiceTextVariable[]>([])
+
+const isSavingAuditRetention = ref(false)
+const auditRetentionForm = ref<AuditRetentionSettings>({ retentionDays: 1095, financeRetentionDays: 0 })
+const auditRowCount = ref(0)
+const auditSizeBytes = ref(0)
+
+const auditSizeLabel = computed(() => {
+  const bytes = auditSizeBytes.value
+  if (bytes < 1024) return `${bytes} B`
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
+  if (bytes < 1024 * 1024 * 1024) return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
+  return `${(bytes / (1024 * 1024 * 1024)).toFixed(1)} GB`
+})
 
 const previewAppLabel = computed(() => {
   if (!restorePreview.value) return ''
@@ -334,8 +403,40 @@ const canRestorePreview = computed(() => {
 })
 
 onMounted(loadInvoiceTexts)
+onMounted(loadAuditRetention)
 
 useAppRefresh().onRefresh(loadInvoiceTexts)
+
+async function loadAuditRetention() {
+  const res = await $fetch<GetAuditSettingsResponse>('/api/audit/settings')
+  if (!res.ok) {
+    toast.error(res.error)
+    return
+  }
+  auditRetentionForm.value = { ...res.settings }
+  auditRowCount.value = res.rowCount
+  auditSizeBytes.value = res.sizeBytes
+}
+
+async function saveAuditRetention() {
+  isSavingAuditRetention.value = true
+  try {
+    const res = await $fetch<SaveAuditSettingsResponse>('/api/audit/settings.save', {
+      method: 'POST',
+      body: auditRetentionForm.value,
+    })
+    if (!res.ok) {
+      toast.error(res.error)
+      return
+    }
+    auditRetentionForm.value = { ...res.settings }
+    toast.success(t('audit.retention.saved'))
+  } catch {
+    toast.error(t('audit.retention.saveFailed'))
+  } finally {
+    isSavingAuditRetention.value = false
+  }
+}
 
 async function loadInvoiceTexts() {
   const res = await $fetch<{ ok: boolean, settings?: InvoiceTextSettings, variables?: InvoiceTextVariable[], error?: string }>('/api/settings/app/invoice-texts')

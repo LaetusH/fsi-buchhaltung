@@ -25,6 +25,10 @@
       {{ t('invoice.lockedNotice', { status: t(`invoice.states.${form.status}`) }) }}
     </div>
 
+    <div v-if="isEditMode && invoiceId" class="mb-3 flex justify-end">
+      <PageAuditHistoryButton table="invoices" :record-id="invoiceId" />
+    </div>
+
     <InvoiceForm
       v-model="form"
       :disabled="!canEdit"

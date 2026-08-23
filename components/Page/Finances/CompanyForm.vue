@@ -1,6 +1,10 @@
 <template>
   <div class="flex flex-col h-full">
     <div class="flex-1 overflow-y-auto space-y-6">
+      <div v-if="form.id" class="flex justify-end">
+        <PageAuditHistoryButton table="companies" :record-id="form.id" />
+      </div>
+
       <section>
         <h3 class="section-title">{{ t('company.personalData') }}</h3>
 

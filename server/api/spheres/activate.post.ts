@@ -16,7 +16,7 @@ export default defineEventHandler(async (event): Promise<ActivateResponse> => {
       entityType: 'sphere',
       id,
       isActive: is_active,
-      userId: current.user.id,
+      user: current.user,
       notFoundMessage: 'No matching spheres in database',
     })
   } catch (err: any) {

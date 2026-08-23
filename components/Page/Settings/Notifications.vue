@@ -11,6 +11,10 @@
       :description="t('settings.notifications.intro')"
       :tone="settings.notifications_enabled ? 'success' : 'warning'"
     >
+      <template #actions>
+        <PageAuditTableHistoryButton :tables="['app_settings']" restricted />
+      </template>
+
       <div class="flex flex-wrap items-center justify-between gap-3">
         <div class="min-w-0">
           <p class="text-sm font-medium text-base-800">{{ t('settings.notifications.masterSwitch') }}</p>

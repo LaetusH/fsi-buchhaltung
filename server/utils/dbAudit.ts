@@ -124,14 +124,18 @@ export async function getAuditedTableMetadata(conn: mariadb.PoolConnection) {
   return metadataPromise
 }
 
-export async function setAuditActor(conn: mariadb.PoolConnection, actor: AuditActor) {
+export async function setAuditActor(
+  conn: mariadb.PoolConnection,
+  actor: AuditActor,
+  changeGroupId?: string | null,
+) {
   const normalized = normalizeAuditActor(actor)
   await conn.query(
-    `SET @audit_user_id = ?, @audit_username = ?`,
-    [normalized.id, normalized.username],
+    `SET @audit_user_id = ?, @audit_username = ?, @audit_change_group_id = ?`,
+    [normalized.id, normalized.username, changeGroupId ?? null],
   )
 }
 
 export async function clearAuditActor(conn: mariadb.PoolConnection) {
-  await conn.query(`SET @audit_user_id = NULL, @audit_username = NULL`)
+  await conn.query(`SET @audit_user_id = NULL, @audit_username = NULL, @audit_change_group_id = NULL`)
 }

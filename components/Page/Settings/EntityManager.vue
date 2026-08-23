@@ -9,6 +9,10 @@
     @update:search-value="search = $event"
     @create="addItem"
   >
+    <template v-if="props.historyTables?.length" #actions>
+      <PageAuditTableHistoryButton :tables="props.historyTables" />
+    </template>
+
     <CommonAdvancedTable
       :loading="loading"
       v-model:search="search"
@@ -168,6 +172,8 @@ const props = withDefaults(defineProps<{
   transformItems?: (items: SettingsEntityRow[]) => SettingsEntityRow[]
   onError?: (context: EntityManagerErrorContext) => void
   modalWidthClass?: string
+  /** Table name(s) backing this list, for the "view change log" button. Omit to hide the button. */
+  historyTables?: string[]
 }>(), {
   extraColumns: () => [],
   persistKey: undefined,

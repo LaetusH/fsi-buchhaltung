@@ -5,6 +5,10 @@
       :title="t('member.fieldConfig.title')"
       :description="t('member.fieldConfig.intro')"
     >
+      <template #actions>
+        <PageAuditTableHistoryButton :tables="['member_self_edit_field_config']" />
+      </template>
+
       <div v-if="loadingConfig" class="flex items-center justify-center p-6 text-base-400">
         <Icon name="material-symbols:progress-activity" class="animate-spin text-2xl" />
       </div>
@@ -48,6 +52,10 @@
     </CommonCard>
 
     <CommonCard v-if="canApprove" :title="t('member.fieldConfig.pendingChangesTitle')">
+      <template #actions>
+        <PageAuditTableHistoryButton :tables="['member_pending_field_changes']" />
+      </template>
+
       <div v-if="loadingPending" class="flex items-center justify-center p-6 text-base-400">
         <Icon name="material-symbols:progress-activity" class="animate-spin text-2xl" />
       </div>

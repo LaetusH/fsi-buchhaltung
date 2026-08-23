@@ -9,6 +9,10 @@
     @update:search-value="search = $event"
     @create="openCreateModal"
   >
+    <template #actions>
+      <PageAuditTableHistoryButton :tables="['users', 'notification_push_subscriptions']" restricted />
+    </template>
+
     <CommonAdvancedTable
       :loading="loading"
       v-model:search="search"

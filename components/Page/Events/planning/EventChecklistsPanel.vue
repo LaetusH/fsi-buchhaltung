@@ -1,8 +1,13 @@
 <template>
   <section class="space-y-6">
     <div class="-mx-6 bg-white p-4 shadow-sm sm:mx-0 sm:rounded-xl sm:shadow-lg">
-      <h2 class="text-lg font-semibold">{{ t('event.planning.checklists') }}</h2>
-      <p class="text-sm text-base-500">{{ t('event.planning.checklistHint') }}</p>
+      <div class="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h2 class="text-lg font-semibold">{{ t('event.planning.checklists') }}</h2>
+          <p class="text-sm text-base-500">{{ t('event.planning.checklistHint') }}</p>
+        </div>
+        <PageAuditScopedHistoryButton v-if="props.eventId" :tables="['event_checklists', 'event_checklist_items>event_checklists:event_id']" :parent-id="props.eventId" />
+      </div>
     </div>
 
     <div :class="['grid gap-6', canManage !== false ? 'xl:grid-cols-[minmax(18rem,0.75fr)_minmax(0,1.25fr)]' : '']">
@@ -295,14 +300,17 @@
               <h3 class="text-lg font-semibold text-base-900">{{ t('event.planning.checklistTemplates') }}</h3>
               <p class="text-sm text-base-500">{{ t('event.planning.checklistTemplateBrowserHint') }}</p>
             </div>
-            <button
-              type="button"
-              class="inline-flex h-8 w-8 items-center justify-center rounded-md border border-base-200 bg-white text-base-600 hover:bg-base-50 cursor-pointer"
-              :title="t('actions.close')"
-              @click="templateBrowserOpen = false"
-            >
-              <Icon name="material-symbols:close-rounded" />
-            </button>
+            <div class="flex items-center gap-2">
+              <PageAuditTableHistoryButton :tables="['event_checklist_templates', 'event_checklist_template_items']" :return-meta="{ tab: 'checklists' }" />
+              <button
+                type="button"
+                class="inline-flex h-8 w-8 items-center justify-center rounded-md border border-base-200 bg-white text-base-600 hover:bg-base-50 cursor-pointer"
+                :title="t('actions.close')"
+                @click="templateBrowserOpen = false"
+              >
+                <Icon name="material-symbols:close-rounded" />
+              </button>
+            </div>
           </div>
 
           <div class="border-b border-base-200 p-4">
@@ -380,6 +388,7 @@ const props = defineProps<{
   disabled?: boolean
   canManage?: boolean
   canSaveTemplates?: boolean
+  eventId?: number | null
   tasks?: EventPlanningTask[]
 }>()
 

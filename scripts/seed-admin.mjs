@@ -79,6 +79,8 @@ const ALL_PERMISSION_KEYS = [
   'wiki.edit',
   'wiki.review',
   'wiki.manage',
+  'audit.view',
+  'audit.viewAll',
 ]
 
 const DEFAULT_ROLE_PERMISSIONS = {

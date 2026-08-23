@@ -28,6 +28,7 @@ import SettingsPermissions from './Permissions.vue'
 import SettingsUsers from './Users.vue'
 import SettingsApp from './App.vue'
 import SettingsNotifications from './Notifications.vue'
+import SettingsAuditLog from './AuditLog.vue'
 import { useAuth } from '~/composables/useAuth'
 import { usePage } from '~/composables/usePage'
 
@@ -35,7 +36,7 @@ defineEmits<{
   (e: 'openMenu'): void
 }>()
 
-type SettingsTab = 'general' | 'association' | 'spheres' | 'costCentres' | 'subdivisions' | 'positions' | 'users' | 'permissions' | 'app' | 'notifications'
+type SettingsTab = 'general' | 'association' | 'spheres' | 'costCentres' | 'subdivisions' | 'positions' | 'users' | 'permissions' | 'app' | 'notifications' | 'audit'
 
 const currentTab = useState<SettingsTab>('settings-overview-current-tab', () => 'general')
 const { t } = useI18n()
@@ -54,6 +55,7 @@ const tabs = computed(() => {
     { key: 'permissions', label: t('settings.tabs.permissions'), show: hasPermission(['permissions.manage', 'settings.viewAs']) },
     { key: 'app', label: t('settings.tabs.app'), show: hasPermission('settings.app.access') },
     { key: 'notifications', label: t('settings.tabs.notifications'), show: hasPermission('settings.notifications.manage') },
+    { key: 'audit', label: t('settings.tabs.audit'), show: hasPermission('audit.view') },
   ] as const
   return list.filter(tab => tab.show).map(({ show, ...rest }) => rest)
 })
@@ -80,6 +82,8 @@ const activeComponent = computed(() => {
       return SettingsApp
     case 'notifications':
       return SettingsNotifications
+    case 'audit':
+      return SettingsAuditLog
     default:
       return SettingsGeneral
   }

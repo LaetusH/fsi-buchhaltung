@@ -57,6 +57,10 @@
   </CommonCard>
 
   <CommonCard :title="t('wiki.admin.pageHelp.listTitle')">
+    <template #actions>
+      <PageAuditTableHistoryButton :tables="['wiki_page_help']" :return-meta="{ tab: 'pageHelp' }" />
+    </template>
+
     <p v-if="loading" class="text-sm text-base-500">{{ t('wiki.loading') }}</p>
     <p v-else-if="!groups.length" class="text-sm text-base-500">{{ t('wiki.admin.pageHelp.empty') }}</p>
 

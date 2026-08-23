@@ -36,6 +36,10 @@
   </CommonCard>
 
   <CommonCard :title="t('wiki.admin.tags.listTitle')">
+    <template #actions>
+      <PageAuditTableHistoryButton :tables="['wiki_tags']" :return-meta="{ tab: 'tags' }" />
+    </template>
+
     <p v-if="loading" class="text-sm text-base-500">{{ t('wiki.loading') }}</p>
     <p v-else-if="!tags.length" class="text-sm text-base-500">{{ t('wiki.admin.tags.empty') }}</p>
 

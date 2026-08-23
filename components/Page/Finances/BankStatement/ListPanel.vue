@@ -9,6 +9,10 @@
     @update:search-value="search = $event"
     @create="createBankStatement"
   >
+    <template #actions>
+      <PageAuditTableHistoryButton :tables="['bank_statements', 'bank_statement_positions']" />
+    </template>
+
     <CommonAdvancedTable
       :loading="loading"
       v-model:search="search"

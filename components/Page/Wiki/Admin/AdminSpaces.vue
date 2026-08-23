@@ -1,6 +1,7 @@
 <template>
   <CommonCard :title="t('wiki.admin.spaces.title')" :description="t('wiki.admin.spaces.hint')">
     <template #actions>
+      <PageAuditTableHistoryButton :tables="['wiki_spaces']" :return-meta="{ tab: 'spaces' }" />
       <button type="button" class="btn-primary" @click="openCreate">{{ t('wiki.space.create') }}</button>
     </template>
 

@@ -2,6 +2,7 @@
   <div v-if="hasAccess" class="contents">
     <CommonCard v-if="canManagePermissions" :title="t('settings.permissions.rolesTitle')">
       <template #actions>
+        <PageAuditTableHistoryButton :tables="['roles', 'role_permissions']" restricted />
         <CommonAdvancedTableViewToggle persist-key="settings-permissions-roles" />
         <CommonGlobalSearchBar v-model="roleSearchInput" />
         <button class="btn-primary" @click="openRoleEditor()">
@@ -33,6 +34,7 @@
 
     <CommonCard v-if="canManagePermissions" :title="t('settings.permissions.positionsTitle')">
       <template #actions>
+        <PageAuditTableHistoryButton :tables="['position_permissions']" />
         <CommonAdvancedTableViewToggle persist-key="settings-permissions-positions" />
         <CommonGlobalSearchBar v-model="positionSearchInput" />
       </template>
@@ -55,6 +57,7 @@
 
     <CommonCard v-if="canManagePermissions" :title="t('settings.permissions.usersTitle')">
       <template #actions>
+        <PageAuditTableHistoryButton :tables="['user_permissions', 'user_roles']" restricted />
         <CommonAdvancedTableViewToggle persist-key="settings-permissions-users" />
         <CommonGlobalSearchBar v-model="userSearchInput" />
       </template>

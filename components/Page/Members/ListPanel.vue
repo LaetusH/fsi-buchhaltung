@@ -12,6 +12,7 @@
     @create="createMember"
   >
     <template #actions>
+      <PageAuditTableHistoryButton :tables="['members', 'member_positions', 'member_pending_field_changes']" />
       <button type="button" class="btn-secondary inline-flex items-center gap-2" @click="exportOpen = true">
         <Icon name="material-symbols:download-rounded" />
         {{ t('member.export.button') }}
