@@ -44,7 +44,7 @@ export interface AuditGroup {
 export interface AuditFilters {
   from?: string
   to?: string
-  userId?: number | 'system'
+  userIds?: Array<number | 'system'>
   tables?: string[]
   domains?: string[]
   operations?: AuditOperation[]

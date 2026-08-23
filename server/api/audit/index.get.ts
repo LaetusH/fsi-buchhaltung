@@ -21,7 +21,9 @@ export default defineEventHandler(async (event): Promise<GetAuditLogResponse> =>
   const filters: AuditFilters = {
     from: typeof q.from === 'string' ? q.from : undefined,
     to: typeof q.to === 'string' ? q.to : undefined,
-    userId: q.userId === 'system' ? 'system' : q.userId ? Number(q.userId) : undefined,
+    userIds: toStringArray(q.userIds)
+      ?.map(id => (id === 'system' ? 'system' as const : Number(id)))
+      .filter(id => id === 'system' || Number.isInteger(id)),
     tables: toStringArray(q.tables),
     domains: toStringArray(q.domains),
     operations: toStringArray(q.operations) as AuditOperation[] | undefined,

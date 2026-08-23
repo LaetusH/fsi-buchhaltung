@@ -3,7 +3,7 @@
     <section class="space-y-4 -mx-6 bg-white p-4 shadow-sm sm:mx-0 sm:rounded-xl sm:shadow-lg">
       <div class="flex flex-wrap items-center justify-between gap-3">
         <h2 class="text-lg font-semibold">{{ t('event.masterData') }}</h2>
-        <PageAuditHistoryButton v-if="eventId" table="events" :record-id="eventId" :include-children="false" />
+        <PageAuditHistoryButton v-if="eventId" table="events" :record-id="eventId" :include-children="false" :context="t('event.masterData')" />
       </div>
 
       <div class="grid gap-4 md:grid-cols-2">
@@ -50,7 +50,7 @@
     <section class="space-y-4 -mx-6 bg-white p-4 shadow-sm sm:mx-0 sm:rounded-xl sm:shadow-lg">
       <div class="flex flex-wrap items-center justify-between gap-3">
         <h2 class="text-lg font-semibold">{{ t('event.organizers') }}</h2>
-        <PageAuditScopedHistoryButton v-if="eventId" :tables="['event_member_organizers', 'event_subdivision_organizers']" :parent-id="eventId" />
+        <PageAuditScopedHistoryButton v-if="eventId" :tables="['event_member_organizers', 'event_subdivision_organizers']" :parent-id="eventId" :context="t('event.organizers')" />
       </div>
 
       <div class="grid gap-4 lg:grid-cols-2">
@@ -99,7 +99,7 @@
           <p class="text-sm font-medium" :class="allocationIsValid ? 'text-success-600' : 'text-warning-600'">
             {{ t('event.allocationTotal', { value: allocationTotalLabel }) }}
           </p>
-          <PageAuditScopedHistoryButton v-if="eventId" :tables="['event_cost_centre_splits']" :parent-id="eventId" />
+          <PageAuditScopedHistoryButton v-if="eventId" :tables="['event_cost_centre_splits']" :parent-id="eventId" :context="t('event.costCentres')" />
         </div>
       </div>
 

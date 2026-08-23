@@ -6,7 +6,7 @@
           <h2 class="text-lg font-semibold">{{ t('event.planning.checklists') }}</h2>
           <p class="text-sm text-base-500">{{ t('event.planning.checklistHint') }}</p>
         </div>
-        <PageAuditScopedHistoryButton v-if="props.eventId" :tables="['event_checklists', 'event_checklist_items>event_checklists:event_id']" :parent-id="props.eventId" />
+        <PageAuditScopedHistoryButton v-if="props.eventId" :tables="['event_checklists', 'event_checklist_items>event_checklists:event_id']" :parent-id="props.eventId" :context="t('event.planning.checklists')" />
       </div>
     </div>
 

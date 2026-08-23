@@ -34,14 +34,14 @@ export function useAuditLog() {
   const domainFilter = ref<string[]>([])
   const tableFilter = ref<string[]>([])
   const operationFilter = ref<string[]>([])
-  const userFilter = ref<number | 'system' | undefined>(undefined)
+  const userFilter = ref<Array<number | 'system'>>([])
 
   const hasMore = computed(() => nextCursor.value !== null)
 
   function buildFilters(): AuditFilters {
     return {
       from: quickRangeFrom(quickRange.value),
-      userId: userFilter.value,
+      userIds: userFilter.value.length ? [...userFilter.value] : undefined,
       tables: tableFilter.value.length ? tableFilter.value : undefined,
       domains: domainFilter.value.length ? domainFilter.value : undefined,
       operations: operationFilter.value.length ? operationFilter.value as any : undefined,
@@ -54,7 +54,7 @@ export function useAuditLog() {
     const query: Record<string, string> = {}
     if (filters.from) query.from = filters.from
     if (filters.to) query.to = filters.to
-    if (filters.userId) query.userId = String(filters.userId)
+    if (filters.userIds?.length) query.userIds = filters.userIds.join(',')
     if (filters.tables) query.tables = filters.tables.join(',')
     if (filters.domains) query.domains = filters.domains.join(',')
     if (filters.operations) query.operations = filters.operations.join(',')

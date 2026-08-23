@@ -59,7 +59,7 @@ export interface AuditFilters {
   from?: string
   to?: string
   /** 'system' filters for changes with no captured actor (background jobs, seed/migration scripts). */
-  userId?: number | 'system'
+  userIds?: Array<number | 'system'>
   tables?: string[]
   domains?: string[]
   operations?: AuditOperation[]
@@ -367,8 +367,15 @@ function buildAuditFilterClauses(visibleTables: string[], filters: AuditFilters)
 
   if (filters.from) { clauses.push('changed_at >= ?'); params.push(filters.from) }
   if (filters.to) { clauses.push('changed_at <= ?'); params.push(filters.to) }
-  if (filters.userId === 'system') { clauses.push('changed_by IS NULL') }
-  else if (filters.userId) { clauses.push('changed_by = ?'); params.push(filters.userId) }
+  if (filters.userIds?.length) {
+    // "System" is the absence of an actor, so it can't be expressed as an id — it has to be ORed in
+    // as an IS NULL check alongside the id list.
+    const ids = filters.userIds.filter((id): id is number => id !== 'system')
+    const parts: string[] = []
+    if (ids.length) { parts.push(`changed_by IN (${ids.map(() => '?').join(', ')})`); params.push(...ids) }
+    if (filters.userIds.includes('system')) parts.push('changed_by IS NULL')
+    clauses.push(`(${parts.join(' OR ')})`)
+  }
   if (filters.operations?.length) {
     clauses.push(`operation IN (${filters.operations.map(() => '?').join(', ')})`)
     params.push(...filters.operations)
