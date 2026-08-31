@@ -81,6 +81,9 @@ const ALL_PERMISSION_KEYS = [
   'wiki.manage',
   'audit.view',
   'audit.viewAll',
+  'calendar.view',
+  'calendar.create',
+  'calendar.manage',
 ]
 
 const DEFAULT_ROLE_PERMISSIONS = {
@@ -99,6 +102,7 @@ const DEFAULT_ROLE_PERMISSIONS = {
     'cost_centres.view',
     'settings.access',
     'wiki.view',
+    'calendar.view',
   ],
 }
 

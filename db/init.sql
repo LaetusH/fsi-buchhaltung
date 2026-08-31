@@ -843,3 +843,86 @@ CREATE TABLE IF NOT EXISTS wiki_article_views (
   FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
   FOREIGN KEY (article_id) REFERENCES wiki_articles(id) ON DELETE CASCADE
 );
+
+CREATE TABLE IF NOT EXISTS appointment_types (
+  id SMALLINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  name VARCHAR(127) NOT NULL,
+  color VARCHAR(16) NOT NULL DEFAULT '#3b82f6',
+  icon VARCHAR(127) NULL,
+  sort_order SMALLINT UNSIGNED NOT NULL DEFAULT 0,
+  is_active TINYINT(1) NOT NULL DEFAULT 1,
+  description TEXT NULL
+);
+
+CREATE TABLE IF NOT EXISTS appointments (
+  id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  type_id SMALLINT UNSIGNED NULL,
+  title VARCHAR(255) NOT NULL,
+  agenda MEDIUMTEXT NULL,
+  location VARCHAR(255) NULL,
+  starts_at DATETIME NOT NULL,
+  ends_at DATETIME NOT NULL,
+  all_day TINYINT(1) NOT NULL DEFAULT 0,
+  status ENUM('active','cancelled') NOT NULL DEFAULT 'active',
+  recurrence_freq ENUM('daily','weekly','monthly') NULL,
+  recurrence_interval TINYINT UNSIGNED NOT NULL DEFAULT 1,
+  recurrence_weekdays VARCHAR(32) NULL,
+  recurrence_monthly_mode ENUM('day_of_month','weekday_of_month') NULL,
+  recurrence_until DATE NULL,
+  recurrence_count SMALLINT UNSIGNED NULL,
+  notify_on_create TINYINT(1) NOT NULL DEFAULT 1,
+  notify_on_change TINYINT(1) NOT NULL DEFAULT 1,
+  notify_reminder TINYINT(1) NOT NULL DEFAULT 1,
+  reminder_lead_minutes VARCHAR(64) NULL,
+  created_by BIGINT UNSIGNED NULL,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  KEY idx_appointments_starts_at (starts_at),
+  FOREIGN KEY (type_id) REFERENCES appointment_types(id),
+  FOREIGN KEY (created_by) REFERENCES users(id)
+);
+
+CREATE TABLE IF NOT EXISTS appointment_occurrence_overrides (
+  id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  appointment_id BIGINT UNSIGNED NOT NULL,
+  occurrence_date DATETIME NOT NULL,
+  is_cancelled TINYINT(1) NOT NULL DEFAULT 0,
+  title VARCHAR(255) NULL,
+  agenda MEDIUMTEXT NULL,
+  location VARCHAR(255) NULL,
+  starts_at DATETIME NULL,
+  ends_at DATETIME NULL,
+  UNIQUE KEY unique_appointment_occurrence (appointment_id, occurrence_date),
+  FOREIGN KEY (appointment_id) REFERENCES appointments(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS appointment_subdivisions (
+  id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  appointment_id BIGINT UNSIGNED NOT NULL,
+  subdivision_id MEDIUMINT UNSIGNED NOT NULL,
+  UNIQUE KEY unique_appointment_subdivision (appointment_id, subdivision_id),
+  FOREIGN KEY (appointment_id) REFERENCES appointments(id) ON DELETE CASCADE,
+  FOREIGN KEY (subdivision_id) REFERENCES subdivisions(id)
+);
+
+CREATE TABLE IF NOT EXISTS appointment_members (
+  id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  appointment_id BIGINT UNSIGNED NOT NULL,
+  member_id BIGINT UNSIGNED NOT NULL,
+  UNIQUE KEY unique_appointment_member (appointment_id, member_id),
+  FOREIGN KEY (appointment_id) REFERENCES appointments(id) ON DELETE CASCADE,
+  FOREIGN KEY (member_id) REFERENCES members(id)
+);
+
+CREATE TABLE IF NOT EXISTS appointment_responses (
+  id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  appointment_id BIGINT UNSIGNED NOT NULL,
+  member_id BIGINT UNSIGNED NOT NULL,
+  occurrence_date DATETIME NOT NULL,
+  response ENUM('yes','no','maybe') NOT NULL,
+  comment VARCHAR(255) NULL,
+  responded_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  UNIQUE KEY unique_appointment_response (appointment_id, member_id, occurrence_date),
+  FOREIGN KEY (appointment_id) REFERENCES appointments(id) ON DELETE CASCADE,
+  FOREIGN KEY (member_id) REFERENCES members(id)
+);

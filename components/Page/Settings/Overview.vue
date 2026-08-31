@@ -28,6 +28,7 @@ import SettingsPermissions from './Permissions.vue'
 import SettingsUsers from './Users.vue'
 import SettingsApp from './App.vue'
 import SettingsNotifications from './Notifications.vue'
+import SettingsAppointmentTypes from './AppointmentTypes.vue'
 import SettingsAuditLog from './AuditLog.vue'
 import { useAuth } from '~/composables/useAuth'
 import { usePage } from '~/composables/usePage'
@@ -36,7 +37,7 @@ defineEmits<{
   (e: 'openMenu'): void
 }>()
 
-type SettingsTab = 'general' | 'association' | 'spheres' | 'costCentres' | 'subdivisions' | 'positions' | 'users' | 'permissions' | 'app' | 'notifications' | 'audit'
+type SettingsTab = 'general' | 'association' | 'spheres' | 'costCentres' | 'subdivisions' | 'positions' | 'appointmentTypes' | 'users' | 'permissions' | 'app' | 'notifications' | 'audit'
 
 const currentTab = useState<SettingsTab>('settings-overview-current-tab', () => 'general')
 const { t } = useI18n()
@@ -51,6 +52,7 @@ const tabs = computed(() => {
     { key: 'costCentres', label: t('settings.tabs.costCentres'), show: hasPermission('settings.cost_centres.manage') },
     { key: 'subdivisions', label: t('settings.tabs.subdivisions'), show: hasPermission('settings.subdivisions.manage') },
     { key: 'positions', label: t('settings.tabs.positions'), show: hasPermission('settings.positions.manage') },
+    { key: 'appointmentTypes', label: t('settings.tabs.appointmentTypes'), show: hasPermission('calendar.manage') },
     { key: 'users', label: t('settings.tabs.users'), show: hasPermission('users.manage') },
     { key: 'permissions', label: t('settings.tabs.permissions'), show: hasPermission(['permissions.manage', 'settings.viewAs']) },
     { key: 'app', label: t('settings.tabs.app'), show: hasPermission('settings.app.access') },
@@ -74,6 +76,8 @@ const activeComponent = computed(() => {
       return SettingsSubdivisions
     case 'positions':
       return SettingsPositions
+    case 'appointmentTypes':
+      return SettingsAppointmentTypes
     case 'users':
       return SettingsUsers
     case 'permissions':

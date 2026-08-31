@@ -24,6 +24,10 @@ const TYPE_ICONS: Record<NotificationTypeKey, string> = {
   'event.created': 'material-symbols:event-rounded',
   'event.changed': 'material-symbols:edit-calendar-rounded',
   'event.reminder': 'material-symbols:event-upcoming-rounded',
+  'appointment.invited': 'material-symbols:event-note-rounded',
+  'appointment.changed': 'material-symbols:edit-calendar-rounded',
+  'appointment.cancelled': 'material-symbols:event-busy-rounded',
+  'appointment.reminder': 'material-symbols:alarm-rounded',
   'custom.message': 'material-symbols:campaign-rounded',
 }
 
@@ -32,6 +36,7 @@ const CATEGORY_COLORS: Record<string, string> = {
   'notifications.categories.shifts': 'bg-info-100 text-info-700',
   'notifications.categories.tasks': 'bg-warning-100 text-warning-700',
   'notifications.categories.events': 'bg-accent-100 text-accent-700',
+  'notifications.categories.appointments': 'bg-secondary-100 text-secondary-700',
   'notifications.categories.custom': 'bg-base-200 text-base-700',
 }
 

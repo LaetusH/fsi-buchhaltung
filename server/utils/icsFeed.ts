@@ -19,6 +19,17 @@ export interface IcsFeedShift {
   ends_at: string
 }
 
+export interface IcsFeedAppointment {
+  appointmentId: number
+  occurrenceDate: string
+  title: string
+  starts_at: string
+  ends_at: string
+  allDay: boolean
+  location: string | null
+  description: string
+}
+
 export interface IcsFeedTaskDeadline {
   id: number
   eventName: string
@@ -93,13 +104,37 @@ function formatAllDayDate(value: string): string {
   return `${year}${month}${day}`
 }
 
-export function buildIcsFeed(
-  events: IcsFeedEvent[],
-  shifts: IcsFeedShift[],
-  tasks: IcsFeedTaskDeadline[],
-  calendarName: string,
-  host: string,
-): string {
+/** An all-day VEVENT's DTEND is exclusive: a one-day appointment ends on the following date. */
+function nextDay(value: string): string {
+  const match = String(value).trim().match(/^(\d{4})-(\d{2})-(\d{2})/)
+  if (!match) return ''
+
+  const date = new Date(Date.UTC(Number(match[1]), Number(match[2]) - 1, Number(match[3]) + 1))
+  return `${date.getUTCFullYear()}${pad(date.getUTCMonth() + 1)}${pad(date.getUTCDate())}`
+}
+
+/** '2026-01-06 18:00:00' → '20260106T180000', for use inside a UID. */
+function compactTimestamp(value: string): string {
+  return String(value).replace(/[-: ]/g, '').replace(/T/i, '').slice(0, 15)
+}
+
+export interface BuildIcsFeedArgs {
+  events: IcsFeedEvent[]
+  shifts: IcsFeedShift[]
+  tasks: IcsFeedTaskDeadline[]
+  appointments: IcsFeedAppointment[]
+  calendarName: string
+  host: string
+}
+
+export function buildIcsFeed({
+  events,
+  shifts,
+  tasks,
+  appointments,
+  calendarName,
+  host,
+}: BuildIcsFeedArgs): string {
   const dtstamp = formatUtcTimestamp(new Date())
   const lines: string[] = []
 
@@ -137,7 +172,7 @@ export function buildIcsFeed(
   }
 
   for (const task of tasks) {
-    const hasTime = /T\d{2}:\d{2}/.test(task.deadline)
+    const hasTime = task.deadline.length > 10
 
     lines.push('BEGIN:VEVENT')
     lines.push(`UID:task-${task.id}@${host}`)
@@ -149,6 +184,25 @@ export function buildIcsFeed(
     }
     lines.push(`SUMMARY:${escapeIcsText(`Frist: ${task.title} (${task.eventName})`)}`)
     if (task.description) lines.push(`DESCRIPTION:${escapeIcsText(task.description)}`)
+    lines.push('END:VEVENT')
+  }
+
+  for (const appointment of appointments) {
+    lines.push('BEGIN:VEVENT')
+    // Stable per occurrence — without this every refresh would duplicate the entry in the
+    // subscriber's calendar instead of updating it.
+    lines.push(`UID:appointment-${appointment.appointmentId}-${compactTimestamp(appointment.occurrenceDate)}@${host}`)
+    lines.push(`DTSTAMP:${dtstamp}`)
+    if (appointment.allDay) {
+      lines.push(`DTSTART;VALUE=DATE:${formatAllDayDate(appointment.starts_at)}`)
+      lines.push(`DTEND;VALUE=DATE:${nextDay(appointment.ends_at)}`)
+    } else {
+      lines.push(`DTSTART:${formatLocalDateTime(appointment.starts_at)}`)
+      lines.push(`DTEND:${formatLocalDateTime(appointment.ends_at)}`)
+    }
+    lines.push(`SUMMARY:${escapeIcsText(appointment.title)}`)
+    if (appointment.location) lines.push(`LOCATION:${escapeIcsText(appointment.location)}`)
+    if (appointment.description) lines.push(`DESCRIPTION:${escapeIcsText(appointment.description)}`)
     lines.push('END:VEVENT')
   }
 

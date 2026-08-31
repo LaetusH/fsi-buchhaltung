@@ -30,6 +30,8 @@ import WikiPathPage from '~/components/Page/Wiki/Path.vue'
 import WikiAdminPage from '~/components/Page/Wiki/Admin/Admin.vue'
 import WikiGlossaryPage from '~/components/Page/Wiki/Glossary/Glossary.vue'
 import AuditLogPage from '~/components/Page/Audit/Log.vue'
+import CalendarPage from '~/components/Page/Calendar/Calendar.vue'
+import AppointmentCreatePage from '~/components/Page/Calendar/Create.vue'
 
 // Do not display more than 8 pages at once
 export const PAGES: Record<string, AppPage> = {
@@ -64,4 +66,6 @@ export const PAGES: Record<string, AppPage> = {
   WikiGlossary: { main: false, labelKey: 'pages.wikiGlossary', component: WikiGlossaryPage, permissions: ['wiki.view'], preserveOnRefresh: true },
   WikiAdmin: { main: false, labelKey: 'pages.wikiAdmin', component: WikiAdminPage, permissions: ['wiki.manage'], preserveOnRefresh: true },
   AuditLog: { main: false, labelKey: 'pages.auditLog', component: AuditLogPage, permissions: ['audit.view'] },
+  Calendar: { main: false, labelKey: 'pages.calendar', component: CalendarPage, permissions: ['calendar.view'], preserveOnRefresh: true },
+  AppointmentCreate: { main: false, labelKey: 'pages.createAppointment', component: AppointmentCreatePage, permissions: ['calendar.create'], preserveOnRefresh: true },
 }

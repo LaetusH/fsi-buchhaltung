@@ -12,7 +12,12 @@ export function formatLocalDateTime(value: unknown): string {
   return `${match[3]}.${match[2]}.${match[1]}, ${match[4]}:${match[5]}`
 }
 
-const DATETIME_VARIABLES = new Set(['shift_start', 'shift_end', 'event_start', 'event_end', 'task_deadline'])
+const DATETIME_VARIABLES = new Set([
+  'shift_start', 'shift_end',
+  'event_start', 'event_end',
+  'task_deadline',
+  'appointment_start', 'appointment_end',
+])
 
 function formatPayload(payload: Record<string, any>, locale: 'de' | 'en'): Record<string, string | number> {
   const formatted: Record<string, string | number> = {}

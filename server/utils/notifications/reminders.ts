@@ -1,5 +1,7 @@
 import { query } from '~/server/utils/db'
 import { enqueueNotification } from '~/server/utils/notifications/enqueue'
+import { expandOccurrences, type AppointmentRecurrenceRow } from '~/server/utils/appointments/recurrence'
+import { loadOverrides } from '~/server/utils/appointments'
 import { normalizeDeadline } from '~/server/utils/eventTasks'
 import { isTypeEnabled } from '~/server/utils/notifications/settings'
 import type { NotificationTypeKey } from '~/config/notificationTypes'
@@ -143,6 +145,88 @@ async function sweepTaskDeadlineReminders(now: Date, settings: NotificationSetti
   }
 }
 
+const APPOINTMENT_REMINDER_WINDOW_DAYS = 30
+
+async function sweepAppointmentReminders(now: Date, settings: NotificationSettings, planned: Set<string>, conn?: DbConn) {
+  const globalLeadMinutes = settings.lead_times['appointment.reminder'] || []
+
+  const today = toMysqlDatetime(now).slice(0, 10)
+
+  // Series that can still produce a future occurrence: either open-ended/not yet finished, or a
+  // single appointment that has not started.
+  const appointments = await query<Array<AppointmentRecurrenceRow & { type_id: number | null, location: string | null, reminder_lead_minutes: string | null, name: string | null }>>(
+    `SELECT a.id, a.title, a.location, a.starts_at, a.ends_at, a.all_day, a.type_id,
+            a.recurrence_freq, a.recurrence_interval, a.recurrence_weekdays, a.recurrence_monthly_mode,
+            a.recurrence_until, a.recurrence_count, a.reminder_lead_minutes, at.name
+     FROM appointments a
+     LEFT JOIN appointment_types at ON at.id = a.type_id
+     WHERE a.status = 'active'
+       AND a.notify_reminder = 1
+       AND (
+         (a.recurrence_freq IS NOT NULL AND (a.recurrence_until IS NULL OR a.recurrence_until >= ?))
+         OR (a.recurrence_freq IS NULL AND a.starts_at >= ?)
+       )`,
+    [today, toMysqlDatetime(now)],
+    conn,
+  )
+
+  if (!appointments.length) return
+
+  const overridesByAppointment = await loadOverrides(appointments.map(row => Number(row.id)), conn)
+
+  const windowFrom = toMysqlDatetime(now)
+  const windowTo = toMysqlDatetime(new Date(now.getTime() + APPOINTMENT_REMINDER_WINDOW_DAYS * 86400000))
+
+  for (const appointment of appointments) {
+    // Per-appointment lead times win over the association-wide ones.
+    const leadMinutes = parseLeadMinutesList(appointment.reminder_lead_minutes) || globalLeadMinutes
+    if (!leadMinutes.length) continue
+
+    const overrides = overridesByAppointment.get(Number(appointment.id)) ?? []
+    const occurrences = expandOccurrences(appointment, overrides, { from: windowFrom, to: windowTo })
+
+    for (const occurrence of occurrences) {
+      const startsAt = new Date(occurrence.startsAt.replace(' ', 'T') + 'Z')
+
+      for (const lead of leadMinutes) {
+        const scheduledFor = new Date(startsAt.getTime() - lead * 60000)
+        if (scheduledFor.getTime() < now.getTime() - 15 * 60000) continue
+
+        // The occurrence date in the key is what makes per-occurrence reminders idempotent.
+        const dedupeKey = `appointment.reminder:${appointment.id}:${occurrence.occurrenceDate}:${lead}`
+        if (planned.has(dedupeKey)) continue
+
+        await enqueueNotification({
+          type: 'appointment.reminder',
+          payload: {
+            appointment_id: Number(appointment.id),
+            appointment_title: occurrence.title,
+            appointment_type: appointment.name ?? '',
+            appointment_start: occurrence.startsAt,
+            appointment_end: occurrence.endsAt,
+            occurrence_date: occurrence.occurrenceDate,
+            location: occurrence.location ?? '',
+            lead_minutes: lead,
+          },
+          recipients: { kind: 'appointmentParticipants', appointmentId: Number(appointment.id) },
+          scheduledFor,
+          dedupeKey,
+        }, conn)
+      }
+    }
+  }
+}
+
+/** Returns null (not []) when nothing is configured, so the caller can fall back to the global list. */
+function parseLeadMinutesList(value: string | null): number[] | null {
+  if (!value) return null
+  const parsed = String(value)
+    .split(',')
+    .map(part => Number(part.trim()))
+    .filter(minutes => Number.isFinite(minutes) && minutes > 0)
+  return parsed.length ? parsed : null
+}
+
 async function sweepShiftUnderstaffed(now: Date, settings: NotificationSettings, planned: Set<string>, conn?: DbConn) {
   // Switching the warning off is done through the per-type switch in the settings, which
   // `enqueueNotification` already honours; no lead times configured also means nothing to plan.
@@ -271,8 +355,53 @@ export async function dropObsoleteReminders(settings: NotificationSettings, conn
   return obsolete.length
 }
 
+/**
+ * The appointment reminders are kept out of LEAD_TIME_TYPES above: their lead times may come from
+ * the appointment itself, so "not in settings.lead_times" is not enough to call a row obsolete.
+ * They are checked against whichever list actually produced them instead.
+ */
+async function dropObsoleteAppointmentReminders(settings: NotificationSettings, conn?: DbConn) {
+  const pending = await query<Array<{ id: number, dedupe_key: string, reminder_lead_minutes: string | null, notify_reminder: number, status: string }>>(
+    `SELECT n.id, n.dedupe_key, a.reminder_lead_minutes, a.notify_reminder, a.status
+     FROM notifications n
+     LEFT JOIN appointments a ON a.id = CAST(SUBSTRING_INDEX(SUBSTRING_INDEX(n.dedupe_key, ':', 2), ':', -1) AS UNSIGNED)
+     WHERE n.status = 'scheduled' AND n.type_key = 'appointment.reminder' AND n.dedupe_key IS NOT NULL`,
+    [],
+    conn,
+  )
+
+  if (!pending.length) return 0
+
+  const typeEnabled = isTypeEnabled(settings, 'appointment.reminder')
+  const globalLeads = settings.lead_times['appointment.reminder'] || []
+
+  const obsolete = pending.filter((row) => {
+    if (!typeEnabled) return true
+    // The appointment was deleted, cancelled, or had its reminders switched off.
+    if (row.notify_reminder == null || !row.notify_reminder || row.status !== 'active') return true
+
+    const lead = Number(row.dedupe_key.split(':').pop())
+    if (!Number.isFinite(lead)) return false
+
+    const leads = parseLeadMinutesList(row.reminder_lead_minutes) || globalLeads
+    return !leads.includes(lead)
+  })
+
+  if (!obsolete.length) return 0
+
+  await query(
+    `DELETE FROM notifications
+     WHERE status = 'scheduled' AND id IN (${obsolete.map(() => '?').join(',')})`,
+    obsolete.map(row => row.id),
+    conn,
+  )
+
+  return obsolete.length
+}
+
 export async function sweepReminders(now: Date, settings: NotificationSettings, conn?: DbConn) {
   await dropObsoleteReminders(settings, conn)
+  await dropObsoleteAppointmentReminders(settings, conn)
 
   // Loaded after the obsolete rows are gone, so a lead time that is removed and re-added is planned
   // again rather than being seen as already handled.
@@ -282,5 +411,6 @@ export async function sweepReminders(now: Date, settings: NotificationSettings, 
   await sweepEventReminders(now, settings, planned, conn)
   await sweepTaskDeadlineReminders(now, settings, planned, conn)
   await sweepShiftUnderstaffed(now, settings, planned, conn)
+  await sweepAppointmentReminders(now, settings, planned, conn)
   await sweepTaskOverdue(now, conn)
 }

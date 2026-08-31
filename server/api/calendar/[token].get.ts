@@ -1,82 +1,68 @@
 import { defineEventHandler, getRequestHost, getRouterParam, setHeader, setResponseStatus } from 'h3'
 import { getUserByCalendarToken } from '~/server/utils/calendarToken'
 import { query } from '~/server/utils/db'
-import { loadEventRelations } from '~/server/utils/events'
-import { normalizeShiftTypeKey } from '~/server/utils/eventShifts'
-import { buildIcsFeed, type IcsFeedEvent, type IcsFeedShift, type IcsFeedTaskDeadline } from '~/server/utils/icsFeed'
+import {
+  loadCalendarAppointments,
+  loadCalendarEvents,
+  loadCalendarShifts,
+  loadCalendarTaskDeadlines,
+  type CalendarEventSource,
+  type CalendarTaskStatus,
+} from '~/server/utils/calendarSources'
+import { agendaPlainText } from '~/server/utils/appointments'
+import { formatWallClock } from '~/server/utils/appointments/recurrence'
+import { getUserPermissions, getUserPositionIds, getUserRoleIds } from '~/server/utils/permissions'
+import {
+  buildIcsFeed,
+  type IcsFeedAppointment,
+  type IcsFeedEvent,
+  type IcsFeedShift,
+  type IcsFeedTaskDeadline,
+} from '~/server/utils/icsFeed'
 
-interface EventRow {
-  id: number
-  name: string
-  starts_at: string
-  ends_at: string
-  location: string | null
-  expected_guests: number | null
-}
-
-interface ShiftRow {
-  id: number
-  event_id: number
-  event_name: string
-  name: string
-  description: string | null
-  event_location: string | null
-  starts_at: string
-  ends_at: string
-}
-
-interface ShiftTypeDescriptionRow {
-  event_id: number
-  name_key: string
-  description: string
-}
-
-interface TaskDeadlineRow {
-  id: number
-  event_name: string
-  title: string
-  deadline: string
-  status: 'open' | 'in_progress' | 'done'
-}
-
-interface TaskAssigneeRow {
-  task_id: number
-  name: string
-}
-
-const TASK_STATUS_LABELS: Record<TaskDeadlineRow['status'], string> = {
+const TASK_STATUS_LABELS: Record<CalendarTaskStatus, string> = {
   open: 'Offen',
   in_progress: 'In Bearbeitung',
   done: 'Erledigt',
 }
 
-function buildEventDescription(row: EventRow, memberOrganizers: string[], subdivisionOrganizers: string[]): string {
+/** Appointments are materialised occurrence by occurrence over this window. */
+const APPOINTMENT_PAST_DAYS = 90
+const APPOINTMENT_FUTURE_DAYS = 365
+
+function buildEventDescription(row: CalendarEventSource): string {
   const lines: string[] = []
 
   if (row.expected_guests != null) lines.push(`Erwartete Gäste: ${row.expected_guests}`)
 
-  const organizers = [...memberOrganizers, ...subdivisionOrganizers]
+  const organizers = [...row.memberOrganizers, ...row.subdivisionOrganizers]
   if (organizers.length) lines.push(`Organisiert von: ${organizers.join(', ')}`)
 
   return lines.join('\n')
 }
 
-function buildShiftDescription(typeDescription: string, shiftDescription: string): string {
-  const parts: string[] = []
-
-  if (typeDescription) parts.push(typeDescription)
-  if (shiftDescription) parts.push(shiftDescription)
-
-  return parts.join('\n\n')
-}
-
-function buildTaskDescription(status: TaskDeadlineRow['status'], members: string[], subdivisions: string[]): string {
+function buildTaskDescription(status: CalendarTaskStatus, members: string[], subdivisions: string[]): string {
   const lines: string[] = [`Status: ${TASK_STATUS_LABELS[status]}`]
 
   if (members.length) lines.push(`Zugewiesen an: ${members.join(', ')}`)
   if (subdivisions.length) lines.push(`Abteilung(en): ${subdivisions.join(', ')}`)
 
   return lines.join('\n')
+}
+
+function buildAppointmentDescription(typeName: string | null, agenda: string | null, summary: { yes: number, no: number, maybe: number } | null): string {
+  const lines: string[] = []
+
+  if (typeName) lines.push(typeName)
+
+  const agendaText = agendaPlainText(agenda)
+  if (agendaText) lines.push(agendaText)
+
+  if (summary && (summary.yes || summary.no || summary.maybe)) {
+    lines.push(`Rückmeldungen: ${summary.yes} Zusagen, ${summary.no} Absagen, ${summary.maybe} vielleicht`)
+  }
+
+  return lines.join('\n\n')
 }
 
 // Token-authenticated route, deliberately isolated from the cookie-based
@@ -102,140 +88,95 @@ export default defineEventHandler(async (event) => {
   )
   const memberId = memberRows[0] ? Number(memberRows[0].id) : null
 
-  const eventRows = await query<EventRow[]>(
-    `SELECT id, name, starts_at, ends_at, location, expected_guests
-     FROM events
-     ORDER BY starts_at`,
-  )
+  const now = new Date()
+  const appointmentWindow = {
+    from: formatWallClock(new Date(now.getTime() - APPOINTMENT_PAST_DAYS * 86400000)),
+    to: formatWallClock(new Date(now.getTime() + APPOINTMENT_FUTURE_DAYS * 86400000)),
+  }
 
-  const eventRelations = await loadEventRelations(eventRows.map(row => Number(row.id)))
+  // The same loaders the in-app calendar uses, so both surfaces can never show different things.
+  const [events, shifts, tasks] = await Promise.all([
+    loadCalendarEvents(null),
+    loadCalendarShifts(memberId, null),
+    loadCalendarTaskDeadlines(memberId, null),
+  ])
 
-  let shiftRows: ShiftRow[] = []
-  let taskRows: TaskDeadlineRow[] = []
-  let taskMemberRows: TaskAssigneeRow[] = []
-  let taskSubdivisionRows: TaskAssigneeRow[] = []
+  // The token route resolves nothing but a user id, so the effective permissions have to be loaded
+  // here — the feed must show exactly what the calendar page would show this user, no more.
+  const [roleIds, positionIds] = await Promise.all([getUserRoleIds(user.id), getUserPositionIds(user.id)])
+  const permissions = await getUserPermissions(user.id, roleIds, positionIds)
 
-  if (memberId) {
-    shiftRows = await query<ShiftRow[]>(
-      `SELECT s.id, s.event_id, e.name AS event_name, s.name, s.description, e.location AS event_location, s.starts_at, s.ends_at
-       FROM event_shift_slots s
-       JOIN event_shift_members esm ON esm.shift_id = s.id
-       JOIN events e ON e.id = s.event_id
-       WHERE esm.member_id = ?
-       ORDER BY s.starts_at`,
-      [memberId],
+  const appointments = permissions.includes('calendar.view')
+    ? await loadCalendarAppointments(
+      { userId: user.id, memberId, canManage: permissions.includes('calendar.manage') },
+      appointmentWindow,
     )
-
-    taskRows = await query<TaskDeadlineRow[]>(
-      `SELECT t.id, e.name AS event_name, t.title, t.deadline, t.status
-       FROM event_tasks t
-       JOIN events e ON e.id = t.event_id
-       WHERE t.deadline IS NOT NULL
-         AND (
-           t.id IN (SELECT task_id FROM event_task_members WHERE member_id = ?)
-           OR t.id IN (
-             SELECT task_id FROM event_task_subdivisions
-             WHERE subdivision_id IN (SELECT subdivision_id FROM subdivision_members WHERE member_id = ?)
-           )
-         )
-       GROUP BY t.id
-       ORDER BY t.deadline`,
-      [memberId, memberId],
-    )
-
-    if (taskRows.length) {
-      const taskIds = taskRows.map(row => Number(row.id))
-
-      taskMemberRows = await query<TaskAssigneeRow[]>(
-        `SELECT etm.task_id, CONCAT(m.first_name, ' ', m.last_name) AS name
-         FROM event_task_members etm
-         JOIN members m ON m.id = etm.member_id
-         WHERE etm.task_id IN (${taskIds.map(() => '?').join(',')})
-         ORDER BY m.first_name, m.last_name`,
-        taskIds,
-      )
-
-      taskSubdivisionRows = await query<TaskAssigneeRow[]>(
-        `SELECT ets.task_id, s.name AS name
-         FROM event_task_subdivisions ets
-         JOIN subdivisions s ON s.id = ets.subdivision_id
-         WHERE ets.task_id IN (${taskIds.map(() => '?').join(',')})
-         ORDER BY s.name`,
-        taskIds,
-      )
-    }
-  }
-
-  let shiftTypeDescriptionRows: ShiftTypeDescriptionRow[] = []
-  const shiftEventIds = Array.from(new Set(shiftRows.map(row => Number(row.event_id))))
-
-  if (shiftEventIds.length) {
-    shiftTypeDescriptionRows = await query<ShiftTypeDescriptionRow[]>(
-      `SELECT event_id, name_key, description
-       FROM event_shift_type_descriptions
-       WHERE event_id IN (${shiftEventIds.map(() => '?').join(',')})`,
-      shiftEventIds,
-    )
-  }
-
-  const shiftTypeDescriptionByKey = new Map<string, string>()
-  for (const row of shiftTypeDescriptionRows) {
-    shiftTypeDescriptionByKey.set(`${Number(row.event_id)}::${row.name_key}`, String(row.description))
-  }
-
-  const taskMembersById = new Map<number, string[]>()
-  for (const row of taskMemberRows) {
-    const taskId = Number(row.task_id)
-    taskMembersById.set(taskId, [...(taskMembersById.get(taskId) ?? []), String(row.name)])
-  }
-
-  const taskSubdivisionsById = new Map<number, string[]>()
-  for (const row of taskSubdivisionRows) {
-    const taskId = Number(row.task_id)
-    taskSubdivisionsById.set(taskId, [...(taskSubdivisionsById.get(taskId) ?? []), String(row.name)])
-  }
+    : null
 
   const host = getRequestHost(event) || 'fsi-buchhaltung.local'
 
-  const icsEvents: IcsFeedEvent[] = eventRows.map(row => ({
-    id: Number(row.id),
-    name: String(row.name),
-    starts_at: String(row.starts_at),
-    ends_at: String(row.ends_at),
-    location: row.location != null ? String(row.location) : null,
-    description: buildEventDescription(
-      row,
-      (eventRelations.memberOrganizers.get(Number(row.id)) ?? []).map(organizer => organizer.full_name),
-      (eventRelations.subdivisionOrganizers.get(Number(row.id)) ?? []).map(organizer => organizer.name),
-    ),
+  const icsEvents: IcsFeedEvent[] = events.map(row => ({
+    id: row.id,
+    name: row.name,
+    starts_at: row.starts_at,
+    ends_at: row.ends_at,
+    location: row.location,
+    description: buildEventDescription(row),
   }))
 
-  const icsShifts: IcsFeedShift[] = shiftRows.map(row => ({
-    id: Number(row.id),
-    eventName: String(row.event_name),
-    name: String(row.name),
-    description: buildShiftDescription(
-      shiftTypeDescriptionByKey.get(`${Number(row.event_id)}::${normalizeShiftTypeKey(row.name)}`) ?? '',
-      row.description != null ? String(row.description) : '',
-    ),
-    location: row.event_location != null ? String(row.event_location) : null,
-    starts_at: String(row.starts_at),
-    ends_at: String(row.ends_at),
+  const icsShifts: IcsFeedShift[] = shifts.map(row => ({
+    id: row.id,
+    eventName: row.eventName,
+    name: row.name,
+    description: row.description,
+    location: row.location,
+    starts_at: row.starts_at,
+    ends_at: row.ends_at,
   }))
 
-  const icsTasks: IcsFeedTaskDeadline[] = taskRows.map(row => ({
-    id: Number(row.id),
-    eventName: String(row.event_name),
-    title: String(row.title),
-    deadline: String(row.deadline),
-    description: buildTaskDescription(
-      row.status,
-      taskMembersById.get(Number(row.id)) ?? [],
-      taskSubdivisionsById.get(Number(row.id)) ?? [],
-    ),
+  const icsTasks: IcsFeedTaskDeadline[] = tasks.map(row => ({
+    id: row.id,
+    eventName: row.eventName,
+    title: row.title,
+    deadline: row.deadline,
+    description: buildTaskDescription(row.status, row.members, row.subdivisions),
   }))
 
-  const ics = buildIcsFeed(icsEvents, icsShifts, icsTasks, 'FSi Kalender', host)
+  const icsAppointments: IcsFeedAppointment[] = []
+
+  if (appointments) {
+    const seriesById = new Map(appointments.series.map(row => [row.id, row]))
+
+    for (const occurrence of appointments.occurrences) {
+      // Cancelled occurrences are simply absent from the feed; the subscriber's calendar drops
+      // them on the next refresh, so there is nothing left for STATUS:CANCELLED to describe.
+      if (occurrence.isCancelled) continue
+
+      const series = seriesById.get(occurrence.appointmentId)
+      const type = series?.type_id != null ? appointments.typesById.get(series.type_id) ?? null : null
+      const summary = appointments.responseSummaries.get(`${occurrence.appointmentId}:${occurrence.occurrenceDate}`) ?? null
+
+      icsAppointments.push({
+        appointmentId: occurrence.appointmentId,
+        occurrenceDate: occurrence.occurrenceDate,
+        title: occurrence.title,
+        starts_at: occurrence.startsAt,
+        ends_at: occurrence.endsAt,
+        allDay: Boolean(series?.all_day),
+        location: occurrence.location,
+        description: buildAppointmentDescription(type?.name ?? null, occurrence.agenda, summary),
+      })
+    }
+  }
+
+  const ics = buildIcsFeed({
+    events: icsEvents,
+    shifts: icsShifts,
+    tasks: icsTasks,
+    appointments: icsAppointments,
+    calendarName: 'FSi Kalender',
+    host,
+  })
 
   setHeader(event, 'Content-Type', 'text/calendar; charset=utf-8')
   setHeader(event, 'Content-Disposition', 'inline; filename="fsi-kalender.ics"')

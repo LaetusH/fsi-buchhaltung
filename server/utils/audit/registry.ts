@@ -2,7 +2,7 @@ import type { PermissionKey } from '~/config/permissions'
 import type { User } from '~/types/user'
 import { hasPermission } from '~/server/utils/api/guards'
 
-export type AuditDomain = 'finances' | 'members' | 'events' | 'settings' | 'wiki' | 'notifications' | 'security'
+export type AuditDomain = 'finances' | 'members' | 'events' | 'settings' | 'wiki' | 'notifications' | 'security' | 'calendar'
 
 export interface AuditReferenceDefinition {
   table: string
@@ -608,6 +608,58 @@ export const AUDIT_TABLES: Record<string, AuditTableDefinition> = {
     viewPermissions: ['files.view'],
     restricted: true,
     references: { file_id: { table: 'files', labelColumns: ['original_name'] }, attached_by: USER_REF, detached_by: USER_REF },
+  },
+  appointments: {
+    table: 'appointments',
+    labelKey: 'audit.entities.appointment',
+    domain: 'calendar',
+    viewPermissions: ['calendar.view'],
+    // Pure noise in every diff — the row is touched on every save.
+    ignoredColumns: ['updated_at'],
+    references: {
+      type_id: { table: 'appointment_types', labelColumns: ['name'] },
+      created_by: USER_REF,
+    },
+    describe: state => state.title ?? null,
+    openPage: { page: 'AppointmentCreate', metaKey: 'appointmentId' },
+  },
+  appointment_types: {
+    table: 'appointment_types',
+    labelKey: 'audit.entities.appointmentType',
+    domain: 'calendar',
+    viewPermissions: ['calendar.manage'],
+    describe: state => state.name ?? null,
+  },
+  appointment_subdivisions: {
+    table: 'appointment_subdivisions',
+    labelKey: 'audit.entities.appointmentSubdivision',
+    domain: 'calendar',
+    viewPermissions: ['calendar.view'],
+    parent: { table: 'appointments', foreignKey: 'appointment_id' },
+    references: { subdivision_id: SUBDIVISION_REF },
+  },
+  appointment_members: {
+    table: 'appointment_members',
+    labelKey: 'audit.entities.appointmentMember',
+    domain: 'calendar',
+    viewPermissions: ['calendar.view'],
+    parent: { table: 'appointments', foreignKey: 'appointment_id' },
+    references: { member_id: MEMBER_REF },
+  },
+  appointment_occurrence_overrides: {
+    table: 'appointment_occurrence_overrides',
+    labelKey: 'audit.entities.appointmentOccurrenceOverride',
+    domain: 'calendar',
+    viewPermissions: ['calendar.view'],
+    parent: { table: 'appointments', foreignKey: 'appointment_id' },
+  },
+  appointment_responses: {
+    table: 'appointment_responses',
+    labelKey: 'audit.entities.appointmentResponse',
+    domain: 'calendar',
+    viewPermissions: ['calendar.view'],
+    parent: { table: 'appointments', foreignKey: 'appointment_id' },
+    references: { member_id: MEMBER_REF },
   },
   notification_push_subscriptions: {
     table: 'notification_push_subscriptions',

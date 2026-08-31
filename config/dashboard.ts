@@ -1,5 +1,6 @@
 import type { Component } from 'vue'
 import type { PermissionKey } from '~/config/permissions'
+import CalendarWidget from '~/components/Page/Home/Widget/Calendar.vue'
 import EventsWidget from '~/components/Page/Home/Widget/Events.vue'
 import MembersWidget from '~/components/Page/Home/Widget/Members.vue'
 import WikiWidget from '~/components/Page/Home/Widget/Wiki.vue'
@@ -33,6 +34,7 @@ export interface DashboardWidget {
 // Widgets render in this order; the grid packs them left to right.
 export const DASHBOARD_WIDGETS: DashboardWidget[] = [
   { id: 'events', component: EventsWidget, size: 'medium', permissions: ['events.access'] },
+  { id: 'calendar', component: CalendarWidget, size: 'medium', permissions: ['calendar.view'] },
   { id: 'members', component: MembersWidget, size: 'medium', permissions: ['members.view'] },
   { id: 'wiki', component: WikiWidget, size: 'small', permissions: ['wiki.view'] },
 ]

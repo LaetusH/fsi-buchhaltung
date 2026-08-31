@@ -1,6 +1,6 @@
 import { translate } from '~/composables/useI18n'
 
-export type ChangeFieldKey = 'name' | 'start' | 'end' | 'location'
+export type ChangeFieldKey = 'name' | 'start' | 'end' | 'location' | 'recurrence'
 
 /** One field to compare for a `{changes}` notification variable — `from`/`to` should already be display-formatted (e.g. via `formatLocalDateTime`). */
 export interface ChangedField {

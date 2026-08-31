@@ -15,6 +15,11 @@ export type NotificationTypeKey =
   | 'event.created'
   | 'event.changed'
   | 'event.reminder'
+  // appointments
+  | 'appointment.invited'
+  | 'appointment.changed'
+  | 'appointment.cancelled'
+  | 'appointment.reminder'
   // admin-composed
   | 'custom.message'
 
@@ -22,7 +27,7 @@ export interface NotificationTypeSchedule {
   /** Minutes before the anchor timestamp; admins override this in global settings. */
   defaultLeadMinutes: number[]
   /** Which timestamp the lead time counts back from. */
-  anchor: 'shift.starts_at' | 'task.deadline' | 'event.starts_at'
+  anchor: 'shift.starts_at' | 'task.deadline' | 'event.starts_at' | 'appointment.starts_at'
 }
 
 export interface NotificationTypeDefinition {
@@ -52,6 +57,10 @@ export interface NotificationTypeDefinition {
 const shiftLink = (payload: Record<string, any>) => ({ page: 'EventCreate', meta: { eventId: payload.event_id, tab: 'shifts' } })
 const taskLink = (payload: Record<string, any>) => ({ page: 'EventCreate', meta: { eventId: payload.event_id, tab: 'tasks' } })
 const eventLink = (payload: Record<string, any>) => ({ page: 'EventCreate', meta: { eventId: payload.event_id } })
+const appointmentLink = (payload: Record<string, any>) => ({
+  page: 'Calendar',
+  meta: { appointmentId: payload.appointment_id, occurrenceDate: payload.occurrence_date },
+})
 
 /** Present in every notification's payload regardless of type — safe to offer wherever nothing type-specific is being referenced. */
 export const RECIPIENT_VARIABLES = ['member_name', 'first_name', 'association_name']
@@ -197,6 +206,51 @@ export const NOTIFICATION_TYPES: NotificationTypeDefinition[] = [
     schedule: { defaultLeadMinutes: [10080, 1440], anchor: 'event.starts_at' },
     variables: ['event_name', 'event_start', 'event_end', 'location', 'lead_text'],
     link: eventLink,
+  },
+  {
+    key: 'appointment.invited',
+    categoryKey: 'notifications.categories.appointments',
+    labelKey: 'notifications.types.appointment.invited.label',
+    descriptionKey: 'notifications.types.appointment.invited.description',
+    defaultChannels: ['in_app', 'email', 'push'],
+    userConfigurable: true,
+    audience: 'explicit',
+    variables: ['member_name', 'appointment_title', 'appointment_type', 'appointment_start', 'appointment_end', 'location'],
+    link: appointmentLink,
+  },
+  {
+    key: 'appointment.changed',
+    categoryKey: 'notifications.categories.appointments',
+    labelKey: 'notifications.types.appointment.changed.label',
+    descriptionKey: 'notifications.types.appointment.changed.description',
+    defaultChannels: ['in_app', 'email', 'push'],
+    userConfigurable: true,
+    audience: 'explicit',
+    variables: ['member_name', 'appointment_title', 'appointment_type', 'appointment_start', 'appointment_end', 'location', 'changes'],
+    link: appointmentLink,
+  },
+  {
+    key: 'appointment.cancelled',
+    categoryKey: 'notifications.categories.appointments',
+    labelKey: 'notifications.types.appointment.cancelled.label',
+    descriptionKey: 'notifications.types.appointment.cancelled.description',
+    defaultChannels: ['in_app', 'email', 'push'],
+    userConfigurable: true,
+    audience: 'explicit',
+    variables: ['member_name', 'appointment_title', 'appointment_type', 'appointment_start', 'appointment_end', 'location'],
+    link: appointmentLink,
+  },
+  {
+    key: 'appointment.reminder',
+    categoryKey: 'notifications.categories.appointments',
+    labelKey: 'notifications.types.appointment.reminder.label',
+    descriptionKey: 'notifications.types.appointment.reminder.description',
+    defaultChannels: ['in_app', 'email', 'push'],
+    userConfigurable: true,
+    audience: 'explicit',
+    schedule: { defaultLeadMinutes: [1440, 120], anchor: 'appointment.starts_at' },
+    variables: ['member_name', 'appointment_title', 'appointment_type', 'appointment_start', 'appointment_end', 'location', 'lead_text'],
+    link: appointmentLink,
   },
   {
     key: 'custom.message',

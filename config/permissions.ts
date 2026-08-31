@@ -53,6 +53,9 @@ export type PermissionKey =
   | 'wiki.manage'
   | 'audit.view'
   | 'audit.viewAll'
+  | 'calendar.view'
+  | 'calendar.create'
+  | 'calendar.manage'
 
 export interface PermissionDefinition {
   key: PermissionKey
@@ -116,6 +119,9 @@ export const PERMISSIONS: PermissionDefinition[] = [
   { key: 'wiki.manage', labelKey: 'permissions.items.wikiManage', categoryKey: 'permissions.categories.wiki' },
   { key: 'audit.view', labelKey: 'permissions.items.auditView', categoryKey: 'permissions.categories.audit' },
   { key: 'audit.viewAll', labelKey: 'permissions.items.auditViewAll', categoryKey: 'permissions.categories.audit' },
+  { key: 'calendar.view', labelKey: 'permissions.items.calendarView', categoryKey: 'permissions.categories.calendar' },
+  { key: 'calendar.create', labelKey: 'permissions.items.calendarCreate', categoryKey: 'permissions.categories.calendar' },
+  { key: 'calendar.manage', labelKey: 'permissions.items.calendarManage', categoryKey: 'permissions.categories.calendar' },
 ]
 
 export const implied: Partial<Record<PermissionKey, PermissionKey[]>> = {
@@ -149,4 +155,6 @@ export const implied: Partial<Record<PermissionKey, PermissionKey[]>> = {
   'wiki.review': ['wiki.edit', 'wiki.view'],
   'wiki.manage': ['wiki.review', 'wiki.edit', 'wiki.view'],
   'audit.viewAll': ['audit.view'],
+  'calendar.create': ['calendar.view'],
+  'calendar.manage': ['calendar.create', 'calendar.view'],
 }

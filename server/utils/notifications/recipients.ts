@@ -1,4 +1,5 @@
 import { query } from '~/server/utils/db'
+import { loadAppointmentAudience } from '~/server/utils/appointments/visibility'
 import type { RecipientRule, ResolvedRecipient, DbConn } from '~/server/utils/notifications/types'
 
 interface MemberRow {
@@ -162,6 +163,22 @@ async function participantsByEvent(eventId: number, conn?: DbConn): Promise<Memb
   return [...organizers, ...shiftMembers, ...taskMembers]
 }
 
+/**
+ * Everyone in an appointment's scope, plus its creator. The scope itself is resolved by the shared
+ * helper in server/utils/appointments/visibility.ts so this can never disagree with what the
+ * calendar page and the ICS feed show.
+ */
+async function recipientsByAppointment(appointmentId: number, conn?: DbConn): Promise<ResolvedRecipient[]> {
+  const audience = await loadAppointmentAudience(appointmentId, conn)
+
+  const [members, creator] = await Promise.all([
+    membersByIds(audience.memberIds, conn),
+    audience.createdByUserId != null ? recipientsByUserIds([audience.createdByUserId], conn) : Promise.resolve([]),
+  ])
+
+  return [...members.map(toRecipient), ...creator]
+}
+
 async function recipientsByPermission(permission: string, conn?: DbConn): Promise<ResolvedRecipient[]> {
   const rows = await query<Array<{ id: number }>>(
     `SELECT DISTINCT u.id
@@ -195,6 +212,7 @@ async function resolveRuleRecipients(rule: RecipientRule, conn?: DbConn): Promis
     case 'taskAssignees': return (await membersByTask(rule.taskId, conn)).map(toRecipient)
     case 'eventOrganizers': return (await organizersByEvent(rule.eventId, conn)).map(toRecipient)
     case 'eventParticipants': return (await participantsByEvent(rule.eventId, conn)).map(toRecipient)
+    case 'appointmentParticipants': return await recipientsByAppointment(rule.appointmentId, conn)
     case 'permission': return await recipientsByPermission(rule.permission, conn)
     case 'allActiveMembers': return (await allActiveMembers(conn)).map(toRecipient)
     case 'composite': {
