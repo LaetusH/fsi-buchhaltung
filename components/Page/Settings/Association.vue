@@ -178,18 +178,35 @@
       </div>
     </CommonCard>
 
-    <CommonCard>
-      <CommonValidationSummary
-        :errors="validationErrors"
-        :title="t('common.validationBlocked')"
-      />
+    <CommonValidationSummary
+      v-if="validationErrors.length > 0"
+      :errors="validationErrors"
+      :title="t('common.validationBlocked')"
+    />
 
-      <div class="flex justify-end">
-        <button class="btn-primary" :class="{ 'opacity-50 cursor-not-allowed': isSaving || validationErrors.length > 0 }" :disabled="isSaving || validationErrors.length > 0" @click="save">
-          {{ t('actions.save') }}
-        </button>
-      </div>
-    </CommonCard>
+    <div class="sticky bottom-0 col-span-12 -mx-6 flex flex-wrap items-center justify-end gap-3 border-t border-base-200 bg-white/95 px-4 py-3 backdrop-blur sm:mx-0 sm:rounded-xl sm:border sm:px-6 sm:shadow-lg">
+      <span v-if="dirty" class="mr-auto inline-flex items-center gap-1 text-xs text-warning-600">
+        <Icon name="material-symbols:error-outline-rounded" class="h-4 w-4" aria-hidden="true" />
+        {{ t('settings.notifications.unsavedChanges') }}
+      </span>
+      <button
+        type="button"
+        class="btn-secondary"
+        :disabled="!dirty || isSaving"
+        :class="{ 'opacity-50 cursor-not-allowed': !dirty || isSaving }"
+        @click="load"
+      >
+        {{ t('actions.discard') }}
+      </button>
+      <button
+        class="btn-primary"
+        :class="{ 'opacity-50 cursor-not-allowed': isSaving || validationErrors.length > 0 }"
+        :disabled="isSaving || validationErrors.length > 0"
+        @click="save"
+      >
+        {{ t('actions.save') }}
+      </button>
+    </div>
   </template>
 </template>
 
@@ -220,6 +237,7 @@ const positionOptions = ref<AssociationResponsiblePositionOption[]>([])
 const logoFile = ref<File | null>(null)
 const existingLogo = ref<{ id: number, url: string, name: string, mime_type: string, size: number } | null>(null)
 const removeExistingLogoFlag = ref(false)
+const savedSnapshot = ref('')
 const form = reactive<SaveAssociationProfileBody>({
   name: '',
   short_name: null,
@@ -239,6 +257,16 @@ const form = reactive<SaveAssociationProfileBody>({
   responsible_member_ids: [],
   responsible_position_ids: [],
 })
+
+function snapshot() {
+  return JSON.stringify({
+    form,
+    logo: logoFile.value ? `${logoFile.value.name}:${logoFile.value.size}` : null,
+    removeExistingLogo: removeExistingLogoFlag.value,
+  })
+}
+
+const dirty = computed(() => savedSnapshot.value !== '' && snapshot() !== savedSnapshot.value)
 
 const memberOptionsById = computed(() => new Map(memberOptions.value.map(member => [member.id, member])))
 const positionOptionsById = computed(() => new Map(positionOptions.value.map(position => [position.id, position])))
@@ -432,6 +460,7 @@ async function load() {
       : null
     logoFile.value = null
     removeExistingLogoFlag.value = false
+    savedSnapshot.value = snapshot()
   } catch (error) {
     console.error(error)
     toast.error(t('settings.association.loadFailed'))
