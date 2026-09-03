@@ -117,6 +117,14 @@ function defaultFilters<T, K extends string>(columns: TableColumnConfig<T, K>[])
 }
 
 export type AdvancedTableViewMode = 'table' | 'compact'
+export type AdvancedTablePageSize = 10 | 25 | 50 | 100 | 'all'
+
+export const ADVANCED_TABLE_PAGE_SIZE_OPTIONS: AdvancedTablePageSize[] = [10, 25, 50, 100, 'all']
+const DEFAULT_PAGE_SIZE: AdvancedTablePageSize = 25
+
+export function useAdvancedTablePageSize() {
+  return useState<AdvancedTablePageSize>('table:pageSize', () => DEFAULT_PAGE_SIZE)
+}
 
 /**
  * Shared between `CommonAdvancedTable` and `CommonAdvancedTableViewToggle`, which usually live in
@@ -143,6 +151,8 @@ export function useAdvancedTable<T, K extends string>(
   const sortDirection = persistKey ? useState<SortDirection>(`table:${persistKey}:sortDirection`, () => null) : ref<SortDirection>(null)
   const globalSearchInput = persistKey ? useState<string>(`table:${persistKey}:search`, () => '') : ref('')
   const globalSearchTerm = ref('')
+  const pageSize = useAdvancedTablePageSize()
+  const page = persistKey ? useState<number>(`table:${persistKey}:page`, () => 1) : ref(1)
 
   const columnByKey = computed(() => {
     return columns.reduce<Record<string, TableColumnConfig<T, K>>>((acc, column) => {
@@ -254,7 +264,7 @@ export function useAdvancedTable<T, K extends string>(
     globalSearchTerm.value = value.trim()
   })
 
-  const processedRows = computed<T[]>(() => {
+  const sortedRows = computed<T[]>(() => {
     const filtered = rows.value.filter((row) => {
       for (const column of columns) {
         if (column.filterable === false) continue
@@ -321,6 +331,28 @@ export function useAdvancedTable<T, K extends string>(
     return sorted
   })
 
+  const totalCount = computed(() => sortedRows.value.length)
+
+  const totalPages = computed(() => {
+    if (pageSize.value === 'all') return 1
+    return Math.max(1, Math.ceil(totalCount.value / pageSize.value))
+  })
+
+  watch([filters, globalSearchTerm, pageSize], () => {
+    page.value = 1
+  }, { deep: true })
+
+  watch([totalPages, page], ([currentTotalPages, currentPage]) => {
+    if (currentPage > currentTotalPages) page.value = currentTotalPages
+    else if (currentPage < 1) page.value = 1
+  })
+
+  const processedRows = computed<T[]>(() => {
+    if (pageSize.value === 'all') return sortedRows.value
+    const start = (page.value - 1) * pageSize.value
+    return sortedRows.value.slice(start, start + pageSize.value)
+  })
+
   return {
     sortKey,
     sortDirection,
@@ -329,6 +361,10 @@ export function useAdvancedTable<T, K extends string>(
     numberBoundsByColumn,
     globalSearchInput,
     globalSearchTerm,
+    page,
+    pageSize,
+    totalCount,
+    totalPages,
     processedRows,
     getFilter,
     isFilterActive,

@@ -332,13 +332,74 @@
         </button>
       </template>
     </CommonModal>
+
+    <!-- Pagination -->
+    <div
+      v-if="!loading && totalCount > 0"
+      class="flex flex-wrap items-center justify-between gap-3 pt-1 text-sm text-base-600"
+    >
+      <span>{{ paginationSummary }}</span>
+
+      <div class="flex flex-wrap items-center gap-3">
+        <div class="flex items-center gap-2">
+          <span class="text-base-500">{{ t('common.rowsPerPage') }}</span>
+          <MenuDropdown v-model="pageSizeMenuOpen" id="pageSize" wrapper-class="relative">
+            <template #trigger="{ styling }">
+              <button type="button" :class="styling" class="w-auto! h-8 gap-1.5 px-2 cursor-pointer">
+                {{ pageSize === 'all' ? t('common.all') : pageSize }}
+                <Icon name="material-symbols:keyboard-arrow-down-rounded" class="text-lg text-base-400" />
+              </button>
+            </template>
+
+            <template #default="{ styling }">
+              <button
+                v-for="option in ADVANCED_TABLE_PAGE_SIZE_OPTIONS"
+                :key="option"
+                type="button"
+                :class="[styling, option === pageSize ? 'text-link-600 font-medium' : '']"
+                @click="pageSize = option; pageSizeMenuOpen = null"
+              >
+                {{ option === 'all' ? t('common.all') : option }}
+              </button>
+            </template>
+          </MenuDropdown>
+        </div>
+
+        <div v-if="totalPages > 1" class="flex items-center gap-1">
+          <button
+            type="button"
+            class="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-base-300 text-base-600 transition not-disabled:cursor-pointer not-disabled:hover:bg-base-50 disabled:opacity-40 disabled:cursor-not-allowed"
+            :disabled="page <= 1"
+            :aria-label="t('common.previousPage')"
+            @click="page = page - 1"
+          >
+            <Icon name="material-symbols:chevron-left-rounded" class="text-xl" />
+          </button>
+          <span class="px-1 tabular-nums">{{ t('common.pageOfTotal', { page, total: totalPages }) }}</span>
+          <button
+            type="button"
+            class="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-base-300 text-base-600 transition not-disabled:cursor-pointer not-disabled:hover:bg-base-50 disabled:opacity-40 disabled:cursor-not-allowed"
+            :disabled="page >= totalPages"
+            :aria-label="t('common.nextPage')"
+            @click="page = page + 1"
+          >
+            <Icon name="material-symbols:chevron-right-rounded" class="text-xl" />
+          </button>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
 <script setup lang="ts" generic="T">
 import { computed, ref, toRef, watchEffect } from 'vue'
 import { useI18n } from '~/composables/useI18n'
-import { useAdvancedTable, useAdvancedTableViewMode, type AdvancedTableColumn } from '~/composables/useAdvancedTable'
+import {
+  useAdvancedTable,
+  useAdvancedTableViewMode,
+  ADVANCED_TABLE_PAGE_SIZE_OPTIONS,
+  type AdvancedTableColumn,
+} from '~/composables/useAdvancedTable'
 
 const props = withDefaults(defineProps<{
   rows: T[]
@@ -389,6 +450,10 @@ const {
   textOptionsByColumn,
   numberBoundsByColumn,
   globalSearchInput,
+  page,
+  pageSize,
+  totalCount,
+  totalPages,
   processedRows,
   getFilter,
   isFilterActive,
@@ -397,6 +462,15 @@ const {
   setRangeFilter,
   resetFilter,
 } = useAdvancedTable<T, string>(toRef(props, 'rows'), props.columns, props.persistKey)
+
+const pageSizeMenuOpen = ref<string | null>(null)
+
+const paginationSummary = computed(() => {
+  if (totalCount.value === 0) return ''
+  const from = (page.value - 1) * (pageSize.value === 'all' ? totalCount.value : pageSize.value) + 1
+  const to = pageSize.value === 'all' ? totalCount.value : Math.min(page.value * pageSize.value, totalCount.value)
+  return t('common.paginationSummary', { from, to, total: totalCount.value })
+})
 
 // Seed the header search box from restored persisted state; afterwards the box drives it.
 if (props.persistKey && globalSearchInput.value !== search.value) {
