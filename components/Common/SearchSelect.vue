@@ -143,6 +143,13 @@ const filteredOptions = computed(() => {
 const showCreateOption = computed(() => props.allowCreate && (props.hideCreateQuery || currentQuery.value.trim().length > 0))
 const menuWidthClass = computed(() => props.menuWidth === 'wide' ? 'w-full max-w-[48rem]' : 'max-w-[min(30rem,calc(100vw-2rem))]')
 
+function getLockedScrollOffset() {
+  if (document.body.style.position === 'fixed') {
+    return -(parseFloat(document.body.style.top) || 0)
+  }
+  return window.scrollY
+}
+
 function updateMenuPosition() {
   if (!open.value || !rootRef.value) return
 
@@ -178,8 +185,10 @@ function updateMenuPosition() {
   // (viewport coordinates) - iOS Safari misplaces `fixed` elements while the
   // on-screen keyboard is showing. `absolute` also scrolls natively with the
   // page for free, instead of needing a JS recalculation on every scroll tick.
+  const scrollOffset = getLockedScrollOffset()
+
   menuStyle.value = {
-    top: `${top + window.scrollY}px`,
+    top: `${top + scrollOffset}px`,
     left: `${left + window.scrollX}px`,
     minWidth: `${rootRect.width}px`,
     maxHeight: `${menuMaxHeight}px`,
