@@ -177,6 +177,7 @@
         <CommonSearchSelect
           v-model="eventQuery"
           :options="eventOptions"
+          :selected-label="selectedEvent ? eventLabel(selectedEvent) : ''"
           :placeholder="t('wiki.editor.eventTabLink.eventPlaceholder')"
           :empty-text="t('wiki.editor.eventTabLink.noEvents')"
           @select="onSelectEvent"
@@ -228,6 +229,7 @@ import { SETTINGS_TABS } from '~/config/settingsTabs'
 import { EVENT_PLANNING_TABS } from '~/config/eventPlanningTabs'
 import { useAuth } from '~/composables/useAuth'
 import { useWikiGlossary } from '~/composables/useWikiGlossary'
+import { useLocaleFormatters } from '~/composables/useLocaleFormatters'
 import type { PreviewResponse } from '~/server/api/wiki/preview.post'
 import type { GetEventsResponse } from '~/server/api/events/index.get'
 import type { GlossaryTermView } from '~/server/utils/wiki/glossary'
@@ -249,6 +251,7 @@ const emit = defineEmits<{
 const { t } = useI18n()
 const { hasPermission } = useAuth()
 const { loadGlossary } = useWikiGlossary()
+const { formatLocalDateTime } = useLocaleFormatters()
 
 const TABLE_SNIPPET = '| Spalte | Spalte |\n| --- | --- |\n| Wert | Wert |'
 
@@ -299,7 +302,17 @@ const selectedEvent = ref<Event | null>(null)
 const selectedEventTab = ref(DEFAULT_EVENT_TAB)
 
 const eventOptions = computed<SearchSelectOption<number>[]>(() => events.value
-  .map(event => ({ key: event.id, label: event.name, value: event.id })))
+  .map(event => ({
+    key: event.id,
+    label: eventLabel(event),
+    searchText: [event.name, event.location].filter(Boolean).join(' '),
+    value: event.id,
+  })))
+
+function eventLabel(event: Event) {
+  const startsAt = formatLocalDateTime(event.starts_at)
+  return [event.name, startsAt, event.location].filter(Boolean).join(' | ')
+}
 
 async function ensureEventsLoaded() {
   if (eventsLoaded.value) return
