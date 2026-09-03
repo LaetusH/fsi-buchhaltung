@@ -1,6 +1,6 @@
 import { query } from '~/server/utils/db'
 import { NOTIFICATION_TYPE_MAP, type NotificationTypeKey } from '~/config/notificationTypes'
-import { isTypeChannelEnabled, isTypeEnabled } from '~/server/utils/notifications/settings'
+import { isDefaultChannelOn, isTypeChannelEnabled, isTypeEnabled } from '~/server/utils/notifications/settings'
 import type { NotificationChannelKey } from '~/config/notificationChannels'
 import type { NotificationSettings } from '~/types/notification'
 import type { ResolvedRecipient, DbConn } from '~/server/utils/notifications/types'
@@ -71,7 +71,7 @@ export async function getEffectiveChannels(
       continue
     }
 
-    if (definition.defaultChannels.includes(channel)) channels.push(channel)
+    if (isDefaultChannelOn(settings, typeKey, channel)) channels.push(channel)
   }
 
   return channels
@@ -94,7 +94,7 @@ export async function getPreferenceMatrix(subjectType: 'user' | 'member', subjec
       // Either the type-channel switch or the association-wide channel switch can block this —
       // a personal override must not be able to defeat either one.
       const blocked = !isTypeChannelEnabled(settings, definition.key, channel) || !settings.channels_enabled[channel]
-      const effective = override !== undefined ? override : (settings.channels_enabled[channel] && definition.defaultChannels.includes(channel))
+      const effective = override !== undefined ? override : (settings.channels_enabled[channel] && isDefaultChannelOn(settings, definition.key, channel))
       entries.push({
         typeKey: definition.key,
         channel,

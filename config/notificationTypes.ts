@@ -1,5 +1,3 @@
-import type { NotificationChannelKey } from '~/config/notificationChannels'
-
 export type NotificationTypeKey =
   // shifts
   | 'shift.assigned'
@@ -35,13 +33,6 @@ export interface NotificationTypeDefinition {
   categoryKey: string
   labelKey: string
   descriptionKey: string
-  /**
-   * Channels used when neither the user nor global settings say otherwise. `push` is listed
-   * wherever `email` is: it only ever reaches devices that explicitly subscribed (and the global
-   * channel toggle still has to be on), so leaving it out of the defaults meant a subscribed device
-   * silently received nothing until the user flipped every row of the preference matrix by hand.
-   */
-  defaultChannels: NotificationChannelKey[]
   /** false => hidden from the user preference matrix and always delivered (custom.message). */
   userConfigurable: boolean
   /** Who it is aimed at — drives the default recipient rule at the call site. Documentation + UI grouping. */
@@ -86,7 +77,6 @@ export const NOTIFICATION_TYPES: NotificationTypeDefinition[] = [
     categoryKey: 'notifications.categories.shifts',
     labelKey: 'notifications.types.shift.assigned.label',
     descriptionKey: 'notifications.types.shift.assigned.description',
-    defaultChannels: ['in_app', 'email', 'push'],
     userConfigurable: true,
     audience: 'assignees',
     variables: ['member_name', 'event_name', 'shift_name', 'shift_start', 'shift_end', 'location'],
@@ -97,7 +87,6 @@ export const NOTIFICATION_TYPES: NotificationTypeDefinition[] = [
     categoryKey: 'notifications.categories.shifts',
     labelKey: 'notifications.types.shift.removed.label',
     descriptionKey: 'notifications.types.shift.removed.description',
-    defaultChannels: ['in_app'],
     userConfigurable: true,
     audience: 'assignees',
     variables: ['member_name', 'event_name', 'shift_name', 'shift_start', 'shift_end', 'location'],
@@ -108,7 +97,6 @@ export const NOTIFICATION_TYPES: NotificationTypeDefinition[] = [
     categoryKey: 'notifications.categories.shifts',
     labelKey: 'notifications.types.shift.changed.label',
     descriptionKey: 'notifications.types.shift.changed.description',
-    defaultChannels: ['in_app', 'email', 'push'],
     userConfigurable: true,
     audience: 'assignees',
     variables: ['member_name', 'event_name', 'shift_name', 'shift_start', 'shift_end', 'location', 'changes'],
@@ -119,7 +107,6 @@ export const NOTIFICATION_TYPES: NotificationTypeDefinition[] = [
     categoryKey: 'notifications.categories.shifts',
     labelKey: 'notifications.types.shift.reminder.label',
     descriptionKey: 'notifications.types.shift.reminder.description',
-    defaultChannels: ['in_app', 'email', 'push'],
     userConfigurable: true,
     audience: 'assignees',
     schedule: { defaultLeadMinutes: [1440, 120], anchor: 'shift.starts_at' },
@@ -131,7 +118,6 @@ export const NOTIFICATION_TYPES: NotificationTypeDefinition[] = [
     categoryKey: 'notifications.categories.shifts',
     labelKey: 'notifications.types.shift.understaffed.label',
     descriptionKey: 'notifications.types.shift.understaffed.description',
-    defaultChannels: ['in_app', 'email', 'push'],
     userConfigurable: true,
     audience: 'organizers',
     schedule: { defaultLeadMinutes: [2880], anchor: 'shift.starts_at' },
@@ -144,7 +130,6 @@ export const NOTIFICATION_TYPES: NotificationTypeDefinition[] = [
     categoryKey: 'notifications.categories.tasks',
     labelKey: 'notifications.types.task.assigned.label',
     descriptionKey: 'notifications.types.task.assigned.description',
-    defaultChannels: ['in_app', 'email', 'push'],
     userConfigurable: true,
     audience: 'assignees',
     variables: ['member_name', 'event_name', 'task_title', 'task_deadline'],
@@ -155,7 +140,6 @@ export const NOTIFICATION_TYPES: NotificationTypeDefinition[] = [
     categoryKey: 'notifications.categories.tasks',
     labelKey: 'notifications.types.task.deadline_reminder.label',
     descriptionKey: 'notifications.types.task.deadline_reminder.description',
-    defaultChannels: ['in_app', 'email', 'push'],
     userConfigurable: true,
     audience: 'assignees',
     schedule: { defaultLeadMinutes: [2880, 480], anchor: 'task.deadline' },
@@ -167,7 +151,6 @@ export const NOTIFICATION_TYPES: NotificationTypeDefinition[] = [
     categoryKey: 'notifications.categories.tasks',
     labelKey: 'notifications.types.task.overdue.label',
     descriptionKey: 'notifications.types.task.overdue.description',
-    defaultChannels: ['in_app'],
     userConfigurable: true,
     audience: 'organizers',
     variables: ['event_name', 'task_title', 'task_deadline', 'days_overdue'],
@@ -178,7 +161,6 @@ export const NOTIFICATION_TYPES: NotificationTypeDefinition[] = [
     categoryKey: 'notifications.categories.events',
     labelKey: 'notifications.types.event.created.label',
     descriptionKey: 'notifications.types.event.created.description',
-    defaultChannels: ['in_app'],
     userConfigurable: true,
     audience: 'explicit',
     variables: ['event_name', 'event_start', 'event_end', 'location'],
@@ -189,7 +171,6 @@ export const NOTIFICATION_TYPES: NotificationTypeDefinition[] = [
     categoryKey: 'notifications.categories.events',
     labelKey: 'notifications.types.event.changed.label',
     descriptionKey: 'notifications.types.event.changed.description',
-    defaultChannels: ['in_app', 'email', 'push'],
     userConfigurable: true,
     audience: 'assignees',
     variables: ['event_name', 'event_start', 'event_end', 'location', 'changes'],
@@ -200,7 +181,6 @@ export const NOTIFICATION_TYPES: NotificationTypeDefinition[] = [
     categoryKey: 'notifications.categories.events',
     labelKey: 'notifications.types.event.reminder.label',
     descriptionKey: 'notifications.types.event.reminder.description',
-    defaultChannels: ['in_app', 'email', 'push'],
     userConfigurable: true,
     audience: 'assignees',
     schedule: { defaultLeadMinutes: [10080, 1440], anchor: 'event.starts_at' },
@@ -212,7 +192,6 @@ export const NOTIFICATION_TYPES: NotificationTypeDefinition[] = [
     categoryKey: 'notifications.categories.appointments',
     labelKey: 'notifications.types.appointment.invited.label',
     descriptionKey: 'notifications.types.appointment.invited.description',
-    defaultChannels: ['in_app', 'email', 'push'],
     userConfigurable: true,
     audience: 'explicit',
     variables: ['member_name', 'appointment_title', 'appointment_type', 'appointment_start', 'appointment_end', 'location'],
@@ -223,7 +202,6 @@ export const NOTIFICATION_TYPES: NotificationTypeDefinition[] = [
     categoryKey: 'notifications.categories.appointments',
     labelKey: 'notifications.types.appointment.changed.label',
     descriptionKey: 'notifications.types.appointment.changed.description',
-    defaultChannels: ['in_app', 'email', 'push'],
     userConfigurable: true,
     audience: 'explicit',
     variables: ['member_name', 'appointment_title', 'appointment_type', 'appointment_start', 'appointment_end', 'location', 'changes'],
@@ -234,7 +212,6 @@ export const NOTIFICATION_TYPES: NotificationTypeDefinition[] = [
     categoryKey: 'notifications.categories.appointments',
     labelKey: 'notifications.types.appointment.cancelled.label',
     descriptionKey: 'notifications.types.appointment.cancelled.description',
-    defaultChannels: ['in_app', 'email', 'push'],
     userConfigurable: true,
     audience: 'explicit',
     variables: ['member_name', 'appointment_title', 'appointment_type', 'appointment_start', 'appointment_end', 'location'],
@@ -245,7 +222,6 @@ export const NOTIFICATION_TYPES: NotificationTypeDefinition[] = [
     categoryKey: 'notifications.categories.appointments',
     labelKey: 'notifications.types.appointment.reminder.label',
     descriptionKey: 'notifications.types.appointment.reminder.description',
-    defaultChannels: ['in_app', 'email', 'push'],
     userConfigurable: true,
     audience: 'explicit',
     schedule: { defaultLeadMinutes: [1440, 120], anchor: 'appointment.starts_at' },
@@ -257,7 +233,6 @@ export const NOTIFICATION_TYPES: NotificationTypeDefinition[] = [
     categoryKey: 'notifications.categories.custom',
     labelKey: 'notifications.types.custom.message.label',
     descriptionKey: 'notifications.types.custom.message.description',
-    defaultChannels: ['in_app', 'email', 'push'],
     userConfigurable: false,
     audience: 'explicit',
     variables: RECIPIENT_VARIABLES,

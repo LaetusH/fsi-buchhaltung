@@ -8,6 +8,7 @@ const NOTIFICATION_SETTING_KEYS = {
   notifications_enabled: 'notifications_enabled',
   channels_enabled: 'notifications_channels_enabled',
   type_settings: 'notifications_type_settings',
+  default_channels: 'notifications_default_channels',
   lead_times: 'notifications_lead_times',
   templates: 'notifications_templates',
   email_from_name: 'notifications_email_from_name',
@@ -25,6 +26,8 @@ export const DEFAULT_NOTIFICATION_SETTINGS: NotificationSettings = {
   channels_enabled: { in_app: true, email: true, push: true },
   // Empty means "every type behaves as defined in config/notificationTypes.ts".
   type_settings: {},
+  // Empty means "every channel starts enabled for every type" until an admin narrows it down.
+  default_channels: {},
   lead_times: {
     'shift.reminder': [1440, 120],
     'shift.understaffed': [2880],
@@ -96,6 +99,29 @@ export function normalizeTypeSettings(input: unknown): NotificationSettings['typ
   return result
 }
 
+export function normalizeDefaultChannels(input: unknown): NotificationSettings['default_channels'] {
+  if (!input || typeof input !== 'object') return {}
+  const result: NotificationSettings['default_channels'] = {}
+
+  for (const [typeKey, raw] of Object.entries(input as Record<string, any>)) {
+    if (!NOTIFICATION_TYPE_MAP[typeKey as NotificationTypeKey]) continue
+    if (!raw || typeof raw !== 'object') continue
+
+    const channels: Partial<Record<NotificationChannelKey, boolean>> = {}
+    for (const channel of ALL_CHANNELS) {
+      if (raw[channel] === false) channels[channel] = false
+    }
+
+    if (Object.keys(channels).length) result[typeKey as NotificationTypeKey] = channels
+  }
+
+  return result
+}
+
+export function isDefaultChannelOn(settings: NotificationSettings, typeKey: NotificationTypeKey, channel: NotificationChannelKey): boolean {
+  return settings.default_channels[typeKey]?.[channel] !== false
+}
+
 /** False => the type is switched off association-wide and is not even enqueued. */
 export function isTypeEnabled(settings: NotificationSettings, typeKey: NotificationTypeKey): boolean {
   return settings.type_settings[typeKey]?.enabled !== false
@@ -136,6 +162,7 @@ export function normalizeNotificationSettings(input: Partial<NotificationSetting
       push: Boolean(channelsEnabled.push ?? DEFAULT_NOTIFICATION_SETTINGS.channels_enabled.push),
     },
     type_settings: normalizeTypeSettings(input?.type_settings),
+    default_channels: normalizeDefaultChannels(input?.default_channels),
     lead_times: leadTimes.ok ? leadTimes.value : DEFAULT_NOTIFICATION_SETTINGS.lead_times,
     templates: templates.ok ? templates.value : DEFAULT_NOTIFICATION_SETTINGS.templates,
     email_from_name: String(input?.email_from_name ?? DEFAULT_NOTIFICATION_SETTINGS.email_from_name).trim(),
@@ -177,6 +204,7 @@ export async function getNotificationSettings(conn?: DbConn): Promise<Notificati
     notifications_enabled: values.get(NOTIFICATION_SETTING_KEYS.notifications_enabled) === 'true',
     channels_enabled: parseJson(values.get(NOTIFICATION_SETTING_KEYS.channels_enabled), DEFAULT_NOTIFICATION_SETTINGS.channels_enabled),
     type_settings: parseJson(values.get(NOTIFICATION_SETTING_KEYS.type_settings), DEFAULT_NOTIFICATION_SETTINGS.type_settings),
+    default_channels: parseJson(values.get(NOTIFICATION_SETTING_KEYS.default_channels), DEFAULT_NOTIFICATION_SETTINGS.default_channels),
     lead_times: parseJson(values.get(NOTIFICATION_SETTING_KEYS.lead_times), DEFAULT_NOTIFICATION_SETTINGS.lead_times),
     templates: parseJson(values.get(NOTIFICATION_SETTING_KEYS.templates), DEFAULT_NOTIFICATION_SETTINGS.templates),
     email_from_name: values.get(NOTIFICATION_SETTING_KEYS.email_from_name),
@@ -198,6 +226,7 @@ export async function saveNotificationSettings(settings: Partial<NotificationSet
     [NOTIFICATION_SETTING_KEYS.notifications_enabled, String(normalized.notifications_enabled)],
     [NOTIFICATION_SETTING_KEYS.channels_enabled, JSON.stringify(normalized.channels_enabled)],
     [NOTIFICATION_SETTING_KEYS.type_settings, JSON.stringify(normalized.type_settings)],
+    [NOTIFICATION_SETTING_KEYS.default_channels, JSON.stringify(normalized.default_channels)],
     [NOTIFICATION_SETTING_KEYS.lead_times, JSON.stringify(normalized.lead_times)],
     [NOTIFICATION_SETTING_KEYS.templates, JSON.stringify(normalized.templates)],
     [NOTIFICATION_SETTING_KEYS.email_from_name, normalized.email_from_name],

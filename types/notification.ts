@@ -16,6 +16,7 @@ export interface NotificationSettings {
   channels_enabled: Record<NotificationChannelKey, boolean>
   /** Only types the admin actually touched appear here; everything else follows its defaults. */
   type_settings: Partial<Record<NotificationTypeKey, NotificationTypeSetting>>
+  default_channels: Partial<Record<NotificationTypeKey, Partial<Record<NotificationChannelKey, boolean>>>>
   lead_times: Partial<Record<NotificationTypeKey, number[]>>
   templates: Partial<Record<NotificationTypeKey, { subject: string, body: string }>>
   email_from_name: string

@@ -89,24 +89,51 @@
             />
           </div>
 
-          <div v-if="isTypeOn(typeKey)" class="mt-2 flex flex-wrap items-center gap-2 sm:pl-12">
-            <button
-              v-for="channel in typeChannelKeys()"
-              :key="channel"
-              type="button"
-              class="inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-medium transition cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
-              :class="isTypeChannelOn(typeKey, channel)
-                ? 'border-secondary-200 bg-secondary-50 text-secondary-800 hover:border-secondary-300'
-                : 'border-base-200 bg-base-50 text-base-400 line-through hover:border-base-300'"
-              :aria-pressed="isTypeChannelOn(typeKey, channel)"
-              :disabled="channelOffGlobally(channel)"
-              :title="channelOffGlobally(channel) ? t('settings.notifications.channelOffGlobally') : t('settings.notifications.toggleChannelForType')"
-              @click="toggleTypeChannel(typeKey, channel)"
-            >
-              <Icon :name="channelIcon(channel)" class="h-4 w-4" aria-hidden="true" />
-              {{ t(`notifications.channels.${channel}`) }}
-            </button>
-            <span class="text-xs text-base-400">{{ t('settings.notifications.typeChannelsHint') }}</span>
+          <div v-if="isTypeOn(typeKey)" class="mt-3 overflow-x-auto sm:pl-12">
+            <table class="w-full min-w-88 border-separate border-spacing-y-1 text-xs">
+              <thead>
+                <tr class="text-left text-[11px] font-medium text-base-400">
+                  <th class="w-0 pr-2 font-medium"></th>
+                  <th class="px-2 font-medium" :title="t('settings.notifications.channelActiveHelp')">
+                    {{ t('settings.notifications.channelActiveHeader') }}
+                  </th>
+                  <th class="px-2 font-medium" :title="t('settings.notifications.channelDefaultHelp')">
+                    {{ t('settings.notifications.channelDefaultHeader') }}
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="channel in typeChannelKeys()" :key="channel">
+                  <td class="whitespace-nowrap rounded-l-md bg-base-50 py-1.5 pr-2 pl-2 font-medium text-base-600">
+                    <span class="inline-flex items-center gap-1.5">
+                      <Icon :name="channelIcon(channel)" class="h-4 w-4 shrink-0" aria-hidden="true" />
+                      {{ t(`notifications.channels.${channel}`) }}
+                    </span>
+                  </td>
+                  <td class="bg-base-50 px-2 py-1.5">
+                    <CommonToggleSwitch
+                      :model-value="isTypeChannelOn(typeKey, channel)"
+                      :disabled="channelOffGlobally(channel)"
+                      :label="`${typeLabel(typeKey)} – ${t(`notifications.channels.${channel}`)} – ${t('settings.notifications.channelActiveHeader')}`"
+                      @update:model-value="toggleTypeChannel(typeKey, channel)"
+                    />
+                    <span v-if="channelOffGlobally(channel)" class="mt-0.5 block text-[10px] text-warning-600">
+                      {{ t('settings.notifications.channelOffGlobally') }}
+                    </span>
+                  </td>
+                  <td class="rounded-r-md bg-base-50 px-2 py-1.5">
+                    <CommonToggleSwitch
+                      v-if="defaultChannelKeys.includes(channel)"
+                      :model-value="isDefaultChannelOn(typeKey, channel)"
+                      :disabled="!isTypeChannelOn(typeKey, channel) || channelOffGlobally(channel)"
+                      :label="`${typeLabel(typeKey)} – ${t(`notifications.channels.${channel}`)} – ${t('settings.notifications.channelDefaultHeader')}`"
+                      @update:model-value="toggleDefaultChannel(typeKey, channel)"
+                    />
+                    <span v-else class="text-base-400">{{ t('settings.notifications.alwaysOn') }}</span>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
           </div>
 
           <p v-else class="mt-2 text-xs text-warning-600 sm:pl-12">
@@ -410,7 +437,49 @@ const leadDrafts = reactive(Object.fromEntries(
   scheduledTypeKeys.map(key => [key, { value: 1, unit: 'days' as keyof typeof UNIT_MINUTES }]),
 ) as Record<NotificationTypeKey, { value: number, unit: keyof typeof UNIT_MINUTES }>)
 
-const dirty = computed(() => Boolean(settings.value) && JSON.stringify(settings.value) !== savedSnapshot.value)
+const ALL_CHANNELS: NotificationChannelKey[] = ['in_app', 'email', 'push']
+
+function canonicalizeSettings(input: NotificationSettings): NotificationSettings {
+  const typeSettings: NotificationSettings['type_settings'] = {}
+  for (const key of Object.keys(input.type_settings).sort() as NotificationTypeKey[]) {
+    const entry = input.type_settings[key]
+    if (!entry) continue
+    const channels: Partial<Record<NotificationChannelKey, boolean>> = {}
+    for (const channel of ALL_CHANNELS) {
+      if (entry.channels?.[channel] === false) channels[channel] = false
+    }
+    const enabled = entry.enabled !== false
+    if (enabled && !Object.keys(channels).length) continue
+    typeSettings[key] = { enabled, channels }
+  }
+
+  const defaultChannels: NotificationSettings['default_channels'] = {}
+  for (const key of Object.keys(input.default_channels).sort() as NotificationTypeKey[]) {
+    const entry = input.default_channels[key]
+    if (!entry) continue
+    const channels: Partial<Record<NotificationChannelKey, boolean>> = {}
+    for (const channel of ALL_CHANNELS) {
+      if (entry[channel] === false) channels[channel] = false
+    }
+    if (Object.keys(channels).length) defaultChannels[key] = channels
+  }
+
+  const templates: NotificationSettings['templates'] = {}
+  for (const key of Object.keys(input.templates).sort() as NotificationTypeKey[]) {
+    const entry = input.templates[key]
+    const subject = entry?.subject?.trim() || ''
+    const body = entry?.body?.trim() || ''
+    if (subject || body) templates[key] = { subject, body }
+  }
+
+  return { ...input, type_settings: typeSettings, default_channels: defaultChannels, templates }
+}
+
+function snapshot(input: NotificationSettings): string {
+  return JSON.stringify(canonicalizeSettings(input))
+}
+
+const dirty = computed(() => settings.value !== null && snapshot(settings.value) !== savedSnapshot.value)
 
 const dimWhenDisabled = computed(() => (settings.value?.notifications_enabled ? '' : 'opacity-60'))
 
@@ -453,6 +522,24 @@ function toggleTypeChannel(typeKey: NotificationTypeKey, channel: NotificationCh
   if (channels[channel] === false) delete channels[channel]
   else channels[channel] = false
   settings.value.type_settings = { ...settings.value.type_settings, [typeKey]: { ...entry, channels } }
+}
+
+const defaultChannelKeys: NotificationChannelKey[] = ['email', 'push']
+
+function defaultChannelEntry(typeKey: NotificationTypeKey) {
+  return settings.value?.default_channels[typeKey] ?? {}
+}
+
+function isDefaultChannelOn(typeKey: NotificationTypeKey, channel: NotificationChannelKey) {
+  return defaultChannelEntry(typeKey)[channel] !== false
+}
+
+function toggleDefaultChannel(typeKey: NotificationTypeKey, channel: NotificationChannelKey) {
+  if (!settings.value) return
+  const channels = { ...defaultChannelEntry(typeKey) }
+  if (channels[channel] === false) delete channels[channel]
+  else channels[channel] = false
+  settings.value.default_channels = { ...settings.value.default_channels, [typeKey]: channels }
 }
 
 function variableToken(variable: string) {
@@ -546,7 +633,7 @@ async function load() {
     const res = await $fetch<GetNotificationSettingsResponse>('/api/settings/notifications')
     if (res.ok) {
       settings.value = res.settings
-      savedSnapshot.value = JSON.stringify(res.settings)
+      savedSnapshot.value = snapshot(res.settings)
       smtpConfigured.value = res.smtpConfigured
       pushConfigured.value = res.pushConfigured
     } else {
@@ -564,7 +651,7 @@ async function save() {
     const res = await $fetch<SaveNotificationSettingsResponse>('/api/settings/notifications.save', { method: 'POST', body: settings.value })
     if (res.ok) {
       settings.value = res.settings
-      savedSnapshot.value = JSON.stringify(res.settings)
+      savedSnapshot.value = snapshot(res.settings)
       toast.success(t('settings.notifications.saved'))
     } else {
       toast.error(res.error)
