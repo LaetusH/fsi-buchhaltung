@@ -32,6 +32,7 @@ import SettingsAppointmentTypes from './AppointmentTypes.vue'
 import SettingsAuditLog from './AuditLog.vue'
 import { useAuth } from '~/composables/useAuth'
 import { usePage } from '~/composables/usePage'
+import { SETTINGS_TABS } from '~/config/settingsTabs'
 
 defineEmits<{
   (e: 'openMenu'): void
@@ -44,23 +45,9 @@ const { t } = useI18n()
 const { hasPermission } = useAuth()
 const { pageMeta, setPage } = usePage()
 
-const tabs = computed(() => {
-  const list = [
-    { key: 'general', label: t('settings.tabs.general'), show: true },
-    { key: 'association', label: t('settings.tabs.association'), show: hasPermission('settings.association.manage') },
-    { key: 'spheres', label: t('settings.tabs.spheres'), show: hasPermission('settings.spheres.manage') },
-    { key: 'costCentres', label: t('settings.tabs.costCentres'), show: hasPermission('settings.cost_centres.manage') },
-    { key: 'subdivisions', label: t('settings.tabs.subdivisions'), show: hasPermission('settings.subdivisions.manage') },
-    { key: 'positions', label: t('settings.tabs.positions'), show: hasPermission('settings.positions.manage') },
-    { key: 'appointmentTypes', label: t('settings.tabs.appointmentTypes'), show: hasPermission('calendar.manage') },
-    { key: 'users', label: t('settings.tabs.users'), show: hasPermission('users.manage') },
-    { key: 'permissions', label: t('settings.tabs.permissions'), show: hasPermission(['permissions.manage', 'settings.viewAs']) },
-    { key: 'app', label: t('settings.tabs.app'), show: hasPermission('settings.app.access') },
-    { key: 'notifications', label: t('settings.tabs.notifications'), show: hasPermission('settings.notifications.manage') },
-    { key: 'audit', label: t('settings.tabs.audit'), show: hasPermission('audit.view') },
-  ] as const
-  return list.filter(tab => tab.show).map(({ show, ...rest }) => rest)
-})
+const tabs = computed(() => SETTINGS_TABS
+  .filter(tab => !tab.permission || hasPermission(tab.permission))
+  .map(tab => ({ key: tab.key, label: t(tab.labelKey) })))
 
 const activeComponent = computed(() => {
   switch (currentTab.value) {
@@ -101,7 +88,7 @@ watch([tabs, () => pageMeta.value?.tab, () => pageMeta.value?.resetTabKey], ([av
   }
 
   if (resetTabKey && available[0]?.key) {
-    currentTab.value = available[0].key
+    currentTab.value = available[0].key as SettingsTab
     return
   }
 

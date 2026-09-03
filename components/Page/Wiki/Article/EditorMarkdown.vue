@@ -66,6 +66,22 @@
           >
             {{ pageLabel(page) }}
           </button>
+          <div v-if="settingsTabs.length" class="px-3 py-1 text-xs font-semibold text-base-500">{{ t('wiki.editor.toolbar.insertSettingsTab') }}</div>
+          <button
+            v-for="tab in settingsTabs"
+            :key="`settingsTab:${tab.key}`"
+            type="button"
+            :class="styling"
+            @click="chooseInsert(`settingsTab:${tab.key}`)"
+          >
+            {{ t(tab.labelKey) }}
+          </button>
+          <template v-if="canLinkEventTab">
+            <div class="px-3 py-1 text-xs font-semibold text-base-500">{{ t('wiki.editor.toolbar.insertEventTab') }}</div>
+            <button type="button" :class="styling" @click="openEventTabPicker">
+              {{ t('wiki.editor.toolbar.insertEventTab') }}
+            </button>
+          </template>
           <div class="px-3 py-1 text-xs font-semibold text-base-500">{{ t('wiki.editor.toolbar.insertEmbed') }}</div>
           <button
             v-for="embed in embeds"
@@ -154,6 +170,52 @@
         </div>
       </div>
     </div>
+
+    <CommonModal v-model="eventTabModalOpen" :title="t('wiki.editor.eventTabLink.title')">
+      <div class="field">
+        <label class="section-title">{{ t('wiki.editor.eventTabLink.eventLabel') }}</label>
+        <CommonSearchSelect
+          v-model="eventQuery"
+          :options="eventOptions"
+          :placeholder="t('wiki.editor.eventTabLink.eventPlaceholder')"
+          :empty-text="t('wiki.editor.eventTabLink.noEvents')"
+          @select="onSelectEvent"
+          @clear-selection="selectedEvent = null"
+        />
+      </div>
+
+      <div v-if="selectedEvent" class="field">
+        <label class="section-title">{{ t('wiki.editor.eventTabLink.tabLabel') }}</label>
+        <div class="flex flex-wrap gap-2">
+          <button
+            v-for="tab in linkableEventTabs"
+            :key="tab.key"
+            type="button"
+            class="cursor-pointer rounded-lg border px-3 py-1.5 text-sm font-medium transition-colors"
+            :class="selectedEventTab === tab.key
+              ? 'border-accent-400 bg-accent-50 text-accent-700'
+              : 'border-base-200 bg-white text-base-600 hover:bg-base-100'"
+            @click="selectedEventTab = tab.key"
+          >
+            {{ t(tab.labelKey) }}
+          </button>
+        </div>
+      </div>
+
+      <template #footer>
+        <button type="button" class="btn-secondary" @click="eventTabModalOpen = false">
+          {{ t('wiki.editor.eventTabLink.cancel') }}
+        </button>
+        <button
+          type="button"
+          class="btn-primary disabled:cursor-not-allowed disabled:opacity-40"
+          :disabled="!selectedEvent || !selectedEventTab"
+          @click="insertEventTabLink"
+        >
+          {{ t('wiki.editor.eventTabLink.insert') }}
+        </button>
+      </template>
+    </CommonModal>
   </div>
 </template>
 
@@ -162,10 +224,15 @@ import { computed, onBeforeUnmount, ref, useId, watch } from 'vue'
 import { useI18n } from '~/composables/useI18n'
 import { PAGES } from '~/config/pages'
 import { WIKI_EMBEDS } from '~/config/wikiEmbeds'
+import { SETTINGS_TABS } from '~/config/settingsTabs'
+import { EVENT_PLANNING_TABS } from '~/config/eventPlanningTabs'
 import { useAuth } from '~/composables/useAuth'
 import { useWikiGlossary } from '~/composables/useWikiGlossary'
 import type { PreviewResponse } from '~/server/api/wiki/preview.post'
+import type { GetEventsResponse } from '~/server/api/events/index.get'
 import type { GlossaryTermView } from '~/server/utils/wiki/glossary'
+import type { SearchSelectOption } from '~/components/Common/SearchSelect.vue'
+import type { Event } from '~/types/event'
 import type { WikiChecklistView } from '~/types/wiki'
 
 const props = withDefaults(defineProps<{
@@ -205,6 +272,68 @@ const toolPages = Object.entries(PAGES)
 function pageLabel(name: string) {
   const page = PAGES[name]
   return page ? `${t(page.labelKey)} (${name})` : name
+}
+
+const settingsTabs = computed(() => SETTINGS_TABS
+  .filter(tab => !tab.permission || hasPermission(tab.permission)))
+
+const canLinkEventTab = computed(() => {
+  const page = PAGES.EventCreate
+  if (!page) return false
+  return !page.permissions.length || hasPermission(page.permissions)
+})
+
+const runtimeConfig = useRuntimeConfig()
+const cashRegisterAvailable = computed(() =>
+  runtimeConfig.public.cashRegisterMode === 'connected' && hasPermission('cash_register.manage'),
+)
+const linkableEventTabs = computed(() => EVENT_PLANNING_TABS
+  .filter(tab => tab.key !== 'cashRegister' || cashRegisterAvailable.value))
+const DEFAULT_EVENT_TAB = EVENT_PLANNING_TABS[0]?.key ?? 'overview'
+
+const eventTabModalOpen = ref(false)
+const eventQuery = ref('')
+const events = ref<Event[]>([])
+const eventsLoaded = ref(false)
+const selectedEvent = ref<Event | null>(null)
+const selectedEventTab = ref(DEFAULT_EVENT_TAB)
+
+const eventOptions = computed<SearchSelectOption<number>[]>(() => events.value
+  .map(event => ({ key: event.id, label: event.name, value: event.id })))
+
+async function ensureEventsLoaded() {
+  if (eventsLoaded.value) return
+  eventsLoaded.value = true
+  const res = await $fetch<GetEventsResponse>('/api/events')
+  if (res.ok) events.value = res.events
+}
+
+function openEventTabPicker() {
+  openInsertMenu.value = null
+  eventQuery.value = ''
+  selectedEvent.value = null
+  selectedEventTab.value = DEFAULT_EVENT_TAB
+  eventTabModalOpen.value = true
+  ensureEventsLoaded()
+}
+
+function onSelectEvent(value: unknown) {
+  selectedEvent.value = events.value.find(event => event.id === value) ?? null
+}
+
+function escapeAttr(value: string) {
+  return value.replace(/"/g, "'")
+}
+
+function insertEventTabLink() {
+  const event = selectedEvent.value
+  if (!event || !selectedEventTab.value) return
+
+  const tab = EVENT_PLANNING_TABS.find(entry => entry.key === selectedEventTab.value)
+  const label = escapeAttr(`${event.name} – ${tab ? t(tab.labelKey) : selectedEventTab.value}`)
+  const meta = JSON.stringify({ returnTarget: 'self', eventId: event.id, tab: selectedEventTab.value })
+  eventTabModalOpen.value = false
+  insertBlock(`:::tool{page="EventCreate" meta='${meta}' label="${label}"}`)
 }
 
 function replaceSelection(build: (selected: string) => { text: string, cursor?: number }) {
@@ -253,6 +382,12 @@ function chooseInsert(value: string) {
   if (kind === 'tool') {
     const page = PAGES[key]
     insertBlock(`:::tool{page="${key}" meta='{"returnTarget":"self"}' label="${page ? t(page.labelKey) : key}"}`)
+    return
+  }
+  if (kind === 'settingsTab') {
+    const tab = SETTINGS_TABS.find(entry => entry.key === key)
+    const label = escapeAttr(`${t('pages.settings')} – ${tab ? t(tab.labelKey) : key}`)
+    insertBlock(`:::tool{page="Settings" meta='{"returnTarget":"self","tab":"${key}"}' label="${label}"}`)
     return
   }
 
