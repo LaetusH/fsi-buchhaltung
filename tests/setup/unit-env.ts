@@ -1,0 +1,7 @@
+process.env.MAX_UPLOAD_MB = '5'
+process.env.SESSION_COOKIE_NAME = 'fsi_session_test'
+process.env.SESSION_SECRET = 'unit_test_secret'
+process.env.SESSION_INACTIVITY_MINUTES = '30'
+process.env.SESSION_MAX_AGE_MINUTES = '1440'
+process.env.UPLOAD_DIR = '/tmp/fsi-unit-tests'
+process.env.TZ = 'UTC'

@@ -1,0 +1,18 @@
+export const MIGRATION_SCRIPTS = [
+  'migrate-event-cost-centre-splits.mjs',
+  'migrate-event-planning.mjs',
+  'migrate-invoice-paid-at.mjs',
+  'migrate-invoice-position-description-nullable.mjs',
+  'migrate-app-settings.mjs',
+  'migrate-cash-count-register-checks.mjs',
+  'migrate-user-password-change-required.mjs',
+  'migrate-checklist-task-link.mjs',
+  'migrate-bank-statements.mjs',
+  'migrate-shift-templates.mjs',
+  'migrate-calendar-token.mjs',
+  'migrate-member-self-service.mjs',
+  'migrate-notifications.mjs',
+  'migrate-wiki.mjs',
+  'migrate-audit-log.mjs',
+  'migrate-appointments.mjs',
+]

@@ -1,0 +1,24 @@
+# Throwaway MariaDB for the automated test suite.
+name: fsi-buchhaltung-test
+
+services:
+  test-db:
+    image: mariadb:11.4
+    environment:
+      - MARIADB_ROOT_PASSWORD=test_root
+      - MARIADB_DATABASE=fsi_buchhaltung_test
+      - MARIADB_USER=fsi_test
+      - MARIADB_PASSWORD=fsi_test
+    volumes:
+      - db_test_data:/var/lib/mysql
+    ports:
+      - "3309:3306"
+    healthcheck:
+      test: ["CMD", "mariadb", "-u", "fsi_test", "-pfsi_test", "-h", "localhost", "-e", "SELECT 1;"]
+      interval: 3s
+      timeout: 5s
+      retries: 20
+    restart: unless-stopped
+
+volumes:
+  db_test_data:
