@@ -17,7 +17,7 @@ export async function getDefaultRoleId(conn?: mariadb.PoolConnection) {
     conn
   )
 
-  return rows.length > 0 ? Number(rows[0].id) : null
+  return rows.length > 0 ? Number(rows[0]!.id) : null
 }
 
 export async function assignDefaultRoleToUser(userId: number, conn?: mariadb.PoolConnection) {

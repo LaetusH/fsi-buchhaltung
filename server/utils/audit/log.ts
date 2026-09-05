@@ -557,7 +557,7 @@ interface ScopedTableSpec {
  * Returns null for anything malformed or not registered — callers skip those silently rather than
  * failing the whole request, so a button may list a table the current user may not see.
  */
-function parseScopedTableSpec(raw: string): ScopedTableSpec | null {
+export function parseScopedTableSpec(raw: string): ScopedTableSpec | null {
   const [head, ...literalParts] = raw.split(';')
   const [left, viaPart] = String(head).split('>')
   const [table, explicitColumn] = String(left).split(':')

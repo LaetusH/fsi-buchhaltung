@@ -4,7 +4,7 @@ import { normalizeBigInt } from '~/server/utils/normalize'
 import { requirePermission } from '~/server/utils/api/guards'
 import { getNumericRouteParam } from '~/server/utils/api/request'
 import { getAttachedFile, getEntityIdsWithActiveFiles } from '~/server/utils/files'
-import { Reimbursement, ReimbursementPosition, ReimbursementRow } from '~/types/reimbursement'
+import type { Reimbursement, ReimbursementPosition, ReimbursementRow } from '~/types/reimbursement'
 import { ReceiptStatus } from '~/types/receipt'
 import type { FileRow } from '~/types/file'
 

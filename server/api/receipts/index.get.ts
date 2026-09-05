@@ -2,7 +2,7 @@ import { defineEventHandler } from 'h3'
 import { query } from '~/server/utils/db'
 import { requirePermission } from '~/server/utils/api/guards'
 import { getEntityIdsWithActiveFiles } from '~/server/utils/files'
-import { ReceiptRow, ReceiptStatus } from '~/types/receipt'
+import { ReceiptStatus, type ReceiptRow } from '~/types/receipt'
 
 interface GetReceiptsSuccess {
   ok: true

@@ -1,5 +1,5 @@
 import { defineEventHandler } from 'h3'
-import { PermissionDefinition, PERMISSIONS } from '~/config/permissions'
+import { PERMISSIONS, type PermissionDefinition } from '~/config/permissions'
 import { requirePermission } from '~/server/utils/api/guards'
 
 interface DefinitionsSuccess {

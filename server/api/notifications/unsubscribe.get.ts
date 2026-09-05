@@ -2,7 +2,7 @@ import { defineEventHandler, getQuery, setHeader } from 'h3'
 import { query } from '~/server/utils/db'
 import { hmacToken } from '~/server/utils/auth'
 import { setPreference } from '~/server/utils/notifications/preferences'
-import { translate } from '~/composables/useI18n'
+import { translate } from '~/shared/i18n'
 
 export default defineEventHandler(async (event) => {
   const q = getQuery(event)

@@ -2,7 +2,7 @@ import { NOTIFICATION_TYPE_MAP, type NotificationTypeKey } from '~/config/notifi
 import type { NotificationChannelKey } from '~/config/notificationChannels'
 import type { NotificationSettings } from '~/types/notification'
 import type { RenderedNotification } from '~/server/utils/notifications/types'
-import { translate } from '~/composables/useI18n'
+import { translate } from '~/shared/i18n'
 import { describeChangedFields, type ChangedField } from '~/server/utils/notifications/changeDescription'
 import { describeLeadText } from '~/server/utils/notifications/leadText'
 

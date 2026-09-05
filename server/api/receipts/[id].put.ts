@@ -11,7 +11,7 @@ import {
 import { validateCostCentreSelection } from '~/server/utils/costCentres'
 import { receiptRequiresFile, validateReceiptPayload } from '~/server/utils/receipts'
 import { validateSphereSelection } from '~/server/utils/spheres'
-import { ReceiptPosition, ReceiptRow } from '~/types/receipt'
+import type { ReceiptPosition, ReceiptRow } from '~/types/receipt'
 
 interface UpdateReceiptSuccess {
   ok: true

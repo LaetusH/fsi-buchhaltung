@@ -1,4 +1,4 @@
-import { translate } from '~/composables/useI18n'
+import { translate } from '~/shared/i18n'
 
 export type ChangeFieldKey = 'name' | 'start' | 'end' | 'location' | 'recurrence'
 

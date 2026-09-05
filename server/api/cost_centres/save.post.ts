@@ -78,7 +78,7 @@ async function validateParentHierarchy(
       return { ok: false as const, error: 'Selected parent cost centre does not exist' }
     }
 
-    const currentRow: CostCentreParentRow = rows[0]
+    const currentRow: CostCentreParentRow = rows[0]!
     if (id && currentRow.id === id) {
       return { ok: false as const, error: 'A cost centre cannot be assigned to one of its descendants' }
     }

@@ -1,4 +1,4 @@
-import { translate } from '~/composables/useI18n'
+import { translate } from '~/shared/i18n'
 
 /**
  * Builds the human-readable `{lead_text}` value used by `*.reminder`/`shift.understaffed` templates
